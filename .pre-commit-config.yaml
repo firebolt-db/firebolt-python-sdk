@@ -1,0 +1,23 @@
+repos:
+
+  - repo: https://github.com/myint/autoflake
+    rev: v1.4
+    hooks:
+      - id: autoflake
+        args:
+          - -i
+          - -r
+          - --remove-all-unused-imports
+          - --ignore-init-module-imports
+          - --remove-duplicate-keys
+          - --remove-unused-variables
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.7.0
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/psf/black
+    rev: 20.8b1
+    hooks:
+      - id: black
