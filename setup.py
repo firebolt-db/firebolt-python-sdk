@@ -9,7 +9,7 @@ setup(
     packages=find_packages("src"),
     package_dir={"": "src"},
     python_requires=">=3.7",
-    install_requires=["requests", "requests-toolbelt"],
+    install_requires=["requests", "requests-toolbelt", "keyring"],
     extras_require={
         "dev": [
             "pre-commit",
