@@ -1,14 +1,14 @@
 import httpx
 
 
-def get_token(host: str, username: str, password: str) -> str:
+def _get_token(host: str, username: str, password: str) -> str:
     """
     Authenticate with username and password, and get a Bearer token.
 
-    :param host:
-    :param username:
-    :param password:
-    :return: Token
+    :param host: Firebolt server (eg. api.app.firebolt.io)
+    :param username: Username, should be an entire email address
+    :param password: Password
+    :return: Bearer Token string
     """
     with httpx.Client(http2=True) as client:
         response = client.post(
@@ -28,7 +28,7 @@ def get_http_client(host: str, username: str, password: str) -> httpx.Client:
     :param password: Password
     :return: A configured httpx.Client
     """
-    access_token = get_token(host=host, username=username, password=password)
+    access_token = _get_token(host=host, username=username, password=password)
 
     client = httpx.Client(http2=True, base_url=f"https://{host}")
     client.headers.update({"Authorization": f"Bearer {access_token}"})
