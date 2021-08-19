@@ -1,5 +1,13 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:  # prevent circular imports
+    from firebolt.firebolt_client import FireboltClient
+
+
 class EngineService:
-    def __init__(self, firebolt_client):
+    def __init__(self, firebolt_client: FireboltClient):
         self.firebolt_client = firebolt_client
         self.http_client = firebolt_client.http_client
 
