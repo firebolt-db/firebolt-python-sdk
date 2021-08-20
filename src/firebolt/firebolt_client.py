@@ -2,8 +2,8 @@ import logging
 
 import dotenv
 
-from firebolt.api.database import DatabaseService
-from firebolt.api.engine import EngineService
+from firebolt.api.database_service import DatabaseService
+from firebolt.api.engine_service import EngineService
 from firebolt.common import env
 from firebolt.http_client import get_http_client
 
