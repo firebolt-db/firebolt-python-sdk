@@ -15,6 +15,7 @@ def _get_token(host: str, username: str, password: str) -> str:
             f"https://{host}/auth/v1/login",
             headers={"Content-Type": "application/json;charset=UTF-8"},
             json={"username": username, "password": password},
+            timeout=None,
         )
         return response.json()["access_token"]
 
@@ -30,6 +31,29 @@ def get_http_client(host: str, username: str, password: str) -> httpx.Client:
     """
     access_token = _get_token(host=host, username=username, password=password)
 
-    client = httpx.Client(http2=True, base_url=f"https://{host}")
+    # see: https://www.python-httpx.org/advanced/#event-hooks
+    def log_request(request):
+        print(
+            f"Request event hook: {request.method} {request.url} - Waiting for response"
+        )
+
+    def log_response(response):
+        request = response.request
+        print(
+            f"Response event hook: {request.method} {request.url} - Status {response.status_code}"
+        )
+
+    def raise_on_4xx_5xx(response):
+        response.raise_for_status()
+
+    client = httpx.Client(
+        http2=True,
+        base_url=f"https://{host}",
+        event_hooks={
+            "request": [log_request],
+            "response": [log_response, raise_on_4xx_5xx],
+        },
+        timeout=None,
+    )
     client.headers.update({"Authorization": f"Bearer {access_token}"})
     return client

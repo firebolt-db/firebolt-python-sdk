@@ -12,6 +12,7 @@ setup(
     install_requires=[
         "httpx[http2]==0.18",
         "python-dotenv",
+        "pydantic",
     ],
     extras_require={
         "dev": [
