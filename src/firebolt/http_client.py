@@ -1,4 +1,8 @@
+import logging
+
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 def _get_token(host: str, username: str, password: str) -> str:
@@ -33,13 +37,13 @@ def get_http_client(host: str, username: str, password: str) -> httpx.Client:
 
     # see: https://www.python-httpx.org/advanced/#event-hooks
     def log_request(request):
-        print(
+        logger.info(
             f"Request event hook: {request.method} {request.url} - Waiting for response"
         )
 
     def log_response(response):
         request = response.request
-        print(
+        logger.info(
             f"Response event hook: {request.method} {request.url} - Status {response.status_code}"
         )
 
