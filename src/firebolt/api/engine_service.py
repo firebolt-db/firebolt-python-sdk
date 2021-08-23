@@ -33,12 +33,16 @@ class EngineService:
         engine_id = response.json()["engine_id"]["engine_id"]
         return engine_id
 
-    def start_engine(self, engine_id: str) -> str:
-        response = self.http_client.get(
+    def start_engine_by_id(self, engine_id: str) -> str:
+        response = self.http_client.post(
             url=f"/core/v1/account/engines/{engine_id}:start",
         )
         status = response.json()["engine"]["current_status_summary"]
         return status
+
+    def start_engine_by_name(self, engine_name: str) -> str:
+        engine_id = self.get_engine_id_by_name(engine_name=engine_name)
+        return self.start_engine_by_id(engine_id=engine_id)
 
     def create_engine(self, engine: Engine):
         response = self.http_client.post(
