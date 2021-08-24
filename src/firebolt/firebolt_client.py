@@ -2,12 +2,22 @@ import logging
 
 import dotenv
 
-from firebolt.api.database_service import DatabaseService
-from firebolt.api.engine_service import EngineService
+# from firebolt.api.database_service import DatabaseService
+# from firebolt.api.engine_service import EngineService
 from firebolt.common import env
+from firebolt.common.exception import FireboltClientRequiredError
 from firebolt.http_client import get_http_client
 
 logger = logging.getLogger(__name__)
+
+_firebolt_client_singleton = None
+
+
+def get_firebolt_client():
+    global _firebolt_client_singleton
+    if _firebolt_client_singleton is None:
+        raise FireboltClientRequiredError()
+    return _firebolt_client_singleton
 
 
 class FireboltClient:
@@ -29,8 +39,8 @@ class FireboltClient:
             f"Connected to {self.host} as {self.username} (account_id:{self.account_id})"
         )
 
-        self.databases = DatabaseService(firebolt_client=self)
-        self.engines = EngineService(firebolt_client=self)
+        # self.databases = DatabaseService(firebolt_client=self)
+        # self.engines = EngineService(firebolt_client=self)
 
     @classmethod
     def from_env(cls, dotenv_path=None):
@@ -63,8 +73,12 @@ class FireboltClient:
         return account_id
 
     def __enter__(self):
+        global _firebolt_client_singleton
+        _firebolt_client_singleton = self
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.http_client.close()
         logger.info(f"Connection to {self.host} closed")
+        global _firebolt_client_singleton
+        _firebolt_client_singleton = None
