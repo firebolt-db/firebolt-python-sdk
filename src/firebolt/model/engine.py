@@ -1,6 +1,12 @@
+import logging
+import time
 from typing import Any
 
 from pydantic import BaseModel
+
+from firebolt.firebolt_client import get_firebolt_client
+
+logger = logging.getLogger(__name__)
 
 
 class EngineId(BaseModel):
@@ -47,3 +53,59 @@ class Engine(BaseModel):
     desired_status: str
     health_status: str
     endpoint_desired_revision_id: Any
+
+    @property
+    def engine_id(self) -> str:
+        return self.id.engine_id
+
+    @classmethod
+    def get_by_id(cls, engine_id: str):
+        fc = get_firebolt_client()
+        response = fc.http_client.get(
+            url=f"/core/v1/accounts/{fc.account_id}/engines/{engine_id}",
+        )
+        engine_spec: dict = response.json()["engine"]
+        return cls.parse_obj(engine_spec)
+
+    @classmethod
+    def get_by_name(cls, engine_name: str):
+        fc = get_firebolt_client()
+        response = fc.http_client.get(
+            url=f"/core/v1/account/engines:getIdByName",
+            params={"engine_name": engine_name},
+        )
+        engine_id = response.json()["engine_id"]["engine_id"]
+        return cls.get_by_id(engine_id=engine_id)
+
+    def start(
+        self,
+        wait_for_startup: bool = True,
+        wait_timeout_seconds: int = 3600,
+        print_dots=True,
+    ):
+        fc = get_firebolt_client()
+        response = fc.http_client.post(
+            url=f"/core/v1/account/engines/{self.engine_id}:start",
+        )
+        status = response.json()["engine"]["current_status_summary"]
+        logger.info(
+            f"Starting Engine engine_id={self.engine_id} name={self.name} status_summary={status}"
+        )
+        start_time = time.time()
+        end_time = start_time + wait_timeout_seconds
+        while (
+            wait_for_startup
+            and status
+            != "ENGINE_STATUS_SUMMARY_RUNNING"  # summary statuses: https://tinyurl.com/as7a9ru9
+        ):
+            if time.time() >= end_time:
+                raise TimeoutError(
+                    f"Could not start engine within {wait_timeout_seconds} seconds."
+                )
+            new_status = self.get_by_id(engine_id=self.engine_id).current_status_summary
+            if new_status != status:
+                logger.info(f"Engine status_summary={new_status}")
+            elif print_dots:
+                print(".", end="")
+            time.sleep(5)
+            status = new_status
