@@ -82,3 +82,8 @@ class FireboltClient:
         logger.info(f"Connection to {self.host} closed")
         global _firebolt_client_singleton
         _firebolt_client_singleton = None
+
+    def get_instance_types(self):
+        return self.http_client.get(
+            url="/compute/v1/instanceTypes", params={"page.first": 5000}
+        ).json()
