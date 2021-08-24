@@ -1,19 +1,24 @@
+# from firebolt.api.database_service import DatabaseService
+# from firebolt.api.engine_service import EngineService
+from __future__ import annotations
+
 import logging
+from typing import Optional
 
 import dotenv
 
-# from firebolt.api.database_service import DatabaseService
-# from firebolt.api.engine_service import EngineService
 from firebolt.common import env
 from firebolt.common.exception import FireboltClientRequiredError
 from firebolt.http_client import get_http_client
+from firebolt.model.instance_type import InstanceType
+from firebolt.model.region import Region
 
 logger = logging.getLogger(__name__)
 
-_firebolt_client_singleton = None
+_firebolt_client_singleton: Optional[FireboltClient] = None
 
 
-def get_firebolt_client():
+def get_firebolt_client() -> FireboltClient:
     global _firebolt_client_singleton
     if _firebolt_client_singleton is None:
         raise FireboltClientRequiredError()
@@ -21,7 +26,7 @@ def get_firebolt_client():
 
 
 class FireboltClient:
-    def __init__(self, host: str, username: str, password: str):
+    def __init__(self, host: str, username: str, password: str, region_name: str):
         self.username = username
         try:
             self.account_name = username.split("@")[1].split(".")[0]
@@ -38,7 +43,8 @@ class FireboltClient:
         logger.info(
             f"Connected to {self.host} as {self.username} (account_id:{self.account_id})"
         )
-
+        self.region_name = region_name
+        self._instance_types: Optional[list[InstanceType]] = None
         # self.databases = DatabaseService(firebolt_client=self)
         # self.engines = EngineService(firebolt_client=self)
 
@@ -61,8 +67,11 @@ class FireboltClient:
         host = env.FIREBOLT_SERVER.get_value()
         username = env.FIREBOLT_USER.get_value()
         password = env.FIREBOLT_PASSWORD.get_value()
+        region_name = env.FIREBOLT_PROVIDER_REGION.get_value()
 
-        return cls(host=host, username=username, password=password)
+        return cls(
+            host=host, username=username, password=password, region_name=region_name
+        )
 
     def _get_account_id(self) -> str:
         response = self.http_client.get(
@@ -83,7 +92,42 @@ class FireboltClient:
         global _firebolt_client_singleton
         _firebolt_client_singleton = None
 
-    def get_instance_types(self):
-        return self.http_client.get(
-            url="/compute/v1/instanceTypes", params={"page.first": 5000}
-        ).json()
+    @property
+    def region(self):
+        return Region.get_by_name(self.region_name)
+
+    def providers(self):
+        response = self.http_client.get(
+            url="/compute/v1/providers", params={"page.first": 5000}
+        )
+        # '402a51bb-1c8e-4dc4-9e05-ced3c1e2186e'
+        # AWS
+        return response.json()
+
+    def regions(self):
+        response = self.http_client.get(
+            url="/compute/v1/regions", params={"page.first": 5000}
+        )
+        return response.json()
+
+    # def get_instance_type_by_name(self, instance_name: str, region_name: Optional[str] =self.region_name):
+    #     return self.get_instance_type_by_id(InstanceTypeId(
+    #         provider_id=,
+    #         region_id=,
+    #         instance_type_id=,
+    #     ))
+
+    # def get_instance_type_by_id(self, instance_type_id: InstanceTypeId):
+    #     return self.instance_types[instance_type_id]
+    #
+    # @property
+    # def instance_types(self) -> list[InstanceType]:
+    #     if not self._instance_types:
+    #         response = self.http_client.get(
+    #             url="/compute/v1/instanceTypes", params={"page.first": 5000}
+    #         )
+    #         self._instance_types =  [
+    #             InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]
+    #         ]
+    #         self._instance_types_by_region
+    #     return self._instance_types

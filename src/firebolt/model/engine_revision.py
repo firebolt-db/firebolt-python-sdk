@@ -3,18 +3,13 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from firebolt.firebolt_client import get_firebolt_client
+from firebolt.model.instance_type import InstanceTypeId
 
 
 class EngineRevisionId(BaseModel):
     account_id: str
     engine_id: str
     engine_revision_id: str
-
-
-class DbComputeInstancesTypeId(BaseModel):
-    provider_id: str
-    region_id: str
-    instance_type_id: str
 
 
 class ProxyInstancesTypeId(BaseModel):
@@ -24,7 +19,7 @@ class ProxyInstancesTypeId(BaseModel):
 
 
 class Specification(BaseModel):
-    db_compute_instances_type_id: DbComputeInstancesTypeId
+    db_compute_instances_type_id: InstanceTypeId
     db_compute_instances_count: int
     db_compute_instances_use_spot: bool
     db_version: str
@@ -34,9 +29,10 @@ class Specification(BaseModel):
 
     @classmethod
     def default_ingest(cls):
+        fc = get_firebolt_client()
         return (
             cls(
-                db_compute_instances_type_id=DbComputeInstancesTypeId(
+                db_compute_instances_type_id=fc.get_instance(
                     provider_id="402a51bb-1c8e-4dc4-9e05-ced3c1e2186e",
                     region_id="f1841f9f-4031-4a9a-b3d7-1dc27e7e61ed",
                     instance_type_id="fe68d451-ac59-4b89-bb75-71a153b9cfde",
