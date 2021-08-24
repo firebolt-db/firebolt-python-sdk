@@ -42,6 +42,20 @@ pip install datamodel-code-generator
 datamodel-codegen --input-file-type json --input engine_revision.json --output engine_revision.py
 ```
 
+You can also generate code from a json string in python:
+```python
+from datamodel_code_generator import generate, InputFileType
+import json
+instance = {'name': 'r5.8xlarge'} # assume instance is a dict; it represents something we want to model
+instance_json = json.dumps(instance)
+
+# calling generate will print out the generated code
+generate(
+    input_=instance_json,
+    input_file_type=InputFileType.Json
+)
+```
+
 Or, you can try generating from the json api [spec](https://api.app.firebolt.io/docs/openapi.json):
 ```shell
 datamodel-codegen --url https://api.app.firebolt.io/docs/openapi.json --output out/openapi.py
