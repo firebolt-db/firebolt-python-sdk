@@ -18,6 +18,20 @@ class ComputeRegionId(BaseModel):
     provider_id: str
     region_id: str
 
+    @classmethod
+    def us_east_1(cls):
+        return cls(
+            provider_id="402a51bb-1c8e-4dc4-9e05-ced3c1e2186e",
+            region_id="f1841f9f-4031-4a9a-b3d7-1dc27e7e61ed",
+        )
+
+    @classmethod
+    def eu_west_1(cls):
+        return cls(
+            provider_id="402a51bb-1c8e-4dc4-9e05-ced3c1e2186e",
+            region_id="fcacdb84-5206-4f5c-99b5-75668e1f53fb",
+        )
+
 
 class Settings(BaseModel):
     preset: str
@@ -25,6 +39,26 @@ class Settings(BaseModel):
     minimum_logging_level: str
     is_read_only: bool
     warm_up: str
+
+    @classmethod
+    def analytics_default(cls):
+        return cls(
+            preset="ENGINE_SETTINGS_PRESET_DATA_ANALYTICS",
+            auto_stop_delay_duration="1200s",
+            minimum_logging_level="ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
+            is_read_only=True,
+            warm_up="ENGINE_SETTINGS_WARM_UP_INDEXES",
+        )
+
+    @classmethod
+    def ingest_default(cls):
+        return cls(
+            preset="ENGINE_SETTINGS_PRESET_GENERAL_PURPOSE",
+            auto_stop_delay_duration="1200s",
+            minimum_logging_level="ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
+            is_read_only=False,
+            warm_up="ENGINE_SETTINGS_WARM_UP_INDEXES",
+        )
 
 
 class RevisionId(BaseModel):
@@ -76,6 +110,10 @@ class Engine(BaseModel):
         )
         engine_id = response.json()["engine_id"]["engine_id"]
         return cls.get_by_id(engine_id=engine_id)
+
+    @classmethod
+    def create_engine(cls):
+        pass
 
     def start(
         self,
