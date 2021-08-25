@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from functools import cached_property
 from typing import Optional
 
 import dotenv
@@ -10,8 +11,6 @@ import dotenv
 from firebolt.common import env
 from firebolt.common.exception import FireboltClientRequiredError
 from firebolt.http_client import get_http_client
-from firebolt.model.instance_type import InstanceType
-from firebolt.model.region import Region
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +25,9 @@ def get_firebolt_client() -> FireboltClient:
 
 
 class FireboltClient:
-    def __init__(self, host: str, username: str, password: str, region_name: str):
+    def __init__(
+        self, host: str, username: str, password: str, default_region_name: str
+    ):
         self.username = username
         try:
             self.account_name = username.split("@")[1].split(".")[0]
@@ -39,12 +40,11 @@ class FireboltClient:
         self.http_client = get_http_client(
             host=host, username=username, password=password
         )
-        self.account_id = self._get_account_id()
         logger.info(
             f"Connected to {self.host} as {self.username} (account_id:{self.account_id})"
         )
-        self.region_name = region_name
-        self._instance_types: Optional[list[InstanceType]] = None
+        self.default_region_name = default_region_name
+        # self._instance_types: Optional[list[InstanceType]] = None
         # self.databases = DatabaseService(firebolt_client=self)
         # self.engines = EngineService(firebolt_client=self)
 
@@ -70,10 +70,14 @@ class FireboltClient:
         region_name = env.FIREBOLT_PROVIDER_REGION.get_value()
 
         return cls(
-            host=host, username=username, password=password, region_name=region_name
+            host=host,
+            username=username,
+            password=password,
+            default_region_name=region_name,
         )
 
-    def _get_account_id(self) -> str:
+    @cached_property
+    def account_id(self) -> str:
         response = self.http_client.get(
             url="/iam/v2/accounts:getIdByName",
             params={"account_name": self.account_name},
@@ -91,10 +95,6 @@ class FireboltClient:
         logger.info(f"Connection to {self.host} closed")
         global _firebolt_client_singleton
         _firebolt_client_singleton = None
-
-    @property
-    def region(self):
-        return Region.get_by_name(self.region_name)
 
     def providers(self):
         response = self.http_client.get(
@@ -131,3 +131,9 @@ class FireboltClient:
     #         ]
     #         self._instance_types_by_region
     #     return self._instance_types
+
+
+class FireboltClientMixin:
+    @cached_property
+    def firebolt_client(self) -> FireboltClient:
+        return get_firebolt_client()

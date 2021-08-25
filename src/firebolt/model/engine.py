@@ -5,7 +5,7 @@ from typing import Any
 from pydantic import BaseModel
 
 from firebolt.firebolt_client import get_firebolt_client
-from firebolt.model.engine_revision import EngineRevision, EngineRevisionId
+from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class Engine(BaseModel):
     settings: Settings
     current_status: str
     current_status_summary: str
-    latest_revision_id: EngineRevisionId
+    latest_revision_id: EngineRevisionKey
     endpoint: str
     endpoint_serving_revision_id: Any
     create_time: str
@@ -117,8 +117,8 @@ class Engine(BaseModel):
         pass
 
     def get_latest_engine_revision(self):
-        return EngineRevision.get_by_engine_revision_id(
-            engine_revision_id=self.latest_revision_id
+        return EngineRevision.get_by_engine_revision_key(
+            engine_revision_key=self.latest_revision_id
         )
 
     def start(
