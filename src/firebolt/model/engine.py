@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import time
 from datetime import datetime
@@ -93,14 +95,22 @@ class Engine(BaseModel, FireboltClientMixin):
         pass
 
     def create(self):
-        data = {
-            "account_id": self.firebolt_client.account_id,
-            "engine": self.dict(by_alias=True),
-            "engine_revision": self.get_latest_engine_revision().dict(by_alias=True),
-        }
+        json_payload = EngineCreate(
+            account_id=self.firebolt_client.account_id,
+            engine=self,
+            engine_revision=self.get_latest_engine_revision(),
+        ).json(by_alias=True)
+
+        # json_payload = {
+        #     "account_id": self.firebolt_client.account_id,
+        #     "engine": self.json(by_alias=True),
+        #     "engine_revision": self.get_latest_engine_revision().json(by_alias=True),
+        # }
+
         response = self.firebolt_client.http_client.post(
             url="/core/v1/account/engines",
-            data=data,
+            headers={"Content-type": "application/json"},
+            data=json_payload,
         )
         return response.json()
 
@@ -140,3 +150,11 @@ class Engine(BaseModel, FireboltClientMixin):
                 print(".", end="")
             time.sleep(5)
             status = new_status
+
+
+class EngineCreate(BaseModel):
+    """Helper model for sending Engine create requests"""
+
+    account_id: str
+    engine: Engine
+    engine_revision: EngineRevision
