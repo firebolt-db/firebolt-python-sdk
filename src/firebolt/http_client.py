@@ -5,6 +5,10 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
+class BadRequestError(httpx.HTTPStatusError):
+    pass
+
+
 def _get_token(host: str, username: str, password: str) -> str:
     """
     Authenticate with username and password, and get a Bearer token.
@@ -47,8 +51,24 @@ def get_http_client(host: str, username: str, password: str) -> httpx.Client:
             f"Response event hook: {request.method} {request.url} - Status {response.status_code}"
         )
 
-    def raise_on_4xx_5xx(response):
-        response.raise_for_status()
+    def raise_on_4xx_5xx(response: httpx.Response):
+        try:
+            response.raise_for_status()
+        except httpx.RequestError as exc:
+            logger.exception(f"An error occurred while requesting {exc.request.url!r}.")
+            raise exc
+        except httpx.HTTPStatusError as exc:
+            logger.exception(
+                f"Error response {exc.response.status_code} while requesting {exc.request.url!r}. "
+                f"Response: {exc.response.json()}"
+            )
+            if exc.response.status_code == 400:
+                raise BadRequestError(
+                    message=exc.response.json()["message"],
+                    request=exc.request,
+                    response=exc.response,
+                ) from exc
+            raise exc
 
     client = httpx.Client(
         http2=True,

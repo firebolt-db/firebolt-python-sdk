@@ -1,37 +1,20 @@
 import logging
 import time
-from typing import Any
+from datetime import datetime
+from typing import Any, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from firebolt.firebolt_client import get_firebolt_client
+from firebolt.firebolt_client import FireboltClientMixin
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
+from firebolt.model.region import RegionKey
 
 logger = logging.getLogger(__name__)
 
 
-class EngineId(BaseModel):
+class EngineKey(BaseModel):
     account_id: str
     engine_id: str
-
-
-class ComputeRegionId(BaseModel):
-    provider_id: str
-    region_id: str
-
-    @classmethod
-    def us_east_1(cls):
-        return cls(
-            provider_id="402a51bb-1c8e-4dc4-9e05-ced3c1e2186e",
-            region_id="f1841f9f-4031-4a9a-b3d7-1dc27e7e61ed",
-        )
-
-    @classmethod
-    def eu_west_1(cls):
-        return cls(
-            provider_id="402a51bb-1c8e-4dc4-9e05-ced3c1e2186e",
-            region_id="fcacdb84-5206-4f5c-99b5-75668e1f53fb",
-        )
 
 
 class Settings(BaseModel):
@@ -62,40 +45,34 @@ class Settings(BaseModel):
         )
 
 
-# class RevisionId(BaseModel):
-#     account_id: str
-#     engine_id: str
-#     engine_revision_id: str
-
-
-class Engine(BaseModel):
-    id: EngineId
+class Engine(BaseModel, FireboltClientMixin):
+    key: EngineKey = Field(alias="id")
     name: str
     description: str
     emoji: str
-    compute_region_id: ComputeRegionId
+    compute_region_id: RegionKey
     settings: Settings
     current_status: str
     current_status_summary: str
     latest_revision_id: EngineRevisionKey
     endpoint: str
-    endpoint_serving_revision_id: Any
-    create_time: str
+    endpoint_serving_revision_id: Any  # todo? (can be None)
+    create_time: datetime
     create_actor: str
-    last_update_time: str
+    last_update_time: datetime
     last_update_actor: str
-    last_use_time: Any
+    last_use_time: Optional[datetime]
     desired_status: str
     health_status: str
-    endpoint_desired_revision_id: Any
+    endpoint_desired_revision_id: Any  # todo? (can be None)
 
     @property
     def engine_id(self) -> str:
-        return self.id.engine_id
+        return self.key.engine_id
 
     @classmethod
     def get_by_id(cls, engine_id: str):
-        fc = get_firebolt_client()
+        fc = cls.get_firebolt_client()
         response = fc.http_client.get(
             url=f"/core/v1/accounts/{fc.account_id}/engines/{engine_id}",
         )
@@ -104,19 +81,30 @@ class Engine(BaseModel):
 
     @classmethod
     def get_by_name(cls, engine_name: str):
-        fc = get_firebolt_client()
-        response = fc.http_client.get(
-            url=f"/core/v1/account/engines:getIdByName",
+        response = cls.get_firebolt_client().http_client.get(
+            url="/core/v1/account/engines:getIdByName",
             params={"engine_name": engine_name},
         )
         engine_id = response.json()["engine_id"]["engine_id"]
         return cls.get_by_id(engine_id=engine_id)
 
     @classmethod
-    def create_engine(cls):
+    def create_analytics(cls):
         pass
 
-    def get_latest_engine_revision(self):
+    def create(self):
+        data = {
+            "account_id": self.firebolt_client.account_id,
+            "engine": self.dict(by_alias=True),
+            "engine_revision": self.get_latest_engine_revision().dict(by_alias=True),
+        }
+        response = self.firebolt_client.http_client.post(
+            url="/core/v1/account/engines",
+            data=data,
+        )
+        return response.json()
+
+    def get_latest_engine_revision(self) -> EngineRevision:
         return EngineRevision.get_by_engine_revision_key(
             engine_revision_key=self.latest_revision_id
         )
@@ -127,8 +115,7 @@ class Engine(BaseModel):
         wait_timeout_seconds: int = 3600,
         print_dots=True,
     ):
-        fc = get_firebolt_client()
-        response = fc.http_client.post(
+        response = self.firebolt_client.http_client.post(
             url=f"/core/v1/account/engines/{self.engine_id}:start",
         )
         status = response.json()["engine"]["current_status_summary"]

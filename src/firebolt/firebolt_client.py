@@ -34,20 +34,12 @@ class FireboltClient:
         default_provider_name: Optional[str] = None,
     ):
         self.username = username
-        try:
-            username.split("@")[1].split(".")[0]
-        except IndexError:
-            raise ValueError(
-                "Invalid username. Your username should be a valid email address, including a domain."
-            )
         self.password = password
         self.host = host
         self.http_client = get_http_client(
             host=host, username=username, password=password
         )
-        logger.info(
-            f"Connected to {self.host} as {self.username}"
-        )
+        logger.info(f"Connected to {self.host} as {self.username}")
 
         self.default_region_name = default_region_name
         self.default_provider_name = (
@@ -107,6 +99,10 @@ class FireboltClient:
 
 
 class FireboltClientMixin:
-    @cached_property
+    @classmethod
+    def get_firebolt_client(cls) -> FireboltClient:
+        return get_firebolt_client()
+
+    @property
     def firebolt_client(self) -> FireboltClient:
         return get_firebolt_client()

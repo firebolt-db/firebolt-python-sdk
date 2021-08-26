@@ -12,12 +12,6 @@ class EngineRevisionKey(BaseModel):
     engine_revision_id: str
 
 
-# class ProxyInstancesTypeId(BaseModel):
-#     provider_id: str
-#     region_id: str
-#     instance_type_id: str
-
-
 class Specification(BaseModel):
     db_compute_instances_type_id: InstanceTypeKey  # todo alias id to key?
     db_compute_instances_count: int
@@ -33,20 +27,10 @@ class Specification(BaseModel):
         return (
             cls(
                 db_compute_instances_type_id=instance_type_key,
-                # db_compute_instances_type_id=fc.get_instance(
-                #     provider_id="402a51bb-1c8e-4dc4-9e05-ced3c1e2186e",
-                #     region_id="f1841f9f-4031-4a9a-b3d7-1dc27e7e61ed",
-                #     instance_type_id="fe68d451-ac59-4b89-bb75-71a153b9cfde",
-                # ),
                 db_compute_instances_count=2,
                 db_compute_instances_use_spot=False,
                 db_version="",
                 proxy_instances_type_id=instance_type_key,
-                # proxy_instances_type_id=InstanceTypeKey(
-                #     provider_id="402a51bb-1c8e-4dc4-9e05-ced3c1e2186e",
-                #     region_id="f1841f9f-4031-4a9a-b3d7-1dc27e7e61ed",
-                #     instance_type_id="fe68d451-ac59-4b89-bb75-71a153b9cfde",
-                # ),
                 proxy_instances_count=1,
                 proxy_version="",
             ),
@@ -85,8 +69,3 @@ class EngineRevision(BaseModel):
         )
         engine_spec: dict = response.json()["engine_revision"]
         return cls.parse_obj(engine_spec)
-
-
-#
-# class Model(BaseModel):
-#     engine_revision: EngineRevision
