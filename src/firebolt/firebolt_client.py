@@ -35,7 +35,7 @@ class FireboltClient:
     ):
         self.username = username
         try:
-            self.account_name = username.split("@")[1].split(".")[0]
+            username.split("@")[1].split(".")[0]
         except IndexError:
             raise ValueError(
                 "Invalid username. Your username should be a valid email address, including a domain."
@@ -46,7 +46,7 @@ class FireboltClient:
             host=host, username=username, password=password
         )
         logger.info(
-            f"Connected to {self.host} as {self.username} (account_id:{self.account_id})"
+            f"Connected to {self.host} as {self.username}"
         )
 
         self.default_region_name = default_region_name
@@ -89,10 +89,9 @@ class FireboltClient:
     @cached_property
     def account_id(self) -> str:
         response = self.http_client.get(
-            url="/iam/v2/accounts:getIdByName",
-            params={"account_name": self.account_name},
+            url="/iam/v2/account",
         )
-        account_id = response.json()["account_id"]
+        account_id = response.json()["account"]["id"]
         return account_id
 
     def __enter__(self):
