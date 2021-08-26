@@ -101,12 +101,6 @@ class Engine(BaseModel, FireboltClientMixin):
             engine_revision=self.get_latest_engine_revision(),
         ).json(by_alias=True)
 
-        # json_payload = {
-        #     "account_id": self.firebolt_client.account_id,
-        #     "engine": self.json(by_alias=True),
-        #     "engine_revision": self.get_latest_engine_revision().json(by_alias=True),
-        # }
-
         response = self.firebolt_client.http_client.post(
             url="/core/v1/account/engines",
             headers={"Content-type": "application/json"},
