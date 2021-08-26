@@ -26,7 +26,12 @@ def get_firebolt_client() -> FireboltClient:
 
 class FireboltClient:
     def __init__(
-        self, host: str, username: str, password: str, default_region_name: str
+        self,
+        host: str,
+        username: str,
+        password: str,
+        default_region_name: Optional[str] = None,
+        default_provider_name: Optional[str] = None,
     ):
         self.username = username
         try:
@@ -43,10 +48,11 @@ class FireboltClient:
         logger.info(
             f"Connected to {self.host} as {self.username} (account_id:{self.account_id})"
         )
+
         self.default_region_name = default_region_name
-        # self._instance_types: Optional[list[InstanceType]] = None
-        # self.databases = DatabaseService(firebolt_client=self)
-        # self.engines = EngineService(firebolt_client=self)
+        self.default_provider_name = (
+            default_provider_name if default_provider_name else "AWS"
+        )
 
     @classmethod
     def from_env(cls, dotenv_path=None):
@@ -67,13 +73,17 @@ class FireboltClient:
         host = env.FIREBOLT_SERVER.get_value()
         username = env.FIREBOLT_USER.get_value()
         password = env.FIREBOLT_PASSWORD.get_value()
-        region_name = env.FIREBOLT_PROVIDER_REGION.get_value()
+        default_region_name = env.FIREBOLT_DEFAULT_REGION.get_value(is_required=False)
+        default_provider_name = env.FIREBOLT_DEFAULT_PROVIDER.get_value(
+            is_required=False
+        )
 
         return cls(
             host=host,
             username=username,
             password=password,
-            default_region_name=region_name,
+            default_region_name=default_region_name,
+            default_provider_name=default_provider_name,
         )
 
     @cached_property
@@ -95,42 +105,6 @@ class FireboltClient:
         logger.info(f"Connection to {self.host} closed")
         global _firebolt_client_singleton
         _firebolt_client_singleton = None
-
-    def providers(self):
-        response = self.http_client.get(
-            url="/compute/v1/providers", params={"page.first": 5000}
-        )
-        # '402a51bb-1c8e-4dc4-9e05-ced3c1e2186e'
-        # AWS
-        return response.json()
-
-    def regions(self):
-        response = self.http_client.get(
-            url="/compute/v1/regions", params={"page.first": 5000}
-        )
-        return response.json()
-
-    # def get_instance_type_by_name(self, instance_name: str, region_name: Optional[str] =self.region_name):
-    #     return self.get_instance_type_by_id(InstanceTypeId(
-    #         provider_id=,
-    #         region_id=,
-    #         instance_type_id=,
-    #     ))
-
-    # def get_instance_type_by_id(self, instance_type_id: InstanceTypeId):
-    #     return self.instance_types[instance_type_id]
-    #
-    # @property
-    # def instance_types(self) -> list[InstanceType]:
-    #     if not self._instance_types:
-    #         response = self.http_client.get(
-    #             url="/compute/v1/instanceTypes", params={"page.first": 5000}
-    #         )
-    #         self._instance_types =  [
-    #             InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]
-    #         ]
-    #         self._instance_types_by_region
-    #     return self._instance_types
 
 
 class FireboltClientMixin:

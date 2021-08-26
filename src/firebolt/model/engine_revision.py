@@ -29,11 +29,7 @@ class Specification(BaseModel):
 
     @classmethod
     def default_ingest(cls):
-        fc = get_firebolt_client()
-        instance_type_key = instance_types.get_by_region_name_instance_name(
-            instance_name="i3.4xlarge",
-            region_name=fc.default_region_name,
-        ).key
+        instance_type_key = instance_types.get_by_name(instance_name="i3.4xlarge").key
         return (
             cls(
                 db_compute_instances_type_id=instance_type_key,

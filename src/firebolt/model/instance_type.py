@@ -1,13 +1,14 @@
 from functools import cached_property
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 from pydantic import BaseModel, Field
 
 from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey, regions
 
 
-class InstanceTypeKey(BaseModel):
+class InstanceTypeKey(BaseModel, frozen=True):  # type: ignore
     provider_id: str
     region_id: str
     instance_type_id: str
@@ -20,6 +21,10 @@ class InstanceTypeKey(BaseModel):
                 region_id=self.region_id,
             )
         )
+
+    @property
+    def provider(self) -> Provider:
+        return self.region.provider
 
 
 class InstanceType(BaseModel):
@@ -37,14 +42,13 @@ class InstanceType(BaseModel):
     def region(self) -> Region:
         return self.key.region
 
+    @property
+    def provider(self) -> Provider:
+        return self.region.provider
+
 
 class InstanceTypeLookup(NamedTuple):
-    """
-    Lookup an instance type by region and instance type name
-    Consider replacing this with a frozen pydantic model (currently a beta feature)
-        or a HashableBaseModel
-    """
-
+    provider_name: str
     region_name: str
     instance_name: str
 
@@ -58,21 +62,56 @@ class _InstanceTypes(FireboltClientMixin):
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     @cached_property
-    def instance_types_by_region_name_instance_name(
-        self,
-    ) -> dict[InstanceTypeLookup, InstanceType]:
+    def instance_types_by_key(self) -> dict[InstanceTypeKey, InstanceType]:
+        return {i.key: i for i in self.instance_types}
+
+    @cached_property
+    def instance_types_by_name(self) -> dict[InstanceTypeLookup, InstanceType]:
         return {
-            InstanceTypeLookup(region_name=i.region.name, instance_name=i.name): i
+            InstanceTypeLookup(
+                provider_name=i.provider.name,
+                region_name=i.region.name,
+                instance_name=i.name,
+            ): i
             for i in self.instance_types
         }
 
-    def get_by_region_name_instance_name(self, instance_name: str, region_name: str):
-        return self.instance_types_by_region_name_instance_name[
+    def get_by_name(
+        self,
+        instance_name: str,
+        region_name: Optional[str] = None,
+        provider_name: Optional[str] = None,
+    ) -> InstanceType:
+        if region_name is None:
+            if self.firebolt_client.default_region_name is None:
+                raise ValueError("region_name or default_region_name is required.")
+            region_name = self.firebolt_client.default_region_name
+        if provider_name is None:
+            provider_name = self.firebolt_client.default_provider_name
+        return self.instance_types_by_name[
             InstanceTypeLookup(
+                provider_name=provider_name,
                 region_name=region_name,
                 instance_name=instance_name,
             )
         ]
+
+    # @cached_property
+    # def instance_types_by_region_name_instance_name(
+    #     self,
+    # ) -> dict[InstanceTypeLookup, InstanceType]:
+    #     return {
+    #         InstanceTypeLookup(region_name=i.region.name, instance_name=i.name): i
+    #         for i in self.instance_types
+    #     }
+
+    # def get_by_region_name_instance_name(self, instance_name: str, region_name: str):
+    #     return self.instance_types_by_region_name_instance_name[
+    #         InstanceTypeLookup(
+    #             region_name=region_name,
+    #             instance_name=instance_name,
+    #         )
+    #     ]
 
 
 instance_types = _InstanceTypes()
