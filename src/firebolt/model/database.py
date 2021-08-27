@@ -41,14 +41,6 @@ class Database(BaseModel, FireboltClientMixin):
     last_update_actor: str
     desired_status: str
 
-    # def get_id_by_name(self, database_name: str) -> str:
-    #     response = self.firebolt_client.http_client.get(
-    #         url=f"/core/v1/account/databases:getIdByName",
-    #         params={"database_name": database_name},
-    #     )
-    #     database_id = response.json()["database_id"]["database_id"]
-    #     return database_id
-
     @classmethod
     def get_by_id(cls, database_id: str) -> Database:
         fc = cls.get_firebolt_client()
@@ -58,6 +50,20 @@ class Database(BaseModel, FireboltClientMixin):
         database_spec: dict = response.json()["database"]
         return Database.parse_obj(database_spec)
 
+    @classmethod
+    def get_id_by_name(cls, database_name: str) -> str:
+        response = cls.get_firebolt_client().http_client.get(
+            url=f"/core/v1/account/databases:getIdByName",
+            params={"database_name": database_name},
+        )
+        database_id = response.json()["database_id"]["database_id"]
+        return database_id
+
+    @classmethod
+    def get_by_name(cls, database_name: str) -> Database:
+        database_id = cls.get_id_by_name(database_name=database_name)
+        return cls.get_by_id(database_id=database_id)
+
     @property
     def database_id(self) -> str:
         return self.database_key.database_id
@@ -66,9 +72,5 @@ class Database(BaseModel, FireboltClientMixin):
     def engines(self) -> list[Engine]:
         from firebolt.model.engine import Engine
 
-        bindings = Binding.list(database_id=self.database_id)
+        bindings = Binding.list_bindings(database_id=self.database_id)
         return Engine.get_by_ids([b.engine_id for b in bindings])
-
-    # def get_by_name(self, database_name: str) -> Database:
-    #     database_id = self.get_id_by_name(database_name=database_name)
-    #     return self.get_by_id(database_id=database_id)

@@ -10,9 +10,9 @@ setup(
     package_dir={"": "src"},
     python_requires=">=3.7",
     entry_points={
-        'console_scripts': [
-            'firebolt=firebolt.cli:run',
-            'fb=firebolt.cli:run',
+        "console_scripts": [
+            "firebolt=firebolt.cli:run",
+            "fb=firebolt.cli:run",
         ],
     },
     install_requires=[
