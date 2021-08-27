@@ -91,6 +91,20 @@ class Engine(BaseModel, FireboltClientMixin):
         return cls.get_by_id(engine_id=engine_id)
 
     @classmethod
+    def list_engines(cls):
+        fc = cls.get_firebolt_client()
+        response = fc.http_client.get(
+            url=f"/core/v1/accounts/{fc.account_id}/engines",
+        )
+        return response.json()
+
+    def delete(self):
+        response = self.firebolt_client.http_client.delete(
+            url=f"/core/v1/accounts/{self.firebolt_client.account_id}/engines/{self.engine_id}",
+        )
+        return response.json()
+
+    @classmethod
     def create_analytics(cls):
         pass
 
