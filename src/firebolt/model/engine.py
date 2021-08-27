@@ -6,8 +6,11 @@ from datetime import datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
+from toolz import first
 
 from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model.binding import Binding
+from firebolt.model.database import Database
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 from firebolt.model.region import RegionKey
 
@@ -82,6 +85,20 @@ class Engine(BaseModel, FireboltClientMixin):
         return cls.parse_obj(engine_spec)
 
     @classmethod
+    def get_by_ids(cls, engine_ids: list[str]) -> list[Engine]:
+        fc = cls.get_firebolt_client()
+        response = fc.http_client.post(
+            url=f"/core/v1/engines:getByIds",
+            json={
+                "engine_ids": [
+                    {"account_id": fc.account_id, "engine_id": engine_id}
+                    for engine_id in engine_ids
+                ]
+            },
+        )
+        return [cls.parse_obj(e) for e in response.json()["engines"]]
+
+    @classmethod
     def get_by_name(cls, engine_name: str):
         response = cls.get_firebolt_client().http_client.get(
             url="/core/v1/account/engines:getIdByName",
@@ -107,6 +124,15 @@ class Engine(BaseModel, FireboltClientMixin):
     @classmethod
     def create_analytics(cls):
         pass
+
+    @property
+    def database(self) -> Optional[Database]:
+        # FUTURE: in the new architecture, an engine can be bound to multiple databases
+        try:
+            binding = first(Binding.list(engine_id=self.engine_id))
+            return Database.get_by_id(binding.database_id)
+        except StopIteration:
+            return None
 
     def create(self):
         json_payload = EngineCreate(

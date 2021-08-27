@@ -20,6 +20,7 @@ setup(
         "python-dotenv",
         "pydantic",
         "typer",
+        "toolz",
     ],
     extras_require={
         "dev": [
