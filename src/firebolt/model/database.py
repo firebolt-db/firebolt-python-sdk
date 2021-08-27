@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
 from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model.binding import Binding
 from firebolt.model.region import RegionKey
+
+if TYPE_CHECKING:
+    from firebolt.model.engine import Engine
 
 
 class DatabaseKey(BaseModel):
@@ -52,6 +57,17 @@ class Database(BaseModel, FireboltClientMixin):
         )
         database_spec: dict = response.json()["database"]
         return Database.parse_obj(database_spec)
+
+    @property
+    def database_id(self) -> str:
+        return self.database_key.database_id
+
+    @property
+    def engines(self) -> list[Engine]:
+        from firebolt.model.engine import Engine
+
+        bindings = Binding.list(database_id=self.database_id)
+        return Engine.get_by_ids([b.engine_id for b in bindings])
 
     # def get_by_name(self, database_name: str) -> Database:
     #     database_id = self.get_id_by_name(database_name=database_name)
