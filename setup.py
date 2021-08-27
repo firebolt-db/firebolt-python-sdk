@@ -9,10 +9,17 @@ setup(
     packages=find_packages("src"),
     package_dir={"": "src"},
     python_requires=">=3.7",
+    entry_points={
+        'console_scripts': [
+            'firebolt=firebolt.cli:run',
+            'fb=firebolt.cli:run',
+        ],
+    },
     install_requires=[
         "httpx[http2]==0.18",
         "python-dotenv",
         "pydantic",
+        "typer",
         "toolz",
     ],
     extras_require={
