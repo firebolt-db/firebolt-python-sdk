@@ -13,6 +13,7 @@ setup(
         "httpx[http2]==0.18",
         "python-dotenv",
         "pydantic",
+        "toolz",
     ],
     extras_require={
         "dev": [

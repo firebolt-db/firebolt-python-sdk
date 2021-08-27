@@ -6,8 +6,11 @@ from datetime import datetime
 from typing import Any, Optional
 
 from pydantic import BaseModel, Field
+from toolz import first
 
 from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model.binding import Binding
+from firebolt.model.database import Database
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 from firebolt.model.region import RegionKey
 
@@ -93,6 +96,15 @@ class Engine(BaseModel, FireboltClientMixin):
     @classmethod
     def create_analytics(cls):
         pass
+
+    @property
+    def database(self) -> Optional[Database]:
+        # FUTURE: in the new architecture, an engine can be bound to multiple databases
+        try:
+            binding = first(Binding.list(engine_id=self.engine_id))
+            return Database.get_by_id(binding.database_id)
+        except StopIteration:
+            return None
 
     def create(self):
         json_payload = EngineCreate(
