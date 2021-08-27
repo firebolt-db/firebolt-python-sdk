@@ -1,15 +1,16 @@
 import json
+
 import typer
 
-from .model.engine import Engine
 from .firebolt_client import FireboltClient
+from .model.engine import Engine
 
 app = typer.Typer()
 
-ENGINE_OPERATIONS = ['start', 'stop', 'restart']
-READ_COMMANDS = ['ls', 'list', 'read']
-DELETE_COMMANDS = ['delete', 'destroy']
-CREATE_COMMANDS = ['create']
+ENGINE_OPERATIONS = ["start", "stop", "restart"]
+READ_COMMANDS = ["ls", "list", "read"]
+DELETE_COMMANDS = ["delete", "destroy"]
+CREATE_COMMANDS = ["create"]
 
 
 def run():
