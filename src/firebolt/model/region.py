@@ -60,12 +60,6 @@ class _Regions(FireboltClientMixin):
                 "via environment variable: FIREBOLT_DEFAULT_REGION"
             )
         return self.get_by_name(region_name=self.firebolt_client.default_region_name)
-        # return self.regions_by_name[
-        #     RegionLookup(
-        #         provider_name=providers.default_provider.name,
-        #         region_name=self.firebolt_client.default_region_name,
-        #     )
-        # ]
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None

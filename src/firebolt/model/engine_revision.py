@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -22,18 +24,29 @@ class Specification(BaseModel):
     proxy_version: str
 
     @classmethod
-    def default_ingest(cls):
+    def ingest_default(cls) -> Specification:
         instance_type_key = instance_types.get_by_name(instance_name="i3.4xlarge").key
-        return (
-            cls(
-                db_compute_instances_type_id=instance_type_key,
-                db_compute_instances_count=2,
-                db_compute_instances_use_spot=False,
-                db_version="",
-                proxy_instances_type_id=instance_type_key,
-                proxy_instances_count=1,
-                proxy_version="",
-            ),
+        return cls(
+            db_compute_instances_type_id=instance_type_key,
+            db_compute_instances_count=2,
+            db_compute_instances_use_spot=False,
+            db_version="",
+            proxy_instances_type_id=instance_type_key,
+            proxy_instances_count=1,
+            proxy_version="",
+        )
+
+    @classmethod
+    def analytics_default(cls) -> Specification:
+        instance_type_key = instance_types.get_by_name(instance_name="m5d.4xlarge").key
+        return cls(
+            db_compute_instances_type_id=instance_type_key,
+            db_compute_instances_count=1,
+            db_compute_instances_use_spot=False,
+            db_version="",
+            proxy_instances_type_id=instance_type_key,
+            proxy_instances_count=1,
+            proxy_version="",
         )
 
 
@@ -49,7 +62,7 @@ class EngineRevision(BaseModel):
     health_status: str
 
     @classmethod
-    def get_by_id(cls, engine_id: str, engine_revision_id: str):
+    def get_by_id(cls, engine_id: str, engine_revision_id: str) -> EngineRevision:
         fc = get_firebolt_client()
         return cls.get_by_engine_revision_key(
             EngineRevisionKey(
@@ -60,7 +73,9 @@ class EngineRevision(BaseModel):
         )
 
     @classmethod
-    def get_by_engine_revision_key(cls, engine_revision_key: EngineRevisionKey):
+    def get_by_engine_revision_key(
+        cls, engine_revision_key: EngineRevisionKey
+    ) -> EngineRevision:
         fc = get_firebolt_client()
         response = fc.http_client.get(
             url=f"/core/v1/accounts/{engine_revision_key.account_id}"
@@ -69,3 +84,7 @@ class EngineRevision(BaseModel):
         )
         engine_spec: dict = response.json()["engine_revision"]
         return cls.parse_obj(engine_spec)
+
+    @classmethod
+    def analytics_default(cls) -> EngineRevision:
+        return cls.construct(specification=Specification.analytics_default())

@@ -56,7 +56,7 @@ class Binding(BaseModel, FireboltClientMixin):
         return response.json()
 
     @classmethod
-    def list(
+    def list_bindings(
         cls,
         database_id: Optional[str] = None,
         engine_id: Optional[str] = None,

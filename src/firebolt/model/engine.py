@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime
-from typing import Any, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field
 from toolz import first
@@ -12,7 +12,7 @@ from firebolt.firebolt_client import FireboltClientMixin
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
-from firebolt.model.region import RegionKey
+from firebolt.model.region import RegionKey, regions
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class Settings(BaseModel):
     warm_up: str
 
     @classmethod
-    def analytics_default(cls):
+    def analytics_default(cls) -> Settings:
         return cls(
             preset="ENGINE_SETTINGS_PRESET_DATA_ANALYTICS",
             auto_stop_delay_duration="1200s",
@@ -40,7 +40,7 @@ class Settings(BaseModel):
         )
 
     @classmethod
-    def ingest_default(cls):
+    def ingest_default(cls) -> Settings:
         return cls(
             preset="ENGINE_SETTINGS_PRESET_GENERAL_PURPOSE",
             auto_stop_delay_duration="1200s",
@@ -51,28 +51,37 @@ class Settings(BaseModel):
 
 
 class Engine(BaseModel, FireboltClientMixin):
-    key: EngineKey = Field(alias="id")
+    key: Optional[EngineKey] = Field(alias="id")
     name: str
-    description: str
-    emoji: str
-    compute_region_id: RegionKey
+    description: Optional[str]
+    emoji: Optional[str]
+    compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: Settings
-    current_status: str
-    current_status_summary: str
-    latest_revision_id: EngineRevisionKey
-    endpoint: str
-    endpoint_serving_revision_id: Any  # todo? (can be None)
-    create_time: datetime
-    create_actor: str
-    last_update_time: datetime
-    last_update_actor: str
+    current_status: Optional[str]
+    current_status_summary: Optional[str]
+    latest_revision_key: Optional[EngineRevisionKey] = Field(alias="latest_revision_id")
+    endpoint: Optional[str]
+    endpoint_serving_revision_key: Optional[EngineRevisionKey] = Field(
+        alias="endpoint_serving_revision_id"
+    )
+    create_time: Optional[datetime]
+    create_actor: Optional[str]
+    last_update_time: Optional[datetime]
+    last_update_actor: Optional[str]
     last_use_time: Optional[datetime]
-    desired_status: str
-    health_status: str
-    endpoint_desired_revision_id: Any  # todo? (can be None)
+    desired_status: Optional[str]
+    health_status: Optional[str]
+    endpoint_desired_revision_key: Optional[EngineRevisionKey] = Field(
+        alias="endpoint_desired_revision_id"
+    )
+
+    class Config:
+        allow_population_by_field_name = True
 
     @property
-    def engine_id(self) -> str:
+    def engine_id(self) -> Optional[str]:
+        if self.key is None:
+            return None
         return self.key.engine_id
 
     @classmethod
@@ -108,12 +117,13 @@ class Engine(BaseModel, FireboltClientMixin):
         return cls.get_by_id(engine_id=engine_id)
 
     @classmethod
-    def list_engines(cls):
+    def list_engines(cls) -> list[Engine]:
         fc = cls.get_firebolt_client()
         response = fc.http_client.get(
             url=f"/core/v1/accounts/{fc.account_id}/engines",
+            params={"page.first": 5000},  # FUTURE: consider generator
         )
-        return response.json()
+        return [cls.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     def delete(self):
         response = self.firebolt_client.http_client.delete(
@@ -122,23 +132,40 @@ class Engine(BaseModel, FireboltClientMixin):
         return response.json()
 
     @classmethod
-    def create_analytics(cls):
-        pass
+    def analytics_default(
+        cls,
+        name: str,
+        description: Optional[str] = None,
+        region_name: Optional[str] = None,
+    ) -> Engine:
+        if region_name is not None:
+            region = regions.get_by_name(region_name=region_name)
+        else:
+            region = regions.default_region
+        return Engine(
+            name=name,
+            description=description,
+            compute_region_key=region.key,
+            settings=Settings.analytics_default(),
+        )
 
     @property
     def database(self) -> Optional[Database]:
         # FUTURE: in the new architecture, an engine can be bound to multiple databases
         try:
-            binding = first(Binding.list(engine_id=self.engine_id))
+            binding = first(Binding.list_bindings(engine_id=self.engine_id))
             return Database.get_by_id(binding.database_id)
         except StopIteration:
             return None
 
-    def create(self):
+    def create(self, engine_revision: Optional[EngineRevision] = None):
+        if engine_revision is None:
+            engine_revision = self.get_latest_engine_revision()
+
         json_payload = EngineCreate(
             account_id=self.firebolt_client.account_id,
             engine=self,
-            engine_revision=self.get_latest_engine_revision(),
+            engine_revision=engine_revision,
         ).json(by_alias=True)
 
         response = self.firebolt_client.http_client.post(
@@ -148,9 +175,11 @@ class Engine(BaseModel, FireboltClientMixin):
         )
         return response.json()
 
-    def get_latest_engine_revision(self) -> EngineRevision:
+    def get_latest_engine_revision(self) -> Optional[EngineRevision]:
+        if self.latest_revision_key is None:
+            return None
         return EngineRevision.get_by_engine_revision_key(
-            engine_revision_key=self.latest_revision_id
+            engine_revision_key=self.latest_revision_key
         )
 
     def start(
@@ -159,6 +188,8 @@ class Engine(BaseModel, FireboltClientMixin):
         wait_timeout_seconds: int = 3600,
         print_dots=True,
     ):
+        if self.engine_id is None:
+            raise ValueError("engine_id must be set before starting")
         response = self.firebolt_client.http_client.post(
             url=f"/core/v1/account/engines/{self.engine_id}:start",
         )
@@ -191,4 +222,4 @@ class EngineCreate(BaseModel):
 
     account_id: str
     engine: Engine
-    engine_revision: EngineRevision
+    engine_revision: Optional[EngineRevision]
