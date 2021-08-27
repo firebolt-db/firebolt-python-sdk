@@ -85,6 +85,20 @@ class Engine(BaseModel, FireboltClientMixin):
         return cls.parse_obj(engine_spec)
 
     @classmethod
+    def get_by_ids(cls, engine_ids: list[str]) -> list[Engine]:
+        fc = cls.get_firebolt_client()
+        response = fc.http_client.post(
+            url=f"/core/v1/engines:getByIds",
+            json={
+                "engine_ids": [
+                    {"account_id": fc.account_id, "engine_id": engine_id}
+                    for engine_id in engine_ids
+                ]
+            },
+        )
+        return [cls.parse_obj(e) for e in response.json()["engines"]]
+
+    @classmethod
     def get_by_name(cls, engine_name: str):
         response = cls.get_firebolt_client().http_client.get(
             url="/core/v1/account/engines:getIdByName",

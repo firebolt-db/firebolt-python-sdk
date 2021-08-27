@@ -30,6 +30,10 @@ class Binding(BaseModel, FireboltClientMixin):
     def database_id(self) -> str:
         return self.binding_key.database_id
 
+    @property
+    def engine_id(self) -> str:
+        return self.binding_key.engine_id
+
     @classmethod
     def get_by_key(cls, binding_key: BindingKey) -> Binding:
         response = cls.get_firebolt_client().http_client.get(
@@ -43,8 +47,8 @@ class Binding(BaseModel, FireboltClientMixin):
     def create(self):
         response = self.firebolt_client.http_client.post(
             url=f"/core/v1/accounts/{self.binding_key.account_id}"
-            f"/databases/{self.binding_key.database_id}"
-            f"/bindings/{self.binding_key.engine_id}",
+            f"/databases/{self.database_id}"
+            f"/bindings/{self.engine_id}",
             json=self.json(
                 by_alias=True, include={"id": ..., "engine_is_default": ...}
             ),
