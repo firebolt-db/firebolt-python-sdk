@@ -199,7 +199,9 @@ class Engine(BaseModel, FireboltClientMixin):
             description=description,
             region_name=region_name,
         )
-        return engine.create(engine_revision=EngineRevision.analytics_default())
+        return engine.create_with_revision(
+            engine_revision=EngineRevision.analytics_default()
+        )
 
     @classmethod
     def create_ingest_default(
@@ -228,7 +230,9 @@ class Engine(BaseModel, FireboltClientMixin):
             description=description,
             region_name=region_name,
         )
-        return engine.create(engine_revision=EngineRevision.ingest_default())
+        return engine.create_with_revision(
+            engine_revision=EngineRevision.ingest_default()
+        )
 
     @property
     def database(self) -> Optional[Database]:
@@ -255,7 +259,7 @@ class Engine(BaseModel, FireboltClientMixin):
             The newly created engine.
         """
         instance_type_key = instance_types.get_by_name(instance_name=instance_name).key
-        return self.create(
+        return self.create_with_revision(
             engine_revision=EngineRevision(
                 db_compute_instances_type_id=instance_type_key,
                 db_compute_instances_count=instance_count,
@@ -267,20 +271,27 @@ class Engine(BaseModel, FireboltClientMixin):
             )
         )
 
-    def create(self, engine_revision: Optional[EngineRevision] = None) -> Engine:
+    def create_with_revision(
+        self, engine_revision: Optional[EngineRevision] = None
+    ) -> Engine:
         """
         Create a new Engine on Firebolt.
 
         Args:
             engine_revision:
                 EngineRevision to use for configuring the Engine.
-                If omitted, attempt to use the latest engine revision.
+                If omitted, attempt to use the latest engine revision from Firebolt.
 
         Returns:
             The newly created engine.
         """
         if engine_revision is None:
             engine_revision = self.get_latest_engine_revision()
+            if engine_revision is None:
+                raise ValueError(
+                    "engine_revision is required, and it could not be "
+                    "fetched from Firebolt."
+                )
 
         json_payload = _EngineCreateRequest(
             account_id=self.firebolt_client.account_id,
