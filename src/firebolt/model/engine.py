@@ -282,7 +282,7 @@ class Engine(BaseModel, FireboltClientMixin):
         if engine_revision is None:
             engine_revision = self.get_latest_engine_revision()
 
-        json_payload = EngineCreate(
+        json_payload = _EngineCreateRequest(
             account_id=self.firebolt_client.account_id,
             engine=self,
             engine_revision=engine_revision,
@@ -351,8 +351,8 @@ class Engine(BaseModel, FireboltClientMixin):
             status = new_status
 
 
-class EngineCreate(BaseModel):
-    """Helper model for sending Engine create requests"""
+class _EngineCreateRequest(BaseModel):
+    """Helper model for sending Engine create requests."""
 
     account_id: str
     engine: Engine
