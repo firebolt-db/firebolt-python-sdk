@@ -24,6 +24,11 @@ Working Directory: $ProjectFileDir$
 ```
 2. Preferences -> Keymap -> External Tools -> lint, Assign the keyboard shortcut `Option-cmd-l`
 
+### Docstrings
+
+Use Google format for docstrings. Do not include types or an indication of "optional" in docstrings. 
+Those should be captured in the function signature as type annotations; no need to repeat them in the docstring.
+
 ### Generating Models
 
 If you have a json response from the API, you can try running the following:

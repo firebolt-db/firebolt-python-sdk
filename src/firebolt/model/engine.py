@@ -12,6 +12,7 @@ from firebolt.firebolt_client import FireboltClientMixin
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
+from firebolt.model.instance_type import instance_types
 from firebolt.model.region import RegionKey, regions
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class Settings(BaseModel):
 
     @classmethod
     def analytics_default(cls) -> Settings:
+        """Default settings for the data analytics (querying) use case."""
         return cls(
             preset="ENGINE_SETTINGS_PRESET_DATA_ANALYTICS",
             auto_stop_delay_duration="1200s",
@@ -41,6 +43,7 @@ class Settings(BaseModel):
 
     @classmethod
     def ingest_default(cls) -> Settings:
+        """Default settings for the data ingestion use case."""
         return cls(
             preset="ENGINE_SETTINGS_PRESET_GENERAL_PURPOSE",
             auto_stop_delay_duration="1200s",
@@ -86,6 +89,7 @@ class Engine(BaseModel, FireboltClientMixin):
 
     @classmethod
     def get_by_id(cls, engine_id: str):
+        """Get an Engine from Firebolt by it's id."""
         fc = cls.get_firebolt_client()
         response = fc.http_client.get(
             url=f"/core/v1/accounts/{fc.account_id}/engines/{engine_id}",
@@ -95,6 +99,7 @@ class Engine(BaseModel, FireboltClientMixin):
 
     @classmethod
     def get_by_ids(cls, engine_ids: list[str]) -> list[Engine]:
+        """Get multiple Engines from Firebolt by their ids."""
         fc = cls.get_firebolt_client()
         response = fc.http_client.post(
             url=f"/core/v1/engines:getByIds",
@@ -109,6 +114,7 @@ class Engine(BaseModel, FireboltClientMixin):
 
     @classmethod
     def get_by_name(cls, engine_name: str):
+        """Get an Engine from Firebolt by it's id."""
         response = cls.get_firebolt_client().http_client.get(
             url="/core/v1/account/engines:getIdByName",
             params={"engine_name": engine_name},
@@ -116,28 +122,45 @@ class Engine(BaseModel, FireboltClientMixin):
         engine_id = response.json()["engine_id"]["engine_id"]
         return cls.get_by_id(engine_id=engine_id)
 
-    @classmethod
-    def list_engines(cls) -> list[Engine]:
-        fc = cls.get_firebolt_client()
-        response = fc.http_client.get(
-            url=f"/core/v1/accounts/{fc.account_id}/engines",
-            params={"page.first": 5000},  # FUTURE: consider generator
-        )
-        return [cls.parse_obj(i["node"]) for i in response.json()["edges"]]
+    # @classmethod
+    # def list_engines(cls) -> list[Engine]:
+    #     """Get all Engines from Firebolt."""
+    #     fc = cls.get_firebolt_client()
+    #     response = fc.http_client.get(
+    #         url=f"/core/v1/accounts/{fc.account_id}/engines",
+    #         params={"page.first": 5000},  # FUTURE: consider generator
+    #     )
+    #     return [cls.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     def delete(self):
+        """Delete an Engine from Firebolt."""
         response = self.firebolt_client.http_client.delete(
-            url=f"/core/v1/accounts/{self.firebolt_client.account_id}/engines/{self.engine_id}",
+            url=f"/core/v1"
+            f"/accounts/{self.firebolt_client.account_id}"
+            f"/engines/{self.engine_id}",
         )
         return response.json()
 
     @classmethod
-    def analytics_default(
+    def _default(
         cls,
         name: str,
+        settings: Settings,
         description: Optional[str] = None,
         region_name: Optional[str] = None,
     ) -> Engine:
+        """
+        Create a new engine locally.
+
+        Args:
+            name: Name of the engine.
+            settings: Engine revision settings to apply to the
+            description:
+            region_name:
+
+        Returns:
+
+        """
         if region_name is not None:
             region = regions.get_by_name(region_name=region_name)
         else:
@@ -146,11 +169,70 @@ class Engine(BaseModel, FireboltClientMixin):
             name=name,
             description=description,
             compute_region_key=region.key,
-            settings=Settings.analytics_default(),
+            settings=settings,
         )
+
+    @classmethod
+    def create_analytics_default(
+        cls,
+        name: str,
+        description: Optional[str] = None,
+        region_name: Optional[str] = None,
+    ) -> Engine:
+        """
+        Create a new engine on Firebolt, based on default Analytics settings.
+
+        (The engine should be used for running queries on Firebolt, not for ingesting data.)
+
+        Args:
+            name: Name of the engine.
+            description: Long description of the engine.
+            region_name: Name of the region in which to create the engine.
+                If omitted, use the default region.
+
+        Returns:
+            The newly created engine.
+        """
+        engine = cls._default(
+            name=name,
+            settings=Settings.analytics_default(),
+            description=description,
+            region_name=region_name,
+        )
+        return engine.create(engine_revision=EngineRevision.analytics_default())
+
+    @classmethod
+    def create_ingest_default(
+        cls,
+        name: str,
+        description: Optional[str] = None,
+        region_name: Optional[str] = None,
+    ) -> Engine:
+        """
+        Create a new engine, based on default Ingest settings.
+
+        (The engine should be used for ingesting data into Firebolt.)
+
+        Args:
+            name: Name of the engine.
+            description: Long description of the engine.
+            region_name: Name of the region in which to create the engine.
+                If omitted, use the default region.
+
+        Returns:
+            The newly created engine.
+        """
+        engine = cls._default(
+            name=name,
+            settings=Settings.ingest_default(),
+            description=description,
+            region_name=region_name,
+        )
+        return engine.create(engine_revision=EngineRevision.ingest_default())
 
     @property
     def database(self) -> Optional[Database]:
+        """The database the engine is bound to, if any."""
         # FUTURE: in the new architecture, an engine can be bound to multiple databases
         try:
             binding = first(Binding.list_bindings(engine_id=self.engine_id))
@@ -158,7 +240,45 @@ class Engine(BaseModel, FireboltClientMixin):
         except StopIteration:
             return None
 
-    def create(self, engine_revision: Optional[EngineRevision] = None):
+    def create_with_settings(
+        self, instance_name: str, instance_count: int, use_spot_instances=False
+    ) -> Engine:
+        """
+        Create a new engine by specifying selected settings.
+
+        Args:
+            instance_name: The name of the instance to use.
+            instance_count: The number of instances for the engine to use.
+            use_spot_instances: Whether or not to use spot instances.
+
+        Returns:
+            The newly created engine.
+        """
+        instance_type_key = instance_types.get_by_name(instance_name=instance_name).key
+        return self.create(
+            engine_revision=EngineRevision(
+                db_compute_instances_type_id=instance_type_key,
+                db_compute_instances_count=instance_count,
+                db_compute_instances_use_spot=use_spot_instances,
+                db_version="",
+                proxy_instances_type_id=instance_type_key,
+                proxy_instances_count=1,
+                proxy_version="",
+            )
+        )
+
+    def create(self, engine_revision: Optional[EngineRevision] = None) -> Engine:
+        """
+        Create a new Engine on Firebolt.
+
+        Args:
+            engine_revision:
+                EngineRevision to use for configuring the Engine.
+                If omitted, attempt to use the latest engine revision.
+
+        Returns:
+            The newly created engine.
+        """
         if engine_revision is None:
             engine_revision = self.get_latest_engine_revision()
 
@@ -173,9 +293,10 @@ class Engine(BaseModel, FireboltClientMixin):
             headers={"Content-type": "application/json"},
             data=json_payload,
         )
-        return response.json()
+        return Engine.parse_obj(response.json()["engine"])
 
     def get_latest_engine_revision(self) -> Optional[EngineRevision]:
+        """Get the latest engine revision, if one exists."""
         if self.latest_revision_key is None:
             return None
         return EngineRevision.get_by_engine_revision_key(
@@ -187,7 +308,20 @@ class Engine(BaseModel, FireboltClientMixin):
         wait_for_startup: bool = True,
         wait_timeout_seconds: int = 3600,
         print_dots=True,
-    ):
+    ) -> None:
+        """
+        Start an engine. If it's already started, do nothing.
+
+        Args:
+            wait_for_startup:
+                If True, wait for startup to complete.
+                If false, return immediately after requesting startup.
+            wait_timeout_seconds:
+                Number of seconds to wait for startup to complete before raising a TimeoutError.
+            print_dots:
+                If True, print dots periodically while waiting for engine startup.
+                If false, do not print any dots.
+        """
         if self.engine_id is None:
             raise ValueError("engine_id must be set before starting")
         response = self.firebolt_client.http_client.post(
