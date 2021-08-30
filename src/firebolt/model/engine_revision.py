@@ -88,3 +88,7 @@ class EngineRevision(BaseModel):
     @classmethod
     def analytics_default(cls) -> EngineRevision:
         return cls.construct(specification=Specification.analytics_default())
+
+    @classmethod
+    def ingest_default(cls) -> EngineRevision:
+        return cls.construct(specification=Specification.ingest_default())
