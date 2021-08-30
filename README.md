@@ -29,6 +29,8 @@ Working Directory: $ProjectFileDir$
 Use Google format for docstrings. Do not include types or an indication of "optional" in docstrings. 
 Those should be captured in the function signature as type annotations; no need to repeat them in the docstring.
 
+All methods and functions should have docstrings. One-liners are fine for simple methods and functions.
+
 ### Generating Models
 
 If you have a json response from the API, you can try running the following:
