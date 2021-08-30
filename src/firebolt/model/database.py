@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel, Field
 
 from firebolt.firebolt_client import FireboltClientMixin
 from firebolt.model.binding import Binding
-from firebolt.model.region import RegionKey
+from firebolt.model.region import RegionKey, regions
 
 if TYPE_CHECKING:
     from firebolt.model.engine import Engine
@@ -18,31 +18,33 @@ class DatabaseKey(BaseModel):
     database_id: str
 
 
-class ComputeRegionId(BaseModel):
-    provider_id: str
-    region_id: str
-
-
 class Database(BaseModel, FireboltClientMixin):
-    database_key: DatabaseKey = Field(alias="id")
     name: str
-    description: str
-    emoji: str
-    compute_region_id: RegionKey
-    current_status: str
-    health_status: str
-    data_size_full: int
-    data_size_compressed: int
-    is_system_database: bool
-    storage_bucket_name: str
-    create_time: datetime
-    create_actor: str
-    last_update_time: datetime
-    last_update_actor: str
-    desired_status: str
+    compute_region_key: RegionKey = Field(alias="compute_region_id")
+
+    # optional
+    database_key: Optional[DatabaseKey] = Field(alias="id")
+    description: Optional[str]
+    emoji: Optional[str]
+    current_status: Optional[str]
+    health_status: Optional[str]
+    data_size_full: Optional[int]
+    data_size_compressed: Optional[int]
+    is_system_database: Optional[bool]
+    storage_bucket_name: Optional[str]
+    create_time: Optional[datetime]
+    create_actor: Optional[str]
+    last_update_time: Optional[datetime]
+    last_update_actor: Optional[str]
+    desired_status: Optional[str]
+
+    class Config:
+        allow_population_by_field_name = True
 
     @property
-    def database_id(self) -> str:
+    def database_id(self) -> Optional[str]:
+        if self.database_key is None:
+            return None
         return self.database_key.database_id
 
     @property
@@ -78,9 +80,25 @@ class Database(BaseModel, FireboltClientMixin):
         database_id = cls.get_id_by_name(database_name=database_name)
         return cls.get_by_id(database_id=database_id)
 
+    @classmethod
+    def create_new(cls, database_name: str, region_name: str) -> Database:
+        """
+        Create a new Database on Firebolt.
+
+        Args:
+            database_name: Name of the database.
+            region_name: Region name in which to create the database.
+
+        Returns:
+            The newly created Database.
+        """
+        region_key = regions.get_by_name(region_name=region_name).key
+        database = Database(name=database_name, compute_region_key=region_key)
+        return database.create()
+
     def create(self) -> Database:
         """
-        Create a Database on Firebolt.
+        Create a Database on Firebolt from the local Database object.
 
         Returns:
             The newly created Database.

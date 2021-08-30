@@ -29,6 +29,8 @@ class Region(BaseModel):
 
 
 class RegionLookup(NamedTuple):
+    """Helper to lookup a Region by provider name and region name"""
+
     provider_name: str
     region_name: str
 
@@ -64,6 +66,7 @@ class _Regions(FireboltClientMixin):
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None
     ) -> Region:
+        """Get a region by its name (eg. us-east-1)."""
         if provider_name is None:
             provider_name = providers.default_provider.name
 
@@ -72,9 +75,11 @@ class _Regions(FireboltClientMixin):
         ]
 
     def get_by_key(self, region_key: RegionKey) -> Region:
+        """Get a Region by its key."""
         return self.regions_by_key[region_key]
 
     def get_by_id(self, region_id: str, provider_id: str = None) -> Region:
+        """Get a Region by region_id and provider id."""
         if provider_id is None:
             provider_id = self.default_region.key.provider_id
         return self.get_by_key(RegionKey(provider_id=provider_id, region_id=region_id))
