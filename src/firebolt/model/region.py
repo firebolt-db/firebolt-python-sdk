@@ -1,13 +1,13 @@
 from functools import cached_property
 from typing import NamedTuple, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model import FireboltBaseModel, FireboltClientMixin
 from firebolt.model.provider import Provider, providers
 
 
-class RegionKey(BaseModel, frozen=True):  # type: ignore
+class RegionKey(FireboltBaseModel, frozen=True):  # type: ignore
     provider_id: str
     region_id: str
 
@@ -16,7 +16,7 @@ class RegionKey(BaseModel, frozen=True):  # type: ignore
         return providers.get_by_id(provider_id=self.provider_id)
 
 
-class Region(BaseModel):
+class Region(FireboltBaseModel):
     key: RegionKey = Field(alias="id")
     name: str
     display_name: str
@@ -38,7 +38,7 @@ class RegionLookup(NamedTuple):
 class _Regions(FireboltClientMixin):
     @cached_property
     def regions(self) -> list[Region]:
-        response = self.firebolt_client.http_client.get(
+        response = self.get_firebolt_client().http_client.get(
             url="/compute/v1/regions", params={"page.first": 5000}
         )
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -56,12 +56,13 @@ class _Regions(FireboltClientMixin):
 
     @cached_property
     def default_region(self) -> Region:
-        if self.firebolt_client.default_region_name is None:
+        firebolt_client = self.get_firebolt_client()
+        if firebolt_client.default_region_name is None:
             raise ValueError(
                 "default_region_name is required. Please set it on FireboltClient or "
                 "via environment variable: FIREBOLT_DEFAULT_REGION"
             )
-        return self.get_by_name(region_name=self.firebolt_client.default_region_name)
+        return self.get_by_name(region_name=firebolt_client.default_region_name)
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None

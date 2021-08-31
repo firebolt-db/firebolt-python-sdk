@@ -5,10 +5,10 @@ import time
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 from toolz import first
 
-from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
@@ -18,12 +18,12 @@ from firebolt.model.region import RegionKey, regions
 logger = logging.getLogger(__name__)
 
 
-class EngineKey(BaseModel):
+class EngineKey(FireboltBaseModel):
     account_id: str
     engine_id: str
 
 
-class Settings(BaseModel):
+class Settings(FireboltBaseModel):
     preset: str
     auto_stop_delay_duration: str
     minimum_logging_level: str
@@ -53,13 +53,21 @@ class Settings(BaseModel):
         )
 
 
-class Engine(BaseModel, FireboltClientMixin):
-    key: Optional[EngineKey] = Field(alias="id")
+class Engine(FireboltBaseModel):
+    """
+    A Firebolt engine. Responsible for performing work (queries, data ingestion).
+
+    Engines are configured in Settings and in EngineRevisions.
+    """
+
     name: str
-    description: Optional[str]
-    emoji: Optional[str]
     compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: Settings
+
+    # optional
+    key: Optional[EngineKey] = Field(alias="id")
+    description: Optional[str]
+    emoji: Optional[str]
     current_status: Optional[str]
     current_status_summary: Optional[str]
     latest_revision_key: Optional[EngineRevisionKey] = Field(alias="latest_revision_id")
@@ -77,9 +85,6 @@ class Engine(BaseModel, FireboltClientMixin):
     endpoint_desired_revision_key: Optional[EngineRevisionKey] = Field(
         alias="endpoint_desired_revision_id"
     )
-
-    class Config:
-        allow_population_by_field_name = True
 
     @property
     def engine_id(self) -> Optional[str]:
@@ -122,16 +127,6 @@ class Engine(BaseModel, FireboltClientMixin):
         engine_id = response.json()["engine_id"]["engine_id"]
         return cls.get_by_id(engine_id=engine_id)
 
-    # @classmethod
-    # def list_engines(cls) -> list[Engine]:
-    #     """Get all Engines from Firebolt."""
-    #     fc = cls.get_firebolt_client()
-    #     response = fc.http_client.get(
-    #         url=f"/core/v1/accounts/{fc.account_id}/engines",
-    #         params={"page.first": 5000},  # FUTURE: consider generator
-    #     )
-    #     return [cls.parse_obj(i["node"]) for i in response.json()["edges"]]
-
     def delete(self):
         """Delete an Engine from Firebolt."""
         response = self.firebolt_client.http_client.delete(
@@ -154,12 +149,12 @@ class Engine(BaseModel, FireboltClientMixin):
 
         Args:
             name: Name of the engine.
-            settings: Engine revision settings to apply to the
-            description:
-            region_name:
+            settings: Engine revision settings to apply to the engine.
+            description: Description of the engine.
+            region_name: Region in which to create the engine.
 
         Returns:
-
+            The new local Engine object.
         """
         if region_name is not None:
             region = regions.get_by_name(region_name=region_name)
@@ -248,7 +243,8 @@ class Engine(BaseModel, FireboltClientMixin):
         self, instance_name: str, instance_count: int, use_spot_instances=False
     ) -> Engine:
         """
-        Create a new engine by specifying selected settings.
+        Create a new engine on Firebolt from the local Engine object,
+        specifying selected settings.
 
         Args:
             instance_name: The name of the instance to use.
@@ -275,7 +271,7 @@ class Engine(BaseModel, FireboltClientMixin):
         self, engine_revision: Optional[EngineRevision] = None
     ) -> Engine:
         """
-        Create a new Engine on Firebolt.
+        Create a new Engine on Firebolt from the local Engine object.
 
         Args:
             engine_revision:
@@ -294,12 +290,12 @@ class Engine(BaseModel, FireboltClientMixin):
                 )
 
         json_payload = _EngineCreateRequest(
-            account_id=self.firebolt_client.account_id,
+            account_id=self.get_firebolt_client().account_id,
             engine=self,
             engine_revision=engine_revision,
         ).json(by_alias=True)
 
-        response = self.firebolt_client.http_client.post(
+        response = self.get_firebolt_client().http_client.post(
             url="/core/v1/account/engines",
             headers={"Content-type": "application/json"},
             data=json_payload,
@@ -335,20 +331,19 @@ class Engine(BaseModel, FireboltClientMixin):
         """
         if self.engine_id is None:
             raise ValueError("engine_id must be set before starting")
-        response = self.firebolt_client.http_client.post(
+        response = self.get_firebolt_client().http_client.post(
             url=f"/core/v1/account/engines/{self.engine_id}:start",
         )
         status = response.json()["engine"]["current_status_summary"]
         logger.info(
-            f"Starting Engine engine_id={self.engine_id} name={self.name} status_summary={status}"
+            f"Starting Engine engine_id={self.engine_id} "
+            f"name={self.name} status_summary={status}"
         )
         start_time = time.time()
         end_time = start_time + wait_timeout_seconds
-        while (
-            wait_for_startup
-            and status
-            != "ENGINE_STATUS_SUMMARY_RUNNING"  # summary statuses: https://tinyurl.com/as7a9ru9
-        ):
+
+        # summary statuses: https://tinyurl.com/as7a9ru9
+        while wait_for_startup and status != "ENGINE_STATUS_SUMMARY_RUNNING":
             if time.time() >= end_time:
                 raise TimeoutError(
                     f"Could not start engine within {wait_timeout_seconds} seconds."
@@ -362,7 +357,7 @@ class Engine(BaseModel, FireboltClientMixin):
             status = new_status
 
 
-class _EngineCreateRequest(BaseModel):
+class _EngineCreateRequest(FireboltBaseModel):
     """Helper model for sending Engine create requests."""
 
     account_id: str

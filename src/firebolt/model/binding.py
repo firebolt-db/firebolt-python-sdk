@@ -6,7 +6,7 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from firebolt.common.data import prune_dict
-from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model import FireboltBaseModel
 
 
 class BindingKey(BaseModel):
@@ -15,7 +15,7 @@ class BindingKey(BaseModel):
     engine_id: str
 
 
-class Binding(BaseModel, FireboltClientMixin):
+class Binding(FireboltBaseModel):
     binding_key: BindingKey = Field(alias="id")
     engine_is_default: bool
     current_status: str
@@ -45,7 +45,7 @@ class Binding(BaseModel, FireboltClientMixin):
         return cls.parse_obj(binding)
 
     def create(self):
-        response = self.firebolt_client.http_client.post(
+        response = self.get_firebolt_client().http_client.post(
             url=f"/core/v1/accounts/{self.binding_key.account_id}"
             f"/databases/{self.database_id}"
             f"/bindings/{self.engine_id}",
