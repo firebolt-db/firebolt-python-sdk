@@ -1,11 +1,11 @@
 from functools import cached_property
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model import FireboltBaseModel, FireboltClientMixin
 
 
-class Provider(BaseModel, frozen=True):  # type: ignore
+class Provider(FireboltBaseModel, frozen=True):  # type: ignore
     provider_id: str = Field(alias="id")
     name: str
 
@@ -13,7 +13,7 @@ class Provider(BaseModel, frozen=True):  # type: ignore
 class _Providers(FireboltClientMixin):
     @cached_property
     def providers(self) -> list[Provider]:
-        response = self.firebolt_client.http_client.get(
+        response = self.get_firebolt_client().http_client.get(
             url="/compute/v1/providers", params={"page.first": 5000}
         )
         return [Provider.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -35,7 +35,7 @@ class _Providers(FireboltClientMixin):
     @cached_property
     def default_provider(self) -> Provider:
         return self.get_by_name(
-            provider_name=self.firebolt_client.default_provider_name
+            provider_name=self.get_firebolt_client().default_provider_name
         )
 
 

@@ -1,14 +1,14 @@
 from functools import cached_property
 from typing import NamedTuple, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model import FireboltBaseModel, FireboltClientMixin
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey, regions
 
 
-class InstanceTypeKey(BaseModel, frozen=True):  # type: ignore
+class InstanceTypeKey(FireboltBaseModel, frozen=True):  # type: ignore
     provider_id: str
     region_id: str
     instance_type_id: str
@@ -27,7 +27,7 @@ class InstanceTypeKey(BaseModel, frozen=True):  # type: ignore
         return self.region.provider
 
 
-class InstanceType(BaseModel):
+class InstanceType(FireboltBaseModel):
     key: InstanceTypeKey = Field(alias="id")
     name: str
     is_spot_available: bool
@@ -56,7 +56,7 @@ class InstanceTypeLookup(NamedTuple):
 class _InstanceTypes(FireboltClientMixin):
     @cached_property
     def instance_types(self) -> list[InstanceType]:
-        response = self.firebolt_client.http_client.get(
+        response = self.get_firebolt_client().http_client.get(
             url="/compute/v1/instanceTypes", params={"page.first": 5000}
         )
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -82,12 +82,13 @@ class _InstanceTypes(FireboltClientMixin):
         region_name: Optional[str] = None,
         provider_name: Optional[str] = None,
     ) -> InstanceType:
+        firebolt_client = self.get_firebolt_client()
         if region_name is None:
-            if self.firebolt_client.default_region_name is None:
+            if firebolt_client.default_region_name is None:
                 raise ValueError("region_name or default_region_name is required.")
-            region_name = self.firebolt_client.default_region_name
+            region_name = firebolt_client.default_region_name
         if provider_name is None:
-            provider_name = self.firebolt_client.default_provider_name
+            provider_name = firebolt_client.default_provider_name
         return self.instance_types_by_name[
             InstanceTypeLookup(
                 provider_name=provider_name,
@@ -95,23 +96,6 @@ class _InstanceTypes(FireboltClientMixin):
                 instance_name=instance_name,
             )
         ]
-
-    # @cached_property
-    # def instance_types_by_region_name_instance_name(
-    #     self,
-    # ) -> dict[InstanceTypeLookup, InstanceType]:
-    #     return {
-    #         InstanceTypeLookup(region_name=i.region.name, instance_name=i.name): i
-    #         for i in self.instance_types
-    #     }
-
-    # def get_by_region_name_instance_name(self, instance_name: str, region_name: str):
-    #     return self.instance_types_by_region_name_instance_name[
-    #         InstanceTypeLookup(
-    #             region_name=region_name,
-    #             instance_name=instance_name,
-    #         )
-    #     ]
 
 
 instance_types = _InstanceTypes()

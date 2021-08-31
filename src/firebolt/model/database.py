@@ -3,9 +3,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
-from firebolt.firebolt_client import FireboltClientMixin
+from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.region import RegionKey, regions
 
@@ -13,12 +13,12 @@ if TYPE_CHECKING:
     from firebolt.model.engine import Engine
 
 
-class DatabaseKey(BaseModel):
+class DatabaseKey(FireboltBaseModel):
     account_id: str
     database_id: str
 
 
-class Database(BaseModel, FireboltClientMixin):
+class Database(FireboltBaseModel):
     name: str
     compute_region_key: RegionKey = Field(alias="compute_region_id")
 
@@ -104,12 +104,12 @@ class Database(BaseModel, FireboltClientMixin):
             The newly created Database.
         """
         json_payload = _DatabaseCreateRequest(
-            account_id=self.firebolt_client.account_id,
+            account_id=self.get_firebolt_client().account_id,
             database=self,
         ).json(by_alias=True)
 
-        response = self.firebolt_client.http_client.post(
-            url=f"/core/v1/accounts/{self.firebolt_client.account_id}/databases",
+        response = self.get_firebolt_client().http_client.post(
+            url=f"/core/v1/accounts/{self.get_firebolt_client().account_id}/databases",
             headers={"Content-type": "application/json"},
             data=json_payload,
         )
@@ -117,7 +117,7 @@ class Database(BaseModel, FireboltClientMixin):
         return Database.parse_obj(response.json()["database"])
 
 
-class _DatabaseCreateRequest(BaseModel):
+class _DatabaseCreateRequest(FireboltBaseModel):
     """Helper model for sending Database creation requests."""
 
     account_id: str

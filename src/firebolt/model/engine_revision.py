@@ -2,19 +2,20 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from firebolt.firebolt_client import get_firebolt_client
+from firebolt.model import FireboltBaseModel
 from firebolt.model.instance_type import InstanceTypeKey, instance_types
 
 
-class EngineRevisionKey(BaseModel):
+class EngineRevisionKey(FireboltBaseModel):
     account_id: str
     engine_id: str
     engine_revision_id: str
 
 
-class Specification(BaseModel):
+class Specification(FireboltBaseModel):
     db_compute_instances_type_id: InstanceTypeKey  # todo alias id to key?
     db_compute_instances_count: int
     db_compute_instances_use_spot: bool
@@ -50,7 +51,7 @@ class Specification(BaseModel):
         )
 
 
-class EngineRevision(BaseModel):
+class EngineRevision(FireboltBaseModel):
     key: EngineRevisionKey = Field(alias="id")
     current_status: str
     specification: Specification

@@ -1,5 +1,3 @@
-# from firebolt.api.database_service import DatabaseService
-# from firebolt.api.engine_service import EngineService
 from __future__ import annotations
 
 import logging
@@ -47,19 +45,24 @@ class FireboltClient:
         )
 
     @classmethod
-    def from_env(cls, dotenv_path=None):
+    def from_env(cls, dotenv_path=None) -> FireboltClient:
         """
         Create a FireboltClient from the following environment variables:
         FIREBOLT_SERVER, FIREBOLT_USER, FIREBOLT_PASSWORD
 
-        Load a .env file beforehand. Environment variables defined in .env will not overwrite values already present.
+        Load a .env file beforehand. Environment variables defined in .env will
+        not overwrite values already present.
 
         Raise an exception if any of the environment variables are missing.
 
-        :param dotenv_path: (Optional) path to a local .env file
-        :return: Initialized FireboltClient
+        Args:
+            dotenv_path: path to a local .env file
+
+        Returns:
+            Initialized FireboltClient
         """
-        # for local development: load any unset environment variables that are defined in a `.env` file
+        # for local development: load any unset environment variables
+        # that are defined in a `.env` file
         dotenv.load_dotenv(dotenv_path=dotenv_path, override=False)
 
         host = env.FIREBOLT_SERVER.get_value()
@@ -96,13 +99,3 @@ class FireboltClient:
         logger.info(f"Connection to {self.host} closed")
         global _firebolt_client_singleton
         _firebolt_client_singleton = None
-
-
-class FireboltClientMixin:
-    @classmethod
-    def get_firebolt_client(cls) -> FireboltClient:
-        return get_firebolt_client()
-
-    @property
-    def firebolt_client(self) -> FireboltClient:
-        return get_firebolt_client()
