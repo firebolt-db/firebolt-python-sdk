@@ -1,4 +1,6 @@
+from datetime import datetime
 from functools import cached_property
+from typing import Optional
 
 from pydantic import Field
 
@@ -8,6 +10,11 @@ from firebolt.model import FireboltBaseModel, FireboltClientMixin
 class Provider(FireboltBaseModel, frozen=True):  # type: ignore
     provider_id: str = Field(alias="id")
     name: str
+
+    # optional
+    create_time: Optional[datetime]
+    display_name: Optional[str]
+    last_update_time: Optional[datetime]
 
 
 class _Providers(FireboltClientMixin):

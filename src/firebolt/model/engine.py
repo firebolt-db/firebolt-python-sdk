@@ -12,7 +12,6 @@ from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
-from firebolt.model.instance_type import instance_types
 from firebolt.model.region import RegionKey, regions
 
 logger = logging.getLogger(__name__)
@@ -23,7 +22,7 @@ class EngineKey(FireboltBaseModel):
     engine_id: str
 
 
-class Settings(FireboltBaseModel):
+class EngineSettings(FireboltBaseModel):
     """
     Engine Settings.
 
@@ -37,7 +36,7 @@ class Settings(FireboltBaseModel):
     warm_up: str
 
     @classmethod
-    def analytics_default(cls) -> Settings:
+    def analytics_default(cls) -> EngineSettings:
         """Default settings for the data analytics (querying) use case."""
         return cls(
             preset="ENGINE_SETTINGS_PRESET_DATA_ANALYTICS",
@@ -48,7 +47,7 @@ class Settings(FireboltBaseModel):
         )
 
     @classmethod
-    def ingest_default(cls) -> Settings:
+    def ingest_default(cls) -> EngineSettings:
         """Default settings for the data ingestion use case."""
         return cls(
             preset="ENGINE_SETTINGS_PRESET_GENERAL_PURPOSE",
@@ -68,7 +67,7 @@ class Engine(FireboltBaseModel):
 
     name: str
     compute_region_key: RegionKey = Field(alias="compute_region_id")
-    settings: Settings
+    settings: EngineSettings
 
     # optional
     key: Optional[EngineKey] = Field(alias="id")
@@ -135,7 +134,7 @@ class Engine(FireboltBaseModel):
         """
         engine = cls._default(
             name=name,
-            settings=Settings.analytics_default(),
+            settings=EngineSettings.analytics_default(),
             description=description,
             region_name=region_name,
         )
@@ -166,7 +165,7 @@ class Engine(FireboltBaseModel):
         """
         engine = cls._default(
             name=name,
-            settings=Settings.ingest_default(),
+            settings=EngineSettings.ingest_default(),
             description=description,
             region_name=region_name,
         )
@@ -178,7 +177,7 @@ class Engine(FireboltBaseModel):
     def _default(
         cls,
         name: str,
-        settings: Settings,
+        settings: EngineSettings,
         description: Optional[str] = None,
         region_name: Optional[str] = None,
     ) -> Engine:
@@ -236,34 +235,6 @@ class Engine(FireboltBaseModel):
         except StopIteration:
             return None
 
-    def create_with_settings(
-        self, instance_name: str, instance_count: int, use_spot_instances=False
-    ) -> Engine:
-        """
-        Create a new engine on Firebolt from the local Engine object,
-        specifying selected settings.
-
-        Args:
-            instance_name: The name of the instance to use.
-            instance_count: The number of instances for the engine to use.
-            use_spot_instances: Whether or not to use spot instances.
-
-        Returns:
-            The newly created engine.
-        """
-        instance_type_key = instance_types.get_by_name(instance_name=instance_name).key
-        return self.create_with_revision(
-            engine_revision=EngineRevision(
-                db_compute_instances_type_id=instance_type_key,
-                db_compute_instances_count=instance_count,
-                db_compute_instances_use_spot=use_spot_instances,
-                db_version="",
-                proxy_instances_type_id=instance_type_key,
-                proxy_instances_count=1,
-                proxy_version="",
-            )
-        )
-
     def create_with_revision(
         self, engine_revision: Optional[EngineRevision] = None
     ) -> Engine:
@@ -271,20 +242,11 @@ class Engine(FireboltBaseModel):
         Create a new Engine on Firebolt from the local Engine object.
 
         Args:
-            engine_revision:
-                EngineRevision to use for configuring the Engine.
-                If omitted, attempt to use the latest engine revision from Firebolt.
+            engine_revision: EngineRevision to use for configuring the Engine.
 
         Returns:
             The newly created engine.
         """
-        if engine_revision is None:
-            engine_revision = self.get_latest_engine_revision()
-            if engine_revision is None:
-                raise ValueError(
-                    "engine_revision is required, and it could not be "
-                    "fetched from Firebolt."
-                )
 
         json_payload = _EngineCreateRequest(
             account_id=self.get_firebolt_client().account_id,
@@ -299,6 +261,18 @@ class Engine(FireboltBaseModel):
         )
         return Engine.parse_obj(response.json()["engine"])
 
+    def create_with_latest_revision(self) -> Engine:
+        """
+        Create an Engine on Firebolt using the latest EngineRevision on Firebolt.
+
+        Note: this will only work on Engines that already exist on Firebolt.
+        This method is mainly useful for copying existing engines.
+        """
+        engine_revision = self.get_latest_engine_revision()
+        if engine_revision is None:
+            raise RuntimeError("An EngineRevision does not exist for this Engine")
+        return self.create_with_revision(engine_revision=engine_revision)
+
     def get_latest_engine_revision(self) -> Optional[EngineRevision]:
         """Get the latest engine revision, if one exists."""
         if self.latest_revision_key is None:
@@ -312,7 +286,7 @@ class Engine(FireboltBaseModel):
         wait_for_startup: bool = True,
         wait_timeout_seconds: int = 3600,
         print_dots=True,
-    ) -> None:
+    ) -> Engine:
         """
         Start an engine. If it's already started, do nothing.
 
@@ -321,17 +295,22 @@ class Engine(FireboltBaseModel):
                 If True, wait for startup to complete.
                 If false, return immediately after requesting startup.
             wait_timeout_seconds:
-                Number of seconds to wait for startup to complete before raising a TimeoutError.
+                Number of seconds to wait for startup to complete
+                before raising a TimeoutError.
             print_dots:
                 If True, print dots periodically while waiting for engine startup.
                 If false, do not print any dots.
+
+        Returns:
+            The updated Engine from Firebolt.
         """
         if self.engine_id is None:
             raise ValueError("engine_id must be set before starting")
         response = self.get_firebolt_client().http_client.post(
             url=f"/core/v1/account/engines/{self.engine_id}:start",
         )
-        status = response.json()["engine"]["current_status_summary"]
+        engine = Engine.parse_obj(response.json()["engine"])
+        status = engine.current_status_summary
         logger.info(
             f"Starting Engine engine_id={self.engine_id} "
             f"name={self.name} status_summary={status}"
@@ -345,13 +324,15 @@ class Engine(FireboltBaseModel):
                 raise TimeoutError(
                     f"Could not start engine within {wait_timeout_seconds} seconds."
                 )
-            new_status = self.get_by_id(engine_id=self.engine_id).current_status_summary
+            engine = self.get_by_id(engine_id=self.engine_id)
+            new_status = engine.current_status_summary
             if new_status != status:
                 logger.info(f"Engine status_summary={new_status}")
             elif print_dots:
                 print(".", end="")
             time.sleep(5)
             status = new_status
+        return engine
 
     def delete(self) -> str:
         """Delete an Engine from Firebolt."""
