@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import cached_property
 from typing import NamedTuple, Optional
 
@@ -19,9 +20,11 @@ class RegionKey(FireboltBaseModel, frozen=True):  # type: ignore
 class Region(FireboltBaseModel):
     key: RegionKey = Field(alias="id")
     name: str
-    display_name: str
-    create_time: str
-    last_update_time: str
+
+    # optional
+    display_name: Optional[str]
+    create_time: Optional[datetime]
+    last_update_time: Optional[datetime]
 
     @property
     def provider(self) -> Provider:
