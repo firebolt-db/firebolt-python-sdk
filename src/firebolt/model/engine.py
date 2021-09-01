@@ -24,6 +24,12 @@ class EngineKey(FireboltBaseModel):
 
 
 class Settings(FireboltBaseModel):
+    """
+    Engine Settings.
+
+    See Also: engine_revision.Specification which also contains engine configuration.
+    """
+
     preset: str
     auto_stop_delay_duration: str
     minimum_logging_level: str
@@ -86,86 +92,25 @@ class Engine(FireboltBaseModel):
         alias="endpoint_desired_revision_id"
     )
 
-    @property
-    def engine_id(self) -> Optional[str]:
-        if self.key is None:
-            return None
-        return self.key.engine_id
-
     @classmethod
-    def get_by_id(cls, engine_id: str):
-        """Get an Engine from Firebolt by it's id."""
-        fc = cls.get_firebolt_client()
-        response = fc.http_client.get(
-            url=f"/core/v1/accounts/{fc.account_id}/engines/{engine_id}",
+    def get_by_id(cls, engine_id: str) -> Engine:
+        """Get an Engine from Firebolt by its id."""
+        firebolt_client = cls.get_firebolt_client()
+        response = firebolt_client.http_client.get(
+            url=f"/core/v1/accounts/{firebolt_client.account_id}/engines/{engine_id}",
         )
         engine_spec: dict = response.json()["engine"]
         return cls.parse_obj(engine_spec)
 
     @classmethod
-    def get_by_ids(cls, engine_ids: list[str]) -> list[Engine]:
-        """Get multiple Engines from Firebolt by their ids."""
-        fc = cls.get_firebolt_client()
-        response = fc.http_client.post(
-            url=f"/core/v1/engines:getByIds",
-            json={
-                "engine_ids": [
-                    {"account_id": fc.account_id, "engine_id": engine_id}
-                    for engine_id in engine_ids
-                ]
-            },
-        )
-        return [cls.parse_obj(e) for e in response.json()["engines"]]
-
-    @classmethod
-    def get_by_name(cls, engine_name: str):
-        """Get an Engine from Firebolt by it's id."""
+    def get_by_name(cls, engine_name: str) -> Engine:
+        """Get an Engine from Firebolt by its name."""
         response = cls.get_firebolt_client().http_client.get(
             url="/core/v1/account/engines:getIdByName",
             params={"engine_name": engine_name},
         )
         engine_id = response.json()["engine_id"]["engine_id"]
         return cls.get_by_id(engine_id=engine_id)
-
-    def delete(self):
-        """Delete an Engine from Firebolt."""
-        response = self.firebolt_client.http_client.delete(
-            url=f"/core/v1"
-            f"/accounts/{self.firebolt_client.account_id}"
-            f"/engines/{self.engine_id}",
-        )
-        return response.json()
-
-    @classmethod
-    def _default(
-        cls,
-        name: str,
-        settings: Settings,
-        description: Optional[str] = None,
-        region_name: Optional[str] = None,
-    ) -> Engine:
-        """
-        Create a new engine locally.
-
-        Args:
-            name: Name of the engine.
-            settings: Engine revision settings to apply to the engine.
-            description: Description of the engine.
-            region_name: Region in which to create the engine.
-
-        Returns:
-            The new local Engine object.
-        """
-        if region_name is not None:
-            region = regions.get_by_name(region_name=region_name)
-        else:
-            region = regions.default_region
-        return Engine(
-            name=name,
-            description=description,
-            compute_region_key=region.key,
-            settings=settings,
-        )
 
     @classmethod
     def create_analytics_default(
@@ -228,6 +173,58 @@ class Engine(FireboltBaseModel):
         return engine.create_with_revision(
             engine_revision=EngineRevision.ingest_default()
         )
+
+    @classmethod
+    def _default(
+        cls,
+        name: str,
+        settings: Settings,
+        description: Optional[str] = None,
+        region_name: Optional[str] = None,
+    ) -> Engine:
+        """
+        Create a new engine locally.
+
+        Args:
+            name: Name of the engine.
+            settings: Engine revision settings to apply to the engine.
+            description: Description of the engine.
+            region_name: Region in which to create the engine.
+
+        Returns:
+            The new local Engine object.
+        """
+        if region_name is not None:
+            region = regions.get_by_name(region_name=region_name)
+        else:
+            region = regions.default_region
+        return Engine(
+            name=name,
+            description=description,
+            compute_region_key=region.key,
+            settings=settings,
+        )
+
+    @classmethod
+    def get_by_ids(cls, engine_ids: list[str]) -> list[Engine]:
+        """Get multiple Engines from Firebolt by their ids."""
+        fc = cls.get_firebolt_client()
+        response = fc.http_client.post(
+            url=f"/core/v1/engines:getByIds",
+            json={
+                "engine_ids": [
+                    {"account_id": fc.account_id, "engine_id": engine_id}
+                    for engine_id in engine_ids
+                ]
+            },
+        )
+        return [cls.parse_obj(e) for e in response.json()["engines"]]
+
+    @property
+    def engine_id(self) -> Optional[str]:
+        if self.key is None:
+            return None
+        return self.key.engine_id
 
     @property
     def database(self) -> Optional[Database]:
@@ -355,6 +352,16 @@ class Engine(FireboltBaseModel):
                 print(".", end="")
             time.sleep(5)
             status = new_status
+
+    def delete(self) -> str:
+        """Delete an Engine from Firebolt."""
+        firebolt_client = self.get_firebolt_client()
+        response = firebolt_client.http_client.delete(
+            url=f"/core/v1"
+            f"/accounts/{firebolt_client.account_id}"
+            f"/engines/{self.engine_id}",
+        )
+        return response.json()
 
 
 class _EngineCreateRequest(FireboltBaseModel):

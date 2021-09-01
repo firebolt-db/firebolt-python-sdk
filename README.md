@@ -22,14 +22,39 @@ Program: $PyInterpreterDirectory$/pre-commit
 Arguments: run --files=$FilePath$Working 
 Working Directory: $ProjectFileDir$
 ```
-2. Preferences -> Keymap -> External Tools -> lint, Assign the keyboard shortcut `Option-cmd-l`
+2. Preferences -> Keymap -> External Tools -> lint, 
+   Assign the keyboard shortcut `Option-cmd-l`
 
 ### Docstrings
 
-Use Google format for docstrings. Do not include types or an indication of "optional" in docstrings. 
-Those should be captured in the function signature as type annotations; no need to repeat them in the docstring.
+Use the Google format for docstrings. Do not include types or an indication 
+of "optional" in docstrings. Those should be captured in the function signature 
+as type annotations; no need to repeat them in the docstring.
 
-All methods and functions should have docstrings. One-liners are fine for simple methods and functions.
+Public methods and functions should have docstrings. 
+One-liners are fine for simple methods and functions.
+
+### Method Order
+
+In general, organize class internals in this order:
+
+1. class attributes
+2. `__init__()`
+3. classmethods (`@classmethod`)
+   * alternative constructors first
+   * other classmethods next
+4. properties (`@property`)
+5. remaining methods 
+   * put more important / broadly applicable functions first
+   * group related functions together to minimize scrolling
+
+Read more about this philosophy 
+[here](https://softwareengineering.stackexchange.com/a/199317).
+
+### Huge classes
+
+If classes start to approach 1k lines, consider breaking them into parts, 
+possibly like [this](https://stackoverflow.com/a/47562412).
 
 ### Generating Models
 
@@ -43,17 +68,21 @@ with pathlib.Path("./engine_revision.json").open("w") as f:
     f.write(json.dumps(engine_revision))
 ```
 
-From this file, you can [generate models](https://pydantic-docs.helpmanual.io/datamodel_code_generator/), like this:
+From this file, you can [generate models](
+https://pydantic-docs.helpmanual.io/datamodel_code_generator/), like this:
 ```shell
 pip install datamodel-code-generator
-datamodel-codegen --input-file-type json --input engine_revision.json --output engine_revision.py
+datamodel-codegen \
+   --input-file-type json \
+   --input engine_revision.json \
+   --output engine_revision.py
 ```
 
 You can also generate code from a json string in python:
 ```python
 from datamodel_code_generator import generate, InputFileType
 import json
-instance = {'name': 'r5.8xlarge'} # assume instance is a dict; it represents something we want to model
+instance = {'name': 'r5.8xlarge'}
 instance_json = json.dumps(instance)
 
 # calling generate will print out the generated code
@@ -63,16 +92,20 @@ generate(
 )
 ```
 
-Or, you can try generating from the json api [spec](https://api.app.firebolt.io/docs/openapi.json):
+Or, you can try generating from the json api [spec](
+https://api.app.firebolt.io/docs/openapi.json):
 ```shell
-datamodel-codegen --url https://api.app.firebolt.io/docs/openapi.json --output out/openapi.py
+datamodel-codegen \
+  --url https://api.app.firebolt.io/docs/openapi.json \
+  --output out/openapi.py
 ```
 
-Note: this did not work for me, I suspect we may have to [dereference](https://github.com/koxudaxi/datamodel-code-generator/issues/500) first.
+Note: this did not work for me, I suspect we may have to [dereference](
+https://github.com/koxudaxi/datamodel-code-generator/issues/500) first.
 But it is a feature I would like to use in the future.
 
 ### Versioning
 
 Consider adopting: 
  * https://packboard.atlassian.net/wiki/x/AYC6aQ
- * https://python-semantic-release.readthedocs.io/en/latest/ 
+ * https://python-semantic-release.readthedocs.io/en/latest/

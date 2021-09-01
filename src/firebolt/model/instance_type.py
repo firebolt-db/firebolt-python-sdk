@@ -48,6 +48,8 @@ class InstanceType(FireboltBaseModel):
 
 
 class InstanceTypeLookup(NamedTuple):
+    """Helper tuple for looking up instance types by names"""
+
     provider_name: str
     region_name: str
     instance_name: str
@@ -56,6 +58,7 @@ class InstanceTypeLookup(NamedTuple):
 class _InstanceTypes(FireboltClientMixin):
     @cached_property
     def instance_types(self) -> list[InstanceType]:
+        """List of instance types available on Firebolt."""
         response = self.get_firebolt_client().http_client.get(
             url="/compute/v1/instanceTypes", params={"page.first": 5000}
         )
@@ -63,10 +66,12 @@ class _InstanceTypes(FireboltClientMixin):
 
     @cached_property
     def instance_types_by_key(self) -> dict[InstanceTypeKey, InstanceType]:
+        """Dict of {InstanceTypeKey: InstanceType}"""
         return {i.key: i for i in self.instance_types}
 
     @cached_property
     def instance_types_by_name(self) -> dict[InstanceTypeLookup, InstanceType]:
+        """Dict of {InstanceTypeLookup: InstanceType}"""
         return {
             InstanceTypeLookup(
                 provider_name=i.provider.name,
@@ -82,6 +87,21 @@ class _InstanceTypes(FireboltClientMixin):
         region_name: Optional[str] = None,
         provider_name: Optional[str] = None,
     ) -> InstanceType:
+        """
+        Get an instance type by name.
+
+        Args:
+            instance_name: Name of the instance (eg. "i3.4xlarge").
+            region_name:
+                Name of the region from which to get the instance.
+                If not provided, use the default region name from the client.
+            provider_name:
+                Name of the provider from which to get the instance.
+                If not provided, use the default provider name from the client.
+
+        Returns:
+            The requested instance type.
+        """
         firebolt_client = self.get_firebolt_client()
         if region_name is None:
             if firebolt_client.default_region_name is None:

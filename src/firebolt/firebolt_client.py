@@ -16,6 +16,12 @@ _firebolt_client_singleton: Optional[FireboltClient] = None
 
 
 def get_firebolt_client() -> FireboltClient:
+    """
+    Get the initialized FireboltClient singleton.
+
+    This function is intended to be used by classes and functions that will
+    be accessed within an existing FireboltClient context.
+    """
     global _firebolt_client_singleton
     if _firebolt_client_singleton is None:
         raise FireboltClientRequiredError()
@@ -23,6 +29,15 @@ def get_firebolt_client() -> FireboltClient:
 
 
 class FireboltClient:
+    """
+    Client for interacting with Firebolt.
+
+    This class is intended to be used as a context manager to ensure connections to
+    Firebolt are closed upon exit. For example:
+    >>> with FireboltClient.from_env():
+    >>>     ...
+    """
+
     def __init__(
         self,
         host: str,
@@ -43,6 +58,17 @@ class FireboltClient:
         self.default_provider_name = (
             default_provider_name if default_provider_name else "AWS"
         )
+
+    def __enter__(self):
+        global _firebolt_client_singleton
+        _firebolt_client_singleton = self
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.http_client.close()
+        logger.info(f"Connection to {self.host} closed")
+        global _firebolt_client_singleton
+        _firebolt_client_singleton = None
 
     @classmethod
     def from_env(cls, dotenv_path=None) -> FireboltClient:
@@ -88,14 +114,3 @@ class FireboltClient:
         )
         account_id = response.json()["account"]["id"]
         return account_id
-
-    def __enter__(self):
-        global _firebolt_client_singleton
-        _firebolt_client_singleton = self
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.http_client.close()
-        logger.info(f"Connection to {self.host} closed")
-        global _firebolt_client_singleton
-        _firebolt_client_singleton = None
