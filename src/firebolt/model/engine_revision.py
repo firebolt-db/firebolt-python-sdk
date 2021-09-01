@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Optional
 
 from pydantic import Field
 
@@ -15,7 +16,7 @@ class EngineRevisionKey(FireboltBaseModel):
     engine_revision_id: str
 
 
-class Specification(FireboltBaseModel):
+class EngineRevisionSpecification(FireboltBaseModel):
     """
     An EngineRevision Specification.
 
@@ -28,36 +29,36 @@ class Specification(FireboltBaseModel):
         alias="db_compute_instances_type_id"
     )
     db_compute_instances_count: int
-    db_compute_instances_use_spot: bool
-    db_version: str
+    db_compute_instances_use_spot: bool = False
+    db_version: str = ""
     proxy_instances_type_key: InstanceTypeKey = Field(alias="proxy_instances_type_id")
-    proxy_instances_count: int
-    proxy_version: str
+    proxy_instances_count: int = 1
+    proxy_version: str = ""
 
     @classmethod
-    def ingest_default(cls) -> Specification:
+    def ingest_default(cls) -> EngineRevisionSpecification:
         """Default Specification for data ingestion"""
         instance_type_key = instance_types.get_by_name(instance_name="i3.4xlarge").key
         return cls(
-            db_compute_instances_type_id=instance_type_key,
+            db_compute_instances_type_key=instance_type_key,
             db_compute_instances_count=2,
             db_compute_instances_use_spot=False,
             db_version="",
-            proxy_instances_type_id=instance_type_key,
+            proxy_instances_type_key=instance_type_key,
             proxy_instances_count=1,
             proxy_version="",
         )
 
     @classmethod
-    def analytics_default(cls) -> Specification:
+    def analytics_default(cls) -> EngineRevisionSpecification:
         """Default Specification for analytics (querying)"""
         instance_type_key = instance_types.get_by_name(instance_name="m5d.4xlarge").key
         return cls(
-            db_compute_instances_type_id=instance_type_key,
+            db_compute_instances_type_key=instance_type_key,
             db_compute_instances_count=1,
             db_compute_instances_use_spot=False,
             db_version="",
-            proxy_instances_type_id=instance_type_key,
+            proxy_instances_type_key=instance_type_key,
             proxy_instances_count=1,
             proxy_version="",
         )
@@ -70,15 +71,17 @@ class EngineRevision(FireboltBaseModel):
     As engines are updated with new settings, revisions are created.
     """
 
-    key: EngineRevisionKey = Field(alias="id")
-    current_status: str
-    specification: Specification
-    create_time: datetime
-    create_actor: str
-    last_update_time: datetime
-    last_update_actor: str
-    desired_status: str
-    health_status: str
+    specification: EngineRevisionSpecification
+
+    # optional
+    key: Optional[EngineRevisionKey] = Field(alias="id")
+    current_status: Optional[str]
+    create_time: Optional[datetime]
+    create_actor: Optional[str]
+    last_update_time: Optional[datetime]
+    last_update_actor: Optional[str]
+    desired_status: Optional[str]
+    health_status: Optional[str]
 
     @classmethod
     def get_by_id(cls, engine_id: str, engine_revision_id: str) -> EngineRevision:
@@ -117,9 +120,9 @@ class EngineRevision(FireboltBaseModel):
     @classmethod
     def analytics_default(cls) -> EngineRevision:
         """Get an EngineRevision configured with default settings for analytics"""
-        return cls.construct(specification=Specification.analytics_default())
+        return cls(specification=EngineRevisionSpecification.analytics_default())
 
     @classmethod
     def ingest_default(cls) -> EngineRevision:
         """Get an EngineRevision configured with default settings for ingestion"""
-        return cls.construct(specification=Specification.ingest_default())
+        return cls(specification=EngineRevisionSpecification.ingest_default())
