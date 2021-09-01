@@ -29,7 +29,7 @@ class Region(FireboltBaseModel):
 
 
 class RegionLookup(NamedTuple):
-    """Helper to lookup a Region by provider name and region name"""
+    """Helper tuple for looking up Regions by names."""
 
     provider_name: str
     region_name: str
@@ -38,6 +38,7 @@ class RegionLookup(NamedTuple):
 class _Regions(FireboltClientMixin):
     @cached_property
     def regions(self) -> list[Region]:
+        """List of available Regions on Firebolt."""
         response = self.get_firebolt_client().http_client.get(
             url="/compute/v1/regions", params={"page.first": 5000}
         )
@@ -45,6 +46,7 @@ class _Regions(FireboltClientMixin):
 
     @cached_property
     def regions_by_name(self) -> dict[RegionLookup, Region]:
+        """Dict of {RegionLookup: Region}"""
         return {
             RegionLookup(provider_name=r.provider.name, region_name=r.name): r
             for r in self.regions
@@ -52,10 +54,12 @@ class _Regions(FireboltClientMixin):
 
     @cached_property
     def regions_by_key(self) -> dict[RegionKey, Region]:
+        """Dict of {RegionKey: Region}"""
         return {r.key: r for r in self.regions}
 
     @cached_property
     def default_region(self) -> Region:
+        """Default Region, as specified by the client."""
         firebolt_client = self.get_firebolt_client()
         if firebolt_client.default_region_name is None:
             raise ValueError(

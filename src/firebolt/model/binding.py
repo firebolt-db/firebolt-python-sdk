@@ -16,6 +16,8 @@ class BindingKey(BaseModel):
 
 
 class Binding(FireboltBaseModel):
+    """A Binding between an Engine and a Database"""
+
     binding_key: BindingKey = Field(alias="id")
     engine_is_default: bool
     current_status: str
@@ -36,6 +38,7 @@ class Binding(FireboltBaseModel):
 
     @classmethod
     def get_by_key(cls, binding_key: BindingKey) -> Binding:
+        """Get a binding by it's BindingKey"""
         response = cls.get_firebolt_client().http_client.get(
             url=f"/core/v1/accounts/{binding_key.account_id}"
             f"/databases/{binding_key.database_id}"
@@ -45,6 +48,7 @@ class Binding(FireboltBaseModel):
         return cls.parse_obj(binding)
 
     def create(self):
+        """Send a request to create the Binding on Firebolt"""
         response = self.get_firebolt_client().http_client.post(
             url=f"/core/v1/accounts/{self.binding_key.account_id}"
             f"/databases/{self.database_id}"
@@ -62,6 +66,24 @@ class Binding(FireboltBaseModel):
         engine_id: Optional[str] = None,
         is_system_database: Optional[bool] = None,
     ) -> list[Binding]:
+        """
+        List bindings on Firebolt, optionally filtering by database and engine.
+
+        Args:
+            database_id:
+                Return bindings matching the database_id.
+                If None, match any databases.
+            engine_id:
+                Return bindings matching the engine_id.
+                If None, match any engines.
+            is_system_database:
+                If True, return only system databases.
+                If False, return only non-system databases.
+                If None, do not filter on this parameter.
+
+        Returns:
+            List of bindings matching the filter parameters.
+        """
         fc = cls.get_firebolt_client()
         response = fc.http_client.get(
             url=f"/core/v1/accounts/{fc.account_id}/bindings",
