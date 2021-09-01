@@ -112,22 +112,26 @@ class Engine(FireboltBaseModel):
         return cls.get_by_id(engine_id=engine_id)
 
     @classmethod
-    def create_analytics_default(
+    def create_analytics(
         cls,
         name: str,
         description: Optional[str] = None,
         region_name: Optional[str] = None,
+        compute_instance_type_name: Optional[str] = None,
+        compute_instance_count: Optional[int] = None,
     ) -> Engine:
         """
         Create a new engine on Firebolt, based on default Analytics settings.
 
-        (The engine should be used for running queries on Firebolt, not for ingesting data.)
+        (The engine should be used for running queries on Firebolt.)
 
         Args:
             name: Name of the engine.
             description: Long description of the engine.
             region_name: Name of the region in which to create the engine.
                 If omitted, use the default region.
+            compute_instance_type_name: Name of the instance type to use for the Engine.
+            compute_instance_count: Number of instances to use for the Engine.
 
         Returns:
             The newly created engine.
@@ -138,19 +142,24 @@ class Engine(FireboltBaseModel):
             description=description,
             region_name=region_name,
         )
-        return engine.create_with_revision(
-            engine_revision=EngineRevision.analytics_default()
+        return engine.apply_create(
+            engine_revision=EngineRevision.analytics_default(
+                compute_instance_type_name=compute_instance_type_name,
+                compute_instance_count=compute_instance_count,
+            )
         )
 
     @classmethod
-    def create_ingest_default(
+    def create_ingest(
         cls,
         name: str,
         description: Optional[str] = None,
         region_name: Optional[str] = None,
+        compute_instance_type_name: Optional[str] = None,
+        compute_instance_count: Optional[int] = None,
     ) -> Engine:
         """
-        Create a new engine, based on default Ingest settings.
+        Create a new engine on Firebolt, based on default Ingest settings.
 
         (The engine should be used for ingesting data into Firebolt.)
 
@@ -159,7 +168,8 @@ class Engine(FireboltBaseModel):
             description: Long description of the engine.
             region_name: Name of the region in which to create the engine.
                 If omitted, use the default region.
-
+            compute_instance_type_name: Name of the instance type to use for the Engine.
+            compute_instance_count: Number of instances to use for the Engine.
         Returns:
             The newly created engine.
         """
@@ -169,8 +179,11 @@ class Engine(FireboltBaseModel):
             description=description,
             region_name=region_name,
         )
-        return engine.create_with_revision(
-            engine_revision=EngineRevision.ingest_default()
+        return engine.apply_create(
+            engine_revision=EngineRevision.ingest_default(
+                compute_instance_type_name=compute_instance_type_name,
+                compute_instance_count=compute_instance_count,
+            )
         )
 
     @classmethod
@@ -182,7 +195,7 @@ class Engine(FireboltBaseModel):
         region_name: Optional[str] = None,
     ) -> Engine:
         """
-        Create a new engine locally.
+        Create a new local Engine object with default settings.
 
         Args:
             name: Name of the engine.
@@ -235,9 +248,7 @@ class Engine(FireboltBaseModel):
         except StopIteration:
             return None
 
-    def create_with_revision(
-        self, engine_revision: Optional[EngineRevision] = None
-    ) -> Engine:
+    def apply_create(self, engine_revision: Optional[EngineRevision] = None) -> Engine:
         """
         Create a new Engine on Firebolt from the local Engine object.
 
@@ -261,9 +272,10 @@ class Engine(FireboltBaseModel):
         )
         return Engine.parse_obj(response.json()["engine"])
 
-    def create_with_latest_revision(self) -> Engine:
+    def apply_create_with_latest_revision(self) -> Engine:
         """
-        Create an Engine on Firebolt using the latest EngineRevision on Firebolt.
+        Create a new Engine on Firebolt from the local Engine object,
+        passing in the latest EngineRevision from Firebolt.
 
         Note: this will only work on Engines that already exist on Firebolt.
         This method is mainly useful for copying existing engines.
@@ -271,7 +283,7 @@ class Engine(FireboltBaseModel):
         engine_revision = self.get_latest_engine_revision()
         if engine_revision is None:
             raise RuntimeError("An EngineRevision does not exist for this Engine")
-        return self.create_with_revision(engine_revision=engine_revision)
+        return self.apply_create(engine_revision=engine_revision)
 
     def get_latest_engine_revision(self) -> Optional[EngineRevision]:
         """Get the latest engine revision, if one exists."""

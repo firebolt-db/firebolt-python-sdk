@@ -55,7 +55,7 @@ class InstanceTypeLookup(NamedTuple):
 
     provider_name: str
     region_name: str
-    instance_name: str
+    instance_type_name: str
 
 
 class _InstanceTypes(FireboltClientMixin):
@@ -79,14 +79,18 @@ class _InstanceTypes(FireboltClientMixin):
             InstanceTypeLookup(
                 provider_name=i.provider.name,
                 region_name=i.region.name,
-                instance_name=i.name,
+                instance_type_name=i.name,
             ): i
             for i in self.instance_types
         }
 
+    def get_by_key(self, instance_type_key: InstanceTypeKey) -> InstanceType:
+        """Get an instance type by key."""
+        return self.instance_types_by_key[instance_type_key]
+
     def get_by_name(
         self,
-        instance_name: str,
+        instance_type_name: str,
         region_name: Optional[str] = None,
         provider_name: Optional[str] = None,
     ) -> InstanceType:
@@ -94,7 +98,7 @@ class _InstanceTypes(FireboltClientMixin):
         Get an instance type by name.
 
         Args:
-            instance_name: Name of the instance (eg. "i3.4xlarge").
+            instance_type_name: Name of the instance (eg. "i3.4xlarge").
             region_name:
                 Name of the region from which to get the instance.
                 If not provided, use the default region name from the client.
@@ -116,7 +120,7 @@ class _InstanceTypes(FireboltClientMixin):
             InstanceTypeLookup(
                 provider_name=provider_name,
                 region_name=region_name,
-                instance_name=instance_name,
+                instance_type_name=instance_type_name,
             )
         ]
 

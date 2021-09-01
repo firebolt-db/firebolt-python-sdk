@@ -1,5 +1,19 @@
 # firebolt-sdk
 
+## Disclaimer
+This project is incomplete and under heavy development. Things are changing fast!
+
+Please feel free to try it out, but know that breaking changes may occur at any time.
+If you have feature requests or feedback, please ask Eric Gustavson on slack.
+
+To do:
+* functionality: query, bindings, deletes/updates of engines/databases
+* support for tables, indexes?
+* unit tests
+* consider a DI framework
+* general polish
+* documentation & examples
+
 ### Links
 
 * [REST API Docs](https://docs.firebolt.io/integrations/connecting-via-rest-api)
