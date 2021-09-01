@@ -41,19 +41,6 @@ class Database(FireboltBaseModel):
     class Config:
         allow_population_by_field_name = True
 
-    @property
-    def database_id(self) -> Optional[str]:
-        if self.database_key is None:
-            return None
-        return self.database_key.database_id
-
-    @property
-    def engines(self) -> list[Engine]:
-        from firebolt.model.engine import Engine
-
-        bindings = Binding.list_bindings(database_id=self.database_id)
-        return Engine.get_by_ids([b.engine_id for b in bindings])
-
     @classmethod
     def get_by_id(cls, database_id: str) -> Database:
         """Get a Database from Firebolt by its id."""
@@ -65,6 +52,12 @@ class Database(FireboltBaseModel):
         return Database.parse_obj(database_spec)
 
     @classmethod
+    def get_by_name(cls, database_name: str) -> Database:
+        """Get a Database from Firebolt by its name."""
+        database_id = cls.get_id_by_name(database_name=database_name)
+        return cls.get_by_id(database_id=database_id)
+
+    @classmethod
     def get_id_by_name(cls, database_name: str) -> str:
         """Get a Database id from Firebolt by its name."""
         response = cls.get_firebolt_client().http_client.get(
@@ -73,12 +66,6 @@ class Database(FireboltBaseModel):
         )
         database_id = response.json()["database_id"]["database_id"]
         return database_id
-
-    @classmethod
-    def get_by_name(cls, database_name: str) -> Database:
-        """Get a Database from Firebolt by its name."""
-        database_id = cls.get_id_by_name(database_name=database_name)
-        return cls.get_by_id(database_id=database_id)
 
     @classmethod
     def create_new(cls, database_name: str, region_name: str) -> Database:
@@ -94,9 +81,23 @@ class Database(FireboltBaseModel):
         """
         region_key = regions.get_by_name(region_name=region_name).key
         database = Database(name=database_name, compute_region_key=region_key)
-        return database.create()
+        return database.apply_create()
 
-    def create(self) -> Database:
+    @property
+    def database_id(self) -> Optional[str]:
+        if self.database_key is None:
+            return None
+        return self.database_key.database_id
+
+    @property
+    def engines(self) -> list[Engine]:
+        """Engines bound to this database."""
+        from firebolt.model.engine import Engine
+
+        bindings = Binding.list_bindings(database_id=self.database_id)
+        return Engine.get_by_ids([b.engine_id for b in bindings])
+
+    def apply_create(self) -> Database:
         """
         Create a Database on Firebolt from the local Database object.
 

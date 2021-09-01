@@ -47,7 +47,7 @@ class Binding(FireboltBaseModel):
         binding: dict = response.json()["binding"]
         return cls.parse_obj(binding)
 
-    def create(self):
+    def apply_create(self):
         """Send a request to create the Binding on Firebolt"""
         response = self.get_firebolt_client().http_client.post(
             url=f"/core/v1/accounts/{self.binding_key.account_id}"
