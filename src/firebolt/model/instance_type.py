@@ -1,3 +1,4 @@
+from datetime import datetime
 from functools import cached_property
 from typing import NamedTuple, Optional
 
@@ -30,13 +31,15 @@ class InstanceTypeKey(FireboltBaseModel, frozen=True):  # type: ignore
 class InstanceType(FireboltBaseModel):
     key: InstanceTypeKey = Field(alias="id")
     name: str
-    is_spot_available: bool
-    cpu_virtual_cores_count: int
-    memory_size_bytes: str
-    storage_size_bytes: str
-    price_per_hour_cents: float
-    create_time: str
-    last_update_time: str
+
+    # optional
+    is_spot_available: Optional[bool]
+    cpu_virtual_cores_count: Optional[int]
+    memory_size_bytes: Optional[str]
+    storage_size_bytes: Optional[str]
+    price_per_hour_cents: Optional[float]
+    create_time: Optional[datetime]
+    last_update_time: Optional[datetime]
 
     @property
     def region(self) -> Region:
