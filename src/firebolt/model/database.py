@@ -104,15 +104,14 @@ class Database(FireboltBaseModel):
         Returns:
             The newly created Database.
         """
-        json_payload = _DatabaseCreateRequest(
-            account_id=self.get_firebolt_client().account_id,
-            database=self,
-        ).json(by_alias=True)
 
         response = self.get_firebolt_client().http_client.post(
             url=f"/core/v1/accounts/{self.get_firebolt_client().account_id}/databases",
             headers={"Content-type": "application/json"},
-            data=json_payload,
+            json=_DatabaseCreateRequest(
+                account_id=self.get_firebolt_client().account_id,
+                database=self,
+            ).dict(by_alias=True),
         )
 
         return Database.parse_obj(response.json()["database"])

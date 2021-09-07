@@ -1,4 +1,5 @@
 import os
+from typing import Optional
 
 
 class EnvVar:
@@ -6,15 +7,19 @@ class EnvVar:
         self.key = key
         self._value = os.getenv(key=self.key)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"RequiredEnvVar(key={self.key}, value={self._value})"
 
-    def get_value(self, is_required=True):
+    def get_required_value(self) -> str:
         self._value = os.getenv(key=self.key)
-        if is_required and not self._value:
+        if self._value is None:
             raise ValueError(
                 f"Environment variable {self.key} is required, but is not set!"
             )
+        return self._value
+
+    def get_optional_value(self) -> Optional[str]:
+        self._value = os.getenv(key=self.key)
         return self._value
 
 

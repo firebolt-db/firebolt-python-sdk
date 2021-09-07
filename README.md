@@ -26,7 +26,7 @@ To do:
 1. `pre-commit install`
 1. If using pycharm, set the test runner as `pytest` and mark `src` as a sources root.
 
-Optionally configure Pycharm linting shortcut:
+Optionally setup Pycharm linting shortcut:
 
 1. Preferences -> Tools -> External Tools > + (add new entry)
 ```
@@ -39,6 +39,15 @@ Working Directory: $ProjectFileDir$
 2. Preferences -> Keymap -> External Tools -> lint, 
    Assign the keyboard shortcut `Option-cmd-l`
 
+### Before Committing
+
+1. The pre-commit hook should catch linting errors
+2. run `mypy src` to check for type errors
+3. run `pytest` to run unit tests
+
+Note: while there is a `mypy` hook for pre-commit, 
+I found it too buggy to be worthwhile, so I just run mypy manually. 
+
 ### Docstrings
 
 Use the Google format for docstrings. Do not include types or an indication 
@@ -47,6 +56,12 @@ as type annotations; no need to repeat them in the docstring.
 
 Public methods and functions should have docstrings. 
 One-liners are fine for simple methods and functions.
+
+For PyCharm Users:
+
+1. Tools > Python Integrated Tools > Docstring Format: "Google"
+2. Editor > General > Smart Keys > Check "Insert documentation comment stub"
+3. Editor > General > Smart Keys > Python > Uncheck "Insert type placeholders..."
 
 ### Method Order
 

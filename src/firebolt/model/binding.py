@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional
 
 from pydantic import BaseModel, Field
 
-from firebolt.common.data import prune_dict
+from firebolt.common import prune_dict
 from firebolt.model import FireboltBaseModel
 
 if TYPE_CHECKING:
@@ -127,8 +127,8 @@ class Binding(FireboltBaseModel):
             url=f"/core/v1/accounts/{self.binding_key.account_id}"
             f"/databases/{self.database_id}"
             f"/bindings/{self.engine_id}",
-            data=self.json(
-                by_alias=True, include={"id": ..., "engine_is_default": ...}
+            json=self.dict(
+                by_alias=True, include={"binding_key": ..., "is_default_engine": ...}
             ),
         )
         return Binding.parse_obj(response.json()["binding"])
