@@ -46,20 +46,20 @@ def get_http_client(host: str, username: str, password: str) -> httpx.Client:
     access_token = _get_token(host=host, username=username, password=password)
 
     # see: https://www.python-httpx.org/advanced/#event-hooks
-    def log_request(request: httpx.Request):
+    def log_request(request: httpx.Request) -> None:
         """Hook to log http requests"""
         logger.info(
             f"Request event hook: {request.method} {request.url} - Waiting for response"
         )
 
-    def log_response(response: httpx.Response):
+    def log_response(response: httpx.Response) -> None:
         """Hook to log responses to http requests"""
         request = response.request
         logger.info(
             f"Response event hook: {request.method} {request.url} - Status {response.status_code}"
         )
 
-    def raise_on_4xx_5xx(response: httpx.Response):
+    def raise_on_4xx_5xx(response: httpx.Response) -> None:
         """
         Hook to raise an error on http responses with codes indicating an error.
 

@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import logging
 from functools import cached_property
-from typing import Optional
+from types import TracebackType
+from typing import Optional, Type
 
 import dotenv
 
@@ -59,19 +60,24 @@ class FireboltClient:
             default_provider_name if default_provider_name else "AWS"
         )
 
-    def __enter__(self):
+    def __enter__(self) -> FireboltClient:
         global _firebolt_client_singleton
         _firebolt_client_singleton = self
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> None:
         self.http_client.close()
         logger.info(f"Connection to {self.host} closed")
         global _firebolt_client_singleton
         _firebolt_client_singleton = None
 
     @classmethod
-    def from_env(cls, dotenv_path=None) -> FireboltClient:
+    def from_env(cls, dotenv_path: Optional[str] = None) -> FireboltClient:
         """
         Create a FireboltClient from the following environment variables:
         FIREBOLT_SERVER, FIREBOLT_USER, FIREBOLT_PASSWORD
@@ -91,13 +97,11 @@ class FireboltClient:
         # that are defined in a `.env` file
         dotenv.load_dotenv(dotenv_path=dotenv_path, override=False)
 
-        host = env.FIREBOLT_SERVER.get_value()
-        username = env.FIREBOLT_USER.get_value()
-        password = env.FIREBOLT_PASSWORD.get_value()
-        default_region_name = env.FIREBOLT_DEFAULT_REGION.get_value(is_required=False)
-        default_provider_name = env.FIREBOLT_DEFAULT_PROVIDER.get_value(
-            is_required=False
-        )
+        host = env.FIREBOLT_SERVER.get_required_value()
+        username = env.FIREBOLT_USER.get_required_value()
+        password = env.FIREBOLT_PASSWORD.get_required_value()
+        default_region_name = env.FIREBOLT_DEFAULT_REGION.get_optional_value()
+        default_provider_name = env.FIREBOLT_DEFAULT_PROVIDER.get_optional_value()
 
         return cls(
             host=host,

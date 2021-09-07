@@ -6,7 +6,6 @@ from datetime import datetime
 from typing import Optional
 
 from pydantic import Field
-from toolz import first
 
 from firebolt.common.exception import FireboltEngineAlreadyBound
 from firebolt.model import FireboltBaseModel
@@ -244,9 +243,9 @@ class Engine(FireboltBaseModel):
         """The database the engine is bound to, if any."""
         # FUTURE: in the new architecture, an engine can be bound to multiple databases
         try:
-            binding = first(Binding.list_bindings(engine_id=self.engine_id))
+            binding = Binding.list_bindings(engine_id=self.engine_id)[0]
             return Database.get_by_id(binding.database_id)
-        except StopIteration:
+        except IndexError:
             return None
 
     def bind_to_database(self, database: Database, is_default_engine: bool) -> Binding:
@@ -279,16 +278,14 @@ class Engine(FireboltBaseModel):
             The newly created engine.
         """
 
-        json_payload = _EngineCreateRequest(
-            account_id=self.get_firebolt_client().account_id,
-            engine=self,
-            engine_revision=engine_revision,
-        ).json(by_alias=True)
-
         response = self.get_firebolt_client().http_client.post(
             url="/core/v1/account/engines",
             headers={"Content-type": "application/json"},
-            data=json_payload,
+            json=_EngineCreateRequest(
+                account_id=self.get_firebolt_client().account_id,
+                engine=self,
+                engine_revision=engine_revision,
+            ).dict(by_alias=True),
         )
         return Engine.parse_obj(response.json()["engine"])
 
@@ -317,7 +314,7 @@ class Engine(FireboltBaseModel):
         self,
         wait_for_startup: bool = True,
         wait_timeout_seconds: int = 3600,
-        print_dots=True,
+        print_dots: bool = True,
     ) -> Engine:
         """
         Start an engine. If it's already started, do nothing.
@@ -365,6 +362,12 @@ class Engine(FireboltBaseModel):
             time.sleep(5)
             status = new_status
         return engine
+
+    def stop(self) -> None:
+        """Stop an Engine running on Firebolt"""
+        response = self.get_firebolt_client().http_client.post(
+            url=f"/core/v1/account/engines/{self.engine_id}:stop",
+        )
 
     def delete(self) -> str:
         """Delete an Engine from Firebolt."""

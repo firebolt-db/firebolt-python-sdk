@@ -8,7 +8,7 @@ class FireboltError(Exception):
 class FireboltClientRequiredError(FireboltError):
     def __init__(
         self,
-        message=cleandoc(
+        message: str = cleandoc(
             """
         Firebolt Client not found. Start one in a context manager: 
         ```

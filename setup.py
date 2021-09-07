@@ -20,11 +20,11 @@ setup(
         "python-dotenv",
         "pydantic",
         "typer",
-        "toolz",
     ],
     extras_require={
         "dev": [
             "pre-commit",
+            "mypy",
             "pytest",
             "pytest-mock",
         ]
