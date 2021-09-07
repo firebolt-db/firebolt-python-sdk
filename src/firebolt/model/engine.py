@@ -8,6 +8,7 @@ from typing import Optional
 from pydantic import Field
 from toolz import first
 
+from firebolt.common.exception import FireboltEngineAlreadyBound
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
@@ -247,6 +248,25 @@ class Engine(FireboltBaseModel):
             return Database.get_by_id(binding.database_id)
         except StopIteration:
             return None
+
+    def bind_to_database(self, database: Database, is_default_engine: bool) -> Binding:
+        """
+        Attach this engine to a database.
+
+        Args:
+            database: Database to which the engine will be attached.
+            is_default_engine:
+                Whether this engine should be used as default for this database.
+                Only one engine can be set as default for a single database.
+                This will overwrite any existing default.
+        """
+        if self.database is not None:
+            raise FireboltEngineAlreadyBound(
+                f"The engine {self.name} is already bound to {self.database.name}!"
+            )
+        return Binding.create(
+            engine=self, database=database, is_default_engine=is_default_engine
+        )
 
     def apply_create(self, engine_revision: Optional[EngineRevision] = None) -> Engine:
         """

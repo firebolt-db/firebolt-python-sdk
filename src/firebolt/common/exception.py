@@ -19,3 +19,7 @@ class FireboltClientRequiredError(FireboltError):
         ),
     ):
         super().__init__(message)
+
+
+class FireboltEngineAlreadyBound(FireboltError):
+    pass
