@@ -1,6 +1,7 @@
 import logging
 
 import httpx
+from pydantic import SecretStr
 
 logger = logging.getLogger(__name__)
 
@@ -9,7 +10,7 @@ class BadRequestError(httpx.HTTPStatusError):
     pass
 
 
-def get_access_token(host: str, username: str, password: str) -> str:
+def get_access_token(host: str, username: str, password: SecretStr) -> str:
     """
     Authenticate with username and password, and get a Bearer token.
 
@@ -25,7 +26,7 @@ def get_access_token(host: str, username: str, password: str) -> str:
         response = client.post(
             f"https://{host}/auth/v1/login",
             headers={"Content-Type": "application/json;charset=UTF-8"},
-            json={"username": username, "password": password},
+            json={"username": username, "password": password.get_secret_value()},
             timeout=None,
         )
         return response.json()["access_token"]
