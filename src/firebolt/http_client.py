@@ -9,7 +9,7 @@ class BadRequestError(httpx.HTTPStatusError):
     pass
 
 
-def _get_token(host: str, username: str, password: str) -> str:
+def get_access_token(host: str, username: str, password: str) -> str:
     """
     Authenticate with username and password, and get a Bearer token.
 
@@ -31,19 +31,17 @@ def _get_token(host: str, username: str, password: str) -> str:
         return response.json()["access_token"]
 
 
-def get_http_client(host: str, username: str, password: str) -> httpx.Client:
+def get_http_client(host: str, access_token: str) -> httpx.Client:
     """
     Get an httpx client configured to talk to the Firebolt API.
 
     Args:
         host: Firebolt server (eg. api.app.firebolt.io)
-        username: Username, usually an email address
-        password: Password
+        access_token: Access token for API Authorization.
 
     Returns:
          A httpx.Client configured to communicate with Firebolt.
     """
-    access_token = _get_token(host=host, username=username, password=password)
 
     # see: https://www.python-httpx.org/advanced/#event-hooks
     def log_request(request: httpx.Request) -> None:

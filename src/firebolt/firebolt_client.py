@@ -9,7 +9,7 @@ import dotenv
 
 from firebolt.common import env
 from firebolt.common.exception import FireboltClientRequiredError
-from firebolt.http_client import get_http_client
+from firebolt.http_client import get_access_token, get_http_client
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +50,10 @@ class FireboltClient:
         self.username = username
         self.password = password
         self.host = host
-        self.http_client = get_http_client(
+        self.access_token = get_access_token(
             host=host, username=username, password=password
         )
+        self.http_client = get_http_client(host=host, access_token=self.access_token)
         logger.info(f"Connected to {self.host} as {self.username}")
 
         self.default_region_name = default_region_name
