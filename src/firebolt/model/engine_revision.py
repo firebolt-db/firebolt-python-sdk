@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import Field
+from pydantic import Field, PositiveInt
 
 from firebolt.firebolt_client import get_firebolt_client
 from firebolt.model import FireboltBaseModel
@@ -32,11 +32,11 @@ class EngineRevisionSpecification(FireboltBaseModel):
     db_compute_instances_type_key: InstanceTypeKey = Field(
         alias="db_compute_instances_type_id"
     )
-    db_compute_instances_count: int
+    db_compute_instances_count: PositiveInt
     db_compute_instances_use_spot: bool = False
     db_version: str = ""
     proxy_instances_type_key: InstanceTypeKey = Field(alias="proxy_instances_type_id")
-    proxy_instances_count: int = 1
+    proxy_instances_count: PositiveInt = 1
     proxy_version: str = ""
 
     @classmethod

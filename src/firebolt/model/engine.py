@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Annotated, Optional
 
 import httpx
 from pydantic import Field
@@ -71,7 +71,7 @@ class Engine(FireboltBaseModel):
     Engines are configured in Settings and in EngineRevisions.
     """
 
-    name: str
+    name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
     compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: EngineSettings
 
