@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Annotated, Optional
 
 from pydantic import Field
 
@@ -19,13 +19,13 @@ class DatabaseKey(FireboltBaseModel):
 
 
 class Database(FireboltBaseModel):
-    name: str
+    name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
     compute_region_key: RegionKey = Field(alias="compute_region_id")
 
     # optional
     database_key: Optional[DatabaseKey] = Field(alias="id")
-    description: Optional[str]
-    emoji: Optional[str]
+    description: Optional[Annotated[str, Field(max_length=255)]]
+    emoji: Optional[Annotated[str, Field(max_length=255)]]
     current_status: Optional[str]
     health_status: Optional[str]
     data_size_full: Optional[int]
