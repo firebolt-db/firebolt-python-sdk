@@ -5,10 +5,8 @@ from functools import cached_property
 from types import TracebackType
 from typing import Optional, Type
 
-import dotenv
-
-from firebolt.common import env
 from firebolt.common.exception import FireboltClientRequiredError
+from firebolt.common.settings import Settings
 from firebolt.http_client import get_access_token, get_http_client
 
 logger = logging.getLogger(__name__)
@@ -35,31 +33,27 @@ class FireboltClient:
 
     This class is intended to be used as a context manager to ensure connections to
     Firebolt are closed upon exit. For example:
-    >>> with FireboltClient.from_env():
+    >>> with FireboltClient():
     >>>     ...
     """
 
-    def __init__(
-        self,
-        host: str,
-        username: str,
-        password: str,
-        default_region_name: Optional[str] = None,
-        default_provider_name: Optional[str] = None,
-    ):
-        self.username = username
-        self.password = password
-        self.host = host
-        self.access_token = get_access_token(
-            host=host, username=username, password=password
-        )
-        self.http_client = get_http_client(host=host, access_token=self.access_token)
-        logger.info(f"Connected to {self.host} as {self.username}")
+    def __init__(self, settings: Optional[Settings] = None):
+        if settings is None:
+            settings = Settings()
+        self.settings = settings
 
-        self.default_region_name = default_region_name
-        self.default_provider_name = (
-            default_provider_name if default_provider_name else "AWS"
+        self.access_token = get_access_token(
+            host=self.settings.server,
+            username=self.settings.user,
+            password=self.settings.password,
         )
+        self.http_client = get_http_client(
+            host=self.settings.server, access_token=self.access_token
+        )
+        logger.info(f"Connected to {self.settings.server} as {self.settings.user}")
+
+        self.default_region_name = self.settings.default_region
+        self.default_provider_name = self.settings.default_provider
 
     def __enter__(self) -> FireboltClient:
         global _firebolt_client_singleton
@@ -73,44 +67,9 @@ class FireboltClient:
         exc_tb: Optional[TracebackType],
     ) -> None:
         self.http_client.close()
-        logger.info(f"Connection to {self.host} closed")
+        logger.info(f"Connection to {self.settings.server} closed")
         global _firebolt_client_singleton
         _firebolt_client_singleton = None
-
-    @classmethod
-    def from_env(cls, dotenv_path: Optional[str] = None) -> FireboltClient:
-        """
-        Create a FireboltClient from the following environment variables:
-        FIREBOLT_SERVER, FIREBOLT_USER, FIREBOLT_PASSWORD
-
-        Load a .env file beforehand. Environment variables defined in .env will
-        not overwrite values already present.
-
-        Raise an exception if any of the environment variables are missing.
-
-        Args:
-            dotenv_path: path to a local .env file
-
-        Returns:
-            Initialized FireboltClient
-        """
-        # for local development: load any unset environment variables
-        # that are defined in a `.env` file
-        dotenv.load_dotenv(dotenv_path=dotenv_path, override=False)
-
-        host = env.FIREBOLT_SERVER.get_required_value()
-        username = env.FIREBOLT_USER.get_required_value()
-        password = env.FIREBOLT_PASSWORD.get_required_value()
-        default_region_name = env.FIREBOLT_DEFAULT_REGION.get_optional_value()
-        default_provider_name = env.FIREBOLT_DEFAULT_PROVIDER.get_optional_value()
-
-        return cls(
-            host=host,
-            username=username,
-            password=password,
-            default_region_name=default_region_name,
-            default_provider_name=default_provider_name,
-        )
 
     @cached_property
     def account_id(self) -> str:
