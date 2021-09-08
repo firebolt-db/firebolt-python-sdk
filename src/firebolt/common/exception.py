@@ -21,5 +21,17 @@ class FireboltClientRequiredError(FireboltError):
         super().__init__(message)
 
 
-class FireboltEngineAlreadyBound(FireboltError):
+class FireboltEngineError(FireboltError):
+    """Base error for engine errors"""
+
+
+class AlreadyBoundError(FireboltEngineError):
+    pass
+
+
+class EndpointRequiredError(FireboltEngineError):
+    pass
+
+
+class DatabaseRequiredError(FireboltEngineError):
     pass

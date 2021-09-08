@@ -5,9 +5,15 @@ import time
 from datetime import datetime
 from typing import Optional
 
+import httpx
 from pydantic import Field
 
-from firebolt.common.exception import FireboltEngineAlreadyBound
+from firebolt.common.exception import (
+    AlreadyBoundError,
+    DatabaseRequiredError,
+    EndpointRequiredError,
+)
+from firebolt.http_client import get_http_client
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
@@ -248,6 +254,24 @@ class Engine(FireboltBaseModel):
         except IndexError:
             return None
 
+    @property
+    def http_client(self) -> httpx.Client:
+        """
+        Get the http_client for the engine.
+
+        This should not be confused with the FireboltClient http_client.
+
+        This should be used as a context manager, for running queries on the engine.
+        """
+        if self.endpoint is None:
+            raise EndpointRequiredError(
+                "Endpoint is required. Ensure the engine is running first."
+            )
+        return get_http_client(
+            host=self.endpoint,
+            access_token=self.get_firebolt_client().access_token,
+        )
+
     def bind_to_database(self, database: Database, is_default_engine: bool) -> Binding:
         """
         Attach this engine to a database.
@@ -260,7 +284,7 @@ class Engine(FireboltBaseModel):
                 This will overwrite any existing default.
         """
         if self.database is not None:
-            raise FireboltEngineAlreadyBound(
+            raise AlreadyBoundError(
                 f"The engine {self.name} is already bound to {self.database.name}!"
             )
         return Binding.create(
@@ -363,13 +387,14 @@ class Engine(FireboltBaseModel):
             status = new_status
         return engine
 
-    def stop(self) -> None:
-        """Stop an Engine running on Firebolt"""
+    def stop(self) -> Engine:
+        """Stop an Engine running on Firebolt."""
         response = self.get_firebolt_client().http_client.post(
             url=f"/core/v1/account/engines/{self.engine_id}:stop",
         )
+        return Engine.parse_obj(response.json()["engine"])
 
-    def delete(self) -> str:
+    def delete(self) -> Engine:
         """Delete an Engine from Firebolt."""
         firebolt_client = self.get_firebolt_client()
         response = firebolt_client.http_client.delete(
@@ -377,6 +402,31 @@ class Engine(FireboltBaseModel):
             f"/accounts/{firebolt_client.account_id}"
             f"/engines/{self.engine_id}",
         )
+        return Engine.parse_obj(response.json()["engine"])
+
+    def run_query(self, sql: str, timeout: Optional[float] = None) -> dict:
+        """
+        Run a query on the engine.
+
+        Args:
+            sql: SQL query to execute
+            timeout: Seconds to wait until timing out
+
+        Returns:
+            Query results.
+        """
+        if self.database is None:
+            raise DatabaseRequiredError(
+                "Database required before running query. "
+                "Ensure this engine is bound to a database."
+            )
+        with self.http_client as engine_http_client:
+            response = engine_http_client.post(
+                url="/",
+                params={"database": self.database.name},
+                content=sql,
+                timeout=timeout,
+            )
         return response.json()
 
 

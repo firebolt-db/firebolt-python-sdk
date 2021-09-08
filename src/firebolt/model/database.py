@@ -104,16 +104,23 @@ class Database(FireboltBaseModel):
         Returns:
             The newly created Database.
         """
-
-        response = self.get_firebolt_client().http_client.post(
-            url=f"/core/v1/accounts/{self.get_firebolt_client().account_id}/databases",
+        firebolt_client = self.get_firebolt_client()
+        response = firebolt_client.http_client.post(
+            url=f"/core/v1/accounts/{firebolt_client.account_id}/databases",
             headers={"Content-type": "application/json"},
             json=_DatabaseCreateRequest(
                 account_id=self.get_firebolt_client().account_id,
                 database=self,
             ).dict(by_alias=True),
         )
+        return Database.parse_obj(response.json()["database"])
 
+    def delete(self) -> Database:
+        """Delete a database from Firebolt."""
+        response = self.get_firebolt_client().http_client.delete(
+            url=f"/core/v1/account/databases/{self.database_id}",
+            headers={"Content-type": "application/json"},
+        )
         return Database.parse_obj(response.json()["database"])
 
 
