@@ -6,6 +6,7 @@ from pydantic import SecretStr
 from firebolt.common.settings import Settings
 from firebolt.model import FireboltBaseModel
 from firebolt.model.provider import Provider
+from firebolt.model.region import Region, RegionKey
 
 
 @pytest.fixture
@@ -24,13 +25,43 @@ def access_token() -> str:
 
 
 @pytest.fixture
-def mock_providers() -> list[Provider]:
-    return [
-        Provider(
-            provider_id="mock_provider_id",
-            name="mock_provider_name",
-        )
-    ]
+def provider() -> Provider:
+    return Provider(
+        provider_id="mock_provider_id",
+        name="mock_provider_name",
+    )
+
+
+@pytest.fixture
+def mock_providers(provider) -> list[Provider]:
+    return [provider]
+
+
+@pytest.fixture
+def region_1(provider) -> Region:
+    return Region(
+        key=RegionKey(
+            provider_id=provider.provider_id,
+            region_id="mock_region_id_1",
+        ),
+        name="mock_region_1",
+    )
+
+
+@pytest.fixture
+def region_2(provider) -> Region:
+    return Region(
+        key=RegionKey(
+            provider_id=provider.provider_id,
+            region_id="mock_region_id_2",
+        ),
+        name="mock_region_2",
+    )
+
+
+@pytest.fixture
+def mock_regions(region_1, region_2) -> list[Region]:
+    return [region_1, region_2]
 
 
 def paginated(items: list[FireboltBaseModel]) -> dict:
@@ -42,7 +73,7 @@ def paginated(items: list[FireboltBaseModel]) -> dict:
 
 
 @pytest.fixture
-def mocked_api(server, access_token, account_id, mock_providers):
+def mocked_api(server, access_token, account_id, mock_providers, mock_regions):
     with respx.mock(
         base_url=f"https://{server}", assert_all_called=False
     ) as respx_mock:
@@ -56,6 +87,9 @@ def mocked_api(server, access_token, account_id, mock_providers):
 
         providers_route = respx_mock.get("/compute/v1/providers", name="providers")
         providers_route.return_value = Response(200, json=paginated(mock_providers))
+
+        regions_route = respx_mock.get("/compute/v1/regions", name="regions")
+        regions_route.return_value = Response(200, json=paginated(mock_regions))
         yield respx_mock
 
 
