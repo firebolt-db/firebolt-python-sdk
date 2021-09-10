@@ -11,7 +11,6 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "httpx[http2]==0.18",
-        "python-dotenv",
         "pydantic",
     ],
     extras_require={
@@ -20,6 +19,7 @@ setup(
             "mypy",
             "pytest",
             "pytest-mock",
+            "respx",
         ]
     },
 )
