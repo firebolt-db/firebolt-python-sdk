@@ -8,7 +8,7 @@ setup(
     url="https://github.com/firebolt-analytics/firebolt-sdk",
     packages=find_packages("src"),
     package_dir={"": "src"},
-    python_requires=">=3.7",
+    python_requires=">=3.9",
     install_requires=[
         "httpx[http2]==0.18",
         "pydantic",
