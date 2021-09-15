@@ -10,12 +10,12 @@ class FireboltClientRequiredError(FireboltError):
         self,
         message: str = cleandoc(
             """
-        Firebolt Client not found. Start one in a context manager: 
-        ```
-        with FireboltClient.from_env() as fc:
-            ...
-        ```
-        """
+            Firebolt Client not found. Start one in a context manager: 
+            ```
+            with FireboltClient.from_env() as fc:
+                ...
+            ```
+            """
         ),
     ):
         super().__init__(message)
