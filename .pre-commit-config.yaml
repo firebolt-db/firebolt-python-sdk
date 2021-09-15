@@ -1,5 +1,12 @@
 repos:
 
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: check-merge-conflict
+      - id: requirements-txt-fixer
+
+
   - repo: https://github.com/myint/autoflake
     rev: v1.4
     hooks:
@@ -21,3 +28,9 @@ repos:
     rev: 21.7b0
     hooks:
       - id: black
+        language-version: 3.9
+
+  - repo: https://gitlab.com/pycqa/flake8
+    rev: 3.7.9
+    hooks:
+      - id: flake8
