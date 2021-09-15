@@ -40,13 +40,13 @@ class EngineRevisionSpecification(FireboltBaseModel):
     proxy_version: str = ""
 
     @classmethod
-    def ingest_default(
+    def general_purpose_default(
         cls,
         compute_instance_type_name: Optional[str] = None,
         compute_instance_count: Optional[int] = None,
     ) -> EngineRevisionSpecification:
         """
-        Default EngineRevisionSpecification for data ingestion.
+        Default EngineRevisionSpecification for general purpose / data ingestion.
 
         Args:
             compute_instance_type_name: Name of the instance type to use for the Engine.
@@ -129,7 +129,7 @@ class EngineRevision(FireboltBaseModel):
 
     @classmethod
     def get_by_id(cls, engine_id: str, engine_revision_id: str) -> EngineRevision:
-        """Get an EngineRevision from Firebolt by engine_id and engine_revision_id"""
+        """Get an EngineRevision from Firebolt by engine_id and engine_revision_id."""
         fc = get_firebolt_client()
         return cls.get_by_engine_revision_key(
             EngineRevisionKey(
@@ -167,7 +167,7 @@ class EngineRevision(FireboltBaseModel):
         compute_instance_type_name: Optional[str] = None,
         compute_instance_count: Optional[int] = None,
     ) -> EngineRevision:
-        """Create a local EngineRevision with default settings for analytics"""
+        """Create a local EngineRevision with default settings for analytics."""
         return cls(
             specification=EngineRevisionSpecification.analytics_default(
                 compute_instance_type_name=compute_instance_type_name,
@@ -176,14 +176,17 @@ class EngineRevision(FireboltBaseModel):
         )
 
     @classmethod
-    def ingest_default(
+    def general_purpose_default(
         cls,
         compute_instance_type_name: Optional[str] = None,
         compute_instance_count: Optional[int] = None,
     ) -> EngineRevision:
-        """Create a local EngineRevision with default settings for ingestion"""
+        """
+        Create a local EngineRevision with default settings for
+        general purpose usage / data ingestion.
+        """
         return cls(
-            specification=EngineRevisionSpecification.ingest_default(
+            specification=EngineRevisionSpecification.general_purpose_default(
                 compute_instance_type_name=compute_instance_type_name,
                 compute_instance_count=compute_instance_count,
             )

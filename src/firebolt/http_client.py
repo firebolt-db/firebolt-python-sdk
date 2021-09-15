@@ -47,14 +47,14 @@ def get_http_client(host: str, access_token: str) -> httpx.Client:
     # see: https://www.python-httpx.org/advanced/#event-hooks
     def log_request(request: httpx.Request) -> None:
         """Hook to log http requests"""
-        logger.info(
+        logger.debug(
             f"Request event hook: {request.method} {request.url} - Waiting for response"
         )
 
     def log_response(response: httpx.Response) -> None:
         """Hook to log responses to http requests"""
         request = response.request
-        logger.info(
+        logger.debug(
             f"Response event hook: {request.method} {request.url} - Status {response.status_code}"
         )
 
