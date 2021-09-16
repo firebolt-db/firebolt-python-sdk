@@ -4,8 +4,11 @@ repos:
     rev: v4.0.1
     hooks:
       - id: check-merge-conflict
-      - id: requirements-txt-fixer
 
+  - repo: https://github.com/asottile/setup-cfg-fmt
+    rev: v1.17.0
+    hooks:
+      - id: setup-cfg-fmt
 
   - repo: https://github.com/myint/autoflake
     rev: v1.4
