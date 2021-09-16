@@ -89,8 +89,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
         auth.token
 
     assert (
-        str(excinfo.value)
-        == "Failed to authenticate at host: StreamError('httpx')"
+        str(excinfo.value) == "Failed to authenticate at host: StreamError('httpx')"
     ), "Invalid authentication error message"
     httpx_mock.reset(True)
 
@@ -101,8 +100,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
 
     errmsg = str(excinfo.value)
     assert (
-        errmsg.startswith("Failed to authenticate at host:")
-        and "Bad Request" in errmsg
+        errmsg.startswith("Failed to authenticate at host:") and "Bad Request" in errmsg
     ), "Invalid authentication error message"
     httpx_mock.reset(True)
 

@@ -69,9 +69,7 @@ def test_client_different_auths(
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
     FireboltClient(auth=(test_username, test_password)).get("https://url")
-    FireboltClient(auth=FireboltAuth(test_username, test_password)).get(
-        "https://url"
-    )
+    FireboltClient(auth=FireboltAuth(test_username, test_password)).get("https://url")
 
     # client accepts None auth, but authorization fails
     with pytest.raises(AssertionError) as excinfo:

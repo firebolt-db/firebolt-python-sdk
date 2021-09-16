@@ -54,9 +54,7 @@ def check_token_callback(test_token: str) -> typing.Callable:
     def check_token(request: httpx.Request = None, **kwargs) -> httpx.Response:
         prefix = "Bearer "
         assert request, "empty request"
-        assert (
-            "authorization" in request.headers
-        ), "missing authorization header"
+        assert "authorization" in request.headers, "missing authorization header"
         auth = request.headers["authorization"]
         assert auth.startswith(prefix), "invalid authorization header format"
         token = auth[len(prefix) :]

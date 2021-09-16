@@ -1,6 +1,7 @@
 import time
 import typing
 from functools import wraps
+from inspect import cleandoc
 from json import JSONDecodeError
 
 import httpx
@@ -19,6 +20,12 @@ _REQUEST_ERRORS: typing.Tuple[Exception] = (
 
 
 class AuthenticationError(Exception):
+    cleandoc(
+        """
+        Firebolt authentication error. Stores error cause and authnetication endpoint
+        """
+    )
+
     def __init__(self, cause: str, api_endpoint: str):
         self.cause = cause
         self.api_endpoint = api_endpoint
@@ -28,6 +35,13 @@ class AuthenticationError(Exception):
 
 
 class FireboltAuth(httpx.Auth):
+    cleandoc(
+        """
+        Authentication class for Firebolt database. Get's authentication token using
+        provided credentials and updates it when it expires
+        """
+    )
+
     __slots__ = (
         "username",
         "password",
@@ -80,9 +94,7 @@ class FireboltAuth(httpx.Auth):
         request.headers["Authorization"] = f"Bearer {self.token}"
         yield request
 
-    def _check_response_error(
-        self, response: typing.Dict
-    ) -> typing.Optional[str]:
+    def _check_response_error(self, response: typing.Dict) -> typing.Optional[str]:
         if "error" in response:
             raise AuthenticationError(
                 response.get("message", "unknown server error"),
@@ -91,16 +103,16 @@ class FireboltAuth(httpx.Auth):
 
 
 class FireboltClient(httpx.Client):
-    (
+    cleandoc(
         """
-    An http client, based on httpx.Client, that handles the authentificaiton
-    for Firebolt database.
+        An http client, based on httpx.Client, that handles the authentificaiton
+        for Firebolt database.
 
-    Authentification can be passed through auth keyword as a tuple or as a
-    FireboltAuth instance
+        Authentification can be passed through auth keyword as a tuple or as a
+        FireboltAuth instance
 
-    httpx.Client:
-    """
+        httpx.Client:
+        """
         + httpx.Client.__doc__
     )
 
