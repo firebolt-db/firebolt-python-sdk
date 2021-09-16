@@ -9,7 +9,13 @@ from typing import Optional, Type
 from firebolt import client
 from firebolt.common.exception import FireboltClientRequiredError
 from firebolt.common.settings import Settings
-from firebolt.http_client import get_access_token, get_http_client
+from firebolt.http_client import (
+    get_access_token,
+    get_http_client,
+    log_request,
+    log_response,
+    raise_on_4xx_5xx,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +44,10 @@ def init_firebolt_client(settings: Optional[Settings]) -> client.FireboltClient:
         base_url=settings.server,
         api_endpoint=settings.server,
     )
+    _firebolt_client_singleton.event_hooks = {
+        "request": [log_request],
+        "response": [log_response, raise_on_4xx_5xx],
+    }
     yield _firebolt_client_singleton
     _firebolt_client_singleton.close()
     _firebolt_client_singleton = None
