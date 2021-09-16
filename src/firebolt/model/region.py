@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from functools import cached_property
 from typing import NamedTuple, Optional
@@ -6,6 +7,8 @@ from pydantic import Field
 
 from firebolt.model import FireboltBaseModel, FireboltClientMixin
 from firebolt.model.provider import Provider, providers
+
+DEFAULT_REGION_NAME: str = os.environ.get("FIREBOLT_DEFAULT_REGION", None)
 
 
 class RegionKey(FireboltBaseModel, frozen=True):  # type: ignore
@@ -63,13 +66,12 @@ class _Regions(FireboltClientMixin):
     @cached_property
     def default_region(self) -> Region:
         """Default Region, as specified by the client."""
-        firebolt_client = self.get_firebolt_client()
-        if firebolt_client.default_region_name is None:
+        if DEFAULT_REGION_NAME is None:
             raise ValueError(
                 "default_region_name is required. Please set it on FireboltClient or "
                 "via environment variable: FIREBOLT_DEFAULT_REGION"
             )
-        return self.get_by_name(region_name=firebolt_client.default_region_name)
+        return self.get_by_name(region_name=DEFAULT_REGION_NAME)
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None

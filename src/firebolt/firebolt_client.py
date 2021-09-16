@@ -68,9 +68,6 @@ class FireboltClient:
         )
         logger.info(f"Connected to {self.settings.server} as {self.settings.user}")
 
-        self.default_region_name = self.settings.default_region
-        self.default_provider_name = self.settings.default_provider
-
     def __enter__(self) -> FireboltClient:
         global _firebolt_client_singleton
         _firebolt_client_singleton = self

@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from functools import cached_property
 from typing import Optional
@@ -5,6 +6,8 @@ from typing import Optional
 from pydantic import Field
 
 from firebolt.model import FireboltBaseModel, FireboltClientMixin
+
+DEFAULT_PROVIDER_NAME: str = os.environ.get("FIREBOLT_DEFAULT_PROVIDER", "AWS")
 
 
 class Provider(FireboltBaseModel, frozen=True):  # type: ignore
@@ -39,9 +42,7 @@ class _Providers(FireboltClientMixin):
     @cached_property
     def default_provider(self) -> Provider:
         """The default Provider as specified by the client"""
-        return self.get_by_name(
-            provider_name=self.get_firebolt_client().default_provider_name
-        )
+        return self.get_by_name(provider_name=DEFAULT_PROVIDER_NAME)
 
     def get_by_id(self, provider_id: str) -> Provider:
         """Get a Provider by its id"""
