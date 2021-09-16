@@ -53,8 +53,8 @@ class EngineSettings(FireboltBaseModel):
         )
 
     @classmethod
-    def ingest_default(cls) -> EngineSettings:
-        """Default settings for the data ingestion use case."""
+    def general_purpose_default(cls) -> EngineSettings:
+        """Default settings for the general purpose (data ingestion) use case."""
         return cls(
             preset="ENGINE_SETTINGS_PRESET_GENERAL_PURPOSE",
             auto_stop_delay_duration="1200s",
@@ -156,7 +156,7 @@ class Engine(FireboltBaseModel):
         )
 
     @classmethod
-    def create_ingest(
+    def create_general_purpose(
         cls,
         name: str,
         description: Optional[str] = None,
@@ -165,7 +165,7 @@ class Engine(FireboltBaseModel):
         compute_instance_count: Optional[int] = None,
     ) -> Engine:
         """
-        Create a new engine on Firebolt, based on default Ingest settings.
+        Create a new engine on Firebolt, based on default General Purpose settings.
 
         (The engine should be used for ingesting data into Firebolt.)
 
@@ -181,12 +181,12 @@ class Engine(FireboltBaseModel):
         """
         engine = cls._default(
             name=name,
-            settings=EngineSettings.ingest_default(),
+            settings=EngineSettings.general_purpose_default(),
             description=description,
             region_name=region_name,
         )
         return engine.apply_create(
-            engine_revision=EngineRevision.ingest_default(
+            engine_revision=EngineRevision.general_purpose_default(
                 compute_instance_type_name=compute_instance_type_name,
                 compute_instance_count=compute_instance_count,
             )
