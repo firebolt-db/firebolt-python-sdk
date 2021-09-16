@@ -33,6 +33,11 @@ repos:
       - id: black
         language-version: 3.9
 
+  - repo: https://github.com/dfm/black_nbconvert
+    rev: v0.3.0
+    hooks:
+      - id: black_nbconvert
+
   - repo: https://gitlab.com/pycqa/flake8
     rev: 3.7.9
     hooks:
