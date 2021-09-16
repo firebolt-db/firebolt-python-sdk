@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import logging
+from contextlib import contextmanager
 from functools import cached_property
 from types import TracebackType
 from typing import Optional, Type
 
+from firebolt import client
 from firebolt.common.exception import FireboltClientRequiredError
 from firebolt.common.settings import Settings
 from firebolt.http_client import get_access_token, get_http_client
 
 logger = logging.getLogger(__name__)
 
-_firebolt_client_singleton: Optional[FireboltClient] = None
+_firebolt_client_singleton: Optional[client.FireboltClient] = None
 
 
 def get_firebolt_client() -> FireboltClient:
@@ -25,6 +27,20 @@ def get_firebolt_client() -> FireboltClient:
     if _firebolt_client_singleton is None:
         raise FireboltClientRequiredError()
     return _firebolt_client_singleton
+
+
+@contextmanager
+def init_firebolt_client(settings: Optional[Settings]) -> client.FireboltClient:
+    global _firebolt_client_singleton
+    settings = settings or Settings()
+    _firebolt_client_singleton = client.FireboltClient(
+        auth=(settings.user, settings.password),
+        base_url=settings.server,
+        api_endpoint=settings.server,
+    )
+    yield _firebolt_client_singleton
+    _firebolt_client_singleton.close()
+    _firebolt_client_singleton = None
 
 
 class FireboltClient:
