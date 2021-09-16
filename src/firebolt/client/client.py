@@ -1,4 +1,5 @@
 import time
+import typing
 from functools import cached_property, wraps
 from inspect import cleandoc
 from json import JSONDecodeError
@@ -94,7 +95,7 @@ class FireboltAuth(httpx.Auth):
 
     def auth_flow(
         self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    ) -> typing.Generator[httpx.Request, httpx.Response, None]:
         "Add authorization token to request headers. Overrides httpx.Auth.auth_flow"
         request.headers["Authorization"] = f"Bearer {self.token}"
         yield request
@@ -144,7 +145,7 @@ class FireboltClient(httpx.Client):
             raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
     @wraps(httpx.Client.send)
-    def send(self, *args: Any, **kwargs: Any) -> httpx.Response:
+    def send(self, *args, **kwargs) -> httpx.Response:
         cleandoc(
             """
             Try to send request and if it fails with UNAUTHORIZED retry once
@@ -163,7 +164,3 @@ class FireboltClient(httpx.Client):
     @cached_property
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]
-
-    # TODO: Remove this function after we remove run_query function from Engine
-    def copy_auth(self) -> Optional[FireboltAuth]:
-        return self._auth.copy() if isinstance(self._auth, FireboltAuth) else None
