@@ -1,5 +1,6 @@
 import time
-from functools import wraps
+from typing import Generator
+from functools import cached_property, wraps
 from inspect import cleandoc
 from json import JSONDecodeError
 from typing import Any, Generator, Optional, Tuple
@@ -92,6 +93,7 @@ class FireboltAuth(httpx.Auth):
     def auth_flow(
         self, request: httpx.Request
     ) -> Generator[httpx.Request, httpx.Response, None]:
+        "Add authorization token to request headers. Overrides httpx.Auth.auth_flow"
         request.headers["Authorization"] = f"Bearer {self.token}"
         yield request
 
@@ -141,6 +143,12 @@ class FireboltClient(httpx.Client):
 
     @wraps(httpx.Client.send)
     def send(self, *args: Any, **kwargs: Any) -> httpx.Response:
+        cleandoc(
+            """
+            Try to send request and if it fails with UNAUTHORIZED retry once
+            with new token. Overrides httpx.Client.send
+            """
+        )
         resp = super().send(*args, **kwargs)
         if resp.status_code == httpx.codes.UNAUTHORIZED and isinstance(
             self._auth, FireboltAuth
@@ -149,3 +157,7 @@ class FireboltClient(httpx.Client):
             self._auth.get_new_token()
             resp = super().send(*args, **kwargs)
         return resp
+
+    @cached_property
+    def account_id(self) -> str:
+        return self.get(url="/iam/v2/account").json()["account"]["id"]
