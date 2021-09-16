@@ -24,7 +24,7 @@ class _Providers(FireboltClientMixin):
     @cached_property
     def providers(self) -> list[Provider]:
         """List of available Providers on Firebolt"""
-        response = self.get_firebolt_client().http_client.get(
+        response = self.get_firebolt_client().get(
             url="/compute/v1/providers", params={"page.first": 5000}
         )
         return [Provider.parse_obj(i["node"]) for i in response.json()["edges"]]

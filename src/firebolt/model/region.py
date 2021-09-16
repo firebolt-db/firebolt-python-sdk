@@ -45,7 +45,7 @@ class _Regions(FireboltClientMixin):
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
-        response = self.get_firebolt_client().http_client.get(
+        response = self.get_firebolt_client().get(
             url="/compute/v1/regions", params={"page.first": 5000}
         )
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]

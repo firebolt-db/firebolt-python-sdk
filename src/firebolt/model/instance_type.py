@@ -67,7 +67,7 @@ class _InstanceTypes(FireboltClientMixin):
     @cached_property
     def instance_types(self) -> list[InstanceType]:
         """List of instance types available on Firebolt."""
-        response = self.get_firebolt_client().http_client.get(
+        response = self.get_firebolt_client().get(
             url="/compute/v1/instanceTypes", params={"page.first": 5000}
         )
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
