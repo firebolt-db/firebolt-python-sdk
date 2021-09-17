@@ -36,13 +36,13 @@ def test_auth_refresh_on_expiration(
     # To get token for the first time
     httpx_mock.add_response(
         status_code=httpx.codes.OK,
-        json={"expiry": 0, "access_token": test_token},
+        json={"expires_in": 0, "access_token": test_token},
     )
 
     # To refresh token
     httpx_mock.add_response(
         status_code=httpx.codes.OK,
-        json={"expiry": 0, "access_token": test_token2},
+        json={"expires_in": 0, "access_token": test_token2},
     )
 
     auth = FireboltAuth("user", "password")
@@ -60,13 +60,13 @@ def test_auth_uses_same_token_if_valid(
     # To get token for the first time
     httpx_mock.add_response(
         status_code=httpx.codes.OK,
-        json={"expiry": 2 ** 32, "access_token": test_token},
+        json={"expires_in": 2 ** 32, "access_token": test_token},
     )
 
     # To refresh token
     httpx_mock.add_response(
         status_code=httpx.codes.OK,
-        json={"expiry": 2 ** 32, "access_token": test_token2},
+        json={"expires_in": 2 ** 32, "access_token": test_token2},
     )
 
     auth = FireboltAuth("user", "password")
@@ -124,7 +124,7 @@ def test_auth_adds_header(
     "FireboltAuth adds required authentication headers to httpx.Request"
     httpx_mock.add_response(
         status_code=httpx.codes.OK,
-        json={"expiry": 0, "access_token": test_token},
+        json={"expires_in": 0, "access_token": test_token},
     )
 
     auth = FireboltAuth("user", "password")

@@ -86,7 +86,7 @@ class FireboltAuth(httpx.Auth):
             self._check_response_error(parsed)
 
             self._token = parsed["access_token"]
-            self._expires = int(time.time()) + int(parsed["expiry"])
+            self._expires = int(time.time()) + int(parsed["expires_in"])
         except _REQUEST_ERRORS as e:
             raise AuthenticationError(repr(e), self._api_endpoint)
 

@@ -14,7 +14,7 @@ def test_instance_type(
     httpx_mock.add_response(
         url=f"https://{settings.server}/auth/v1/login",
         status_code=httpx.codes.OK,
-        json={"access_token": "", "expiry": 2 ** 32},
+        json={"access_token": "", "expires_in": 2 ** 32},
     )
     httpx_mock.add_response(
         url=f"https://{settings.server}/compute/v1/instanceTypes?page.first=5000",
