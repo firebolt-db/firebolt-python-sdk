@@ -1,5 +1,7 @@
+import httpx
 import pytest
 from pydantic import SecretStr
+from pytest_httpx import HTTPXMock
 
 from firebolt.common.settings import Settings
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
@@ -99,3 +101,13 @@ def settings(server) -> Settings:
         password=SecretStr("*****"),
         default_region="us-east-1",
     )
+
+
+@pytest.fixture
+def httpx_mock_auth(httpx_mock: HTTPXMock, settings: Settings):
+    httpx_mock.add_response(
+        url=f"https://{settings.server}/auth/v1/login",
+        status_code=httpx.codes.OK,
+        json={"access_token": ""},
+    )
+    return httpx_mock
