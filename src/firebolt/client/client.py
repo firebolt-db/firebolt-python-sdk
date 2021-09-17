@@ -5,10 +5,11 @@ from inspect import cleandoc
 from json import JSONDecodeError
 
 import httpx
+import httpx._types
 
 DEFAULT_API_URL: str = "api.app.firebolt.io"
 API_REQUEST_TIMEOUT_SECONDS: typing.Optional[int] = 30
-_REQUEST_ERRORS: typing.Tuple[Exception] = (
+_REQUEST_ERRORS: typing.Tuple[type[Exception], ...] = (
     httpx.HTTPError,
     httpx.InvalidURL,
     httpx.CookieConflict,
@@ -30,7 +31,7 @@ class AuthenticationError(Exception):
         self.cause = cause
         self.api_endpoint = api_endpoint
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Failed to authenticate at {self.api_endpoint}: {self.cause}"
 
 
@@ -56,21 +57,21 @@ class FireboltAuth(httpx.Auth):
         self.username = username
         self.password = password
         self._api_endpoint = api_endpoint
-        self._token: str = None
-        self._expires: int = None
+        self._token: typing.Optional[str] = None
+        self._expires: typing.Optional[int] = None
 
     @property
-    def token(self):
+    def token(self) -> typing.Optional[str]:
         if not self._token or self.expired:
             self.get_new_token()
         return self._token
 
     @property
-    def expired(self):
+    def expired(self) -> typing.Optional[int]:
         return self._expires is not None and self._expires <= int(time.time())
 
-    def get_new_token(self):
-        "Get new token using username and password"
+    def get_new_token(self) -> None:
+        """Get new token using username and password"""
         try:
             response = httpx.post(
                 f"https://{self._api_endpoint}/auth/v1/login",
@@ -94,7 +95,7 @@ class FireboltAuth(httpx.Auth):
         request.headers["Authorization"] = f"Bearer {self.token}"
         yield request
 
-    def _check_response_error(self, response: typing.Dict) -> typing.Optional[str]:
+    def _check_response_error(self, response: typing.Dict) -> None:
         if "error" in response:
             raise AuthenticationError(
                 response.get("message", "unknown server error"),
@@ -113,31 +114,39 @@ class FireboltClient(httpx.Client):
 
         httpx.Client:
         """
-        + httpx.Client.__doc__
+        + ("" if httpx.Client.__doc__ is None else httpx.Client.__doc__)
     )
 
     def __init__(
         self,
-        *args,
+        *args: typing.Any,
         api_endpoint: str = DEFAULT_API_URL,
-        auth: typing.Union[tuple, FireboltAuth, None] = None,
-        **kwargs,
+        auth: httpx._types.AuthTypes = None,
+        **kwargs: typing.Any,
     ):
         self._api_endpoint = api_endpoint
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(self, auth: httpx._types.AuthTypes) -> None:
+    def _build_auth(
+        self, auth: httpx._types.AuthTypes
+    ) -> typing.Optional[FireboltAuth]:
         if auth is None or isinstance(auth, FireboltAuth):
             return auth
         elif isinstance(auth, tuple):
-            return FireboltAuth(auth[0], auth[1], self._api_endpoint)
+            return FireboltAuth(
+                username=str(auth[0]),
+                password=str(auth[1]),
+                api_endpoint=self._api_endpoint,
+            )
         else:
             raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
     @wraps(httpx.Client.send)
-    def send(self, *args, **kwargs) -> httpx.Response:
+    def send(self, *args: typing.Any, **kwargs: typing.Any) -> httpx.Response:
         resp = super().send(*args, **kwargs)
-        if resp.status_code == httpx.codes.UNAUTHORIZED and self._auth:
+        if resp.status_code == httpx.codes.UNAUTHORIZED and isinstance(
+            self._auth, FireboltAuth
+        ):
             # get new token and try to send the request again
             self._auth.get_new_token()
             resp = super().send(*args, **kwargs)
