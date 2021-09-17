@@ -4,7 +4,7 @@ import logging
 from contextlib import contextmanager
 from functools import cached_property
 from types import TracebackType
-from typing import Optional, Type
+from typing import Generator, Optional, Type
 
 from firebolt import client
 from firebolt.common.exception import FireboltClientRequiredError
@@ -36,12 +36,14 @@ def get_firebolt_client() -> FireboltClient:
 
 
 @contextmanager
-def init_firebolt_client(settings: Optional[Settings]) -> client.FireboltClient:
+def init_firebolt_client(
+    settings: Optional[Settings],
+) -> Generator[None, client.FireboltClient, None]:
     global _firebolt_client_singleton
     settings = settings or Settings()
     _firebolt_client_singleton = client.FireboltClient(
-        auth=(settings.user, settings.password),
-        base_url=settings.server,
+        auth=(settings.user, settings.password.get_secret_value()),
+        base_url=f"https://{settings.server}",
         api_endpoint=settings.server,
     )
     _firebolt_client_singleton.event_hooks = {
