@@ -68,6 +68,15 @@ class Database(FireboltBaseModel):
         return database_id
 
     @classmethod
+    def list_databases(cls) -> list[Database]:
+        fc = cls.get_firebolt_client()
+        response = fc.http_client.get(
+            url=f"/core/v1/accounts/{fc.account_id}/databases",
+            params={"page.first": 5000},
+        )
+        return [cls.parse_obj(e["node"]) for e in response.json()["edges"]]
+
+    @classmethod
     def create_new(cls, database_name: str, region_name: str) -> Database:
         """
         Create a new Database on Firebolt.

@@ -238,6 +238,15 @@ class Engine(FireboltBaseModel):
         )
         return [cls.parse_obj(e) for e in response.json()["engines"]]
 
+    @classmethod
+    def list_engines(cls) -> list[Engine]:
+        fc = cls.get_firebolt_client()
+        response = fc.http_client.get(
+            url=f"/core/v1/accounts/{fc.account_id}/engines",
+            params={"page.first": 5000},
+        )
+        return [cls.parse_obj(e["node"]) for e in response.json()["edges"]]
+
     @property
     def engine_id(self) -> Optional[str]:
         if self.key is None:
