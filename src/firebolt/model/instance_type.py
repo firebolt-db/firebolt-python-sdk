@@ -92,7 +92,7 @@ class _InstanceTypes(FireboltClientMixin):
         self,
         instance_type_name: str,
         region_name: Optional[str] = None,
-        provider_name: Optional[str] = None,
+        provider_name: str = None,
     ) -> InstanceType:
         """
         Get an instance type by name.

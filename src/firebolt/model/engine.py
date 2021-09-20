@@ -9,12 +9,12 @@ import httpx
 from pydantic import Field
 
 from firebolt.client import FireboltClient
-from firebolt.client.hooks import log_request, log_response, raise_on_4xx_5xx
 from firebolt.common.exception import (
     AlreadyBoundError,
     DatabaseRequiredError,
     EndpointRequiredError,
 )
+from firebolt.http_client import log_request, log_response, raise_on_4xx_5xx
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database

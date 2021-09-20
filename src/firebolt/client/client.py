@@ -64,6 +64,9 @@ class FireboltAuth(httpx.Auth):
     def copy(self) -> "FireboltAuth":
         return FireboltAuth(self.username, self.password, self._api_endpoint)
 
+    def copy(self) -> "FireboltAuth":
+        return FireboltAuth(self.username, self.password, self._api_endpoint)
+
     @property
     def token(self) -> Optional[str]:
         if not self._token or self.expired:
@@ -132,7 +135,9 @@ class FireboltClient(httpx.Client):
         self._api_endpoint = api_endpoint
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(self, auth: AuthTypes) -> Optional[FireboltAuth]:
+    def _build_auth(
+        self, auth: httpx._types.AuthTypes
+    ) -> typing.Optional[FireboltAuth]:
         if auth is None or isinstance(auth, FireboltAuth):
             return auth
         elif isinstance(auth, tuple):
@@ -164,3 +169,7 @@ class FireboltClient(httpx.Client):
     @cached_property
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]
+
+    # TODO: Remove this function after we remove run_query function from Engine
+    def copy_auth(self) -> typing.Optional[FireboltAuth]:
+        return self._auth.copy() if self._auth else None
