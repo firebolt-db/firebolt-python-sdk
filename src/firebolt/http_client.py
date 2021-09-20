@@ -55,7 +55,8 @@ def get_http_client(host: str, access_token: str) -> httpx.Client:
         """Hook to log responses to http requests"""
         request = response.request
         logger.debug(
-            f"Response event hook: {request.method} {request.url} - Status {response.status_code}"
+            f"Response event hook: {request.method} {request.url} - "
+            f"Status {response.status_code}"
         )
 
     def raise_on_4xx_5xx(response: httpx.Response) -> None:
@@ -72,7 +73,8 @@ def get_http_client(host: str, access_token: str) -> httpx.Client:
             raise exc
         except httpx.HTTPStatusError as exc:
             logger.exception(
-                f"Error response {exc.response.status_code} while requesting {exc.request.url!r}. "
+                f"Error response {exc.response.status_code} "
+                f"while requesting {exc.request.url!r}. "
                 f"Response: {exc.response.json()}"
             )
             if exc.response.status_code == 400:
