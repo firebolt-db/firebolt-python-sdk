@@ -4,4 +4,4 @@ from .client import (
     FireboltAuth,
     FireboltClient,
 )
-from .singleton import get_firebolt_client, init_firebolt_client
+from .singletone import get_firebolt_client, init_firebolt_client
