@@ -3,8 +3,8 @@ from typing import List
 import httpx
 from pytest_httpx import HTTPXMock
 
+from firebolt.client import init_firebolt_client
 from firebolt.common import Settings
-from firebolt.firebolt_client import init_firebolt_client
 from firebolt.model.region import Region, regions
 
 

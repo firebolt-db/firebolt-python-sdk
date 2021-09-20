@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from firebolt.firebolt_client import FireboltClient, get_firebolt_client
+from firebolt.client import FireboltClient, get_firebolt_client
 
 
 class FireboltClientMixin:

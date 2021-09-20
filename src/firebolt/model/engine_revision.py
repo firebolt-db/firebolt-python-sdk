@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import Field, PositiveInt
 
-from firebolt.firebolt_client import get_firebolt_client
+from firebolt.client import get_firebolt_client
 from firebolt.model import FireboltBaseModel
 from firebolt.model.instance_type import (
     InstanceType,
