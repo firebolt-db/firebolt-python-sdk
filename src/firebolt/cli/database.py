@@ -17,7 +17,28 @@ def create(
     typer.secho(f"Database successfully created", fg=typer.colors.GREEN)
 
 
-HEADERS = ["name", "provider - region", "data_size", "description"]
+class DatabaseTable(object):
+    headers = ["name", "provider - region", "data_size", "description"]
+
+    def __init__(
+        self,
+        name,
+        provider_region,
+        data_size,
+        description,
+    ):
+        self.name = name
+        self.provider_region = provider_region
+        self.data_size = data_size
+        self.description = description
+
+    def to_array(self):
+        return [
+            self.name,
+            self.provider_region,
+            self.data_size,
+            self.description,
+        ]
 
 
 def get_database_content(db):
@@ -27,19 +48,22 @@ def get_database_content(db):
 
     provider = providers.providers_by_id[db.compute_region_key.provider_id]
 
-    return [
+    return DatabaseTable(
         db.name,
         "{} - {}".format(provider.name, region.name),
         db.data_size_compressed,
         db.description,
-    ]
+    )
 
 
 @app.command()
 def get(name: str = typer.Argument(...)):
     db = Database.get_by_name(name)
 
-    typer.echo("\n" + tabulate([get_database_content(db)], headers=HEADERS))
+    typer.echo(
+        "\n"
+        + tabulate([get_database_content(db).to_array()], headers=DatabaseTable.headers)
+    )
 
 
 @app.command()
@@ -56,7 +80,9 @@ def ls(
         for db in databases:
             data.append(get_database_content(db))
 
-        typer.echo("\n" + tabulate(data, headers=HEADERS))
+        typer.echo(
+            "\n" + tabulate([d.to_array() for d in data], headers=DatabaseTable.headers)
+        )
     else:
         typer.echo("\n".join(d.json() for d in databases))
 

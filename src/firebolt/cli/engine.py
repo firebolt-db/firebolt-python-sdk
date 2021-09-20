@@ -44,18 +44,48 @@ def bind(
     )
 
 
-HEADERS = [
-    "name",
-    "provider - region",
-    "status",
-    "attached_to",
-    "spec",
-    "scale",
-    "description",
-]
+class EngineTable(object):
+    headers = [
+        "name",
+        "provider - region",
+        "status",
+        "attached_to",
+        "spec",
+        "scale",
+        "description",
+    ]
+
+    def __init__(
+        self,
+        name,
+        provider_region,
+        status,
+        attached_to,
+        spec,
+        scale,
+        description,
+    ):
+        self.name = name
+        self.provider_region = provider_region
+        self.status = status
+        self.attached_to = attached_to
+        self.spec = spec
+        self.scale = scale
+        self.description = description
+
+    def to_array(self):
+        return [
+            self.name,
+            self.provider_region,
+            self.status,
+            self.attached_to,
+            self.spec,
+            self.scale,
+            self.description,
+        ]
 
 
-def get_engine_content(eng: Engine) -> list:
+def get_engine_content(eng: Engine) -> EngineTable:
     region = regions.get_by_id(
         eng.compute_region_key.region_id, eng.compute_region_key.provider_id
     )
@@ -64,7 +94,7 @@ def get_engine_content(eng: Engine) -> list:
 
     provider = providers.providers_by_id[eng.compute_region_key.provider_id]
 
-    return [
+    return EngineTable(
         eng.name,
         "{} - {}".format(provider.name, region.name),
         eng.current_status_summary,
@@ -74,14 +104,17 @@ def get_engine_content(eng: Engine) -> list:
         ).name,
         revision.specification.db_compute_instances_count,
         eng.description,
-    ]
+    )
 
 
 @app.command()
 def get(name: str = typer.Argument(...)):
     eng = Engine.get_by_name(name)
 
-    typer.echo("\n" + tabulate([get_engine_content(eng)], headers=HEADERS))
+    typer.echo(
+        "\n"
+        + tabulate([get_engine_content(eng).to_array()], headers=EngineTable.headers)
+    )
 
 
 @app.command()
@@ -105,7 +138,9 @@ def ls(
 
             data.append(get_engine_content(eng))
 
-        typer.echo("\n" + tabulate(data, headers=HEADERS))
+        typer.echo(
+            "\n" + tabulate([d.to_array() for d in data], headers=EngineTable.headers)
+        )
     else:
         typer.echo("\n".join(e.json() for e in engines))
 

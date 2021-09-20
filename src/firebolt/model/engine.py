@@ -413,17 +413,31 @@ class Engine(FireboltBaseModel):
         )
         return Engine.parse_obj(response.json()["engine"])
 
-    def run_query(self, sql: str, timeout: Optional[float] = None) -> dict:
+    def run_query(
+        self,
+        sql: str,
+        timeout: Optional[float] = None,
+        async_execution: Optional[bool] = False,
+        settings: Optional[dict] = {},
+    ) -> dict:
         """
         Run a query on the engine.
 
         Args:
             sql: SQL query to execute
             timeout: Seconds to wait until timing out
+            async_execution: Whether or not to run in async mode
 
         Returns:
             Query results.
         """
+        params = {"database": self.database.name}
+        if async_execution:
+            params["async_execution"] = 1
+
+        # add any other settings
+        params.update(settings)
+
         if self.database is None:
             raise DatabaseRequiredError(
                 "Database required before running query. "
@@ -432,7 +446,7 @@ class Engine(FireboltBaseModel):
         with self.http_client as engine_http_client:
             response = engine_http_client.post(
                 url="/",
-                params={"database": self.database.name},
+                params=params,
                 content=sql,
                 timeout=timeout,
             )
