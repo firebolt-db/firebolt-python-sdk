@@ -47,6 +47,10 @@ For PyCharm Users:
 2. Editor > General > Smart Keys > Check "Insert documentation comment stub"
 3. Editor > General > Smart Keys > Python > Uncheck "Insert type placeholders..."
 
+### Import style
+
+In general, prefer `from typing import Optional, ...`, and not `import typing`.
+
 ### Method Order
 
 In general, organize class internals in this order:
