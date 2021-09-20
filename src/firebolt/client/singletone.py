@@ -1,4 +1,5 @@
 from contextlib import contextmanager
+from inspect import cleandoc
 from typing import Generator, Optional
 
 from firebolt.common.exception import FireboltClientRequiredError
@@ -11,12 +12,14 @@ _firebolt_client_singleton: Optional[FireboltClient] = None
 
 
 def get_firebolt_client() -> FireboltClient:
-    """
-    Get the initialized FireboltClient singleton.
+    cleandoc(
+        """
+        Get the initialized FireboltClient singleton.
 
-    This function is intended to be used by classes and functions that will
-    be accessed within an existing FireboltClient context.
-    """
+        This function is intended to be used by classes and functions that will
+        be accessed within an existing FireboltClient context.
+        """
+    )
     global _firebolt_client_singleton
     if _firebolt_client_singleton is None:
         raise FireboltClientRequiredError()
@@ -27,6 +30,14 @@ def get_firebolt_client() -> FireboltClient:
 def init_firebolt_client(
     settings: Optional[Settings] = None,
 ) -> Generator[None, FireboltClient, None]:
+    cleandoc(
+        """
+        Initialize FireboltClient singletone.
+
+        All sdk methods should be called inside this context in order to have an access
+        to client.
+        """
+    )
     global _firebolt_client_singleton
     settings = settings or Settings()
     _firebolt_client_singleton = FireboltClient(
