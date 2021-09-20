@@ -1,5 +1,4 @@
 import time
-from typing import Generator
 from functools import cached_property, wraps
 from inspect import cleandoc
 from json import JSONDecodeError
@@ -60,6 +59,9 @@ class FireboltAuth(httpx.Auth):
         self._api_endpoint = api_endpoint
         self._token: Optional[str] = None
         self._expires: Optional[int] = None
+
+    def copy(self) -> "FireboltAuth":
+        return FireboltAuth(self.username, self.password, self._api_endpoint)
 
     @property
     def token(self) -> Optional[str]:
@@ -161,3 +163,7 @@ class FireboltClient(httpx.Client):
     @cached_property
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]
+
+    # TODO: Remove this function after we remove run_query function from Engine
+    def copy_auth(self) -> Optional[FireboltAuth]:
+        return self._auth.copy() if self._auth else None

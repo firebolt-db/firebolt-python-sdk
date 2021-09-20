@@ -8,12 +8,13 @@ from typing import Annotated, Optional
 import httpx
 from pydantic import Field
 
+from firebolt.client import FireboltClient
 from firebolt.common.exception import (
     AlreadyBoundError,
     DatabaseRequiredError,
     EndpointRequiredError,
 )
-from firebolt.http_client import get_http_client
+from firebolt.http_client import log_request, log_response, raise_on_4xx_5xx
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
@@ -267,9 +268,13 @@ class Engine(FireboltBaseModel):
             raise EndpointRequiredError(
                 "Endpoint is required. Ensure the engine is running first."
             )
-        return get_http_client(
-            host=self.endpoint,
-            access_token=self.get_firebolt_client().access_token,
+        return FireboltClient(
+            auth=self.get_firebolt_client().copy_auth(),
+            base_url=f"https://{self.endpoint}",
+            event_hooks={
+                "request": [log_request],
+                "response": [log_response, raise_on_4xx_5xx],
+            },
         )
 
     def bind_to_database(self, database: Database, is_default_engine: bool) -> Binding:
@@ -404,6 +409,7 @@ class Engine(FireboltBaseModel):
         )
         return Engine.parse_obj(response.json()["engine"])
 
+    # TODO: Remove this method. Query should be executed only by DB API
     def run_query(self, sql: str, timeout: Optional[float] = None) -> dict:
         """
         Run a query on the engine.

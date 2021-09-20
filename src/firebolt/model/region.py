@@ -8,8 +8,6 @@ from pydantic import Field
 from firebolt.model import FireboltBaseModel, FireboltClientMixin
 from firebolt.model.provider import Provider, providers
 
-DEFAULT_REGION_NAME: str = os.environ.get("FIREBOLT_DEFAULT_REGION", None)
-
 
 class RegionKey(FireboltBaseModel, frozen=True):  # type: ignore
     provider_id: str
@@ -42,6 +40,9 @@ class RegionLookup(NamedTuple):
 
 
 class _Regions(FireboltClientMixin):
+
+    DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
+
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
@@ -65,13 +66,13 @@ class _Regions(FireboltClientMixin):
 
     @cached_property
     def default_region(self) -> Region:
-        """Default Region, as specified by the client."""
-        if DEFAULT_REGION_NAME is None:
+        """Default Region, could be provided from environment."""
+        if self.DEFAULT_REGION_ENV not in os.environ:
             raise ValueError(
-                "default_region_name is required. Please set it on FireboltClient or "
+                "default_region_name is required. Please set it "
                 "via environment variable: FIREBOLT_DEFAULT_REGION"
             )
-        return self.get_by_name(region_name=DEFAULT_REGION_NAME)
+        return self.get_by_name(region_name=os.environ[self.DEFAULT_REGION_ENV])
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None

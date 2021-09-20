@@ -37,7 +37,7 @@ def get_firebolt_client() -> FireboltClient:
 
 @contextmanager
 def init_firebolt_client(
-    settings: Optional[Settings],
+    settings: Optional[Settings] = None,
 ) -> Generator[None, client.FireboltClient, None]:
     global _firebolt_client_singleton
     settings = settings or Settings()

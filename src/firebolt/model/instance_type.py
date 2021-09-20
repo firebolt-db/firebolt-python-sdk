@@ -5,13 +5,8 @@ from typing import NamedTuple, Optional
 from pydantic import Field
 
 from firebolt.model import FireboltBaseModel, FireboltClientMixin
-from firebolt.model.provider import DEFAULT_PROVIDER_NAME, Provider
-from firebolt.model.region import (
-    DEFAULT_REGION_NAME,
-    Region,
-    RegionKey,
-    regions,
-)
+from firebolt.model.provider import Provider, providers
+from firebolt.model.region import Region, RegionKey, regions
 
 
 class InstanceTypeKey(FireboltBaseModel, frozen=True):  # type: ignore
@@ -97,7 +92,7 @@ class _InstanceTypes(FireboltClientMixin):
         self,
         instance_type_name: str,
         region_name: Optional[str] = None,
-        provider_name: str = DEFAULT_PROVIDER_NAME,
+        provider_name: str = None,
     ) -> InstanceType:
         """
         Get an instance type by name.
@@ -114,10 +109,10 @@ class _InstanceTypes(FireboltClientMixin):
         Returns:
             The requested instance type.
         """
-        if region_name is None:
-            if DEFAULT_REGION_NAME is None:
-                raise ValueError("region_name or default_region_name is required.")
-            region_name = DEFAULT_REGION_NAME
+
+        provider_name = provider_name or providers.default_provider.name
+        # Will raise an error if neither set
+        region_name = region_name or regions.default_region.name
         return self.instance_types_by_name[
             InstanceTypeLookup(
                 provider_name=provider_name,

@@ -7,8 +7,6 @@ from pydantic import Field
 
 from firebolt.model import FireboltBaseModel, FireboltClientMixin
 
-DEFAULT_PROVIDER_NAME: str = os.environ.get("FIREBOLT_DEFAULT_PROVIDER", "AWS")
-
 
 class Provider(FireboltBaseModel, frozen=True):  # type: ignore
     provider_id: str = Field(alias="id")
@@ -21,6 +19,9 @@ class Provider(FireboltBaseModel, frozen=True):  # type: ignore
 
 
 class _Providers(FireboltClientMixin):
+
+    DEFAULT_PROVIDER_ENV = "FIREBOLT_DEFAULT_PROVIDER"
+
     @cached_property
     def providers(self) -> list[Provider]:
         """List of available Providers on Firebolt"""
@@ -42,7 +43,8 @@ class _Providers(FireboltClientMixin):
     @cached_property
     def default_provider(self) -> Provider:
         """The default Provider as specified by the client"""
-        return self.get_by_name(provider_name=DEFAULT_PROVIDER_NAME)
+        default_provider_name = os.environ.get(self.DEFAULT_PROVIDER_ENV, "AWS")
+        return self.get_by_name(provider_name=default_provider_name)
 
     def get_by_id(self, provider_id: str) -> Provider:
         """Get a Provider by its id"""
