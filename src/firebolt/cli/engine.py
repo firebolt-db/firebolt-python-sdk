@@ -1,3 +1,4 @@
+from collections import namedtuple
 from typing import Optional
 
 import typer
@@ -44,45 +45,18 @@ def bind(
     )
 
 
-class EngineTable(object):
-    headers = [
+EngineTable = namedtuple(
+    "EngineTable",
+    [
         "name",
-        "provider - region",
+        "provider_region",
         "status",
         "attached_to",
         "spec",
         "scale",
         "description",
-    ]
-
-    def __init__(
-        self,
-        name,
-        provider_region,
-        status,
-        attached_to,
-        spec,
-        scale,
-        description,
-    ):
-        self.name = name
-        self.provider_region = provider_region
-        self.status = status
-        self.attached_to = attached_to
-        self.spec = spec
-        self.scale = scale
-        self.description = description
-
-    def to_array(self):
-        return [
-            self.name,
-            self.provider_region,
-            self.status,
-            self.attached_to,
-            self.spec,
-            self.scale,
-            self.description,
-        ]
+    ],
+)
 
 
 def get_engine_content(eng: Engine) -> EngineTable:
@@ -113,7 +87,7 @@ def get(name: str = typer.Argument(...)):
 
     typer.echo(
         "\n"
-        + tabulate([get_engine_content(eng).to_array()], headers=EngineTable.headers)
+        + tabulate([get_engine_content(eng).__iter__()], headers=EngineTable._fields)
     )
 
 
@@ -139,7 +113,7 @@ def ls(
             data.append(get_engine_content(eng))
 
         typer.echo(
-            "\n" + tabulate([d.to_array() for d in data], headers=EngineTable.headers)
+            "\n" + tabulate([d.__iter__() for d in data], headers=EngineTable._fields)
         )
     else:
         typer.echo("\n".join(e.json() for e in engines))
