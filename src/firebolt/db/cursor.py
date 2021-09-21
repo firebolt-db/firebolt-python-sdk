@@ -4,7 +4,7 @@ from enum import Enum
 from functools import wraps
 from inspect import cleandoc
 from json import JSONDecodeError
-from typing import Any, Callable, List, Optional, Sequence, Union
+from typing import Any, Callable, Generator, List, Optional, Sequence, Union
 
 from httpx import Response, codes
 
@@ -246,3 +246,21 @@ class Cursor:
     @check_closed
     def setoutputsize(self, size: int, column: Optional[int] = None):
         "Set a column buffer size for fetches of large columns (does nothing)"
+
+    # Iteration support
+    @check_closed
+    @check_query
+    def __iter__(self) -> Generator[List[ColType], None, None]:
+        while True:
+            row = self.fetchone()
+            if row is None:
+                return
+            yield row
+
+    # Context manager support
+    @check_closed
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
