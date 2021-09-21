@@ -2,11 +2,10 @@ from contextlib import contextmanager
 from inspect import cleandoc
 from typing import Generator, Optional
 
+from firebolt.client.client import FireboltClient
+from firebolt.client.hooks import log_request, log_response, raise_on_4xx_5xx
 from firebolt.common.exception import FireboltClientRequiredError
 from firebolt.common.settings import Settings
-
-from .client import FireboltClient
-from .hooks import log_request, log_response, raise_on_4xx_5xx
 
 _firebolt_client_singleton: Optional[FireboltClient] = None
 
