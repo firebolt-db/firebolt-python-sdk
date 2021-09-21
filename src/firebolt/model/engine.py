@@ -30,7 +30,7 @@ class EngineKey(FireboltBaseModel):
 
 
 class EngineSettings(FireboltBaseModel):
-    """nn
+    """
     Engine Settings.
 
     See Also: engine_revision.Specification which also contains engine configuration.
