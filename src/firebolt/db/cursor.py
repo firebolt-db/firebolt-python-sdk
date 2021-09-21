@@ -95,7 +95,7 @@ class Cursor:
         "_state",
         "_descriptions",
         "_rowcount",
-        "_data",
+        "_rows",
         "_idx",
     )
 
@@ -112,8 +112,7 @@ class Cursor:
 
     @property
     @check_closed
-    @check_query
-    def description(self) -> List[Column]:
+    def description(self) -> Optional[List[Column]]:
         cleandoc(
             """
             Provides information about a single result row of a query
@@ -151,7 +150,7 @@ class Cursor:
         try:
             query_data = response.json()
             # TODO: Convert columns based on type info
-            self._data = query_data["data"]
+            self._rows = query_data["data"]
             self._rowcount = int(query_data["rows"])
             # TODO: Convert type names to type codes
             self._descriptions = [
@@ -163,7 +162,7 @@ class Cursor:
     def _reset(self):
         "Clear all data stored from previous query"
         self._state = CursorState.NONE
-        self._data: List = None
+        self._rows: List = None
         self._descriptions: List = None
         self._rowcount = 0
         self._idx = 0
@@ -212,19 +211,20 @@ class Cursor:
     @check_query
     def fetchone(self) -> List[ColType]:
         "Fetch the next row of a query result set"
-        if self._idx < len(self._data):
-            row = self._data[self._idx]
+        if self._idx < len(self._rows):
+            row = self._rows[self._idx]
             self._idx += 1
             return row
         return None
 
     @check_closed
     @check_query
-    def fetchmany(self, size: int = None) -> List[ColType]:
+    def fetchmany(self, size: Optional[int] = None) -> List[ColType]:
         "Fetch the next set of rows of a query result, cursor.arraysize is default size"
-        if self._idx < len(self._data):
-            right = min(self._idx + self.arraysize, len(self._data))
-            rows = self._data[self._idx : right]
+        size = size or self.arraysize
+        if self._idx < len(self._rows):
+            right = min(self._idx + size, len(self._rows))
+            rows = self._rows[self._idx : right]
             self._idx = right
             return rows
         return []
@@ -233,9 +233,9 @@ class Cursor:
     @check_query
     def fetchall(self) -> List[ColType]:
         "Fetch all remaining rows of a query result"
-        if self._idx < len(self._data):
-            rows = self._data[self._idx]
-            self._idx = len(self._data)
+        if self._idx < len(self._rows):
+            rows = self._rows[self._idx]
+            self._idx = len(self._rows)
             return rows
         return []
 
