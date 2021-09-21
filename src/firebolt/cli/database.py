@@ -44,8 +44,7 @@ def get(name: str = typer.Argument(...)):
     db = Database.get_by_name(name)
 
     typer.echo(
-        "\n"
-        + tabulate([get_database_content(db).__iter__()], headers=DatabaseTable._fields)
+        "\n" + tabulate([get_database_content(db)], headers=DatabaseTable._fields)
     )
 
 
@@ -63,9 +62,7 @@ def ls(
         for db in databases:
             data.append(get_database_content(db))
 
-        typer.echo(
-            "\n" + tabulate([d.__iter__() for d in data], headers=DatabaseTable._fields)
-        )
+        typer.echo("\n" + tabulate([d for d in data], headers=DatabaseTable._fields))
     else:
         typer.echo("\n".join(d.json() for d in databases))
 

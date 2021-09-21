@@ -85,10 +85,7 @@ def get_engine_content(eng: Engine) -> EngineTable:
 def get(name: str = typer.Argument(...)):
     eng = Engine.get_by_name(name)
 
-    typer.echo(
-        "\n"
-        + tabulate([get_engine_content(eng).__iter__()], headers=EngineTable._fields)
-    )
+    typer.echo("\n" + tabulate([get_engine_content(eng)], headers=EngineTable._fields))
 
 
 @app.command()
@@ -112,9 +109,7 @@ def ls(
 
             data.append(get_engine_content(eng))
 
-        typer.echo(
-            "\n" + tabulate([d.__iter__() for d in data], headers=EngineTable._fields)
-        )
+        typer.echo("\n" + tabulate([d for d in data], headers=EngineTable._fields))
     else:
         typer.echo("\n".join(e.json() for e in engines))
 
