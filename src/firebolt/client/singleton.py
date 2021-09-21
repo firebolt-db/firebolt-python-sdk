@@ -28,7 +28,7 @@ def get_firebolt_client() -> FireboltClient:
 @contextmanager
 def init_firebolt_client(
     settings: Optional[Settings] = None,
-) -> Generator[None, FireboltClient, None]:
+) -> Generator[FireboltClient, None, None]:
     cleandoc(
         """
         Initialize FireboltClient singletone.

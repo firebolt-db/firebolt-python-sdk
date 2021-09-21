@@ -166,4 +166,4 @@ class FireboltClient(httpx.Client):
 
     # TODO: Remove this function after we remove run_query function from Engine
     def copy_auth(self) -> Optional[FireboltAuth]:
-        return self._auth.copy() if self._auth else None
+        return self._auth.copy() if isinstance(self._auth, FireboltAuth) else None
