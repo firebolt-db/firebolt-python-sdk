@@ -39,5 +39,31 @@ class DatabaseRequiredError(FireboltEngineError):
     pass
 
 
+class CursorError(FireboltError):
+    pass
+
+
+class CursorClosedError(CursorError):
+    def __init__(self, method_name: str):
+        self.method_name = method_name
+        super.__repr__
+
+    def __str__(self):
+        return f"unable to call {self.method_name}: cursor closed"
+
+
+class QueryNotRunError(CursorError):
+    def __init__(self, method_name: str):
+        self.method_name = method_name
+        super.__repr__
+
+    def __str__(self):
+        return f"unable to call {self.method_name}: need to run a query first"
+
+
+class QueryError(CursorError):
+    pass
+
+
 class BadRequestError(HTTPStatusError):
     pass
