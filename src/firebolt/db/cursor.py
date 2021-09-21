@@ -46,8 +46,8 @@ def check_query(func: Callable) -> Callable:
     return inner
 
 
-row_description = namedtuple(
-    "RowDescription",
+Column = namedtuple(
+    "Column",
     (
         "name",
         "type_code",
@@ -113,7 +113,7 @@ class Cursor:
     @property
     @check_closed
     @check_query
-    def description(self) -> List[row_description]:
+    def description(self) -> List[Column]:
         cleandoc(
             """
             Provides information about a single result row of a query
@@ -155,7 +155,7 @@ class Cursor:
             self._rowcount = int(query_data["rows"])
             # TODO: Convert type names to type codes
             self._descriptions = [
-                {"name": d["name"], "type_code": d["type"]} for d in query_data["meta"]
+                Column(name=d["name"], type_code=d["type"]) for d in query_data["meta"]
             ]
         except (KeyError, JSONDecodeError) as err:
             raise QueryError(f"Invalid query data format: {str(err)}")
