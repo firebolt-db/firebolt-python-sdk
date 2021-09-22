@@ -3,7 +3,7 @@ import typing
 from functools import cached_property, wraps
 from inspect import cleandoc
 from json import JSONDecodeError
-from typing import Any, Generator, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import httpx
 from httpx._types import AuthTypes
@@ -60,9 +60,6 @@ class FireboltAuth(httpx.Auth):
         self._api_endpoint = api_endpoint
         self._token: Optional[str] = None
         self._expires: Optional[int] = None
-
-    def copy(self) -> "FireboltAuth":
-        return FireboltAuth(self.username, self.password, self._api_endpoint)
 
     def copy(self) -> "FireboltAuth":
         return FireboltAuth(self.username, self.password, self._api_endpoint)
@@ -150,7 +147,7 @@ class FireboltClient(httpx.Client):
             raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
     @wraps(httpx.Client.send)
-    def send(self, *args, **kwargs) -> httpx.Response:
+    def send(self, *args: Any, **kwargs: Any) -> httpx.Response:
         cleandoc(
             """
             Try to send request and if it fails with UNAUTHORIZED retry once
@@ -172,4 +169,4 @@ class FireboltClient(httpx.Client):
 
     # TODO: Remove this function after we remove run_query function from Engine
     def copy_auth(self) -> typing.Optional[FireboltAuth]:
-        return self._auth.copy() if self._auth else None
+        return self._auth.copy() if isinstance(self._auth, FireboltAuth) else None
