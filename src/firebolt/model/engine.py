@@ -8,12 +8,13 @@ from typing import Annotated, Optional
 import httpx
 from pydantic import Field
 
+from firebolt.client import FireboltClient
+from firebolt.client.hooks import log_request, log_response, raise_on_4xx_5xx
 from firebolt.common.exception import (
     AlreadyBoundError,
     DatabaseRequiredError,
     EndpointRequiredError,
 )
-from firebolt.http_client import get_http_client
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
@@ -101,7 +102,7 @@ class Engine(FireboltBaseModel):
     def get_by_id(cls, engine_id: str) -> Engine:
         """Get an Engine from Firebolt by its id."""
         firebolt_client = cls.get_firebolt_client()
-        response = firebolt_client.http_client.get(
+        response = firebolt_client.get(
             url=f"/core/v1/accounts/{firebolt_client.account_id}/engines/{engine_id}",
         )
         engine_spec: dict = response.json()["engine"]
@@ -110,7 +111,7 @@ class Engine(FireboltBaseModel):
     @classmethod
     def get_by_name(cls, engine_name: str) -> Engine:
         """Get an Engine from Firebolt by its name."""
-        response = cls.get_firebolt_client().http_client.get(
+        response = cls.get_firebolt_client().get(
             url="/core/v1/account/engines:getIdByName",
             params={"engine_name": engine_name},
         )
@@ -227,7 +228,7 @@ class Engine(FireboltBaseModel):
     def get_by_ids(cls, engine_ids: list[str]) -> list[Engine]:
         """Get multiple Engines from Firebolt by their ids."""
         fc = cls.get_firebolt_client()
-        response = fc.http_client.post(
+        response = fc.post(
             url=f"/core/v1/engines:getByIds",
             json={
                 "engine_ids": [
@@ -267,9 +268,13 @@ class Engine(FireboltBaseModel):
             raise EndpointRequiredError(
                 "Endpoint is required. Ensure the engine is running first."
             )
-        return get_http_client(
-            host=self.endpoint,
-            access_token=self.get_firebolt_client().access_token,
+        return FireboltClient(
+            auth=self.get_firebolt_client().copy_auth(),
+            base_url=f"https://{self.endpoint}",
+            event_hooks={
+                "request": [log_request],
+                "response": [log_response, raise_on_4xx_5xx],
+            },
         )
 
     def bind_to_database(self, database: Database, is_default_engine: bool) -> Binding:
@@ -302,7 +307,7 @@ class Engine(FireboltBaseModel):
             The newly created engine.
         """
 
-        response = self.get_firebolt_client().http_client.post(
+        response = self.get_firebolt_client().post(
             url="/core/v1/account/engines",
             headers={"Content-type": "application/json"},
             json=_EngineCreateRequest(
@@ -359,7 +364,7 @@ class Engine(FireboltBaseModel):
         """
         if self.engine_id is None:
             raise ValueError("engine_id must be set before starting")
-        response = self.get_firebolt_client().http_client.post(
+        response = self.get_firebolt_client().post(
             url=f"/core/v1/account/engines/{self.engine_id}:start",
         )
         engine = Engine.parse_obj(response.json()["engine"])
@@ -389,7 +394,7 @@ class Engine(FireboltBaseModel):
 
     def stop(self) -> Engine:
         """Stop an Engine running on Firebolt."""
-        response = self.get_firebolt_client().http_client.post(
+        response = self.get_firebolt_client().post(
             url=f"/core/v1/account/engines/{self.engine_id}:stop",
         )
         return Engine.parse_obj(response.json()["engine"])
@@ -397,13 +402,14 @@ class Engine(FireboltBaseModel):
     def delete(self) -> Engine:
         """Delete an Engine from Firebolt."""
         firebolt_client = self.get_firebolt_client()
-        response = firebolt_client.http_client.delete(
+        response = firebolt_client.delete(
             url=f"/core/v1"
             f"/accounts/{firebolt_client.account_id}"
             f"/engines/{self.engine_id}",
         )
         return Engine.parse_obj(response.json()["engine"])
 
+    # TODO: Remove this method. Query should be executed only by DB API
     def run_query(self, sql: str, timeout: Optional[float] = None) -> dict:
         """
         Run a query on the engine.

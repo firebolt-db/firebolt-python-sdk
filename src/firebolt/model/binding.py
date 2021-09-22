@@ -37,7 +37,7 @@ class Binding(FireboltBaseModel):
     @classmethod
     def get_by_key(cls, binding_key: BindingKey) -> Binding:
         """Get a binding by it's BindingKey"""
-        response = cls.get_firebolt_client().http_client.get(
+        response = cls.get_firebolt_client().get(
             url=f"/core/v1/accounts/{binding_key.account_id}"
             f"/databases/{binding_key.database_id}"
             f"/bindings/{binding_key.engine_id}"
@@ -71,7 +71,7 @@ class Binding(FireboltBaseModel):
             List of bindings matching the filter parameters.
         """
         fc = cls.get_firebolt_client()
-        response = fc.http_client.get(
+        response = fc.get(
             url=f"/core/v1/accounts/{fc.account_id}/bindings",
             params=prune_dict(
                 {
@@ -123,7 +123,7 @@ class Binding(FireboltBaseModel):
 
     def apply_create(self) -> Binding:
         """Send a request to create the Binding on Firebolt"""
-        response = self.get_firebolt_client().http_client.post(
+        response = self.get_firebolt_client().post(
             url=f"/core/v1/accounts/{self.binding_key.account_id}"
             f"/databases/{self.database_id}"
             f"/bindings/{self.engine_id}",

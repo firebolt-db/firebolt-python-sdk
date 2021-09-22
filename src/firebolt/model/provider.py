@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from functools import cached_property
 from typing import Optional
@@ -18,10 +19,13 @@ class Provider(FireboltBaseModel, frozen=True):  # type: ignore
 
 
 class _Providers(FireboltClientMixin):
+
+    DEFAULT_PROVIDER_ENV = "FIREBOLT_DEFAULT_PROVIDER"
+
     @cached_property
     def providers(self) -> list[Provider]:
         """List of available Providers on Firebolt"""
-        response = self.get_firebolt_client().http_client.get(
+        response = self.get_firebolt_client().get(
             url="/compute/v1/providers", params={"page.first": 5000}
         )
         return [Provider.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -39,9 +43,8 @@ class _Providers(FireboltClientMixin):
     @cached_property
     def default_provider(self) -> Provider:
         """The default Provider as specified by the client"""
-        return self.get_by_name(
-            provider_name=self.get_firebolt_client().default_provider_name
-        )
+        default_provider_name = os.environ.get(self.DEFAULT_PROVIDER_ENV, "AWS")
+        return self.get_by_name(provider_name=default_provider_name)
 
     def get_by_id(self, provider_id: str) -> Provider:
         """Get a Provider by its id"""

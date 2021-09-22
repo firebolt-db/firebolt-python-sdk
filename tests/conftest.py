@@ -102,7 +102,6 @@ def settings(server) -> Settings:
         server=server,
         user="email@domain.com",
         password=SecretStr("*****"),
-        default_region="us-east-1",
     )
 
 
@@ -115,7 +114,7 @@ def httpx_mock_auth_callback(settings: Settings) -> Callable:
         assert request.url == f"https://{settings.server}/auth/v1/login"
         return to_response(
             status_code=httpx.codes.OK,
-            json={"access_token": ""},
+            json={"access_token": "", "expires_in": 2 ** 32},
         )
 
     return do_mock
