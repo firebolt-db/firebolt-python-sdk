@@ -45,7 +45,7 @@ class Database(FireboltBaseModel):
     def get_by_id(cls, database_id: str) -> Database:
         """Get a Database from Firebolt by its id."""
         fc = cls.get_firebolt_client()
-        response = fc.http_client.get(
+        response = fc.get(
             url=f"/core/v1/accounts/{fc.account_id}/databases/{database_id}",
         )
         database_spec: dict = response.json()["database"]
@@ -60,7 +60,7 @@ class Database(FireboltBaseModel):
     @classmethod
     def get_id_by_name(cls, database_name: str) -> str:
         """Get a Database id from Firebolt by its name."""
-        response = cls.get_firebolt_client().http_client.get(
+        response = cls.get_firebolt_client().get(
             url=f"/core/v1/account/databases:getIdByName",
             params={"database_name": database_name},
         )
@@ -105,7 +105,7 @@ class Database(FireboltBaseModel):
             The newly created Database.
         """
         firebolt_client = self.get_firebolt_client()
-        response = firebolt_client.http_client.post(
+        response = firebolt_client.post(
             url=f"/core/v1/accounts/{firebolt_client.account_id}/databases",
             headers={"Content-type": "application/json"},
             json=_DatabaseCreateRequest(
@@ -117,7 +117,7 @@ class Database(FireboltBaseModel):
 
     def delete(self) -> Database:
         """Delete a database from Firebolt."""
-        response = self.get_firebolt_client().http_client.delete(
+        response = self.get_firebolt_client().delete(
             url=f"/core/v1/account/databases/{self.database_id}",
             headers={"Content-type": "application/json"},
         )

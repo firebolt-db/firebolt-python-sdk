@@ -5,7 +5,7 @@ from typing import NamedTuple, Optional
 from pydantic import Field
 
 from firebolt.model import FireboltBaseModel, FireboltClientMixin
-from firebolt.model.provider import Provider
+from firebolt.model.provider import Provider, providers
 from firebolt.model.region import Region, RegionKey, regions
 
 
@@ -62,7 +62,7 @@ class _InstanceTypes(FireboltClientMixin):
     @cached_property
     def instance_types(self) -> list[InstanceType]:
         """List of instance types available on Firebolt."""
-        response = self.get_firebolt_client().http_client.get(
+        response = self.get_firebolt_client().get(
             url="/compute/v1/instanceTypes", params={"page.first": 5000}
         )
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -92,7 +92,7 @@ class _InstanceTypes(FireboltClientMixin):
         self,
         instance_type_name: str,
         region_name: Optional[str] = None,
-        provider_name: Optional[str] = None,
+        provider_name: str = None,
     ) -> InstanceType:
         """
         Get an instance type by name.
@@ -109,13 +109,10 @@ class _InstanceTypes(FireboltClientMixin):
         Returns:
             The requested instance type.
         """
-        firebolt_client = self.get_firebolt_client()
-        if region_name is None:
-            if firebolt_client.default_region_name is None:
-                raise ValueError("region_name or default_region_name is required.")
-            region_name = firebolt_client.default_region_name
-        if provider_name is None:
-            provider_name = firebolt_client.default_provider_name
+
+        provider_name = provider_name or providers.default_provider.name
+        # Will raise an error if neither set
+        region_name = region_name or regions.default_region.name
         return self.instance_types_by_name[
             InstanceTypeLookup(
                 provider_name=provider_name,

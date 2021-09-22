@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import Field, PositiveInt
 
-from firebolt.firebolt_client import get_firebolt_client
+from firebolt.client import get_firebolt_client
 from firebolt.model import FireboltBaseModel
 from firebolt.model.instance_type import (
     InstanceType,
@@ -153,7 +153,7 @@ class EngineRevision(FireboltBaseModel):
             The requested EngineRevision
         """
         fc = get_firebolt_client()
-        response = fc.http_client.get(
+        response = fc.get(
             url=f"/core/v1/accounts/{engine_revision_key.account_id}"
             f"/engines/{engine_revision_key.engine_id}"
             f"/engineRevisions/{engine_revision_key.engine_revision_id}",

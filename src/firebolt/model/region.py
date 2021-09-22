@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from functools import cached_property
 from typing import NamedTuple, Optional
@@ -39,10 +40,13 @@ class RegionLookup(NamedTuple):
 
 
 class _Regions(FireboltClientMixin):
+
+    DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
+
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
-        response = self.get_firebolt_client().http_client.get(
+        response = self.get_firebolt_client().get(
             url="/compute/v1/regions", params={"page.first": 5000}
         )
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -62,14 +66,13 @@ class _Regions(FireboltClientMixin):
 
     @cached_property
     def default_region(self) -> Region:
-        """Default Region, as specified by the client."""
-        firebolt_client = self.get_firebolt_client()
-        if firebolt_client.default_region_name is None:
+        """Default Region, could be provided from environment."""
+        if self.DEFAULT_REGION_ENV not in os.environ:
             raise ValueError(
-                "default_region_name is required. Please set it on FireboltClient or "
+                "default_region_name is required. Please set it "
                 "via environment variable: FIREBOLT_DEFAULT_REGION"
             )
-        return self.get_by_name(region_name=firebolt_client.default_region_name)
+        return self.get_by_name(region_name=os.environ[self.DEFAULT_REGION_ENV])
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None

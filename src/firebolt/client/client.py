@@ -1,8 +1,9 @@
 import time
-from functools import wraps
+import typing
+from functools import cached_property, wraps
 from inspect import cleandoc
 from json import JSONDecodeError
-from typing import Any, Generator, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import httpx
 from httpx._types import AuthTypes
@@ -60,6 +61,9 @@ class FireboltAuth(httpx.Auth):
         self._token: Optional[str] = None
         self._expires: Optional[int] = None
 
+    def copy(self) -> "FireboltAuth":
+        return FireboltAuth(self.username, self.password, self._api_endpoint)
+
     @property
     def token(self) -> Optional[str]:
         if not self._token or self.expired:
@@ -85,13 +89,14 @@ class FireboltAuth(httpx.Auth):
             self._check_response_error(parsed)
 
             self._token = parsed["access_token"]
-            self._expires = int(time.time()) + int(parsed["expiry"])
+            self._expires = int(time.time()) + int(parsed["expires_in"])
         except _REQUEST_ERRORS as e:
             raise AuthenticationError(repr(e), self._api_endpoint)
 
     def auth_flow(
         self, request: httpx.Request
-    ) -> Generator[httpx.Request, httpx.Response, None]:
+    ) -> typing.Generator[httpx.Request, httpx.Response, None]:
+        "Add authorization token to request headers. Overrides httpx.Auth.auth_flow"
         request.headers["Authorization"] = f"Bearer {self.token}"
         yield request
 
@@ -127,7 +132,9 @@ class FireboltClient(httpx.Client):
         self._api_endpoint = api_endpoint
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(self, auth: AuthTypes) -> Optional[FireboltAuth]:
+    def _build_auth(
+        self, auth: httpx._types.AuthTypes
+    ) -> typing.Optional[FireboltAuth]:
         if auth is None or isinstance(auth, FireboltAuth):
             return auth
         elif isinstance(auth, tuple):
@@ -141,6 +148,12 @@ class FireboltClient(httpx.Client):
 
     @wraps(httpx.Client.send)
     def send(self, *args: Any, **kwargs: Any) -> httpx.Response:
+        cleandoc(
+            """
+            Try to send request and if it fails with UNAUTHORIZED retry once
+            with new token. Overrides httpx.Client.send
+            """
+        )
         resp = super().send(*args, **kwargs)
         if resp.status_code == httpx.codes.UNAUTHORIZED and isinstance(
             self._auth, FireboltAuth
@@ -149,3 +162,11 @@ class FireboltClient(httpx.Client):
             self._auth.get_new_token()
             resp = super().send(*args, **kwargs)
         return resp
+
+    @cached_property
+    def account_id(self) -> str:
+        return self.get(url="/iam/v2/account").json()["account"]["id"]
+
+    # TODO: Remove this function after we remove run_query function from Engine
+    def copy_auth(self) -> typing.Optional[FireboltAuth]:
+        return self._auth.copy() if isinstance(self._auth, FireboltAuth) else None

@@ -44,7 +44,7 @@ def check_credentials_callback(
 
         return to_response(
             status_code=httpx.codes.OK,
-            json={"expiry": 2 ** 32, "access_token": test_token},
+            json={"expires_in": 2 ** 32, "access_token": test_token},
         )
 
     return check_credentials

@@ -1,5 +1,7 @@
 from inspect import cleandoc
 
+from httpx import HTTPStatusError
+
 
 class FireboltError(Exception):
     pass
@@ -34,4 +36,8 @@ class EndpointRequiredError(FireboltEngineError):
 
 
 class DatabaseRequiredError(FireboltEngineError):
+    pass
+
+
+class BadRequestError(HTTPStatusError):
     pass
