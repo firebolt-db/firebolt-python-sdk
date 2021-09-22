@@ -8,6 +8,8 @@ from typing import Any, Optional, Tuple
 import httpx
 from httpx._types import AuthTypes
 
+from firebolt.common.exception import AuthenticationError
+
 DEFAULT_API_URL: str = "api.app.firebolt.io"
 API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 30
 _REQUEST_ERRORS: Tuple[type[Exception], ...] = (
@@ -19,21 +21,6 @@ _REQUEST_ERRORS: Tuple[type[Exception], ...] = (
     KeyError,
     ValueError,
 )
-
-
-class AuthenticationError(Exception):
-    cleandoc(
-        """
-        Firebolt authentication error. Stores error cause and authnetication endpoint
-        """
-    )
-
-    def __init__(self, cause: str, api_endpoint: str):
-        self.cause = cause
-        self.api_endpoint = api_endpoint
-
-    def __str__(self) -> str:
-        return f"Failed to authenticate at {self.api_endpoint}: {self.cause}"
 
 
 class FireboltAuth(httpx.Auth):
@@ -96,7 +83,7 @@ class FireboltAuth(httpx.Auth):
     def auth_flow(
         self, request: httpx.Request
     ) -> typing.Generator[httpx.Request, httpx.Response, None]:
-        "Add authorization token to request headers. Overrides httpx.Auth.auth_flow"
+        """Add authorization token to request headers. Overrides httpx.Auth.auth_flow"""
         request.headers["Authorization"] = f"Bearer {self.token}"
         yield request
 
@@ -111,10 +98,10 @@ class FireboltAuth(httpx.Auth):
 class FireboltClient(httpx.Client):
     cleandoc(
         """
-        An http client, based on httpx.Client, that handles the authentificaiton
+        An http client, based on httpx.Client, that handles the authentication
         for Firebolt database.
 
-        Authentification can be passed through auth keyword as a tuple or as a
+        Authentication can be passed through auth keyword as a tuple or as a
         FireboltAuth instance
 
         httpx.Client:

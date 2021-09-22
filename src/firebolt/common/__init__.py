@@ -1,4 +1,4 @@
-from .exception import (
+from firebolt.common.exception import (
     AlreadyBoundError,
     DatabaseRequiredError,
     EndpointRequiredError,
@@ -6,7 +6,7 @@ from .exception import (
     FireboltEngineError,
     FireboltError,
 )
-from .settings import Settings
+from firebolt.common.settings import Settings
 
 
 def prune_dict(d: dict) -> dict:
