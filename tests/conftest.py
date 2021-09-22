@@ -1,5 +1,10 @@
+from typing import Callable
+
+import httpx
 import pytest
 from pydantic import SecretStr
+from pytest_httpx import to_response
+from pytest_httpx._httpx_internals import Response
 
 from firebolt.common.settings import Settings
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
@@ -98,3 +103,18 @@ def settings(server) -> Settings:
         user="email@domain.com",
         password=SecretStr("*****"),
     )
+
+
+@pytest.fixture
+def httpx_mock_auth_callback(settings: Settings) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == f"https://{settings.server}/auth/v1/login"
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"access_token": "", "expires_in": 2 ** 32},
+        )
+
+    return do_mock

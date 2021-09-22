@@ -4,6 +4,7 @@ import typing
 import httpx
 import pytest
 from pytest_httpx import to_response
+from pytest_httpx._httpx_internals import Response
 
 
 @pytest.fixture
@@ -33,7 +34,7 @@ def check_credentials_callback(
     def check_credentials(
         request: httpx.Request = None,
         **kwargs,
-    ) -> httpx.Response:
+    ) -> Response:
         assert request, "empty request"
         body = json.loads(request.read())
         assert "username" in body, "Missing username"
@@ -51,7 +52,7 @@ def check_credentials_callback(
 
 @pytest.fixture
 def check_token_callback(test_token: str) -> typing.Callable:
-    def check_token(request: httpx.Request = None, **kwargs) -> httpx.Response:
+    def check_token(request: httpx.Request = None, **kwargs) -> Response:
         prefix = "Bearer "
         assert request, "empty request"
         assert "authorization" in request.headers, "missing authorization header"
