@@ -24,7 +24,7 @@ class FireboltClientRequiredError(FireboltError):
 
 
 class FireboltEngineError(FireboltError):
-    """Base error for engine errors"""
+    """Base error for engine errors."""
 
 
 class AlreadyBoundError(FireboltEngineError):
@@ -41,3 +41,16 @@ class DatabaseRequiredError(FireboltEngineError):
 
 class BadRequestError(HTTPStatusError):
     pass
+
+
+class AuthenticationError(FireboltError):
+    """
+    Firebolt authentication error. Stores error cause and authentication endpoint.
+    """
+
+    def __init__(self, cause: str, api_endpoint: str):
+        self.cause = cause
+        self.api_endpoint = api_endpoint
+
+    def __str__(self) -> str:
+        return f"Failed to authenticate at {self.api_endpoint}: {self.cause}"

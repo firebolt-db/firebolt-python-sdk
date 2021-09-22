@@ -8,6 +8,8 @@ from typing import Any, Optional, Tuple
 import httpx
 from httpx._types import AuthTypes
 
+from firebolt.common.exception import AuthenticationError
+
 DEFAULT_API_URL: str = "api.app.firebolt.io"
 API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 30
 _REQUEST_ERRORS: Tuple[type[Exception], ...] = (
@@ -19,21 +21,6 @@ _REQUEST_ERRORS: Tuple[type[Exception], ...] = (
     KeyError,
     ValueError,
 )
-
-
-class AuthenticationError(Exception):
-    cleandoc(
-        """
-        Firebolt authentication error. Stores error cause and authentication endpoint.
-        """
-    )
-
-    def __init__(self, cause: str, api_endpoint: str):
-        self.cause = cause
-        self.api_endpoint = api_endpoint
-
-    def __str__(self) -> str:
-        return f"Failed to authenticate at {self.api_endpoint}: {self.cause}"
 
 
 class FireboltAuth(httpx.Auth):

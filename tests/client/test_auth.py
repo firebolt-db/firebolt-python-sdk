@@ -5,7 +5,8 @@ import pytest
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
-from firebolt.client import AuthenticationError, FireboltAuth
+from firebolt.client import FireboltAuth
+from firebolt.common.exception import AuthenticationError
 
 
 def test_auth_basic(
