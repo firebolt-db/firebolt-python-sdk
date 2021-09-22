@@ -106,7 +106,7 @@ def settings(server) -> Settings:
 
 
 @pytest.fixture
-def httpx_mock_auth_callback(settings: Settings) -> Callable:
+def auth_callback(settings: Settings) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
