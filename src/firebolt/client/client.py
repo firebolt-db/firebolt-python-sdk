@@ -24,7 +24,7 @@ _REQUEST_ERRORS: Tuple[type[Exception], ...] = (
 class AuthenticationError(Exception):
     cleandoc(
         """
-        Firebolt authentication error. Stores error cause and authnetication endpoint
+        Firebolt authentication error. Stores error cause and authentication endpoint.
         """
     )
 
@@ -96,7 +96,7 @@ class FireboltAuth(httpx.Auth):
     def auth_flow(
         self, request: httpx.Request
     ) -> typing.Generator[httpx.Request, httpx.Response, None]:
-        "Add authorization token to request headers. Overrides httpx.Auth.auth_flow"
+        """Add authorization token to request headers. Overrides httpx.Auth.auth_flow"""
         request.headers["Authorization"] = f"Bearer {self.token}"
         yield request
 
@@ -111,10 +111,10 @@ class FireboltAuth(httpx.Auth):
 class FireboltClient(httpx.Client):
     cleandoc(
         """
-        An http client, based on httpx.Client, that handles the authentificaiton
+        An http client, based on httpx.Client, that handles the authentication
         for Firebolt database.
 
-        Authentification can be passed through auth keyword as a tuple or as a
+        Authentication can be passed through auth keyword as a tuple or as a
         FireboltAuth instance
 
         httpx.Client:
