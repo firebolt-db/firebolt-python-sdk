@@ -131,11 +131,12 @@ p            - internal_size
     @property  # type: ignore
     @check_closed
     def rowcount(self):
-        "The number of rows produced by last query"
+        """The number of rows produced by last query"""
         return self._rowcount
 
     @property
     def arraysize(self):
+        """Default number of rows returned by fetchmany"""
         return self._arraysize
 
     @arraysize.setter
@@ -149,15 +150,15 @@ p            - internal_size
 
     @property
     def closed(self):
-        "True if connection is closed, False otherwise"
+        """True if connection is closed, False otherwise"""
         return self._state == CursorState.CLOSED
 
     def close(self):
-        "Terminate an ongoing query (if any) and mark connection as closed"
+        """Terminate an ongoing query (if any) and mark connection as closed"""
         self._state = CursorState.CLOSED
 
     def _store_query_data(self, response: Response):
-        "Store information about executed query from httpx response"
+        """Store information about executed query from httpx response"""
         try:
             query_data = response.json()
             # TODO: Convert columns based on type info
@@ -172,7 +173,7 @@ p            - internal_size
             raise QueryError(f"Invalid query data format: {str(err)}")
 
     def _reset(self):
-        "Clear all data stored from previous query"
+        """Clear all data stored from previous query"""
         self._state = CursorState.NONE
         self._rows: List = None
         self._descriptions: List = None
@@ -183,7 +184,7 @@ p            - internal_size
     def execute(
         self, query: str, parameters: Optional[Sequence[ParameterType]] = None
     ) -> int:
-        "Prepare and execute a database query. Return row count"
+        """Prepare and execute a database query. Return row count"""
         self._reset()
 
         resp = self._client.request(
@@ -223,7 +224,7 @@ p            - internal_size
     @check_closed
     @check_query
     def fetchone(self) -> Optional[List[ColType]]:
-        "Fetch the next row of a query result set"
+        """Fetch the next row of a query result set"""
         if self._idx < len(self._rows):
             row = self._rows[self._idx]
             self._idx += 1
@@ -233,7 +234,12 @@ p            - internal_size
     @check_closed
     @check_query
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        "Fetch the next set of rows of a query result, cursor.arraysize is default size"
+        cleandoc(
+            """
+            Fetch the next set of rows of a query result,
+            cursor.arraysize is default size
+            """
+        )
         size = size or self.arraysize
         if self._idx < len(self._rows):
             right = min(self._idx + size, len(self._rows))
@@ -245,7 +251,7 @@ p            - internal_size
     @check_closed
     @check_query
     def fetchall(self) -> List[List[ColType]]:
-        "Fetch all remaining rows of a query result"
+        """Fetch all remaining rows of a query result"""
         if self._idx < len(self._rows):
             rows = self._rows[self._idx :]
             self._idx = len(self._rows)
@@ -254,11 +260,11 @@ p            - internal_size
 
     @check_closed
     def setinputsizes(self, sizes: List[int]):
-        "Predefine memory areas for query parameters (does nothing)"
+        """Predefine memory areas for query parameters (does nothing)"""
 
     @check_closed
     def setoutputsize(self, size: int, column: Optional[int] = None):
-        "Set a column buffer size for fetches of large columns (does nothing)"
+        """Set a column buffer size for fetches of large columns (does nothing)"""
 
     # Iteration support
     @check_closed
