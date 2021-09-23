@@ -28,20 +28,20 @@ class CursorState(Enum):
 
 def check_closed(func: Callable) -> Callable:
     @wraps(func)
-    def inner(self: Cursor, *args, **kwargs) -> Any:
+    def inner(self: "Cursor", *args, **kwargs) -> Any:
         if self.closed:
             raise CursorClosedError(method_name=func.__name__)
-        return func()
+        return func(self, *args, **kwargs)
 
     return inner
 
 
 def check_query(func: Callable) -> Callable:
     @wraps(func)
-    def inner(self: Cursor, *args, **kwargs) -> Any:
+    def inner(self: "Cursor", *args, **kwargs) -> Any:
         if self._state == CursorState.NONE:
             raise QueryNotRunError(method_name=func.__name__)
-        return func()
+        return func(self, *args, **kwargs)
 
     return inner
 
@@ -90,7 +90,7 @@ class Cursor:
 
     __slots__ = (
         "connection",
-        "arraysize",
+        "_arraysize",
         "_client",
         "_state",
         "_descriptions",
@@ -104,7 +104,7 @@ class Cursor:
     def __init__(self, client: FireboltClient, connection):
         self.connection = connection
         self._client = client
-        self.arraysize = self.default_arraysize
+        self._arraysize = self.default_arraysize
         self._reset()
 
     def __del__(self):
@@ -120,7 +120,7 @@ class Cursor:
             - name
             - type_code
             - display_size
-            - internal_size
+p            - internal_size
             - precision
             - scale
             - null_ok
@@ -130,17 +130,28 @@ class Cursor:
 
     @property
     @check_closed
-    @check_query
     def rowcount(self):
         "The number of rows produced by last query"
         return self._rowcount
+
+    @property
+    def arraysize(self):
+        return self._arraysize
+
+    @arraysize.setter
+    def arraysize(self, value: int):
+        if not isinstance(value, int):
+            raise TypeError(
+                "Invalid arraysize value type, expected int,"
+                f" got {type(value).__name__}"
+            )
+        self._arraysize = value
 
     @property
     def closed(self):
         "True if connection is closed, False otherwise"
         return self._state == CursorState.CLOSED
 
-    @check_closed
     def close(self):
         "Terminate an ongoing query (if any) and mark connection as closed"
         self._state = CursorState.CLOSED
@@ -154,7 +165,8 @@ class Cursor:
             self._rowcount = int(query_data["rows"])
             # TODO: Convert type names to type codes
             self._descriptions = [
-                Column(name=d["name"], type_code=d["type"]) for d in query_data["meta"]
+                Column(d["name"], d["type"], None, None, None, None, None)
+                for d in query_data["meta"]
             ]
         except (KeyError, JSONDecodeError) as err:
             raise QueryError(f"Invalid query data format: {str(err)}")
@@ -164,7 +176,7 @@ class Cursor:
         self._state = CursorState.NONE
         self._rows: List = None
         self._descriptions: List = None
-        self._rowcount = 0
+        self._rowcount = -1
         self._idx = 0
 
     @check_closed
@@ -175,6 +187,7 @@ class Cursor:
         self._reset()
 
         resp = self._client.request(
+            url="/",
             method="POST",
             params={
                 "database": self.connection.database,
@@ -184,7 +197,7 @@ class Cursor:
         )
 
         if resp.status_code == codes.INTERNAL_SERVER_ERROR:
-            raise QueryError(f"Error executing query:\n{resp.read()}")
+            raise QueryError(f"Error executing query:\n{resp.read().decode('utf-8')}")
 
         resp.raise_for_status()
 
@@ -204,7 +217,7 @@ class Cursor:
         )
         rc = 0
         for params in parameters_seq:
-            rc = self.execute()
+            rc = self.execute(query, params)
         return rc
 
     @check_closed
@@ -234,7 +247,7 @@ class Cursor:
     def fetchall(self) -> List[ColType]:
         "Fetch all remaining rows of a query result"
         if self._idx < len(self._rows):
-            rows = self._rows[self._idx]
+            rows = self._rows[self._idx :]
             self._idx = len(self._rows)
             return rows
         return []
