@@ -110,7 +110,7 @@ class Cursor:
     def __del__(self):
         self.close()
 
-    @property
+    @property  # type: ignore
     @check_closed
     def description(self) -> Optional[List[Column]]:
         cleandoc(
@@ -128,7 +128,7 @@ p            - internal_size
         )
         return self._descriptions
 
-    @property
+    @property  # type: ignore
     @check_closed
     def rowcount(self):
         "The number of rows produced by last query"
@@ -222,7 +222,7 @@ p            - internal_size
 
     @check_closed
     @check_query
-    def fetchone(self) -> List[ColType]:
+    def fetchone(self) -> Optional[List[ColType]]:
         "Fetch the next row of a query result set"
         if self._idx < len(self._rows):
             row = self._rows[self._idx]
@@ -232,7 +232,7 @@ p            - internal_size
 
     @check_closed
     @check_query
-    def fetchmany(self, size: Optional[int] = None) -> List[ColType]:
+    def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         "Fetch the next set of rows of a query result, cursor.arraysize is default size"
         size = size or self.arraysize
         if self._idx < len(self._rows):
@@ -244,7 +244,7 @@ p            - internal_size
 
     @check_closed
     @check_query
-    def fetchall(self) -> List[ColType]:
+    def fetchall(self) -> List[List[ColType]]:
         "Fetch all remaining rows of a query result"
         if self._idx < len(self._rows):
             rows = self._rows[self._idx :]
