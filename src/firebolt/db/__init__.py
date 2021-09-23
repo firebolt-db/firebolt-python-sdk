@@ -1,1 +1,1 @@
-from .cursor import Cursor
+from firebolt.db.cursor import Cursor
