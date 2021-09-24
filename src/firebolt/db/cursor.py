@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections import namedtuple
 from datetime import date, datetime
 from enum import Enum
@@ -26,9 +28,11 @@ class CursorState(Enum):
     CLOSED = 4
 
 
-def check_closed(func: Callable) -> Callable:
+def check_not_closed(func: Callable) -> Callable:
+    """(Decorator) ensure cursor is not closed before calling method"""
+
     @wraps(func)
-    def inner(self: "Cursor", *args, **kwargs) -> Any:
+    def inner(self: Cursor, *args, **kwargs) -> Any:
         if self.closed:
             raise CursorClosedError(method_name=func.__name__)
         return func(self, *args, **kwargs)
@@ -36,9 +40,16 @@ def check_closed(func: Callable) -> Callable:
     return inner
 
 
-def check_query(func: Callable) -> Callable:
+def check_query_executed(func: Callable) -> Callable:
+    cleandoc(
+        """
+        (Decorator) ensure that some query has been executed before
+        calling cursor method
+        """
+    )
+
     @wraps(func)
-    def inner(self: "Cursor", *args, **kwargs) -> Any:
+    def inner(self: Cursor, *args, **kwargs) -> Any:
         if self._state == CursorState.NONE:
             raise QueryNotRunError(method_name=func.__name__)
         return func(self, *args, **kwargs)
@@ -111,7 +122,7 @@ class Cursor:
         self.close()
 
     @property  # type: ignore
-    @check_closed
+    @check_not_closed
     def description(self) -> Optional[List[Column]]:
         cleandoc(
             """
@@ -120,7 +131,7 @@ class Cursor:
             - name
             - type_code
             - display_size
-p            - internal_size
+            - internal_size
             - precision
             - scale
             - null_ok
@@ -129,7 +140,7 @@ p            - internal_size
         return self._descriptions
 
     @property  # type: ignore
-    @check_closed
+    @check_not_closed
     def rowcount(self):
         """The number of rows produced by last query"""
         return self._rowcount
@@ -149,7 +160,7 @@ p            - internal_size
         self._arraysize = value
 
     @property
-    def closed(self):
+    def closed(self) -> bool:
         """True if connection is closed, False otherwise"""
         return self._state == CursorState.CLOSED
 
@@ -180,7 +191,7 @@ p            - internal_size
         self._rowcount = -1
         self._idx = 0
 
-    @check_closed
+    @check_not_closed
     def execute(
         self, query: str, parameters: Optional[Sequence[ParameterType]] = None
     ) -> int:
@@ -206,7 +217,7 @@ p            - internal_size
         self._state = CursorState.DONE
         return self.rowcount
 
-    @check_closed
+    @check_not_closed
     def executemany(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
@@ -221,8 +232,8 @@ p            - internal_size
             rc = self.execute(query, params)
         return rc
 
-    @check_closed
-    @check_query
+    @check_not_closed
+    @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set"""
         if self._idx < len(self._rows):
@@ -231,8 +242,8 @@ p            - internal_size
             return row
         return None
 
-    @check_closed
-    @check_query
+    @check_not_closed
+    @check_query_executed
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         cleandoc(
             """
@@ -248,8 +259,8 @@ p            - internal_size
             return rows
         return []
 
-    @check_closed
-    @check_query
+    @check_not_closed
+    @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result"""
         if self._idx < len(self._rows):
@@ -258,17 +269,17 @@ p            - internal_size
             return rows
         return []
 
-    @check_closed
+    @check_not_closed
     def setinputsizes(self, sizes: List[int]):
         """Predefine memory areas for query parameters (does nothing)"""
 
-    @check_closed
+    @check_not_closed
     def setoutputsize(self, size: int, column: Optional[int] = None):
         """Set a column buffer size for fetches of large columns (does nothing)"""
 
     # Iteration support
-    @check_closed
-    @check_query
+    @check_not_closed
+    @check_query_executed
     def __iter__(self) -> Generator[List[ColType], None, None]:
         while True:
             row = self.fetchone()
@@ -277,7 +288,7 @@ p            - internal_size
             yield row
 
     # Context manager support
-    @check_closed
+    @check_not_closed
     def __enter__(self):
         return self
 
