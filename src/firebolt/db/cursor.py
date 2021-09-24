@@ -6,6 +6,7 @@ from enum import Enum
 from functools import wraps
 from inspect import cleandoc
 from json import JSONDecodeError
+from types import TracebackType
 from typing import Any, Callable, Generator, List, Optional, Sequence, Union
 
 from httpx import Response, codes
@@ -32,7 +33,7 @@ def check_not_closed(func: Callable) -> Callable:
     """(Decorator) ensure cursor is not closed before calling method"""
 
     @wraps(func)
-    def inner(self: Cursor, *args, **kwargs) -> Any:
+    def inner(self: Cursor, *args: Any, **kwargs: Any) -> Any:
         if self.closed:
             raise CursorClosedError(method_name=func.__name__)
         return func(self, *args, **kwargs)
@@ -49,7 +50,7 @@ def check_query_executed(func: Callable) -> Callable:
     )
 
     @wraps(func)
-    def inner(self: Cursor, *args, **kwargs) -> Any:
+    def inner(self: Cursor, *args: Any, **kwargs: Any) -> Any:
         if self._state == CursorState.NONE:
             raise QueryNotRunError(method_name=func.__name__)
         return func(self, *args, **kwargs)
@@ -112,13 +113,15 @@ class Cursor:
 
     default_arraysize = 1
 
-    def __init__(self, client: FireboltClient, connection):
+    def __init__(self, client: FireboltClient, connection: Any):
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize
+        self._rows: Optional[List[List[ColType]]] = None
+        self._descriptions: Optional[List[Column]] = None
         self._reset()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
     @property  # type: ignore
@@ -141,17 +144,17 @@ class Cursor:
 
     @property  # type: ignore
     @check_not_closed
-    def rowcount(self):
+    def rowcount(self) -> int:
         """The number of rows produced by last query"""
         return self._rowcount
 
     @property
-    def arraysize(self):
+    def arraysize(self) -> int:
         """Default number of rows returned by fetchmany"""
         return self._arraysize
 
     @arraysize.setter
-    def arraysize(self, value: int):
+    def arraysize(self, value: int) -> None:
         if not isinstance(value, int):
             raise TypeError(
                 "Invalid arraysize value type, expected int,"
@@ -164,11 +167,11 @@ class Cursor:
         """True if connection is closed, False otherwise"""
         return self._state == CursorState.CLOSED
 
-    def close(self):
+    def close(self) -> None:
         """Terminate an ongoing query (if any) and mark connection as closed"""
         self._state = CursorState.CLOSED
 
-    def _store_query_data(self, response: Response):
+    def _store_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response"""
         try:
             query_data = response.json()
@@ -183,11 +186,11 @@ class Cursor:
         except (KeyError, JSONDecodeError) as err:
             raise QueryError(f"Invalid query data format: {str(err)}")
 
-    def _reset(self):
+    def _reset(self) -> None:
         """Clear all data stored from previous query"""
         self._state = CursorState.NONE
-        self._rows: List = None
-        self._descriptions: List = None
+        self._rows = None
+        self._descriptions = None
         self._rowcount = -1
         self._idx = 0
 
@@ -236,6 +239,7 @@ class Cursor:
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set"""
+        assert self._rows is not None
         if self._idx < len(self._rows):
             row = self._rows[self._idx]
             self._idx += 1
@@ -251,6 +255,7 @@ class Cursor:
             cursor.arraysize is default size
             """
         )
+        assert self._rows is not None
         size = size or self.arraysize
         if self._idx < len(self._rows):
             right = min(self._idx + size, len(self._rows))
@@ -263,6 +268,7 @@ class Cursor:
     @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result"""
+        assert self._rows is not None
         if self._idx < len(self._rows):
             rows = self._rows[self._idx :]
             self._idx = len(self._rows)
@@ -270,11 +276,11 @@ class Cursor:
         return []
 
     @check_not_closed
-    def setinputsizes(self, sizes: List[int]):
+    def setinputsizes(self, sizes: List[int]) -> None:
         """Predefine memory areas for query parameters (does nothing)"""
 
     @check_not_closed
-    def setoutputsize(self, size: int, column: Optional[int] = None):
+    def setoutputsize(self, size: int, column: Optional[int] = None) -> None:
         """Set a column buffer size for fetches of large columns (does nothing)"""
 
     # Iteration support
@@ -289,8 +295,10 @@ class Cursor:
 
     # Context manager support
     @check_not_closed
-    def __enter__(self):
+    def __enter__(self) -> Cursor:
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
         self.close()

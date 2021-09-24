@@ -48,7 +48,7 @@ class CursorClosedError(CursorError):
         self.method_name = method_name
         super.__repr__
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"unable to call {self.method_name}: cursor closed"
 
 
@@ -57,7 +57,7 @@ class QueryNotRunError(CursorError):
         self.method_name = method_name
         super.__repr__
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"unable to call {self.method_name}: need to run a query first"
 
 
