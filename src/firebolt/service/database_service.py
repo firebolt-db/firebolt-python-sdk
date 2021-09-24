@@ -1,16 +1,10 @@
-from typing import Optional
-
-from firebolt.client import FireboltClient
-from firebolt.client.registry import get_firebolt_client
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
 from firebolt.model.region import regions
+from firebolt.service.base_service import BaseService
 
 
-class DatabaseService:
-    def __init__(self, firebolt_client: Optional[FireboltClient] = None):
-        self.firebolt_client = firebolt_client or get_firebolt_client()
-
+class DatabaseServiceV1(BaseService):
     @property
     def account_id(self) -> str:
         return self.firebolt_client.account_id
@@ -48,6 +42,13 @@ class DatabaseService:
         Returns:
             The newly created Database.
         """
+
+        class _DatabaseCreateRequest(FireboltBaseModel):
+            """Helper model for sending Database creation requests."""
+
+            account_id: str
+            database: Database
+
         region_key = regions.get_by_name(region_name=region_name).key
         database = Database(name=database_name, compute_region_key=region_key)
 
@@ -68,10 +69,3 @@ class DatabaseService:
             headers={"Content-type": "application/json"},
         )
         return Database.parse_obj(response.json()["database"])
-
-
-class _DatabaseCreateRequest(FireboltBaseModel):
-    """Helper model for sending Database creation requests."""
-
-    account_id: str
-    database: Database
