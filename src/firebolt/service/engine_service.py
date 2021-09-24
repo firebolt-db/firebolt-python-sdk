@@ -5,8 +5,8 @@ from typing import Optional
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
-from firebolt.model.engine import Engine, EngineRevision, EngineSettings
-from firebolt.model.engine_revision import EngineRevisionKey
+from firebolt.model.engine import Engine, EngineSettings
+from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 from firebolt.model.region import regions
 from firebolt.service.base_service import BaseService
 from firebolt.service.binding_service import BindingService

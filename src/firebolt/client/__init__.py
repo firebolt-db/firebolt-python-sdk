@@ -7,8 +7,6 @@ from firebolt.client.client import (
     FireboltClient,
 )
 from firebolt.client.hooks import log_request, log_response, raise_on_4xx_5xx
-from firebolt.client.singleton import get_firebolt_client  # TODO remove
-from firebolt.common.exception import AuthenticationError
 from firebolt.common.settings import Settings
 
 
