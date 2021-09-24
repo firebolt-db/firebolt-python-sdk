@@ -106,15 +106,25 @@ def settings(server) -> Settings:
 
 
 @pytest.fixture
-def httpx_mock_auth_callback(settings: Settings) -> Callable:
+def auth_callback(auth_url: str) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == f"https://{settings.server}/auth/v1/login"
+        assert request.url == auth_url
         return to_response(
             status_code=httpx.codes.OK,
             json={"access_token": "", "expires_in": 2 ** 32},
         )
 
     return do_mock
+
+
+@pytest.fixture
+def auth_url(settings: Settings) -> str:
+    return f"https://{settings.server}/auth/v1/login"
+
+
+@pytest.fixture
+def db_name() -> str:
+    return "database"
