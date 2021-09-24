@@ -1,16 +1,12 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import Annotated, Optional
 
 from pydantic import Field
 
 from firebolt.model import FireboltBaseModel
-from firebolt.model.binding import Binding
 from firebolt.model.region import RegionKey
-
-if TYPE_CHECKING:
-    from firebolt.model.engine import Engine
 
 
 class DatabaseKey(FireboltBaseModel):
@@ -46,12 +42,3 @@ class Database(FireboltBaseModel):
         if self.database_key is None:
             return None
         return self.database_key.database_id
-
-    @property
-    def engines(self) -> list[Engine]:
-        """Engines bound to this database."""
-        from firebolt.model.engine import Engine
-
-        # todo: use binding/engine services instead
-        bindings = Binding.list_bindings(database_id=self.database_id)
-        return Engine.get_by_ids([b.engine_id for b in bindings])

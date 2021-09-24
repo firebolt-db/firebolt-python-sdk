@@ -5,7 +5,6 @@ from typing import Optional
 
 from pydantic import Field, PositiveInt
 
-from firebolt.client import get_firebolt_client
 from firebolt.model import FireboltBaseModel
 from firebolt.model.instance_type import (
     InstanceType,
@@ -126,40 +125,6 @@ class EngineRevision(FireboltBaseModel):
     last_update_actor: Optional[str]
     desired_status: Optional[str]
     health_status: Optional[str]
-
-    @classmethod
-    def get_by_id(cls, engine_id: str, engine_revision_id: str) -> EngineRevision:
-        """Get an EngineRevision from Firebolt by engine_id and engine_revision_id."""
-        fc = get_firebolt_client()
-        return cls.get_by_engine_revision_key(
-            EngineRevisionKey(
-                account_id=fc.account_id,
-                engine_id=engine_id,
-                engine_revision_id=engine_revision_id,
-            )
-        )
-
-    @classmethod
-    def get_by_engine_revision_key(
-        cls, engine_revision_key: EngineRevisionKey
-    ) -> EngineRevision:
-        """
-        Fetch an EngineRevision from Firebolt by it's key.
-
-        Args:
-            engine_revision_key: Key of the desired EngineRevision.
-
-        Returns:
-            The requested EngineRevision
-        """
-        fc = get_firebolt_client()
-        response = fc.get(
-            url=f"/core/v1/accounts/{engine_revision_key.account_id}"
-            f"/engines/{engine_revision_key.engine_id}"
-            f"/engineRevisions/{engine_revision_key.engine_revision_id}",
-        )
-        engine_spec: dict = response.json()["engine_revision"]
-        return cls.parse_obj(engine_spec)
 
     @classmethod
     def analytics_default(

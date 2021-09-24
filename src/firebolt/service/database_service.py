@@ -4,11 +4,7 @@ from firebolt.model.region import regions
 from firebolt.service.base_service import BaseService
 
 
-class DatabaseServiceV1(BaseService):
-    @property
-    def account_id(self) -> str:
-        return self.firebolt_client.account_id
-
+class DatabaseService(BaseService):
     def get_by_id(self, database_id: str) -> Database:
         """Get a Database from Firebolt by its id."""
         response = self.firebolt_client.get(
