@@ -196,7 +196,7 @@ def test_cursor_execute_error(
         httpx_mock.reset(True)
 
 
-def test_cursor_data_fetch(
+def test_cursor_fetchone(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
@@ -211,32 +211,75 @@ def test_cursor_data_fetch(
     assert cursor.fetchone()[0] == 0, "Invalid rows order returned by fetchone"
     assert cursor.fetchone()[0] == 1, "Invalid rows order returned by fetchone"
 
+    assert (
+        len(cursor.fetchall()) == cursor.rowcount - 2
+    ), "Invalid row number returned by fetchall"
+
+    assert (
+        cursor.fetchone() is None
+    ), "fetchone should return None when no rows left to fetch"
+
+
+def test_cursor_fetchmany(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    cursor.execute("sql")
+
     with raises(TypeError) as excinfo:
         cursor.arraysize = "123"
 
     assert (
         str(excinfo.value) == "Invalid arraysize value type, expected int, got str"
     ), "Invalid value error message"
-
     cursor.arraysize = 2
+
     many = cursor.fetchmany()
     assert len(many) == cursor.arraysize, "Invalid count of rows returned by fetchmany"
-    assert [r[0] for r in many] == [2, 3], "Invalid rows order returned by fetchmany"
+    assert [r[0] for r in many] == [0, 1], "Invalid rows order returned by fetchmany"
 
-    many = cursor.fetchmany(cursor.arraysize + 1)
+    many = cursor.fetchmany(cursor.arraysize + 3)
     assert (
-        len(many) == cursor.arraysize + 1
+        len(many) == cursor.arraysize + 3
     ), "Invalid count of rows returned by fetchmany with size provided"
-    assert [r[0] for r in many] == [4, 5, 6], "Invalid rows order returned by fetchmany"
+    assert [r[0] for r in many] == list(
+        range(2, 7)
+    ), "Invalid rows order returned by fetchmany"
 
     # only 3 left at this point
     many = cursor.fetchmany(4)
     assert (
         len(many) == 3
     ), "Invalid count of rows returned by fetchmany for last elements"
-    assert [r[0] for r in many] == [7, 8, 9], "Invalid rows order returned by fetchmany"
+    assert [r[0] for r in many] == list(
+        range(7, 10)
+    ), "Invalid rows order returned by fetchmany"
+
+    assert (
+        len(cursor.fetchmany()) == 0
+    ), "fetchmany should return empty result set when no rows left to fetch"
+
+
+def test_cursor_fetchall(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
 
     cursor.execute("sql")
+
     cursor.fetchmany(4)
     tail = cursor.fetchall()
     assert (
@@ -245,3 +288,7 @@ def test_cursor_data_fetch(
     assert [r[0] for r in tail] == list(
         range(4, cursor.rowcount)
     ), "Invalid rows order returned by fetchall"
+
+    assert (
+        len(cursor.fetchall()) == 0
+    ), "fetchmany should return empty result set when no rows left to fetch"
