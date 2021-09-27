@@ -17,9 +17,10 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
+from firebolt.db.typing import ColType
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
-ColType = Union[int, float, str, datetime, date, bool, List]
+
 JSON_OUTPUT_FORMAT = "FB_JSONCompactLimited"
 
 

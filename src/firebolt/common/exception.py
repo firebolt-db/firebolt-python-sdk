@@ -80,3 +80,12 @@ class AuthenticationError(FireboltError):
 
     def __str__(self) -> str:
         return f"Failed to authenticate at {self.api_endpoint}: {self.cause}"
+
+
+# PEP-249
+
+Error = FireboltError
+
+
+class DataError(Error):
+    pass
