@@ -2,19 +2,28 @@ import logging
 import time
 from typing import Optional
 
+from firebolt.client import FireboltClient
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine, EngineSettings
-from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
-from firebolt.model.region import regions
+from firebolt.model.engine_revision import EngineRevision
 from firebolt.service.base_service import BaseService
 from firebolt.service.binding_service import BindingService
+from firebolt.service.engine_revision_service import EngineRevisionService
+from firebolt.service.region_service import RegionService
 
 logger = logging.getLogger(__name__)
 
 
 class EngineService(BaseService):
+    def __init__(self, firebolt_client: FireboltClient):
+        self.region_service = RegionService(firebolt_client=firebolt_client)
+        self.engine_revision_service = EngineRevisionService(
+            firebolt_client=firebolt_client
+        )
+        super().__init__(firebolt_client=firebolt_client)
+
     def get_engine_by_id(self, engine_id: str) -> Engine:
         """Get an Engine from Firebolt by its id."""
         response = self.firebolt_client.get(
@@ -31,38 +40,6 @@ class EngineService(BaseService):
         )
         engine_id = response.json()["engine_id"]["engine_id"]
         return self.get_engine_by_id(engine_id=engine_id)
-
-    def get_engine_revision_by_id(
-        self, engine_id: str, engine_revision_id: str
-    ) -> EngineRevision:
-        """Get an EngineRevision from Firebolt by engine_id and engine_revision_id."""
-        return self.get_engine_revision_by_key(
-            EngineRevisionKey(
-                account_id=self.account_id,
-                engine_id=engine_id,
-                engine_revision_id=engine_revision_id,
-            )
-        )
-
-    def get_engine_revision_by_key(
-        self, engine_revision_key: EngineRevisionKey
-    ) -> EngineRevision:
-        """
-        Fetch an EngineRevision from Firebolt by it's key.
-
-        Args:
-            engine_revision_key: Key of the desired EngineRevision.
-
-        Returns:
-            The requested EngineRevision
-        """
-        response = self.firebolt_client.get(
-            url=f"/core/v1/accounts/{engine_revision_key.account_id}"
-            f"/engines/{engine_revision_key.engine_id}"
-            f"/engineRevisions/{engine_revision_key.engine_revision_id}",
-        )
-        engine_spec: dict = response.json()["engine_revision"]
-        return EngineRevision.parse_obj(engine_spec)
 
     def create_analytics_engine(
         self,
@@ -96,7 +73,7 @@ class EngineService(BaseService):
         )
         return self.create_engine(
             engine=engine,
-            engine_revision=EngineRevision.analytics_default(
+            engine_revision=self.engine_revision_service.create_analytics_engine_revision(  # noqa: E501
                 compute_instance_type_name=compute_instance_type_name,
                 compute_instance_count=compute_instance_count,
             ),
@@ -133,14 +110,14 @@ class EngineService(BaseService):
         )
         return self.create_engine(
             engine=engine,
-            engine_revision=EngineRevision.general_purpose_default(
+            engine_revision=self.engine_revision_service.create_general_purpose_engine_revision(  # noqa: E501
                 compute_instance_type_name=compute_instance_type_name,
                 compute_instance_count=compute_instance_count,
             ),
         )
 
-    @staticmethod
     def _default(
+        self,
         name: str,
         settings: EngineSettings,
         description: Optional[str] = None,
@@ -159,9 +136,9 @@ class EngineService(BaseService):
             The new local Engine object.
         """
         if region_name is not None:
-            region = regions.get_by_name(region_name=region_name)
+            region = self.region_service.get_by_name(region_name=region_name)
         else:
-            region = regions.default_region
+            region = self.region_service.default_region
         return Engine(
             name=name,
             description=description,

@@ -38,7 +38,7 @@ class RegionService(BaseService):
         """Dict of {RegionLookup: Region}"""
         return {
             RegionLookup(
-                provider_name=self.provider_service.get_by_id(r.key.provider_id),
+                provider_name=self.provider_service.get_by_id(r.key.provider_id).name,
                 region_name=r.name,
             ): r
             for r in self.regions
