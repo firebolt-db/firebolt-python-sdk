@@ -235,8 +235,6 @@ class EngineService(BaseService):
         Returns:
             The updated Engine from Firebolt.
         """
-        if engine.engine_id is None:
-            raise ValueError("engine_id must be set before starting")
         response = self.firebolt_client.post(
             url=f"/core/v1/account/engines/{engine.engine_id}:start",
         )
@@ -255,7 +253,7 @@ class EngineService(BaseService):
                 raise TimeoutError(
                     f"Could not start engine within {wait_timeout_seconds} seconds."
                 )
-            engine = engine.get_by_id(engine_id=engine.engine_id)
+            engine = self.get_engine_by_id(engine_id=engine.engine_id)
             new_status = engine.current_status_summary
             if new_status != status:
                 logger.info(f"Engine status_summary={new_status}")

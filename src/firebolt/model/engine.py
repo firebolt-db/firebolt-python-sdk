@@ -88,7 +88,7 @@ class Engine(FireboltBaseModel):
     )
 
     @property
-    def engine_id(self) -> Optional[str]:
+    def engine_id(self) -> str:
         if self.key is None:
-            return None
+            raise ValueError("engine key is None")
         return self.key.engine_id
