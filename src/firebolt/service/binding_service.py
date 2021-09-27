@@ -6,7 +6,6 @@ from firebolt.model.database import Database
 from firebolt.model.engine import Engine
 from firebolt.service.base_service import BaseService
 from firebolt.service.database_service import DatabaseService
-from firebolt.service.engine_service import EngineService
 
 
 class BindingService(BaseService):
@@ -69,6 +68,8 @@ class BindingService(BaseService):
 
     def get_engines_bound_to_database(self, database: Database) -> list[Engine]:
         """Get a list of engines that are bound to a database."""
+        from firebolt.service.engine_service import EngineService
+
         bindings = self.list_bindings(database_id=database.database_id)
         return EngineService(self.firebolt_client).get_engines_by_ids(
             engine_ids=[b.engine_id for b in bindings]
