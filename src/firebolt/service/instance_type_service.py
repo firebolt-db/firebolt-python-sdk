@@ -44,6 +44,8 @@ class InstanceTypeService(BaseService):
     @cached_property
     def instance_types_by_name(self) -> dict[InstanceTypeLookup, InstanceType]:
         """Dict of {InstanceTypeLookup: InstanceType}"""
+        assert self.provider_service
+        assert self.region_service
         return {
             InstanceTypeLookup(
                 provider_name=self.provider_service.get_by_id(
@@ -82,7 +84,8 @@ class InstanceTypeService(BaseService):
         Returns:
             The requested instance type.
         """
-
+        assert self.provider_service
+        assert self.region_service
         provider_name = provider_name or self.provider_service.default_provider.name
         # Will raise an error if neither set
         region_name = region_name or self.region_service.default_region.name

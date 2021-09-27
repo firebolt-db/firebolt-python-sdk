@@ -36,6 +36,7 @@ class RegionService(BaseService):
     @cached_property
     def regions_by_name(self) -> dict[RegionLookup, Region]:
         """Dict of {RegionLookup: Region}"""
+        assert self.provider_service is not None
         return {
             RegionLookup(
                 provider_name=self.provider_service.get_by_id(r.key.provider_id).name,
@@ -63,6 +64,7 @@ class RegionService(BaseService):
         self, region_name: str, provider_name: Optional[str] = None
     ) -> Region:
         """Get a region by its name (eg. us-east-1)."""
+        assert self.provider_service is not None
         if provider_name is None:
             provider_name = self.provider_service.default_provider.name
 
