@@ -5,7 +5,8 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client import init_firebolt_client
 from firebolt.common import Settings
-from firebolt.model.region import Region, regions
+from firebolt.model.region import Region
+from firebolt.service.region_service import RegionService
 from tests.util import list_to_paginated_response
 
 
@@ -21,5 +22,5 @@ def test_region(
         status_code=httpx.codes.OK,
         json=list_to_paginated_response(mock_regions),
     )
-    with init_firebolt_client(settings=settings):
-        assert regions.regions == mock_regions
+    with init_firebolt_client(settings=settings) as fc:
+        assert RegionService(firebolt_client=fc).regions == mock_regions
