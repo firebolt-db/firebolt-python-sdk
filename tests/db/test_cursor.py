@@ -1,3 +1,4 @@
+from inspect import cleandoc
 from typing import Callable, List
 
 from httpx import HTTPStatusError, StreamError, codes
@@ -206,6 +207,7 @@ def test_cursor_fetchone(
     query_url: str,
     cursor: Cursor,
 ):
+    """cursor fetchone fetches single row in correct order, if no rows returns None"""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -231,6 +233,10 @@ def test_cursor_fetchmany(
     query_url: str,
     cursor: Cursor,
 ):
+    cleandoc(
+        """cursor fetchmany fetches the provided amount of rows, or arraysize by
+        default.If not enought rows left, returns less or None if there are no rows"""
+    )
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -278,6 +284,7 @@ def test_cursor_fetchall(
     query_url: str,
     cursor: Cursor,
 ):
+    """cursor fetchall fetches all rows that left after last query"""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
