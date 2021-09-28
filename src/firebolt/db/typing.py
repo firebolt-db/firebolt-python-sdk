@@ -134,29 +134,5 @@ def parse_value(
 
 
 def format_value(value: ColType) -> str:
-    if isinstance(value, (int, str, float)):
-        return str(value)
-    if isinstance(value, bool):
-        return "1" if value else "0"
-    if isinstance(value, date):
-        return value.strftime(DATE_FORMAT)
-    if isinstance(value, datetime):
-        return value.strftime(DATETIME_FORMAT)
-    if isinstance(value, (list, tuple)):
-        _validate_array_elements_types(value)
-        inner = ",".join([format_value(it) for it in value])
-        return f"({inner})"
-    raise DataError(f"Unsupported parameter data type: {type(value).__name__}")
-
-
-def _validate_array_elements_types(value: Union[list, tuple]) -> None:
-    if len(value) > 0:
-        initial_type = type(value[0])
-        assert (
-            initial_type in ColType and initial_type is not list
-        ), f"Invalid array element type: {initial_type.__name__}"
-        for it in value[1:]:
-            assert type(it) == initial_type, (
-                "Array elements have different types: "
-                f"{initial_type.__name__} and {type(it).__name__}"
-            )
+    # TODO: FIR-7793
+    pass
