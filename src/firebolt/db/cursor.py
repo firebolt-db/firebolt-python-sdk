@@ -17,7 +17,7 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
-from firebolt.db.typing import ColType
+from firebolt.db.typing import ColType, parse_type, parse_value
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
@@ -176,14 +176,14 @@ class Cursor:
         """Store information about executed query from httpx response"""
         try:
             query_data = response.json()
-            # TODO: Convert columns based on type info
-            self._rows = query_data["data"]
             self._rowcount = int(query_data["rows"])
-            # TODO: Convert type names to type codes
             self._descriptions = [
-                Column(d["name"], d["type"], None, None, None, None, None)
+                Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
                 for d in query_data["meta"]
             ]
+
+            # Parse data during fetch
+            self._rows = query_data["data"]
         except (KeyError, JSONDecodeError) as err:
             raise QueryError(f"Invalid query data format: {str(err)}")
 
@@ -236,6 +236,13 @@ class Cursor:
             rc = self.execute(query, params)
         return rc
 
+    def _parse_row(self, row: List[ColType]) -> List[ColType]:
+        """Parse a single data row based on query column types"""
+        assert len(row) == len(self.description)
+        return [
+            parse_value(col, self.description[i].type_code) for i, col in enumerate(row)
+        ]
+
     @check_not_closed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
@@ -244,7 +251,7 @@ class Cursor:
         if self._idx < len(self._rows):
             row = self._rows[self._idx]
             self._idx += 1
-            return row
+            return self._parse_row(row)
         return None
 
     @check_not_closed
@@ -262,7 +269,7 @@ class Cursor:
             right = min(self._idx + size, len(self._rows))
             rows = self._rows[self._idx : right]
             self._idx = right
-            return rows
+            return [self._parse_row(row) for row in rows]
         return []
 
     @check_not_closed
@@ -273,7 +280,7 @@ class Cursor:
         if self._idx < len(self._rows):
             rows = self._rows[self._idx :]
             self._idx = len(self._rows)
-            return rows
+            return [self._parse_row(row) for row in rows]
         return []
 
     @check_not_closed

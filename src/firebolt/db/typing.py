@@ -80,7 +80,7 @@ class _InternalType(Enum):
     Datetime = "Datetime"
 
     @cached_property
-    def to_python(self):
+    def python_type(self):
         types = {
             self.UInt8: int,
             self.UInt16: int,
@@ -100,7 +100,7 @@ class _InternalType(Enum):
 def parse_type(raw_type: str) -> ColType:
     def parse_internal(raw_internal: str) -> ColType:
         try:
-            return _InternalType(raw_internal).to_python()
+            return _InternalType(raw_internal).python_type
         except ValueError:
             # Treat unknown types as strings. Better that error since user still has
             # a way to work with it
