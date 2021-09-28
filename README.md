@@ -26,7 +26,7 @@ Once the environment variables are defined (either on your system or in `.env`),
 you can initialize a Firebolt client with:
 
 ```python
-from firebolt.firebolt_client import FireboltClient
+from firebolt.client import FireboltClient
 
 with FireboltClient() as fc:
     print(fc.settings)
@@ -34,7 +34,7 @@ with FireboltClient() as fc:
 
 Or you can configure the client by hand:
 ```python
-from firebolt.firebolt_client import FireboltClient
+from firebolt.client import FireboltClient
 from firebolt.common.settings import Settings
 from pydantic import SecretStr
 

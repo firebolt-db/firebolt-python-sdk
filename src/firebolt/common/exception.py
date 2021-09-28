@@ -7,6 +7,10 @@ class FireboltError(Exception):
     pass
 
 
+class FireboltClientLookupError(FireboltError):
+    pass
+
+
 class FireboltClientRequiredError(FireboltError):
     def __init__(
         self,
@@ -14,7 +18,7 @@ class FireboltClientRequiredError(FireboltError):
             """
             Firebolt Client not found. Start one in a context manager:
             ```
-            with FireboltClient.from_env() as fc:
+            with init_firebolt_client() as fc:
                 ...
             ```
             """

@@ -5,7 +5,8 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client import init_firebolt_client
 from firebolt.common import Settings
-from firebolt.model.provider import Provider, providers
+from firebolt.model.provider import Provider
+from firebolt.service.provider_service import ProviderService
 from tests.util import list_to_paginated_response
 
 
@@ -21,5 +22,5 @@ def test_provider(
         status_code=httpx.codes.OK,
         json=list_to_paginated_response(mock_providers),
     )
-    with init_firebolt_client(settings=settings):
-        assert providers.providers == mock_providers
+    with init_firebolt_client(settings=settings) as fc:
+        assert ProviderService(firebolt_client=fc).providers == mock_providers

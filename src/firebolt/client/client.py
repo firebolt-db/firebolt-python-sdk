@@ -153,7 +153,3 @@ class FireboltClient(httpx.Client):
     @cached_property
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]
-
-    # TODO: Remove this function after we remove run_query function from Engine
-    def copy_auth(self) -> typing.Optional[FireboltAuth]:
-        return self._auth.copy() if isinstance(self._auth, FireboltAuth) else None
