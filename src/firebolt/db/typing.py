@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from enum import Enum
 from functools import cached_property
-from typing import Union
+from typing import Union, get_args
 
 from firebolt.common.exception import DataError
 
@@ -41,7 +41,9 @@ class ARRAY:
     _prefix = "Array("
 
     def __init__(self, subtype: type):
-        assert not isinstance(subtype, ARRAY), "Invalid array subtype: ARRAY"
+        assert (
+            subtype in get_args(ColType) and subtype is not list
+        ), "Invalid array subtype: ARRAY"
         self.subtype = subtype
 
     def __str__(self):
