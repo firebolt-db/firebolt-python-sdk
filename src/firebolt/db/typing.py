@@ -41,16 +41,14 @@ class ARRAY:
     _prefix = "Array("
 
     def __init__(self, subtype: type):
-        assert (
-            subtype in ColType and subtype is not list
-        ), f"Invalid array subtype: {subtype.__name__}"
+        assert not isinstance(subtype, ARRAY), "Invalid array subtype: ARRAY"
         self.subtype = subtype
 
     def __str__(self):
         return f"Array({self.subtype.__name__})"
 
-    def to_python(self) -> type:
-        return list
+    def __eq__(self, other):
+        return isinstance(other, ARRAY) and other.subtype == self.subtype
 
 
 class _InternalType(Enum):
@@ -77,7 +75,7 @@ class _InternalType(Enum):
     Date = "Date"
 
     # DATETIME, TIMESTAMP
-    Datetime = "Datetime"
+    DateTime = "DateTime"
 
     @cached_property
     def python_type(self):
@@ -92,7 +90,7 @@ class _InternalType(Enum):
             self.Float64: float,
             self.String: str,
             self.Date: date,
-            self.Datetime: datetime,
+            self.DateTime: datetime,
         }
         return types[self]
 
@@ -107,7 +105,7 @@ def parse_type(raw_type: str) -> ColType:
             return str
 
     if raw_type.startswith(ARRAY._prefix) and raw_type.endswith(")"):
-        return parse_internal(raw_type[len(ARRAY._prefix) : -1])
+        return ARRAY(parse_internal(raw_type[len(ARRAY._prefix) : -1]))
 
     return parse_internal(raw_type)
 
@@ -118,7 +116,7 @@ DATETIME_FORMAT: str = f"{DATE_FORMAT} %H:%M:%S"
 
 def parse_value(
     value: Union[str, int, bool, float, list],
-    ctype: ColType,
+    ctype: Union[type, ARRAY],
 ) -> ColType:
     if ctype in (int, str, float):
         return ctype(value)
@@ -128,7 +126,7 @@ def parse_value(
     if ctype is datetime:
         assert isinstance(value, str)
         return datetime.strptime(value, DATETIME_FORMAT)
-    if ctype is ARRAY:
+    if isinstance(ctype, ARRAY):
         return [parse_value(it, ctype.subtype) for it in value]
     raise DataError(f"Unsupported data type returned: {ctype.__name__}")
 

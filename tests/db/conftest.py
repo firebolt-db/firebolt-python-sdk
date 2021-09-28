@@ -1,3 +1,4 @@
+from datetime import date, datetime
 from typing import Callable, List
 
 from httpx import URL, Request, Response, codes
@@ -8,6 +9,7 @@ from firebolt.client import FireboltClient
 from firebolt.common.settings import Settings
 from firebolt.db import Cursor
 from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
+from firebolt.db.typing import ARRAY
 
 QUERY_ROW_COUNT: int = 10
 
@@ -32,6 +34,25 @@ def query_description() -> List[Column]:
 
 
 @fixture
+def python_query_description() -> List[Column]:
+    return [
+        Column("uint8", int, None, None, None, None, None),
+        Column("uint16", int, None, None, None, None, None),
+        Column("uint32", int, None, None, None, None, None),
+        Column("int32", int, None, None, None, None, None),
+        Column("uint64", int, None, None, None, None, None),
+        Column("int64", int, None, None, None, None, None),
+        Column("float32", float, None, None, None, None, None),
+        Column("float64", float, None, None, None, None, None),
+        Column("string", str, None, None, None, None, None),
+        Column("date", date, None, None, None, None, None),
+        Column("datetime", datetime, None, None, None, None, None),
+        Column("bool", int, None, None, None, None, None),
+        Column("array", ARRAY(int), None, None, None, None, None),
+    ]
+
+
+@fixture
 def query_data() -> List[List[ColType]]:
     return [
         [
@@ -46,6 +67,28 @@ def query_data() -> List[List[ColType]]:
             "some text",
             "2019-07-31",
             "2019-07-31 01:01:01",
+            1,
+            [1, 2, 3, 4],
+        ]
+        for i in range(QUERY_ROW_COUNT)
+    ]
+
+
+@fixture
+def python_query_data() -> List[List[ColType]]:
+    return [
+        [
+            i,
+            256,
+            70000,
+            -32768,
+            922337203685477580,
+            -922337203685477580,
+            1,
+            1.0387398573,
+            "some text",
+            date(2019, 7, 31),
+            datetime(2019, 7, 31, 1, 1, 1),
             1,
             [1, 2, 3, 4],
         ]

@@ -125,8 +125,8 @@ def test_cursor_execute(
     query_callback: Callable,
     query_url: str,
     cursor: Cursor,
-    query_description: List[Column],
-    query_data: List[List[ColType]],
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
 ):
     """Cursor is able to execute query, all fields are populated properly"""
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -136,14 +136,16 @@ def test_cursor_execute(
         lambda: cursor.execute("select *"),
         lambda: cursor.executemany("select *", [None, None]),
     ):
-        assert query() == len(query_data), "Invalid row count returned"
-        assert cursor.rowcount == len(query_data), "Invalid rowcount value"
-        for i, (desc, exp) in enumerate(zip(cursor.description, query_description)):
+        assert query() == len(python_query_data), "Invalid row count returned"
+        assert cursor.rowcount == len(python_query_data), "Invalid rowcount value"
+        for i, (desc, exp) in enumerate(
+            zip(cursor.description, python_query_description)
+        ):
             assert desc == exp, f"Invalid column description at position {i}"
 
         for i in range(cursor.rowcount):
             assert (
-                cursor.fetchone() == query_data[i]
+                cursor.fetchone() == python_query_data[i]
             ), f"Invalid data row at position {i}"
 
         assert cursor.fetchone() is None, "Non-empty fetchone after all data received"
@@ -208,6 +210,7 @@ def test_cursor_fetchone(
     httpx_mock.add_callback(query_callback, url=query_url)
 
     cursor.execute("sql")
+
     assert cursor.fetchone()[0] == 0, "Invalid rows order returned by fetchone"
     assert cursor.fetchone()[0] == 1, "Invalid rows order returned by fetchone"
 
