@@ -7,7 +7,7 @@ from typing import Union, get_args
 
 from firebolt.common.exception import DataError
 
-ColType = Union[int, float, str, datetime, date, bool, list]
+ColType = Union[int, float, str, datetime, date, bool, list, type(None)]
 
 # These definitions are required by PEP-249
 Date = date
@@ -53,6 +53,9 @@ class ARRAY:
         return isinstance(other, ARRAY) and other.subtype == self.subtype
 
 
+NULLABLE_PREFIX = "Nullable("
+
+
 class _InternalType(Enum):
     # INT, INTEGER
     UInt8 = "UInt8"
@@ -79,6 +82,9 @@ class _InternalType(Enum):
     # DATETIME, TIMESTAMP
     DateTime = "DateTime"
 
+    # Nullable(Nothing)
+    Nothing = "Nothing"
+
     @cached_property
     def python_type(self):
         types = {
@@ -93,6 +99,8 @@ class _InternalType(Enum):
             self.String: str,
             self.Date: date,
             self.DateTime: datetime,
+            # For simplicity, this could happen only during 'select null' query
+            self.Nothing: str,
         }
         return types[self]
 
@@ -101,8 +109,12 @@ def parse_type(raw_type: str) -> ColType:
     """Parse typename, provided by query metadata into python type"""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
+    # Handle arrays
     if raw_type.startswith(ARRAY._prefix) and raw_type.endswith(")"):
         return ARRAY(parse_type(raw_type[len(ARRAY._prefix) : -1]))
+    # Handle nullable
+    if raw_type.startswith(NULLABLE_PREFIX) and raw_type.endswith(")"):
+        return ARRAY(parse_type(raw_type[len(NULLABLE_PREFIX) : -1]))
 
     try:
         return _InternalType(raw_type).python_type
@@ -120,6 +132,8 @@ def parse_value(
     value: Union[str, int, bool, float, list],
     ctype: Union[type, ARRAY],
 ) -> ColType:
+    if value is None:
+        return None
     if ctype in (int, str, float):
         return ctype(value)
     if ctype is date:
