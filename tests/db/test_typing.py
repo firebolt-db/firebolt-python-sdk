@@ -3,8 +3,15 @@ from typing import Dict
 
 from pytest import raises
 
-from firebolt.common.exception import DataError
-from firebolt.db.typing import ARRAY, parse_type, parse_value
+from firebolt.common.exception import DataError, NotSupportedError
+from firebolt.db.typing import (
+    ARRAY,
+    DateFromTicks,
+    TimeFromTicks,
+    TimestampFromTicks,
+    parse_type,
+    parse_value,
+)
 
 
 def test_parse_type(types_map: Dict[str, type]) -> None:
@@ -139,3 +146,17 @@ def test_parse_arrays() -> None:
         assert (
             parse_value(None, ARRAY(t)) is None
         ), f"Error parsing array({str(t)}): None provided"
+
+
+def test_helpers() -> None:
+    d = date(2021, 12, 31)
+    dts = datetime(d.year, d.month, d.day).timestamp()
+    assert DateFromTicks(dts) == d, "Error running DateFromTicks"
+
+    dt = datetime(2021, 12, 31, 23, 59, 59)
+    assert (
+        TimestampFromTicks(datetime.timestamp(dt)) == dt
+    ), "Error running TimestampFromTicks"
+
+    with raises(NotSupportedError):
+        TimeFromTicks(0)

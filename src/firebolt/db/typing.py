@@ -94,21 +94,21 @@ class _InternalType(Enum):
     @cached_property
     def python_type(self) -> type:
         types = {
-            self.UInt8: int,
-            self.UInt16: int,
-            self.Int32: int,
-            self.UInt32: int,
-            self.Int64: int,
-            self.UInt64: int,
-            self.Float32: float,
-            self.Float64: float,
-            self.String: str,
-            self.Date: date,
-            self.DateTime: datetime,
+            _InternalType.UInt8: int,
+            _InternalType.UInt16: int,
+            _InternalType.Int32: int,
+            _InternalType.UInt32: int,
+            _InternalType.Int64: int,
+            _InternalType.UInt64: int,
+            _InternalType.Float32: float,
+            _InternalType.Float64: float,
+            _InternalType.String: str,
+            _InternalType.Date: date,
+            _InternalType.DateTime: datetime,
             # For simplicity, this could happen only during 'select null' query
-            self.Nothing: str,
+            _InternalType.Nothing: str,
         }
-        return types[self.name]
+        return types[self]
 
 
 def parse_type(raw_type: str) -> Union[type, ARRAY]:
