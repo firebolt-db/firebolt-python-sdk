@@ -79,9 +79,9 @@ def test_parse_value_datetime() -> None:
     ), "Error parsing date: str provided"
     assert parse_value(None, date) is None, "Error parsing date: None provided"
 
-    # Unable to parse datetime
-    with raises(ValueError):
-        parse_value("2021-12-31 23:59:59", date)
+    assert parse_value("2021-12-31 23:59:59", date) == date(
+        2021, 12, 31
+    ), "Error parsing date: datetime string provided"
 
     with raises(ValueError):
         parse_value("abd", date)
@@ -98,8 +98,9 @@ def test_parse_value_datetime() -> None:
     ), "Error parsing datetime: str provided"
     assert parse_value(None, datetime) is None, "Error parsing datetime: None provided"
 
-    with raises(ValueError):
-        parse_value("2021-12-31", datetime)
+    assert parse_value("2021-12-31", datetime) == datetime(
+        2021, 12, 31
+    ), "Error parsing datetime: date string provided"
 
     with raises(ValueError):
         parse_value("abd", datetime)

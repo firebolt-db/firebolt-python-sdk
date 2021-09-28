@@ -5,6 +5,8 @@ from enum import Enum
 from functools import cached_property
 from typing import Union, get_args
 
+from ciso8601 import parse_datetime
+
 from firebolt.common.exception import DataError, NotSupportedError
 
 _NoneType = type(None)
@@ -139,10 +141,6 @@ def parse_type(raw_type: str) -> Union[type, ARRAY]:
         return str
 
 
-DATE_FORMAT: str = "%Y-%m-%d"
-DATETIME_FORMAT: str = f"{DATE_FORMAT} %H:%M:%S"
-
-
 def parse_value(
     value: RawColType,
     ctype: Union[type, ARRAY],
@@ -157,11 +155,11 @@ def parse_value(
         if not isinstance(value, str):
             raise DataError(f"Invalid date value {value}: str expected")
         assert isinstance(value, str)
-        return datetime.strptime(value, DATE_FORMAT).date()
+        return parse_datetime(value).date()
     if ctype is datetime:
         if not isinstance(value, str):
             raise DataError(f"Invalid datetime value {value}: str expected")
-        return datetime.strptime(value, DATETIME_FORMAT)
+        return parse_datetime(value)
     if isinstance(ctype, ARRAY):
         assert isinstance(value, list)
         return [parse_value(it, ctype.subtype) for it in value]
