@@ -1,0 +1,72 @@
+from functools import wraps
+from inspect import cleandoc
+from typing import Any, Callable, List
+
+from firebolt.client import DEFAULT_API_URL, FireboltClient
+from firebolt.common.exception import ConnectionClosedError
+from firebolt.db import Cursor
+
+
+def check_not_closed(func: Callable) -> Callable:
+    """(Decorator) ensure cursor is not closed before calling method"""
+
+    @wraps(func)
+    def inner(self: Connection, *args: Any, **kwargs: Any) -> Any:
+        if self.closed:
+            raise ConnectionClosedError(method_name=func.__name__)
+        return func(self, *args, **kwargs)
+
+    return inner
+
+
+class Connection:
+    cleandoc(
+        """
+        Firebolt database connection class. Implements PEP-249.
+
+        Parameters:
+            username - Firebolt account username
+            password - Firebolt account password
+            engine_url - Firebolt database engine REST API url
+            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+
+        Methods:
+            cursor - created new Cursor object
+            close - close the Connection and all it's cursors
+
+        Firebolt currenly doesn't support transactions so commit and rollback methods
+        are not implemented.
+        """
+    )
+    __slots__ = ("_client", "_cursors", "_is_closed")
+
+    def __init__(
+        self,
+        username: str,
+        password: str,
+        engine_url: str,
+        api_endpoint: str = DEFAULT_API_URL,
+    ):
+        self._client = FireboltClient(
+            auth=(username, password), base_url=engine_url, api_endpoint=api_endpoint
+        )
+        self._cursors: List[Cursor] = []
+        self._is_closed = False
+
+    @check_not_closed
+    def cursor(self) -> Cursor:
+        c = Cursor(self._client)
+        self._cursors.append(c)
+        return c
+
+    @check_not_closed
+    def close(self) -> None:
+        # self._cursors is going to be changed during closing cursors
+        cursors = self._cursors[:]
+        for c in cursors:
+            c.close()
+        self._client.close()
+        self._is_closed = True
+
+    def _remove_cursor(self, cursor: Cursor) -> None:
+        self._cursors.remove(cursor)

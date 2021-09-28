@@ -17,6 +17,7 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
+from firebolt.db import Connection
 from firebolt.db.types import ColType, RawColType, parse_type, parse_value
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
@@ -114,7 +115,7 @@ class Cursor:
 
     default_arraysize = 1
 
-    def __init__(self, client: FireboltClient, connection: Any):
+    def __init__(self, client: FireboltClient, connection: Connection):
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize
@@ -171,6 +172,7 @@ class Cursor:
     def close(self) -> None:
         """Terminate an ongoing query (if any) and mark connection as closed."""
         self._state = CursorState.CLOSED
+        self.connection._remove_cursor(self)
 
     def _store_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response."""

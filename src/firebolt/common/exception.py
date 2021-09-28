@@ -43,6 +43,19 @@ class DatabaseRequiredError(FireboltEngineError):
     pass
 
 
+class ConnectionError(FireboltError):
+    pass
+
+
+class ConnectionClosedError(ConnectionError):
+    def __init__(self, method_name: str):
+        self.method_name = method_name
+        super.__repr__
+
+    def __str__(self) -> str:
+        return f"unable to call {self.method_name}: connection closed"
+
+
 class CursorError(FireboltError):
     pass
 
