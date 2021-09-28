@@ -17,7 +17,7 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
-from firebolt.db.typing import ColType, parse_type, parse_value
+from firebolt.db.typing import ColType, RawColType, parse_type, parse_value
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
@@ -118,7 +118,7 @@ class Cursor:
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize
-        self._rows: Optional[List[List[ColType]]] = None
+        self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
         self._reset()
 
@@ -236,7 +236,7 @@ class Cursor:
             rc = self.execute(query, params)
         return rc
 
-    def _parse_row(self, row: List[ColType]) -> List[ColType]:
+    def _parse_row(self, row: List[RawColType]) -> List[ColType]:
         """Parse a single data row based on query column types"""
         assert len(row) == len(self.description)
         return [

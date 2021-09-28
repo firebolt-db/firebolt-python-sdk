@@ -5,23 +5,27 @@ from enum import Enum
 from functools import cached_property
 from typing import Union, get_args
 
-from firebolt.common.exception import DataError
+from firebolt.common.exception import DataError, NotSupportedError
 
-ColType = Union[int, float, str, datetime, date, bool, list, type(None)]
+_NoneType = type(None)
+ColType = Union[int, float, str, datetime, date, bool, list, _NoneType]
+RawColType = Union[int, float, str, bool, list]
 
 # These definitions are required by PEP-249
 Date = date
 
 
 def DateFromTicks(t: int) -> date:
-    return datetime.fromtimestamp(t).date
+    return datetime.fromtimestamp(t).date()
 
 
-def Time(hour: int, minute: int, second: int) -> datetime:
-    return datetime(hour=hour, minute=minute, second=second)
+def Time(hour: int, minute: int, second: int) -> None:
+    raise NotSupportedError("time is not supported by Firebolt")
 
 
-TimeFromTicks = datetime.fromtimestamp
+def TimeFromTicks(t: int) -> None:
+    raise NotSupportedError("time is not supported by Firebolt")
+
 
 Timestamp = datetime
 TimestampFromTicks = datetime.fromtimestamp
@@ -40,17 +44,19 @@ ROWID = int
 class ARRAY:
     _prefix = "Array("
 
-    def __init__(self, subtype: type):
+    def __init__(self, subtype: Union[type, ARRAY]):
         assert (subtype in get_args(ColType) and subtype is not list) or isinstance(
             subtype, ARRAY
         ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Array({str(self.subtype)})"
 
-    def __eq__(self, other):
-        return isinstance(other, ARRAY) and other.subtype == self.subtype
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ARRAY):
+            return NotImplemented
+        return other.subtype == self.subtype
 
 
 NULLABLE_PREFIX = "Nullable("
@@ -86,7 +92,7 @@ class _InternalType(Enum):
     Nothing = "Nothing"
 
     @cached_property
-    def python_type(self):
+    def python_type(self) -> type:
         types = {
             self.UInt8: int,
             self.UInt16: int,
@@ -102,10 +108,10 @@ class _InternalType(Enum):
             # For simplicity, this could happen only during 'select null' query
             self.Nothing: str,
         }
-        return types[self]
+        return types[self.name]
 
 
-def parse_type(raw_type: str) -> ColType:
+def parse_type(raw_type: str) -> Union[type, ARRAY]:
     """Parse typename, provided by query metadata into python type"""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
@@ -129,12 +135,13 @@ DATETIME_FORMAT: str = f"{DATE_FORMAT} %H:%M:%S"
 
 
 def parse_value(
-    value: Union[str, int, bool, float, list],
+    value: RawColType,
     ctype: Union[type, ARRAY],
 ) -> ColType:
     if value is None:
         return None
     if ctype in (int, str, float):
+        assert isinstance(ctype, type)
         return ctype(value)
     if ctype is date:
         if not isinstance(value, str):
@@ -146,6 +153,7 @@ def parse_value(
             raise DataError(f"Invalid datetime value {value}: str expected")
         return datetime.strptime(value, DATETIME_FORMAT)
     if isinstance(ctype, ARRAY):
+        assert isinstance(value, list)
         return [parse_value(it, ctype.subtype) for it in value]
     raise DataError(f"Unsupported data type returned: {ctype.__name__}")
 
