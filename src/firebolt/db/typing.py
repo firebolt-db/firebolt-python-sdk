@@ -9,7 +9,7 @@ from firebolt.common.exception import DataError, NotSupportedError
 
 _NoneType = type(None)
 ColType = Union[int, float, str, datetime, date, bool, list, _NoneType]
-RawColType = Union[int, float, str, bool, list]
+RawColType = Union[int, float, str, bool, list, _NoneType]
 
 # These definitions are required by PEP-249
 Date = date
