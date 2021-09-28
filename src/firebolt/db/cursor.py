@@ -17,7 +17,7 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
-from firebolt.db.typing import ColType, RawColType, parse_type, parse_value
+from firebolt.db.types import ColType, RawColType, parse_type, parse_value
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 

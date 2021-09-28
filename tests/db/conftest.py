@@ -9,7 +9,7 @@ from firebolt.client import FireboltClient
 from firebolt.common.settings import Settings
 from firebolt.db import Cursor
 from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
-from firebolt.db.typing import ARRAY
+from firebolt.db.types import ARRAY
 
 QUERY_ROW_COUNT: int = 10
 

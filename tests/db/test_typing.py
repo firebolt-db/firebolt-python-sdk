@@ -4,7 +4,7 @@ from typing import Dict
 from pytest import raises
 
 from firebolt.common.exception import DataError, NotSupportedError
-from firebolt.db.typing import (
+from firebolt.db.types import (
     ARRAY,
     DateFromTicks,
     TimeFromTicks,
