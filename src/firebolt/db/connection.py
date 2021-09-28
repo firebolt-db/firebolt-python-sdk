@@ -38,18 +38,20 @@ class Connection:
         are not implemented.
         """
     )
-    __slots__ = ("_client", "_cursors", "_is_closed")
+    __slots__ = ("_client", "_cursors", "database", "_is_closed")
 
     def __init__(
         self,
         username: str,
         password: str,
         engine_url: str,
+        database: str,  # TODO: Get by engine name
         api_endpoint: str = DEFAULT_API_URL,
     ):
         self._client = FireboltClient(
             auth=(username, password), base_url=engine_url, api_endpoint=api_endpoint
         )
+        self.database = database
         self._cursors: List[Cursor] = []
         self._is_closed = False
 
