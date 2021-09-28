@@ -1,9 +1,10 @@
+from datetime import date, datetime
 from typing import Dict
 
 from pytest import raises
 
 from firebolt.common.exception import DataError
-from firebolt.db.typing import parse_type, parse_value
+from firebolt.db.typing import ARRAY, parse_type, parse_value
 
 
 def test_parse_type(types_map: Dict[str, type]) -> None:
@@ -57,3 +58,84 @@ def test_parse_value_str() -> None:
     assert parse_value(("a",), str) == "('a',)", "Error parsing str: provided tuple"
     assert parse_value(["a"], str) == "['a']", "Error parsing str: provided list"
     assert parse_value(None, str) is None, "Error parsing str: provided None"
+
+
+def test_parse_value_datetime() -> None:
+    # Date
+    assert parse_value("2021-12-31", date) == date(
+        2021, 12, 31
+    ), "Error parsing date: str provided"
+    assert parse_value(None, date) is None, "Error parsing date: None provided"
+
+    # Unable to parse datetime
+    with raises(ValueError):
+        parse_value("2021-12-31 23:59:59", date)
+
+    with raises(ValueError):
+        parse_value("abd", date)
+
+    for value in ([2021, 12, 31], (2021, 12, 31)):
+        with raises(DataError) as exc_info:
+            parse_value(value, date)
+
+        assert str(exc_info.value) == f"Invalid date value {value}: str expected"
+
+    # Datetime
+    assert parse_value("2021-12-31 23:59:59", datetime) == datetime(
+        2021, 12, 31, 23, 59, 59
+    ), "Error parsing datetime: str provided"
+    assert parse_value(None, datetime) is None, "Error parsing datetime: None provided"
+
+    with raises(ValueError):
+        parse_value("2021-12-31", datetime)
+
+    with raises(ValueError):
+        parse_value("abd", datetime)
+
+    for value in ([2021, 12, 31], (2021, 12, 31)):
+        with raises(DataError) as exc_info:
+            parse_value(value, datetime)
+
+        assert str(exc_info.value) == f"Invalid datetime value {value}: str expected"
+
+
+def test_parse_arrays() -> None:
+    assert parse_value([1, 2], ARRAY(int)) == [
+        1,
+        2,
+    ], "Error parsing array(int): list[int] provided"
+    assert parse_value([1, "2"], ARRAY(int)) == [
+        1,
+        2,
+    ], "Error parsing array(int): mixed list provided"
+    assert parse_value(["1", "2"], ARRAY(int)) == [
+        1,
+        2,
+    ], "Error parsing array(int): list[str] provided"
+
+    assert parse_value([1, 2], ARRAY(float)) == [
+        1.0,
+        2.0,
+    ], "Error parsing array(float): list[int] provided"
+
+    assert parse_value(["2021-12-31 23:59:59", "2000-01-01 01:01:01"], ARRAY(str)) == [
+        "2021-12-31 23:59:59",
+        "2000-01-01 01:01:01",
+    ], "Error parsing array(str): list[str] provided"
+
+    assert parse_value(
+        ["2021-12-31 23:59:59", "2000-01-01 01:01:01"], ARRAY(datetime)
+    ) == [
+        datetime(2021, 12, 31, 23, 59, 59),
+        datetime(2000, 1, 1, 1, 1, 1),
+    ], "Error parsing array(datetime): list[str] provided"
+
+    assert parse_value(["2021-12-31", "2000-01-01"], ARRAY(date)) == [
+        date(2021, 12, 31),
+        date(2000, 1, 1),
+    ], "Error parsing array(datetime): list[str] provided"
+
+    for t in (int, float, str, date, datetime, ARRAY(int)):
+        assert (
+            parse_value(None, ARRAY(t)) is None
+        ), f"Error parsing array({str(t)}): None provided"

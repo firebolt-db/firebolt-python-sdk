@@ -114,7 +114,7 @@ def parse_type(raw_type: str) -> ColType:
         return ARRAY(parse_type(raw_type[len(ARRAY._prefix) : -1]))
     # Handle nullable
     if raw_type.startswith(NULLABLE_PREFIX) and raw_type.endswith(")"):
-        return ARRAY(parse_type(raw_type[len(NULLABLE_PREFIX) : -1]))
+        return parse_type(raw_type[len(NULLABLE_PREFIX) : -1])
 
     try:
         return _InternalType(raw_type).python_type
@@ -137,10 +137,13 @@ def parse_value(
     if ctype in (int, str, float):
         return ctype(value)
     if ctype is date:
+        if not isinstance(value, str):
+            raise DataError(f"Invalid date value {value}: str expected")
         assert isinstance(value, str)
         return datetime.strptime(value, DATE_FORMAT).date()
     if ctype is datetime:
-        assert isinstance(value, str)
+        if not isinstance(value, str):
+            raise DataError(f"Invalid datetime value {value}: str expected")
         return datetime.strptime(value, DATETIME_FORMAT)
     if isinstance(ctype, ARRAY):
         return [parse_value(it, ctype.subtype) for it in value]

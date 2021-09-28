@@ -164,8 +164,10 @@ def types_map() -> Dict[str, type]:
         "String": str,
         "Date": date,
         "DateTime": datetime,
+        "Nullable(Nothing)": str,
         "SomeRandomNotExistingType": str,
     }
     array_types = {f"Array({k})": ARRAY(v) for k, v in base_types.items()}
+    nullable_arrays = {f"Nullable({k})": v for k, v in array_types.items()}
     nested_arrays = {f"Array({k})": ARRAY(v) for k, v in array_types.items()}
-    return {**base_types, **array_types, **nested_arrays}
+    return {**base_types, **array_types, **nullable_arrays, **nested_arrays}
