@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from typing import Callable, List
+from typing import Callable, Dict, List
 
 from httpx import URL, Request, Response, codes
 from pytest import fixture
@@ -148,3 +148,24 @@ def cursor(connection, settings: Settings) -> Cursor:
         ),
         connection,
     )
+
+
+@fixture
+def types_map() -> Dict[str, type]:
+    base_types = {
+        "UInt8": int,
+        "UInt16": int,
+        "UInt32": int,
+        "Int32": int,
+        "UInt64": int,
+        "Int64": int,
+        "Float32": float,
+        "Float64": float,
+        "String": str,
+        "Date": date,
+        "DateTime": datetime,
+        "SomeRandomNotExistingType": str,
+    }
+    array_types = {f"Array({k})": ARRAY(v) for k, v in base_types.items()}
+    nested_arrays = {f"Array({k})": ARRAY(v) for k, v in array_types.items()}
+    return {**base_types, **array_types, **nested_arrays}

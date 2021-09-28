@@ -41,13 +41,13 @@ class ARRAY:
     _prefix = "Array("
 
     def __init__(self, subtype: type):
-        assert (
-            subtype in get_args(ColType) and subtype is not list
-        ), "Invalid array subtype: ARRAY"
+        assert (subtype in get_args(ColType) and subtype is not list) or isinstance(
+            subtype, ARRAY
+        ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
 
     def __str__(self):
-        return f"Array({self.subtype.__name__})"
+        return f"Array({str(self.subtype)})"
 
     def __eq__(self, other):
         return isinstance(other, ARRAY) and other.subtype == self.subtype
@@ -98,18 +98,18 @@ class _InternalType(Enum):
 
 
 def parse_type(raw_type: str) -> ColType:
-    def parse_internal(raw_internal: str) -> ColType:
-        try:
-            return _InternalType(raw_internal).python_type
-        except ValueError:
-            # Treat unknown types as strings. Better that error since user still has
-            # a way to work with it
-            return str
-
+    """Parse typename, provided by query metadata into python type"""
+    if not isinstance(raw_type, str):
+        raise DataError(f"Invalid typename {str(raw_type)}: str expected")
     if raw_type.startswith(ARRAY._prefix) and raw_type.endswith(")"):
-        return ARRAY(parse_internal(raw_type[len(ARRAY._prefix) : -1]))
+        return ARRAY(parse_type(raw_type[len(ARRAY._prefix) : -1]))
 
-    return parse_internal(raw_type)
+    try:
+        return _InternalType(raw_type).python_type
+    except ValueError:
+        # Treat unknown types as strings. Better that error since user still has
+        # a way to work with it
+        return str
 
 
 DATE_FORMAT: str = "%Y-%m-%d"
