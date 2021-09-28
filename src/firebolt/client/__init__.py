@@ -1,5 +1,4 @@
-from contextlib import contextmanager
-from typing import Generator, Optional
+from typing import Optional
 
 from firebolt.client.client import (
     DEFAULT_API_URL,
@@ -10,10 +9,7 @@ from firebolt.client.hooks import log_request, log_response, raise_on_4xx_5xx
 from firebolt.common.settings import Settings
 
 
-@contextmanager
-def init_firebolt_client(
-    settings: Optional[Settings] = None,
-) -> Generator[FireboltClient, None, None]:
+def init_firebolt_client(settings: Optional[Settings] = None) -> FireboltClient:
     """
     Initialize FireboltClient.
 
@@ -30,5 +26,4 @@ def init_firebolt_client(
         "request": [log_request],
         "response": [log_response, raise_on_4xx_5xx],
     }
-    yield _client
-    _client.close()
+    return _client
