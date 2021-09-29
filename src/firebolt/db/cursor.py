@@ -7,7 +7,16 @@ from functools import wraps
 from inspect import cleandoc
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Callable, Generator, List, Optional, Sequence, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from httpx import Response, codes
 
@@ -17,8 +26,10 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
-from firebolt.db import Connection
 from firebolt.db.types import ColType, RawColType, parse_type, parse_value
+
+if TYPE_CHECKING:
+    from firebolt.db.connection import Connection
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
@@ -115,7 +126,7 @@ class Cursor:
 
     default_arraysize = 1
 
-    def __init__(self, client: FireboltClient, connection: Connection):
+    def __init__(self, client: FireboltClient, connection: "Connection"):
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize

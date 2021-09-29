@@ -1,10 +1,12 @@
+from __future__ import annotations
+
 from functools import wraps
 from inspect import cleandoc
 from typing import Any, Callable, List
 
 from firebolt.client import DEFAULT_API_URL, FireboltClient
 from firebolt.common.exception import ConnectionClosedError
-from firebolt.db import Cursor
+from firebolt.db.cursor import Cursor
 
 
 def check_not_closed(func: Callable) -> Callable:
@@ -12,7 +14,7 @@ def check_not_closed(func: Callable) -> Callable:
 
     @wraps(func)
     def inner(self: Connection, *args: Any, **kwargs: Any) -> Any:
-        if self.closed:
+        if self._is_closed:
             raise ConnectionClosedError(method_name=func.__name__)
         return func(self, *args, **kwargs)
 
@@ -57,7 +59,7 @@ class Connection:
 
     @check_not_closed
     def cursor(self) -> Cursor:
-        c = Cursor(self._client)
+        c = Cursor(self._client, self)
         self._cursors.append(c)
         return c
 
@@ -71,4 +73,5 @@ class Connection:
         self._is_closed = True
 
     def _remove_cursor(self, cursor: Cursor) -> None:
-        self._cursors.remove(cursor)
+        if cursor in self._cursors:
+            self._cursors.remove(cursor)
