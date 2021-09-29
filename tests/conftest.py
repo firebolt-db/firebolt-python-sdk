@@ -102,6 +102,7 @@ def settings(server) -> Settings:
         server=server,
         user="email@domain.com",
         password=SecretStr("*****"),
+        default_region="us-mock-1",
     )
 
 
