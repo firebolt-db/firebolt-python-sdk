@@ -44,10 +44,10 @@ class Connection:
 
     def __init__(
         self,
-        username: str,
-        password: str,
         engine_url: str,
         database: str,  # TODO: Get by engine name
+        username: str,
+        password: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
         self._client = FireboltClient(
