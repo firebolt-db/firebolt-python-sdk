@@ -1,4 +1,3 @@
-import os
 from functools import cached_property
 
 from firebolt.model.provider import Provider
@@ -6,8 +5,6 @@ from firebolt.service.base_service import BaseService
 
 
 class ProviderService(BaseService):
-    DEFAULT_PROVIDER_ENV = "FIREBOLT_DEFAULT_PROVIDER"
-
     @cached_property
     def providers(self) -> list[Provider]:
         """List of available Providers on Firebolt"""
@@ -29,8 +26,7 @@ class ProviderService(BaseService):
     @cached_property
     def default_provider(self) -> Provider:
         """The default Provider as specified by the client"""
-        default_provider_name = os.environ.get(self.DEFAULT_PROVIDER_ENV, "AWS")
-        return self.get_by_name(provider_name=default_provider_name)
+        return self.get_by_name(provider_name="AWS")
 
     def get_by_id(self, provider_id: str) -> Provider:
         """Get a Provider by its id"""

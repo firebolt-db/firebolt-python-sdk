@@ -1,4 +1,3 @@
-import os
 from functools import cached_property
 from typing import NamedTuple, Optional
 
@@ -14,8 +13,6 @@ class RegionLookup(NamedTuple):
 
 
 class RegionService(BaseService):
-    DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
-
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
@@ -45,12 +42,14 @@ class RegionService(BaseService):
     @cached_property
     def default_region(self) -> Region:
         """Default Region, could be provided from environment."""
-        if self.DEFAULT_REGION_ENV not in os.environ:
+
+        if not self.firebolt_client.settings.default_region:
             raise ValueError(
-                "default_region_name is required. Please set it "
-                "via environment variable: FIREBOLT_DEFAULT_REGION"
+                "The environment variable FIREBOLT_DEFAULT_REGION must be set."
             )
-        return self.get_by_name(region_name=os.environ[self.DEFAULT_REGION_ENV])
+        return self.get_by_name(
+            region_name=self.firebolt_client.settings.default_region
+        )
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None
