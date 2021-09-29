@@ -60,18 +60,25 @@ class Connection:
 
     @check_not_closed
     def cursor(self) -> Cursor:
+        """Create new cursor object."""
         c = Cursor(self._client, self)
         self._cursors.append(c)
         return c
 
     @check_not_closed
     def close(self) -> None:
+        """Close connection and all underlying cursors."""
         # self._cursors is going to be changed during closing cursors
         cursors = self._cursors[:]
         for c in cursors:
             c.close()
         self._client.close()
         self._is_closed = True
+
+    @property
+    def closed(self) -> bool:
+        """True if connection is closed, False otherwise."""
+        return self._is_closed
 
     def _remove_cursor(self, cursor: Cursor) -> None:
         if cursor in self._cursors:

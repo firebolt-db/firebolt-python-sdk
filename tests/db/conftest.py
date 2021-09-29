@@ -129,10 +129,15 @@ def query_url(settings: Settings, db_name: str) -> str:
 
 
 @fixture
-def cursor(settings: Settings, db_name: str) -> Cursor:
+def connection(settings: Settings, db_name: str) -> Connection:
     return Connection(
-        "u", "p", f"https://{settings.server}", db_name, settings.server
-    ).cursor()
+        f"https://{settings.server}", db_name, "u", "p", api_endpoint=settings.server
+    )
+
+
+@fixture
+def cursor(connection: Connection) -> Cursor:
+    return connection.cursor()
 
 
 @fixture
