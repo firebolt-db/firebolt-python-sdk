@@ -2,10 +2,8 @@ import os
 from functools import cached_property
 from typing import NamedTuple, Optional
 
-from firebolt.client import FireboltClient
 from firebolt.model.region import Region, RegionKey
 from firebolt.service.base_service import BaseService
-from firebolt.service.provider_service import ProviderService
 
 
 class RegionLookup(NamedTuple):
@@ -18,13 +16,6 @@ class RegionLookup(NamedTuple):
 class RegionService(BaseService):
     DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
 
-    provider_service = None
-
-    def __init__(self, firebolt_client: FireboltClient):
-        if self.provider_service is None:
-            self.provider_service = ProviderService(firebolt_client=firebolt_client)
-        super().__init__(firebolt_client=firebolt_client)
-
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
@@ -36,10 +27,11 @@ class RegionService(BaseService):
     @cached_property
     def regions_by_name(self) -> dict[RegionLookup, Region]:
         """Dict of {RegionLookup: Region}"""
-        assert self.provider_service is not None
         return {
             RegionLookup(
-                provider_name=self.provider_service.get_by_id(r.key.provider_id).name,
+                provider_name=self.firebolt_client.provider_service.get_by_id(
+                    r.key.provider_id
+                ).name,
                 region_name=r.name,
             ): r
             for r in self.regions
@@ -64,9 +56,9 @@ class RegionService(BaseService):
         self, region_name: str, provider_name: Optional[str] = None
     ) -> Region:
         """Get a region by its name (eg. us-east-1)."""
-        assert self.provider_service is not None
+        assert self.firebolt_client.provider_service is not None
         if provider_name is None:
-            provider_name = self.provider_service.default_provider.name
+            provider_name = self.firebolt_client.provider_service.default_provider.name
 
         return self.regions_by_name[
             RegionLookup(provider_name=provider_name, region_name=region_name)

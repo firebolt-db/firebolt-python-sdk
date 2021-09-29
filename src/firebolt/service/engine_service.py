@@ -2,7 +2,7 @@ import logging
 import time
 from typing import Optional
 
-from firebolt.client import FireboltClient
+from firebolt.client import FireboltResourceClient
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
@@ -11,14 +11,12 @@ from firebolt.model.engine_revision import EngineRevision
 from firebolt.service.base_service import BaseService
 from firebolt.service.binding_service import BindingService
 from firebolt.service.engine_revision_service import EngineRevisionService
-from firebolt.service.region_service import RegionService
 
 logger = logging.getLogger(__name__)
 
 
 class EngineService(BaseService):
-    def __init__(self, firebolt_client: FireboltClient):
-        self.region_service = RegionService(firebolt_client=firebolt_client)
+    def __init__(self, firebolt_client: FireboltResourceClient):
         self.engine_revision_service = EngineRevisionService(
             firebolt_client=firebolt_client
         )
@@ -136,9 +134,11 @@ class EngineService(BaseService):
             The new local Engine object.
         """
         if region_name is not None:
-            region = self.region_service.get_by_name(region_name=region_name)
+            region = self.firebolt_client.region_service.get_by_name(
+                region_name=region_name
+            )
         else:
-            region = self.region_service.default_region
+            region = self.firebolt_client.region_service.default_region
         return Engine(
             name=name,
             description=description,

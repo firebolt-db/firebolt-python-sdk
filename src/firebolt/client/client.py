@@ -8,6 +8,8 @@ from typing import Any, Optional, Tuple
 import httpx
 from httpx._types import AuthTypes
 
+from firebolt.client.hooks import log_request, log_response, raise_on_4xx_5xx
+from firebolt.common import Settings
 from firebolt.common.exception import AuthenticationError
 
 DEFAULT_API_URL: str = "api.app.firebolt.io"
@@ -153,3 +155,29 @@ class FireboltClient(httpx.Client):
     @cached_property
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]
+
+
+class FireboltResourceClient(FireboltClient):
+    def __init__(self, settings: Optional[Settings] = None):
+        self.settings = settings or Settings()
+
+        super().__init__(
+            auth=(self.settings.user, self.settings.password.get_secret_value()),
+            base_url=f"https://{self.settings.server}",
+            api_endpoint=self.settings.server,
+        )
+        self.event_hooks = {
+            "request": [log_request],
+            "response": [log_response, raise_on_4xx_5xx],
+        }
+        self.__init__services__()
+
+    def __init__services__(self) -> None:
+        # avoid circular import
+        from firebolt.service.instance_type_service import InstanceTypeService
+        from firebolt.service.provider_service import ProviderService
+        from firebolt.service.region_service import RegionService
+
+        self.provider_service = ProviderService(firebolt_client=self)
+        self.region_service = RegionService(firebolt_client=self)
+        self.instance_type_service = InstanceTypeService(firebolt_client=self)

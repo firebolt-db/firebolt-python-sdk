@@ -1,8 +1,8 @@
-from firebolt.client import FireboltClient
+from firebolt.client import FireboltResourceClient
 
 
 class BaseService:
-    def __init__(self, firebolt_client: FireboltClient):
+    def __init__(self, firebolt_client: FireboltResourceClient):
         self.firebolt_client = firebolt_client
 
     @property

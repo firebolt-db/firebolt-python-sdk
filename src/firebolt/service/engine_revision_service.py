@@ -1,6 +1,5 @@
 from typing import Optional
 
-from firebolt.client import FireboltClient
 from firebolt.model.engine_revision import (
     EngineRevision,
     EngineRevisionKey,
@@ -11,12 +10,6 @@ from firebolt.service.instance_type_service import InstanceTypeService
 
 
 class EngineRevisionService(BaseService):
-    def __init__(self, firebolt_client: FireboltClient):
-        self.instance_type_service = InstanceTypeService(
-            firebolt_client=firebolt_client
-        )
-        super().__init__(firebolt_client=firebolt_client)
-
     def get_engine_revision_by_id(
         self, engine_id: str, engine_revision_id: str
     ) -> EngineRevision:
@@ -133,7 +126,7 @@ class EngineRevisionService(BaseService):
         if compute_instance_count is None:
             compute_instance_count = 2
 
-        instance_type_key = self.instance_type_service.get_by_name(
+        instance_type_key = self.firebolt_client.instance_type_service.get_by_name(
             instance_type_name=compute_instance_type_name
         ).key
         return EngineRevisionSpecification(

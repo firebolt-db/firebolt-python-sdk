@@ -3,7 +3,7 @@ from typing import Callable, List
 import httpx
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import init_firebolt_client
+from firebolt.client import FireboltResourceClient
 from firebolt.common import Settings
 from firebolt.model.region import Region
 from firebolt.service.region_service import RegionService
@@ -22,5 +22,5 @@ def test_region(
         status_code=httpx.codes.OK,
         json=list_to_paginated_response(mock_regions),
     )
-    with init_firebolt_client(settings=settings) as fc:
+    with FireboltResourceClient(settings=settings) as fc:
         assert RegionService(firebolt_client=fc).regions == mock_regions

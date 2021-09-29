@@ -1,15 +1,9 @@
-from firebolt.client import FireboltClient
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
 from firebolt.service.base_service import BaseService
-from firebolt.service.region_service import RegionService
 
 
 class DatabaseService(BaseService):
-    def __init__(self, firebolt_client: FireboltClient):
-        self.region_service = RegionService(firebolt_client=firebolt_client)
-        super().__init__(firebolt_client=firebolt_client)
-
     def get_by_id(self, database_id: str) -> Database:
         """Get a Database from Firebolt by its id."""
         response = self.firebolt_client.get(
@@ -50,7 +44,9 @@ class DatabaseService(BaseService):
             account_id: str
             database: Database
 
-        region_key = self.region_service.get_by_name(region_name=region_name).key
+        region_key = self.firebolt_client.region_service.get_by_name(
+            region_name=region_name
+        ).key
         database = Database(name=database_name, compute_region_key=region_key)
 
         response = self.firebolt_client.post(
