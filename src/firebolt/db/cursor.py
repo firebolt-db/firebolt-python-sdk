@@ -31,7 +31,7 @@ class CursorState(Enum):
 
 
 def check_not_closed(func: Callable) -> Callable:
-    """(Decorator) ensure cursor is not closed before calling method"""
+    """(Decorator) ensure cursor is not closed before calling method."""
 
     @wraps(func)
     def inner(self: Cursor, *args: Any, **kwargs: Any) -> Any:
@@ -46,7 +46,7 @@ def check_query_executed(func: Callable) -> Callable:
     cleandoc(
         """
         (Decorator) ensure that some query has been executed before
-        calling cursor method
+        calling cursor method.
         """
     )
 
@@ -146,12 +146,12 @@ class Cursor:
     @property  # type: ignore
     @check_not_closed
     def rowcount(self) -> int:
-        """The number of rows produced by last query"""
+        """The number of rows produced by last query."""
         return self._rowcount
 
     @property
     def arraysize(self) -> int:
-        """Default number of rows returned by fetchmany"""
+        """Default number of rows returned by fetchmany."""
         return self._arraysize
 
     @arraysize.setter
@@ -165,15 +165,15 @@ class Cursor:
 
     @property
     def closed(self) -> bool:
-        """True if connection is closed, False otherwise"""
+        """True if connection is closed, False otherwise."""
         return self._state == CursorState.CLOSED
 
     def close(self) -> None:
-        """Terminate an ongoing query (if any) and mark connection as closed"""
+        """Terminate an ongoing query (if any) and mark connection as closed."""
         self._state = CursorState.CLOSED
 
     def _store_query_data(self, response: Response) -> None:
-        """Store information about executed query from httpx response"""
+        """Store information about executed query from httpx response."""
         try:
             query_data = response.json()
             self._rowcount = int(query_data["rows"])
@@ -188,7 +188,7 @@ class Cursor:
             raise QueryError(f"Invalid query data format: {str(err)}")
 
     def _reset(self) -> None:
-        """Clear all data stored from previous query"""
+        """Clear all data stored from previous query."""
         self._state = CursorState.NONE
         self._rows = None
         self._descriptions = None
@@ -199,7 +199,7 @@ class Cursor:
     def execute(
         self, query: str, parameters: Optional[Sequence[ParameterType]] = None
     ) -> int:
-        """Prepare and execute a database query. Return row count"""
+        """Prepare and execute a database query. Return row count."""
         self._reset()
 
         resp = self._client.request(
@@ -228,7 +228,7 @@ class Cursor:
         cleandoc(
             """
             Prepare and execute a database query against all parameter
-            sequences provided. Return last query row count
+            sequences provided. Return last query row count.
             """
         )
         rc = 0
@@ -246,7 +246,7 @@ class Cursor:
     @check_not_closed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
-        """Fetch the next row of a query result set"""
+        """Fetch the next row of a query result set."""
         assert self._rows is not None
         if self._idx < len(self._rows):
             row = self._rows[self._idx]
@@ -260,7 +260,7 @@ class Cursor:
         cleandoc(
             """
             Fetch the next set of rows of a query result,
-            cursor.arraysize is default size
+            cursor.arraysize is default size.
             """
         )
         assert self._rows is not None
@@ -275,7 +275,7 @@ class Cursor:
     @check_not_closed
     @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
-        """Fetch all remaining rows of a query result"""
+        """Fetch all remaining rows of a query result."""
         assert self._rows is not None
         if self._idx < len(self._rows):
             rows = self._rows[self._idx :]
@@ -285,11 +285,11 @@ class Cursor:
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:
-        """Predefine memory areas for query parameters (does nothing)"""
+        """Predefine memory areas for query parameters (does nothing)."""
 
     @check_not_closed
     def setoutputsize(self, size: int, column: Optional[int] = None) -> None:
-        """Set a column buffer size for fetches of large columns (does nothing)"""
+        """Set a column buffer size for fetches of large columns (does nothing)."""
 
     # Iteration support
     @check_not_closed

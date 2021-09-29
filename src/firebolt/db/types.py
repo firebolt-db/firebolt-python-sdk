@@ -18,17 +18,17 @@ Date = date
 
 
 def DateFromTicks(t: int) -> date:
-    """Convert ticks to date for firebolt db"""
+    """Convert ticks to date for firebolt db."""
     return datetime.fromtimestamp(t).date()
 
 
 def Time(hour: int, minute: int, second: int) -> None:
-    """Unsupported: construct time for firebolt db"""
+    """Unsupported: construct time for firebolt db."""
     raise NotSupportedError("time is not supported by Firebolt")
 
 
 def TimeFromTicks(t: int) -> None:
-    """Unsupported: convert ticks to time for firebolt db"""
+    """Unsupported: convert ticks to time for firebolt db."""
     raise NotSupportedError("time is not supported by Firebolt")
 
 
@@ -37,7 +37,7 @@ TimestampFromTicks = datetime.fromtimestamp
 
 
 def Binary(value: str) -> str:
-    """Convert string to binary for firebolt db, does nothing"""
+    """Convert string to binary for firebolt db, does nothing."""
     return value
 
 
@@ -48,7 +48,7 @@ ROWID = int
 
 
 class ARRAY:
-    """Class for holding information about array column type in firebolt db"""
+    """Class for holding information about array column type in firebolt db."""
 
     _prefix = "Array("
 
@@ -71,7 +71,7 @@ NULLABLE_PREFIX = "Nullable("
 
 
 class _InternalType(Enum):
-    """Enum of all internal firebolt types except for array"""
+    """Enum of all internal firebolt types except for array."""
 
     # INT, INTEGER
     UInt8 = "UInt8"
@@ -103,7 +103,7 @@ class _InternalType(Enum):
 
     @cached_property
     def python_type(self) -> type:
-        """Convert internal type to python type"""
+        """Convert internal type to python type."""
         types = {
             _InternalType.UInt8: int,
             _InternalType.UInt16: int,
@@ -123,7 +123,7 @@ class _InternalType(Enum):
 
 
 def parse_type(raw_type: str) -> Union[type, ARRAY]:
-    """Parse typename, provided by query metadata into python type"""
+    """Parse typename, provided by query metadata into python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
     # Handle arrays
@@ -145,7 +145,7 @@ def parse_value(
     value: RawColType,
     ctype: Union[type, ARRAY],
 ) -> ColType:
-    """Provided raw value and python type, parses first into python value"""
+    """Provided raw value and python type, parses first into python value."""
     if value is None:
         return None
     if ctype in (int, str, float):

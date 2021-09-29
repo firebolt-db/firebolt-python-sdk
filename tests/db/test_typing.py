@@ -15,7 +15,7 @@ from firebolt.db.types import (
 
 
 def test_parse_type(types_map: Dict[str, type]) -> None:
-    """parse_type function parses all internal types correctly"""
+    """parse_type function parses all internal types correctly."""
     for type_name, t in types_map.items():
         parsed = parse_type(type_name)
         assert (
@@ -31,7 +31,7 @@ def test_parse_type(types_map: Dict[str, type]) -> None:
 
 
 def test_parse_value_int() -> None:
-    """parse type parses all int values correctly"""
+    """parse_value parses all int values correctly."""
     assert parse_value(1, int) == 1, "Error parsing integer: provided int"
     assert parse_value("1", int) == 1, "Error parsing integer: provided str"
     assert parse_value(1.1, int) == 1, "Error parsing integer: provided float"
@@ -46,7 +46,7 @@ def test_parse_value_int() -> None:
 
 
 def test_parse_value_float() -> None:
-    """parse type parses all float values correctly"""
+    """parse_value parses all float values correctly."""
     assert parse_value(1, float) == 1.0, "Error parsing float: provided int"
     assert parse_value("1", float) == 1.0, "Error parsing float: provided str"
     assert parse_value("1.1", float) == 1.1, "Error parsing float: provided str"
@@ -62,7 +62,7 @@ def test_parse_value_float() -> None:
 
 
 def test_parse_value_str() -> None:
-    """parse type parses all str values correctly"""
+    """parse_value parses all str values correctly."""
     assert parse_value(1, str) == "1", "Error parsing str: provided int"
     assert parse_value("a", str) == "a", "Error parsing str: provided str"
     assert parse_value(1.1, str) == "1.1", "Error parsing str: provided float"
@@ -72,7 +72,7 @@ def test_parse_value_str() -> None:
 
 
 def test_parse_value_datetime() -> None:
-    """parse type parses all date and datetime values correctly"""
+    """parse_value parses all date and datetime values correctly."""
     # Date
     assert parse_value("2021-12-31", date) == date(
         2021, 12, 31
@@ -113,6 +113,7 @@ def test_parse_value_datetime() -> None:
 
 
 def test_parse_arrays() -> None:
+    """parse_value parses all array values correctly."""
     assert parse_value([1, 2], ARRAY(int)) == [
         1,
         2,
@@ -155,7 +156,7 @@ def test_parse_arrays() -> None:
 
 
 def test_helpers() -> None:
-    """All provided helper functions work properly"""
+    """All provided helper functions work properly."""
     d = date(2021, 12, 31)
     dts = datetime(d.year, d.month, d.day).timestamp()
     assert DateFromTicks(dts) == d, "Error running DateFromTicks"
