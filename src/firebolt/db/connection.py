@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import wraps
 from inspect import cleandoc
+from types import TracebackType
 from typing import Any, Callable, List
 
 from firebolt.client import DEFAULT_API_URL, FireboltClient
@@ -75,3 +76,12 @@ class Connection:
     def _remove_cursor(self, cursor: Cursor) -> None:
         if cursor in self._cursors:
             self._cursors.remove(cursor)
+
+    # Context manager support
+    def __enter__(self) -> Connection:
+        return self
+
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()
