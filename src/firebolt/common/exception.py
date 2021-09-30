@@ -48,12 +48,7 @@ class ConnectionError(FireboltError):
 
 
 class ConnectionClosedError(ConnectionError):
-    def __init__(self, method_name: str):
-        self.method_name = method_name
-        super.__repr__
-
-    def __str__(self) -> str:
-        return f"unable to call {self.method_name}: connection closed"
+    pass
 
 
 class CursorError(FireboltError):
