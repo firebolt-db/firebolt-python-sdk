@@ -1,4 +1,5 @@
-from typing import Callable, List
+from datetime import date, datetime
+from typing import Callable, Dict, List
 
 from httpx import URL, Request, Response, codes
 from pytest import fixture
@@ -8,6 +9,7 @@ from firebolt.client import FireboltClient
 from firebolt.common.settings import Settings
 from firebolt.db import Cursor
 from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
+from firebolt.db.types import ARRAY
 
 QUERY_ROW_COUNT: int = 10
 
@@ -32,6 +34,25 @@ def query_description() -> List[Column]:
 
 
 @fixture
+def python_query_description() -> List[Column]:
+    return [
+        Column("uint8", int, None, None, None, None, None),
+        Column("uint16", int, None, None, None, None, None),
+        Column("uint32", int, None, None, None, None, None),
+        Column("int32", int, None, None, None, None, None),
+        Column("uint64", int, None, None, None, None, None),
+        Column("int64", int, None, None, None, None, None),
+        Column("float32", float, None, None, None, None, None),
+        Column("float64", float, None, None, None, None, None),
+        Column("string", str, None, None, None, None, None),
+        Column("date", date, None, None, None, None, None),
+        Column("datetime", datetime, None, None, None, None, None),
+        Column("bool", int, None, None, None, None, None),
+        Column("array", ARRAY(int), None, None, None, None, None),
+    ]
+
+
+@fixture
 def query_data() -> List[List[ColType]]:
     return [
         [
@@ -46,6 +67,28 @@ def query_data() -> List[List[ColType]]:
             "some text",
             "2019-07-31",
             "2019-07-31 01:01:01",
+            1,
+            [1, 2, 3, 4],
+        ]
+        for i in range(QUERY_ROW_COUNT)
+    ]
+
+
+@fixture
+def python_query_data() -> List[List[ColType]]:
+    return [
+        [
+            i,
+            256,
+            70000,
+            -32768,
+            922337203685477580,
+            -922337203685477580,
+            1,
+            1.0387398573,
+            "some text",
+            date(2019, 7, 31),
+            datetime(2019, 7, 31, 1, 1, 1),
             1,
             [1, 2, 3, 4],
         ]
@@ -105,3 +148,26 @@ def cursor(connection, settings: Settings) -> Cursor:
         ),
         connection,
     )
+
+
+@fixture
+def types_map() -> Dict[str, type]:
+    base_types = {
+        "UInt8": int,
+        "UInt16": int,
+        "UInt32": int,
+        "Int32": int,
+        "UInt64": int,
+        "Int64": int,
+        "Float32": float,
+        "Float64": float,
+        "String": str,
+        "Date": date,
+        "DateTime": datetime,
+        "Nullable(Nothing)": str,
+        "SomeRandomNotExistingType": str,
+    }
+    array_types = {f"Array({k})": ARRAY(v) for k, v in base_types.items()}
+    nullable_arrays = {f"Nullable({k})": v for k, v in array_types.items()}
+    nested_arrays = {f"Array({k})": ARRAY(v) for k, v in array_types.items()}
+    return {**base_types, **array_types, **nullable_arrays, **nested_arrays}
