@@ -126,7 +126,7 @@ class Cursor:
 
     default_arraysize = 1
 
-    def __init__(self, client: FireboltClient, connection: "Connection"):
+    def __init__(self, client: FireboltClient, connection: Connection):
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize
