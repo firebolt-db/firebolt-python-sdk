@@ -234,8 +234,10 @@ def test_cursor_fetchmany(
     cursor: Cursor,
 ):
     cleandoc(
-        """cursor fetchmany fetches the provided amount of rows, or arraysize by
-        default.If not enought rows left, returns less or None if there are no rows."""
+        """
+        Cursor's fetchmany fetches the provided amount of rows, or arraysize by
+        default. If not enough rows left, returns less or None if there are no rows.
+        """
     )
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
