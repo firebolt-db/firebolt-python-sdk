@@ -47,14 +47,13 @@ class Connection:
         self._cursors: List[Cursor] = []
         self._is_closed = False
         # Holding this lock for write means that connection is closing itself.
-        # cursor and close should hold this lock for read to read/write state
+        # cursor() should hold this lock for read to read/write state
         self._closing_lock = RWLockWrite()
 
     def cursor(self) -> Cursor:
         """Create new cursor object."""
         with self._closing_lock.gen_rlock():
-            # Call _is_closed instead of closed to remove unnecessary lock hold
-            if self._is_closed:
+            if self.closed:
                 raise ConnectionClosedError(
                     "Unable to create cursor: connection closed"
                 )
@@ -65,9 +64,8 @@ class Connection:
 
     def close(self) -> None:
         """Close connection and all underlying cursors."""
-        # Hold closing lock for read, all other operations will be waiting
         with self._closing_lock.gen_wlock():
-            if self._is_closed:
+            if self.closed:
                 return
 
             # self._cursors is going to be changed during closing cursors
@@ -84,8 +82,7 @@ class Connection:
     @property
     def closed(self) -> bool:
         """True if connection is closed, False otherwise."""
-        with self._closing_lock.gen_rlock():
-            return self._is_closed
+        return self._is_closed
 
     def _remove_cursor(self, cursor: Cursor) -> None:
         # This way it's atomic

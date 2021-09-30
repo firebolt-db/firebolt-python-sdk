@@ -6,6 +6,7 @@ from enum import Enum
 from functools import wraps
 from inspect import cleandoc
 from json import JSONDecodeError
+from threading import Lock
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -20,6 +21,7 @@ from typing import (
 )
 
 from httpx import Response, codes
+from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import FireboltClient
 from firebolt.common.exception import (
@@ -123,6 +125,8 @@ class Cursor:
         "_rowcount",
         "_rows",
         "_idx",
+        "_idx_lock",
+        "_query_lock",
     )
 
     default_arraysize = 1
@@ -133,6 +137,8 @@ class Cursor:
         self._arraysize = self.default_arraysize
         self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
+        self._idx_lock = Lock()
+        self._query_lock = RWLockWrite()
         self._reset()
 
     def __del__(self) -> None:
@@ -232,11 +238,12 @@ class Cursor:
         self, query: str, parameters: Optional[Sequence[ParameterType]] = None
     ) -> int:
         """Prepare and execute a database query. Return row count."""
-        self._reset()
-        resp = self._do_execute_request(query, parameters)
-        self._store_query_data(resp)
-        self._state = CursorState.DONE
-        return self.rowcount
+        with self._query_lock.gen_wlock():
+            self._reset()
+            resp = self._do_execute_request(query, parameters)
+            self._store_query_data(resp)
+            self._state = CursorState.DONE
+            return self.rowcount
 
     @check_not_closed
     def executemany(
@@ -248,14 +255,15 @@ class Cursor:
             sequences provided. Return last query row count.
             """
         )
-        self._reset()
-        resp = None
-        for parameters in parameters_seq:
-            resp = self._do_execute_request(query, parameters)
-        if resp is not None:
-            self._store_query_data(resp)
-        self._state = CursorState.DONE
-        return self.rowcount
+        with self._query_lock.gen_wlock():
+            self._reset()
+            resp = None
+            for parameters in parameters_seq:
+                resp = self._do_execute_request(query, parameters)
+                if resp is not None:
+                    self._store_query_data(resp)
+                    self._state = CursorState.DONE
+            return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
         """Parse a single data row based on query column types"""
@@ -265,22 +273,30 @@ class Cursor:
         ]
 
     def _get_next_range(self, size: int) -> Tuple[int, int]:
+        cleandoc(
+            """
+            Return range of next rows of size (if possible),
+            and update _idx to point to the end of this range
+            """
+        )
         assert self._rows is not None
-        left = self._idx
-        right = min(self._idx + size, len(self._rows))
-        self._idx = right
-        return left, right
+        with self._idx_lock:
+            left = self._idx
+            right = min(self._idx + size, len(self._rows))
+            self._idx = right
+            return left, right
 
     @check_not_closed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set."""
-        left, right = self._get_next_range(1)
-        if left == right:
-            # We are out of elements
-            return None
-        assert self._rows is not None
-        return self._parse_row(self._rows[left])
+        with self._query_lock.gen_rlock():
+            left, right = self._get_next_range(1)
+            if left == right:
+                # We are out of elements
+                return None
+            assert self._rows is not None
+            return self._parse_row(self._rows[left])
 
     @check_not_closed
     @check_query_executed
@@ -291,20 +307,22 @@ class Cursor:
             cursor.arraysize is default size.
             """
         )
-        size = size or self.arraysize
-        left, right = self._get_next_range(size)
-        assert self._rows is not None
-        rows = self._rows[left:right]
-        return [self._parse_row(row) for row in rows]
+        with self._query_lock.gen_rlock():
+            size = size or self.arraysize
+            left, right = self._get_next_range(size)
+            assert self._rows is not None
+            rows = self._rows[left:right]
+            return [self._parse_row(row) for row in rows]
 
     @check_not_closed
     @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result."""
-        assert self._rows is not None
-        left, right = self._get_next_range(len(self._rows))
-        rows = self._rows[left:right]
-        return [self._parse_row(row) for row in rows]
+        with self._query_lock.gen_rlock():
+            assert self._rows is not None
+            left, right = self._get_next_range(len(self._rows))
+            rows = self._rows[left:right]
+            return [self._parse_row(row) for row in rows]
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:
