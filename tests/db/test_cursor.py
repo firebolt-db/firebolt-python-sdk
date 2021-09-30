@@ -1,3 +1,4 @@
+from inspect import cleandoc
 from typing import Callable, List
 
 from httpx import HTTPStatusError, StreamError, codes
@@ -21,7 +22,7 @@ def test_cursor_state(
     query_url: str,
     cursor: Cursor,
 ):
-    """Cursor state changes depending on the operations performed with it"""
+    """Cursor state changes depending on the operations performed with it."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -38,7 +39,7 @@ def test_cursor_state(
 
 
 def test_closed_cursor():
-    """Most of cursor methods are unavailable for closed cursor"""
+    """Most of cursor methods are unavailable for closed cursor."""
     fields = ("description", "rowcount")
     methods = (
         "execute",
@@ -81,7 +82,7 @@ def test_cursor_no_query(
     query_url: str,
     cursor: Cursor,
 ):
-    """Some of cursor methods are unavailable until a query is run"""
+    """Some of cursor methods are unavailable until a query is run."""
     methods = (
         "fetchone",
         "fetchmany",
@@ -125,10 +126,10 @@ def test_cursor_execute(
     query_callback: Callable,
     query_url: str,
     cursor: Cursor,
-    query_description: List[Column],
-    query_data: List[List[ColType]],
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
 ):
-    """Cursor is able to execute query, all fields are populated properly"""
+    """Cursor is able to execute query, all fields are populated properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -136,14 +137,16 @@ def test_cursor_execute(
         lambda: cursor.execute("select *"),
         lambda: cursor.executemany("select *", [None, None]),
     ):
-        assert query() == len(query_data), "Invalid row count returned"
-        assert cursor.rowcount == len(query_data), "Invalid rowcount value"
-        for i, (desc, exp) in enumerate(zip(cursor.description, query_description)):
+        assert query() == len(python_query_data), "Invalid row count returned"
+        assert cursor.rowcount == len(python_query_data), "Invalid rowcount value"
+        for i, (desc, exp) in enumerate(
+            zip(cursor.description, python_query_description)
+        ):
             assert desc == exp, f"Invalid column description at position {i}"
 
         for i in range(cursor.rowcount):
             assert (
-                cursor.fetchone() == query_data[i]
+                cursor.fetchone() == python_query_data[i]
             ), f"Invalid data row at position {i}"
 
         assert cursor.fetchone() is None, "Non-empty fetchone after all data received"
@@ -156,7 +159,7 @@ def test_cursor_execute_error(
     query_url: str,
     cursor: Cursor,
 ):
-    """Cursor handles all types of errors properly"""
+    """Cursor handles all types of errors properly."""
     for query in (
         lambda: cursor.execute("select *"),
         lambda: cursor.executemany("select *", [None, None]),
@@ -204,10 +207,12 @@ def test_cursor_fetchone(
     query_url: str,
     cursor: Cursor,
 ):
+    """cursor fetchone fetches single row in correct order, if no rows returns None."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
     cursor.execute("sql")
+
     assert cursor.fetchone()[0] == 0, "Invalid rows order returned by fetchone"
     assert cursor.fetchone()[0] == 1, "Invalid rows order returned by fetchone"
 
@@ -228,6 +233,12 @@ def test_cursor_fetchmany(
     query_url: str,
     cursor: Cursor,
 ):
+    cleandoc(
+        """
+        Cursor's fetchmany fetches the provided amount of rows, or arraysize by
+        default. If not enough rows left, returns less or None if there are no rows.
+        """
+    )
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -275,6 +286,7 @@ def test_cursor_fetchall(
     query_url: str,
     cursor: Cursor,
 ):
+    """cursor fetchall fetches all rows that left after last query."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
