@@ -15,6 +15,7 @@ from typing import (
     List,
     Optional,
     Sequence,
+    Tuple,
     Union,
 )
 
@@ -208,13 +209,9 @@ class Cursor:
         self._rowcount = -1
         self._idx = 0
 
-    @check_not_closed
-    def execute(
+    def _do_execute_request(
         self, query: str, parameters: Optional[Sequence[ParameterType]] = None
-    ) -> int:
-        """Prepare and execute a database query. Return row count."""
-        self._reset()
-
+    ) -> Response:
         resp = self._client.request(
             url="/",
             method="POST",
@@ -227,9 +224,16 @@ class Cursor:
 
         if resp.status_code == codes.INTERNAL_SERVER_ERROR:
             raise QueryError(f"Error executing query:\n{resp.read().decode('utf-8')}")
-
         resp.raise_for_status()
+        return resp
 
+    @check_not_closed
+    def execute(
+        self, query: str, parameters: Optional[Sequence[ParameterType]] = None
+    ) -> int:
+        """Prepare and execute a database query. Return row count."""
+        self._reset()
+        resp = self._do_execute_request(query, parameters)
         self._store_query_data(resp)
         self._state = CursorState.DONE
         return self.rowcount
@@ -244,10 +248,14 @@ class Cursor:
             sequences provided. Return last query row count.
             """
         )
-        rc = 0
-        for params in parameters_seq:
-            rc = self.execute(query, params)
-        return rc
+        self._reset()
+        resp = None
+        for parameters in parameters_seq:
+            resp = self._do_execute_request(query, parameters)
+        if resp is not None:
+            self._store_query_data(resp)
+        self._state = CursorState.DONE
+        return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
         """Parse a single data row based on query column types"""
@@ -256,16 +264,23 @@ class Cursor:
             parse_value(col, self.description[i].type_code) for i, col in enumerate(row)
         ]
 
+    def _get_next_range(self, size: int) -> Tuple[int, int]:
+        assert self._rows is not None
+        left = self._idx
+        right = min(self._idx + size, len(self._rows))
+        self._idx = right
+        return left, right
+
     @check_not_closed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set."""
+        left, right = self._get_next_range(1)
+        if left == right:
+            # We are out of elements
+            return None
         assert self._rows is not None
-        if self._idx < len(self._rows):
-            row = self._rows[self._idx]
-            self._idx += 1
-            return self._parse_row(row)
-        return None
+        return self._parse_row(self._rows[left])
 
     @check_not_closed
     @check_query_executed
@@ -276,25 +291,20 @@ class Cursor:
             cursor.arraysize is default size.
             """
         )
-        assert self._rows is not None
         size = size or self.arraysize
-        if self._idx < len(self._rows):
-            right = min(self._idx + size, len(self._rows))
-            rows = self._rows[self._idx : right]
-            self._idx = right
-            return [self._parse_row(row) for row in rows]
-        return []
+        left, right = self._get_next_range(size)
+        assert self._rows is not None
+        rows = self._rows[left:right]
+        return [self._parse_row(row) for row in rows]
 
     @check_not_closed
     @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result."""
         assert self._rows is not None
-        if self._idx < len(self._rows):
-            rows = self._rows[self._idx :]
-            self._idx = len(self._rows)
-            return [self._parse_row(row) for row in rows]
-        return []
+        left, right = self._get_next_range(len(self._rows))
+        rows = self._rows[left:right]
+        return [self._parse_row(row) for row in rows]
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:
