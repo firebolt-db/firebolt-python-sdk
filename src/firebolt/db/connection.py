@@ -74,7 +74,7 @@ class Connection:
             cursors = self._cursors[:]
             for c in cursors:
                 # Here c can already be closed by another thread,
-                # but it should'n raise an error in this case
+                # but it shouldn't raise an error in this case
                 c.close()
             self._client.close()
             self._is_closed = True
