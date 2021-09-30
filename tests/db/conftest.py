@@ -5,9 +5,8 @@ from httpx import URL, Request, Response, codes
 from pytest import fixture
 from pytest_httpx import to_response
 
-from firebolt.client import FireboltClient
 from firebolt.common.settings import Settings
-from firebolt.db import Cursor
+from firebolt.db import Connection, Cursor
 from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.db.types import ARRAY
 
@@ -129,25 +128,16 @@ def query_url(settings: Settings, db_name: str) -> str:
     )
 
 
-# TODO: Propper connection after it will be implemented
 @fixture
-def connection(db_name: str):
-    class connection:
-        database = db_name
-
-    return connection()
-
-
-@fixture
-def cursor(connection, settings: Settings) -> Cursor:
-    return Cursor(
-        FireboltClient(
-            auth=("u", "p"),
-            base_url=f"https://{settings.server}",
-            api_endpoint=settings.server,
-        ),
-        connection,
+def connection(settings: Settings, db_name: str) -> Connection:
+    return Connection(
+        f"https://{settings.server}", db_name, "u", "p", api_endpoint=settings.server
     )
+
+
+@fixture
+def cursor(connection: Connection) -> Cursor:
+    return connection.cursor()
 
 
 @fixture
