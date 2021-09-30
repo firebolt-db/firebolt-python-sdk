@@ -38,7 +38,7 @@ def test_cursor_state(
     assert cursor._state == CursorState.CLOSED
 
 
-def test_closed_cursor():
+def test_closed_cursor(cursor: Cursor):
     """Most of cursor methods are unavailable for closed cursor."""
     fields = ("description", "rowcount")
     methods = (
@@ -51,27 +51,26 @@ def test_closed_cursor():
         "setoutputsize",
     )
 
-    c = Cursor(None, None)
-    c.close()
+    cursor.close()
 
     for field in fields:
         with raises(CursorClosedError):
-            getattr(c, field)
+            getattr(cursor, field)
 
     for method in methods:
         with raises(CursorClosedError):
-            getattr(c, method)(c)
+            getattr(cursor, method)(cursor)
 
     with raises(CursorClosedError):
-        with c:
+        with cursor:
             pass
 
     with raises(CursorClosedError):
-        list(c)
+        list(cursor)
 
     # No errors
-    assert c.closed
-    c.close()
+    assert cursor.closed
+    cursor.close()
 
 
 def test_cursor_no_query(
