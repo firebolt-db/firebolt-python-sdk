@@ -1,25 +1,14 @@
 from __future__ import annotations
 
-from functools import wraps
 from inspect import cleandoc
 from types import TracebackType
-from typing import Any, Callable, List
+from typing import List
+
+from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, FireboltClient
 from firebolt.common.exception import ConnectionClosedError
 from firebolt.db.cursor import Cursor
-
-
-def check_not_closed(func: Callable) -> Callable:
-    """(Decorator) ensure cursor is not closed before calling method"""
-
-    @wraps(func)
-    def inner(self: Connection, *args: Any, **kwargs: Any) -> Any:
-        if self._is_closed:
-            raise ConnectionClosedError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
 
 
 class Connection:
@@ -41,7 +30,7 @@ class Connection:
         are not implemented.
         """
     )
-    __slots__ = ("_client", "_cursors", "database", "_is_closed")
+    __slots__ = ("_client", "_cursors", "database", "_is_closed", "_closing_lock")
 
     def __init__(
         self,
@@ -57,23 +46,38 @@ class Connection:
         self.database = database
         self._cursors: List[Cursor] = []
         self._is_closed = False
+        # Holding this lock for write means that connection is closing itself.
+        # cursor() should hold this lock for read to read/write state
+        self._closing_lock = RWLockWrite()
 
-    @check_not_closed
     def cursor(self) -> Cursor:
         """Create new cursor object."""
-        c = Cursor(self._client, self)
-        self._cursors.append(c)
-        return c
+        with self._closing_lock.gen_rlock():
+            if self.closed:
+                raise ConnectionClosedError(
+                    "Unable to create cursor: connection closed"
+                )
 
-    @check_not_closed
+            c = Cursor(self._client, self)
+            self._cursors.append(c)
+            return c
+
     def close(self) -> None:
         """Close connection and all underlying cursors."""
-        # self._cursors is going to be changed during closing cursors
-        cursors = self._cursors[:]
-        for c in cursors:
-            c.close()
-        self._client.close()
-        self._is_closed = True
+        with self._closing_lock.gen_wlock():
+            if self.closed:
+                return
+
+            # self._cursors is going to be changed during closing cursors
+            # after this point no cursors would be added to _cursors, only removed since
+            # closing lock is held, and later connection will be marked as closed
+            cursors = self._cursors[:]
+            for c in cursors:
+                # Here c can already be closed by another thread,
+                # but it shouldn't raise an error in this case
+                c.close()
+            self._client.close()
+            self._is_closed = True
 
     @property
     def closed(self) -> bool:
@@ -81,11 +85,16 @@ class Connection:
         return self._is_closed
 
     def _remove_cursor(self, cursor: Cursor) -> None:
-        if cursor in self._cursors:
+        # This way it's atomic
+        try:
             self._cursors.remove(cursor)
+        except ValueError:
+            pass
 
     # Context manager support
     def __enter__(self) -> Connection:
+        if self.closed:
+            raise ConnectionClosedError("Connection is already closed")
         return self
 
     def __exit__(
