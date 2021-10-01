@@ -10,16 +10,16 @@ from firebolt.db.types import ColType
 
 def test_closed_connection(connection: Connection) -> None:
     """Connection methods are unavailable for closed connection."""
-    methods = ("cursor", "close")
     connection.close()
 
-    for method in methods:
-        with raises(ConnectionClosedError):
-            getattr(connection, method)(connection)
+    with raises(ConnectionClosedError):
+        connection.cursor()
 
     with raises(ConnectionClosedError):
         with connection:
             pass
+
+    connection.close()
 
 
 def test_cursors_closed_on_close(connection: Connection) -> None:
