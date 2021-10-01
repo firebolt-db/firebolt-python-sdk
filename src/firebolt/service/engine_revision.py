@@ -5,8 +5,7 @@ from firebolt.model.engine_revision import (
     EngineRevisionKey,
     EngineRevisionSpecification,
 )
-from firebolt.service.base_service import BaseService
-from firebolt.service.instance_type_service import InstanceTypeService
+from firebolt.service.base import BaseService
 
 
 class EngineRevisionService(BaseService):
@@ -34,7 +33,7 @@ class EngineRevisionService(BaseService):
         Returns:
             The requested EngineRevision
         """
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url=f"/core/v1/accounts/{engine_revision_key.account_id}"
             f"/engines/{engine_revision_key.engine_id}"
             f"/engineRevisions/{engine_revision_key.engine_revision_id}",
@@ -91,11 +90,9 @@ class EngineRevisionService(BaseService):
         if compute_instance_count is None:
             compute_instance_count = 1
 
-        instance_type_key = (
-            InstanceTypeService(firebolt_client=self.firebolt_client)
-            .get_by_name(instance_type_name=compute_instance_type_name)
-            .key
-        )
+        instance_type_key = self.resource_manager.instance_types.get_by_name(
+            instance_type_name=compute_instance_type_name
+        ).key
         return EngineRevisionSpecification(
             db_compute_instances_type_key=instance_type_key,
             db_compute_instances_count=compute_instance_count,
@@ -126,7 +123,7 @@ class EngineRevisionService(BaseService):
         if compute_instance_count is None:
             compute_instance_count = 2
 
-        instance_type_key = self.firebolt_client.instance_type_service.get_by_name(
+        instance_type_key = self.resource_manager.instance_types.get_by_name(
             instance_type_name=compute_instance_type_name
         ).key
         return EngineRevisionSpecification(

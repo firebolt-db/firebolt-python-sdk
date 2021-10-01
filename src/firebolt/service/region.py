@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import NamedTuple, Optional
 
 from firebolt.model.region import Region, RegionKey
-from firebolt.service.base_service import BaseService
+from firebolt.service.base import BaseService
 
 
 class RegionLookup(NamedTuple):
@@ -16,7 +16,7 @@ class RegionService(BaseService):
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url="/compute/v1/regions", params={"page.first": 5000}
         )
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -26,7 +26,7 @@ class RegionService(BaseService):
         """Dict of {RegionLookup: Region}"""
         return {
             RegionLookup(
-                provider_name=self.firebolt_client.provider_service.get_by_id(
+                provider_name=self.resource_manager.providers.get_by_id(
                     r.key.provider_id
                 ).name,
                 region_name=r.name,
@@ -43,21 +43,21 @@ class RegionService(BaseService):
     def default_region(self) -> Region:
         """Default Region, could be provided from environment."""
 
-        if not self.firebolt_client.settings.default_region:
+        if not self.resource_manager.settings.default_region:
             raise ValueError(
                 "The environment variable FIREBOLT_DEFAULT_REGION must be set."
             )
         return self.get_by_name(
-            region_name=self.firebolt_client.settings.default_region
+            region_name=self.resource_manager.settings.default_region
         )
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None
     ) -> Region:
         """Get a region by its name (eg. us-east-1)."""
-        assert self.firebolt_client.provider_service is not None
+        assert self.resource_manager.providers is not None
         if provider_name is None:
-            provider_name = self.firebolt_client.provider_service.default_provider.name
+            provider_name = self.resource_manager.providers.default_provider.name
 
         return self.regions_by_name[
             RegionLookup(provider_name=provider_name, region_name=region_name)

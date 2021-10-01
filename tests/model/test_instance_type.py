@@ -3,10 +3,9 @@ from typing import Callable, List
 import httpx
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import FireboltResourceClient
 from firebolt.common import Settings
 from firebolt.model.instance_type import InstanceType
-from firebolt.service.instance_type_service import InstanceTypeService
+from firebolt.service.manager import ResourceManager
 from tests.util import list_to_paginated_response
 
 
@@ -22,8 +21,5 @@ def test_instance_type(
         status_code=httpx.codes.OK,
         json=list_to_paginated_response(mock_instance_types),
     )
-    with FireboltResourceClient(settings=settings) as fc:
-        assert (
-            InstanceTypeService(firebolt_client=fc).instance_types
-            == mock_instance_types
-        )
+    manager = ResourceManager(settings=settings)
+    assert manager.instance_types.instance_types == mock_instance_types

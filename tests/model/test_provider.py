@@ -3,10 +3,9 @@ from typing import Callable, List
 import httpx
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import FireboltResourceClient
 from firebolt.common import Settings
 from firebolt.model.provider import Provider
-from firebolt.service.provider_service import ProviderService
+from firebolt.service.manager import ResourceManager
 from tests.util import list_to_paginated_response
 
 
@@ -22,5 +21,5 @@ def test_provider(
         status_code=httpx.codes.OK,
         json=list_to_paginated_response(mock_providers),
     )
-    with FireboltResourceClient(settings=settings) as fc:
-        assert ProviderService(firebolt_client=fc).providers == mock_providers
+    manager = ResourceManager(settings=settings)
+    assert manager.providers.providers == mock_providers

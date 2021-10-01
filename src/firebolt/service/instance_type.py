@@ -2,7 +2,7 @@ from functools import cached_property
 from typing import NamedTuple, Optional
 
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
-from firebolt.service.base_service import BaseService
+from firebolt.service.base import BaseService
 
 
 class InstanceTypeLookup(NamedTuple):
@@ -17,7 +17,7 @@ class InstanceTypeService(BaseService):
     @cached_property
     def instance_types(self) -> list[InstanceType]:
         """List of instance types available on Firebolt."""
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url="/compute/v1/instanceTypes", params={"page.first": 5000}
         )
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -32,10 +32,10 @@ class InstanceTypeService(BaseService):
         """Dict of {InstanceTypeLookup: InstanceType}"""
         return {
             InstanceTypeLookup(
-                provider_name=self.firebolt_client.provider_service.get_by_id(
+                provider_name=self.resource_manager.providers.get_by_id(
                     provider_id=i.key.provider_id
                 ).name,
-                region_name=self.firebolt_client.region_service.get_by_id(
+                region_name=self.resource_manager.regions.get_by_id(
                     region_id=i.key.region_id
                 ).name,
                 instance_type_name=i.name,
@@ -69,12 +69,10 @@ class InstanceTypeService(BaseService):
             The requested instance type.
         """
         provider_name = (
-            provider_name or self.firebolt_client.provider_service.default_provider.name
+            provider_name or self.resource_manager.providers.default_provider.name
         )
         # Will raise an error if neither set
-        region_name = (
-            region_name or self.firebolt_client.region_service.default_region.name
-        )
+        region_name = region_name or self.resource_manager.regions.default_region.name
         return self.instance_types_by_name[
             InstanceTypeLookup(
                 provider_name=provider_name,

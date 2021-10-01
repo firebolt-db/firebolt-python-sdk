@@ -2,29 +2,20 @@ import logging
 import time
 from typing import Optional
 
-from firebolt.client import FireboltResourceClient
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine, EngineSettings
 from firebolt.model.engine_revision import EngineRevision
-from firebolt.service.base_service import BaseService
-from firebolt.service.binding_service import BindingService
-from firebolt.service.engine_revision_service import EngineRevisionService
+from firebolt.service.base import BaseService
 
 logger = logging.getLogger(__name__)
 
 
 class EngineService(BaseService):
-    def __init__(self, firebolt_client: FireboltResourceClient):
-        self.engine_revision_service = EngineRevisionService(
-            firebolt_client=firebolt_client
-        )
-        super().__init__(firebolt_client=firebolt_client)
-
     def get_engine_by_id(self, engine_id: str) -> Engine:
         """Get an Engine from Firebolt by its id."""
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url=f"/core/v1/accounts/{self.account_id}/engines/{engine_id}",
         )
         engine_spec: dict = response.json()["engine"]
@@ -32,7 +23,7 @@ class EngineService(BaseService):
 
     def get_engine_by_name(self, engine_name: str) -> Engine:
         """Get an Engine from Firebolt by its name."""
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url="/core/v1/account/engines:getIdByName",
             params={"engine_name": engine_name},
         )
@@ -71,7 +62,7 @@ class EngineService(BaseService):
         )
         return self.create_engine(
             engine=engine,
-            engine_revision=self.engine_revision_service.create_analytics_engine_revision(  # noqa: E501
+            engine_revision=self.resource_manager.engine_revisions.create_analytics_engine_revision(  # noqa: E501
                 compute_instance_type_name=compute_instance_type_name,
                 compute_instance_count=compute_instance_count,
             ),
@@ -108,7 +99,7 @@ class EngineService(BaseService):
         )
         return self.create_engine(
             engine=engine,
-            engine_revision=self.engine_revision_service.create_general_purpose_engine_revision(  # noqa: E501
+            engine_revision=self.resource_manager.engine_revisions.create_general_purpose_engine_revision(  # noqa: E501
                 compute_instance_type_name=compute_instance_type_name,
                 compute_instance_count=compute_instance_count,
             ),
@@ -134,11 +125,9 @@ class EngineService(BaseService):
             The new local Engine object.
         """
         if region_name is not None:
-            region = self.firebolt_client.region_service.get_by_name(
-                region_name=region_name
-            )
+            region = self.resource_manager.regions.get_by_name(region_name=region_name)
         else:
-            region = self.firebolt_client.region_service.default_region
+            region = self.resource_manager.regions.default_region
         return Engine(
             name=name,
             description=description,
@@ -148,7 +137,7 @@ class EngineService(BaseService):
 
     def get_engines_by_ids(self, engine_ids: list[str]) -> list[Engine]:
         """Get multiple Engines from Firebolt by their ids."""
-        response = self.firebolt_client.post(
+        response = self.client.post(
             url=f"/core/v1/engines:getByIds",
             json={
                 "engine_ids": [
@@ -173,7 +162,7 @@ class EngineService(BaseService):
                 Only one engine can be set as default for a single database.
                 This will overwrite any existing default.
         """
-        return BindingService(self.firebolt_client).create_binding(
+        return self.resource_manager.bindings.create_binding(
             engine=engine, database=database, is_default_engine=is_default_engine
         )
 
@@ -198,7 +187,7 @@ class EngineService(BaseService):
             engine: Engine
             engine_revision: Optional[EngineRevision]
 
-        response = self.firebolt_client.post(
+        response = self.client.post(
             url="/core/v1/account/engines",
             headers={"Content-type": "application/json"},
             json=_EngineCreateRequest(
@@ -235,7 +224,7 @@ class EngineService(BaseService):
         Returns:
             The updated Engine from Firebolt.
         """
-        response = self.firebolt_client.post(
+        response = self.client.post(
             url=f"/core/v1/account/engines/{engine.engine_id}:start",
         )
         engine = Engine.parse_obj(response.json()["engine"])
@@ -265,14 +254,14 @@ class EngineService(BaseService):
 
     def stop_engine(self, engine: Engine) -> Engine:
         """Stop an Engine running on Firebolt."""
-        response = self.firebolt_client.post(
+        response = self.client.post(
             url=f"/core/v1/account/engines/{engine.engine_id}:stop",
         )
         return Engine.parse_obj(response.json()["engine"])
 
     def delete(self, engine: Engine) -> Engine:
         """Delete an Engine from Firebolt."""
-        response = self.firebolt_client.delete(
+        response = self.client.delete(
             url=f"/core/v1"
             f"/accounts/{self.account_id}"
             f"/engines/{engine.engine_id}",

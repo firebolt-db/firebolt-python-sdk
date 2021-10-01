@@ -1,14 +1,14 @@
 from functools import cached_property
 
 from firebolt.model.provider import Provider
-from firebolt.service.base_service import BaseService
+from firebolt.service.base import BaseService
 
 
 class ProviderService(BaseService):
     @cached_property
     def providers(self) -> list[Provider]:
         """List of available Providers on Firebolt"""
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url="/compute/v1/providers", params={"page.first": 5000}
         )
         return [Provider.parse_obj(i["node"]) for i in response.json()["edges"]]
