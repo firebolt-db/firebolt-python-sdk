@@ -45,11 +45,9 @@ class ResourceManager:
         from firebolt.service.engine import EngineService
         from firebolt.service.engine_revision import EngineRevisionService
         from firebolt.service.instance_type import InstanceTypeService
-        from firebolt.service.provider import ProviderService
         from firebolt.service.region import RegionService
 
         # Cloud Platform Resources (AWS, etc)
-        self.providers = ProviderService(resource_manager=self)
         self.regions = RegionService(
             resource_manager=self, default_region_name=default_region_name
         )
