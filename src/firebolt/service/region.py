@@ -3,6 +3,7 @@ from typing import NamedTuple, Optional
 
 from firebolt.model.region import Region, RegionKey
 from firebolt.service.base import BaseService
+from firebolt.service.manager import ResourceManager
 
 
 class RegionLookup(NamedTuple):
@@ -13,6 +14,19 @@ class RegionLookup(NamedTuple):
 
 
 class RegionService(BaseService):
+    def __init__(
+        self, resource_manager: ResourceManager, default_region_name: str = None
+    ):
+        """
+        Service to manage Regions (us-east-1, etc).
+
+        Args:
+            resource_manager: Resource manager to use.
+            default_region_name: Region to use as a default.
+        """
+        self.default_region_name = default_region_name
+        super().__init__(resource_manager=resource_manager)
+
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
@@ -43,13 +57,11 @@ class RegionService(BaseService):
     def default_region(self) -> Region:
         """Default Region, could be provided from environment."""
 
-        if not self.resource_manager.settings.default_region:
+        if not self.default_region_name:
             raise ValueError(
                 "The environment variable FIREBOLT_DEFAULT_REGION must be set."
             )
-        return self.get_by_name(
-            region_name=self.resource_manager.settings.default_region
-        )
+        return self.get_by_name(region_name=self.default_region_name)
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None

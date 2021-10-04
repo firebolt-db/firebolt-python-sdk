@@ -10,21 +10,35 @@ from firebolt.common import Settings
 
 
 class ResourceManager:
+    """
+    ResourceManager to access various Firebolt resources:
+
+    - databases
+    - engines
+    - bindings (the bindings between an engine and a database)
+    - engine revisions (versions of an engine)
+
+    Also provides listings of:
+    - regions (AWS regions in which engines can run)
+    - instance types (AWS instance types which engines can use)
+    """
+
     def __init__(self, settings: Optional[Settings] = None):
-        self.settings = settings or Settings()
+        if settings is None:
+            settings = Settings()
 
         self.client = FireboltClient(
-            auth=(self.settings.user, self.settings.password.get_secret_value()),
-            base_url=f"https://{self.settings.server}",
-            api_endpoint=self.settings.server,
+            auth=(settings.user, settings.password.get_secret_value()),
+            base_url=f"https://{settings.server}",
+            api_endpoint=settings.server,
         )
         self.client.event_hooks = {
             "request": [log_request],
             "response": [log_response, raise_on_4xx_5xx],
         }
-        self._init_services()
+        self._init_services(default_region_name=settings.default_region)
 
-    def _init_services(self) -> None:
+    def _init_services(self, default_region_name: str) -> None:
         # avoid circular import
         from firebolt.service.binding import BindingService
         from firebolt.service.database import DatabaseService
@@ -36,7 +50,9 @@ class ResourceManager:
 
         # Cloud Platform Resources (AWS, etc)
         self.providers = ProviderService(resource_manager=self)
-        self.regions = RegionService(resource_manager=self)
+        self.regions = RegionService(
+            resource_manager=self, default_region_name=default_region_name
+        )
         self.instance_types = InstanceTypeService(resource_manager=self)
 
         # Firebolt Resources

@@ -1,3 +1,4 @@
+import json
 import logging
 import time
 from typing import Optional
@@ -190,11 +191,13 @@ class EngineService(BaseService):
         response = self.client.post(
             url="/core/v1/account/engines",
             headers={"Content-type": "application/json"},
-            json=_EngineCreateRequest(
-                account_id=self.account_id,
-                engine=engine,
-                engine_revision=engine_revision,
-            ).dict(by_alias=True),
+            json=json.loads(
+                _EngineCreateRequest(
+                    account_id=self.account_id,
+                    engine=engine,
+                    engine_revision=engine_revision,
+                ).json(by_alias=True)
+            ),
         )
         return Engine.parse_obj(response.json()["engine"])
 
