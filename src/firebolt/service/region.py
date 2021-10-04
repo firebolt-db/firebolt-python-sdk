@@ -1,11 +1,9 @@
-import os
 from functools import cached_property
 from typing import NamedTuple, Optional
 
-from firebolt.client import FireboltClient
 from firebolt.model.region import Region, RegionKey
-from firebolt.service.base_service import BaseService
-from firebolt.service.provider_service import ProviderService
+from firebolt.service.base import BaseService
+from firebolt.service.manager import ResourceManager
 
 
 class RegionLookup(NamedTuple):
@@ -16,19 +14,23 @@ class RegionLookup(NamedTuple):
 
 
 class RegionService(BaseService):
-    DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
+    def __init__(
+        self, resource_manager: ResourceManager, default_region_name: str = None
+    ):
+        """
+        Service to manage Regions (us-east-1, etc).
 
-    provider_service = None
-
-    def __init__(self, firebolt_client: FireboltClient):
-        if self.provider_service is None:
-            self.provider_service = ProviderService(firebolt_client=firebolt_client)
-        super().__init__(firebolt_client=firebolt_client)
+        Args:
+            resource_manager: Resource manager to use.
+            default_region_name: Region to use as a default.
+        """
+        self.default_region_name = default_region_name
+        super().__init__(resource_manager=resource_manager)
 
     @cached_property
     def regions(self) -> list[Region]:
         """List of available Regions on Firebolt."""
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url="/compute/v1/regions", params={"page.first": 5000}
         )
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
@@ -36,10 +38,11 @@ class RegionService(BaseService):
     @cached_property
     def regions_by_name(self) -> dict[RegionLookup, Region]:
         """Dict of {RegionLookup: Region}"""
-        assert self.provider_service is not None
         return {
             RegionLookup(
-                provider_name=self.provider_service.get_by_id(r.key.provider_id).name,
+                provider_name=self.resource_manager.providers.get_by_id(
+                    r.key.provider_id
+                ).name,
                 region_name=r.name,
             ): r
             for r in self.regions
@@ -53,20 +56,20 @@ class RegionService(BaseService):
     @cached_property
     def default_region(self) -> Region:
         """Default Region, could be provided from environment."""
-        if self.DEFAULT_REGION_ENV not in os.environ:
+
+        if not self.default_region_name:
             raise ValueError(
-                "default_region_name is required. Please set it "
-                "via environment variable: FIREBOLT_DEFAULT_REGION"
+                "The environment variable FIREBOLT_DEFAULT_REGION must be set."
             )
-        return self.get_by_name(region_name=os.environ[self.DEFAULT_REGION_ENV])
+        return self.get_by_name(region_name=self.default_region_name)
 
     def get_by_name(
         self, region_name: str, provider_name: Optional[str] = None
     ) -> Region:
         """Get a region by its name (eg. us-east-1)."""
-        assert self.provider_service is not None
+        assert self.resource_manager.providers is not None
         if provider_name is None:
-            provider_name = self.provider_service.default_provider.name
+            provider_name = self.resource_manager.providers.default_provider.name
 
         return self.regions_by_name[
             RegionLookup(provider_name=provider_name, region_name=region_name)

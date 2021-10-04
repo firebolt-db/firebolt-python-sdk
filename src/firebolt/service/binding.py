@@ -4,14 +4,13 @@ from firebolt.common import AlreadyBoundError, prune_dict
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
-from firebolt.service.base_service import BaseService
-from firebolt.service.database_service import DatabaseService
+from firebolt.service.base import BaseService
 
 
 class BindingService(BaseService):
     def get_by_key(self, binding_key: BindingKey) -> Binding:
         """Get a binding by it's BindingKey"""
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url=f"/core/v1/accounts/{binding_key.account_id}"
             f"/databases/{binding_key.database_id}"
             f"/bindings/{binding_key.engine_id}"
@@ -43,7 +42,7 @@ class BindingService(BaseService):
         Returns:
             List of bindings matching the filter parameters.
         """
-        response = self.firebolt_client.get(
+        response = self.client.get(
             url=f"/core/v1/accounts/{self.account_id}/bindings",
             params=prune_dict(
                 {
@@ -60,7 +59,7 @@ class BindingService(BaseService):
         """Get the Database to which an engine is bound, if any."""
         try:
             binding = self.list_bindings(engine_id=engine.engine_id)[0]
-            return DatabaseService(self.firebolt_client).get_by_id(
+            return self.resource_manager.databases.get_by_id(
                 database_id=binding.database_id
             )
         except IndexError:
@@ -68,10 +67,8 @@ class BindingService(BaseService):
 
     def get_engines_bound_to_database(self, database: Database) -> list[Engine]:
         """Get a list of engines that are bound to a database."""
-        from firebolt.service.engine_service import EngineService
-
         bindings = self.list_bindings(database_id=database.database_id)
-        return EngineService(self.firebolt_client).get_engines_by_ids(
+        return self.resource_manager.engines.get_engines_by_ids(
             engine_ids=[b.engine_id for b in bindings]
         )
 
@@ -108,7 +105,7 @@ class BindingService(BaseService):
             is_default_engine=is_default_engine,
         )
 
-        response = self.firebolt_client.post(
+        response = self.client.post(
             url=f"/core/v1/accounts/{self.account_id}"
             f"/databases/{database.database_id}"
             f"/bindings/{engine.engine_id}",

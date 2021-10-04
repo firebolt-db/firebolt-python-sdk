@@ -36,6 +36,7 @@ def raise_on_4xx_5xx(response: Response) -> None:
         logger.exception(f"An error occurred while requesting {exc.request.url!r}.")
         raise exc
     except HTTPStatusError as exc:
+        response.read()  # without this, you can get a ResponseNotRead error
         logger.exception(
             f"Error response {exc.response.status_code} "
             f"while requesting {exc.request.url!r}. "
