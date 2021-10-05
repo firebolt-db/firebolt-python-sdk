@@ -54,7 +54,7 @@ class InstanceTypeService(BaseService):
         Args:
             instance_type_name: Name of the instance (eg. "i3.4xlarge").
             region_name:
-                Name of the region from which to get the instance.
+                Name of the AWS region from which to get the instance.
                 If not provided, use the default region name from the client.
 
         Returns:
