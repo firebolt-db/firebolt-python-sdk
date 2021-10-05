@@ -29,7 +29,7 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
-from firebolt.db.types import ColType, RawColType, parse_type, parse_value
+from firebolt.db._types import ColType, RawColType, parse_type, parse_value
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection

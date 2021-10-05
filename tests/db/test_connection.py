@@ -5,7 +5,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.common.exception import ConnectionClosedError
 from firebolt.db import Connection
-from firebolt.db.types import ColType
+from firebolt.db._types import ColType
 
 
 def test_closed_connection(connection: Connection) -> None:

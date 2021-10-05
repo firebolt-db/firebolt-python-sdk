@@ -6,9 +6,8 @@ from pytest import fixture
 from pytest_httpx import to_response
 
 from firebolt.common.settings import Settings
-from firebolt.db import Connection, Cursor
+from firebolt.db import ARRAY, Connection, Cursor
 from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
-from firebolt.db.types import ARRAY
 
 QUERY_ROW_COUNT: int = 10
 

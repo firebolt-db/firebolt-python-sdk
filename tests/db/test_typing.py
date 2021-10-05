@@ -4,14 +4,8 @@ from typing import Dict
 from pytest import raises
 
 from firebolt.common.exception import DataError, NotSupportedError
-from firebolt.db.types import (
-    ARRAY,
-    DateFromTicks,
-    TimeFromTicks,
-    TimestampFromTicks,
-    parse_type,
-    parse_value,
-)
+from firebolt.db import ARRAY, DateFromTicks, TimeFromTicks, TimestampFromTicks
+from firebolt.db._types import parse_type, parse_value
 
 
 def test_parse_type(types_map: Dict[str, type]) -> None:
