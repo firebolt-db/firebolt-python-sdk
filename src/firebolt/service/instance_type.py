@@ -8,7 +8,6 @@ from firebolt.service.base import BaseService
 class InstanceTypeLookup(NamedTuple):
     """Helper tuple for looking up instance types by names"""
 
-    provider_name: str
     region_name: str
     instance_type_name: str
 
@@ -32,9 +31,6 @@ class InstanceTypeService(BaseService):
         """Dict of {InstanceTypeLookup: InstanceType}"""
         return {
             InstanceTypeLookup(
-                provider_name=self.resource_manager.providers.get_by_id(
-                    provider_id=i.key.provider_id
-                ).name,
                 region_name=self.resource_manager.regions.get_by_id(
                     region_id=i.key.region_id
                 ).name,
@@ -51,7 +47,6 @@ class InstanceTypeService(BaseService):
         self,
         instance_type_name: str,
         region_name: Optional[str] = None,
-        provider_name: str = None,
     ) -> InstanceType:
         """
         Get an instance type by name.
@@ -59,23 +54,16 @@ class InstanceTypeService(BaseService):
         Args:
             instance_type_name: Name of the instance (eg. "i3.4xlarge").
             region_name:
-                Name of the region from which to get the instance.
+                Name of the AWS region from which to get the instance.
                 If not provided, use the default region name from the client.
-            provider_name:
-                Name of the provider from which to get the instance.
-                If not provided, use the default provider name from the client.
 
         Returns:
             The requested instance type.
         """
-        provider_name = (
-            provider_name or self.resource_manager.providers.default_provider.name
-        )
         # Will raise an error if neither set
         region_name = region_name or self.resource_manager.regions.default_region.name
         return self.instance_types_by_name[
             InstanceTypeLookup(
-                provider_name=provider_name,
                 region_name=region_name,
                 instance_type_name=instance_type_name,
             )
