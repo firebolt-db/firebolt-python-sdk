@@ -95,7 +95,7 @@ class FireboltAuth(httpx.Auth):
             )
 
 
-class FireboltClient(httpx.Client):
+class Client(httpx.Client):
     cleandoc(
         """
         An http client, based on httpx.Client, that handles the authentication
