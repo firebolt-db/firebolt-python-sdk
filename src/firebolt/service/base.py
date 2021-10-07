@@ -1,4 +1,4 @@
-from firebolt.client import FireboltClient
+from firebolt.client import Client
 from firebolt.service.manager import ResourceManager
 
 
@@ -7,7 +7,7 @@ class BaseService:
         self.resource_manager = resource_manager
 
     @property
-    def client(self) -> FireboltClient:
+    def client(self) -> Client:
         return self.resource_manager.client
 
     @property

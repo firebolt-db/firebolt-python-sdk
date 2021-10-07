@@ -4,7 +4,7 @@ import httpx
 import pytest
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import DEFAULT_API_URL, FireboltAuth, FireboltClient
+from firebolt.client import DEFAULT_API_URL, Auth, Client
 
 
 def test_client_retry(
@@ -17,7 +17,7 @@ def test_client_retry(
     Firebolt client retries with new auth token
     if first attempt fails with Unauthorized error
     """
-    client = FireboltClient(auth=(test_username, test_password))
+    client = Client(auth=(test_username, test_password))
 
     # auth get token
     httpx_mock.add_response(
@@ -68,15 +68,15 @@ def test_client_different_auths(
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    FireboltClient(auth=(test_username, test_password)).get("https://url")
-    FireboltClient(auth=FireboltAuth(test_username, test_password)).get("https://url")
+    Client(auth=(test_username, test_password)).get("https://url")
+    Client(auth=Auth(test_username, test_password)).get("https://url")
 
     # client accepts None auth, but authorization fails
     with pytest.raises(AssertionError) as excinfo:
-        FireboltClient(auth=None).get("https://url")
+        Client(auth=None).get("https://url")
 
     with pytest.raises(TypeError) as excinfo:
-        FireboltClient(auth=lambda r: r).get("https://url")
+        Client(auth=lambda r: r).get("https://url")
 
     assert str(excinfo.value).startswith(
         'Invalid "auth" argument'

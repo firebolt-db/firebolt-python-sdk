@@ -23,7 +23,7 @@ from typing import (
 from httpx import Response, codes
 from readerwriterlock.rwlock import RWLockWrite
 
-from firebolt.client import FireboltClient
+from firebolt.client import Client
 from firebolt.common.exception import (
     CursorClosedError,
     QueryError,
@@ -131,7 +131,7 @@ class Cursor:
 
     default_arraysize = 1
 
-    def __init__(self, client: FireboltClient, connection: Connection):
+    def __init__(self, client: Client, connection: Connection):
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize
