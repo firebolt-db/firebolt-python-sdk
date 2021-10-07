@@ -1,11 +1,6 @@
 from typing import Optional
 
-from firebolt.client import (
-    FireboltClient,
-    log_request,
-    log_response,
-    raise_on_4xx_5xx,
-)
+from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
 from firebolt.common import Settings
 
 
@@ -27,7 +22,7 @@ class ResourceManager:
         if settings is None:
             settings = Settings()
 
-        self.client = FireboltClient(
+        self.client = Client(
             auth=(settings.user, settings.password.get_secret_value()),
             base_url=f"https://{settings.server}",
             api_endpoint=settings.server,

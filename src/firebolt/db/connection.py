@@ -6,7 +6,7 @@ from typing import List
 
 from readerwriterlock.rwlock import RWLockWrite
 
-from firebolt.client import DEFAULT_API_URL, FireboltClient
+from firebolt.client import DEFAULT_API_URL, Client
 from firebolt.common.exception import ConnectionClosedError
 from firebolt.db.cursor import Cursor
 
@@ -40,7 +40,7 @@ class Connection:
         password: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
-        self._client = FireboltClient(
+        self._client = Client(
             auth=(username, password), base_url=engine_url, api_endpoint=api_endpoint
         )
         self.database = database
