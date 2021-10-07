@@ -23,7 +23,7 @@ _REQUEST_ERRORS: Tuple[type[Exception], ...] = (
 )
 
 
-class FireboltAuth(httpx.Auth):
+class Auth(httpx.Auth):
     cleandoc(
         """
         Authentication class for Firebolt database. Get's authentication token using
@@ -48,8 +48,8 @@ class FireboltAuth(httpx.Auth):
         self._token: Optional[str] = None
         self._expires: Optional[int] = None
 
-    def copy(self) -> "FireboltAuth":
-        return FireboltAuth(self.username, self.password, self._api_endpoint)
+    def copy(self) -> "Auth":
+        return Auth(self.username, self.password, self._api_endpoint)
 
     @property
     def token(self) -> Optional[str]:
@@ -119,13 +119,11 @@ class Client(httpx.Client):
         self._api_endpoint = api_endpoint
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(
-        self, auth: httpx._types.AuthTypes
-    ) -> typing.Optional[FireboltAuth]:
-        if auth is None or isinstance(auth, FireboltAuth):
+    def _build_auth(self, auth: httpx._types.AuthTypes) -> typing.Optional[Auth]:
+        if auth is None or isinstance(auth, Auth):
             return auth
         elif isinstance(auth, tuple):
-            return FireboltAuth(
+            return Auth(
                 username=str(auth[0]),
                 password=str(auth[1]),
                 api_endpoint=self._api_endpoint,
@@ -143,7 +141,7 @@ class Client(httpx.Client):
         )
         resp = super().send(*args, **kwargs)
         if resp.status_code == httpx.codes.UNAUTHORIZED and isinstance(
-            self._auth, FireboltAuth
+            self._auth, Auth
         ):
             # get new token and try to send the request again
             self._auth.get_new_token()

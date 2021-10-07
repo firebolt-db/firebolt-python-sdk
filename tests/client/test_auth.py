@@ -5,7 +5,7 @@ import pytest
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
-from firebolt.client import FireboltAuth
+from firebolt.client import Auth
 from firebolt.common.exception import AuthenticationError
 
 
@@ -22,7 +22,7 @@ def test_auth_basic(
     httpx_mock.add_callback(check_credentials_callback)
 
     mocker.patch("time.time", return_value=0)
-    auth = FireboltAuth(test_username, test_password)
+    auth = Auth(test_username, test_password)
     assert auth.token == test_token, "invalid access token"
     assert auth._expires == 2 ** 32, "invalid expiration value"
 
@@ -46,7 +46,7 @@ def test_auth_refresh_on_expiration(
         json={"expires_in": 0, "access_token": test_token2},
     )
 
-    auth = FireboltAuth("user", "password")
+    auth = Auth("user", "password")
     assert auth.token == test_token, "invalid access token"
     assert auth.token == test_token2, "expired access token was not updated"
 
@@ -70,7 +70,7 @@ def test_auth_uses_same_token_if_valid(
         json={"expires_in": 2 ** 32, "access_token": test_token2},
     )
 
-    auth = FireboltAuth("user", "password")
+    auth = Auth("user", "password")
     assert auth.token == test_token, "invalid access token"
     assert auth.token == test_token, "shoud not update token until it expires"
     httpx_mock.reset(False)
@@ -79,7 +79,7 @@ def test_auth_uses_same_token_if_valid(
 def test_auth_error_handling(httpx_mock: HTTPXMock):
     """FireboltAuth handles different error propperly"""
 
-    auth = FireboltAuth("user", "password", api_endpoint="host")
+    auth = Auth("user", "password", api_endpoint="host")
 
     # Internal httpx error
     def http_error(**kwargs):
@@ -128,7 +128,7 @@ def test_auth_adds_header(
         json={"expires_in": 0, "access_token": test_token},
     )
 
-    auth = FireboltAuth("user", "password")
+    auth = Auth("user", "password")
     request = next(auth.auth_flow(httpx.Request("get", "")))
     assert "authorization" in request.headers, "missing authorization header"
     assert (
