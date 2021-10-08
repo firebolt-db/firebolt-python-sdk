@@ -4,6 +4,7 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.common.exception import ConnectionClosedError
+from firebolt.common.settings import Settings
 from firebolt.db import Connection
 from firebolt.db._types import ColType
 
@@ -37,7 +38,8 @@ def test_cursors_closed_on_close(connection: Connection) -> None:
 
 
 def test_cursor_initialized(
-    connection: Connection,
+    settings: Settings,
+    db_name: str,
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
@@ -49,13 +51,22 @@ def test_cursor_initialized(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
-    cursor = connection.cursor()
-    assert cursor.connection == connection, "Invalid cursor connection attribute"
-    assert cursor._client == connection._client, "Invalid cursor _client attribute"
+    for url in (settings.server, f"https://{settings.server}"):
+        connection = Connection(
+            url,
+            db_name,
+            "u",
+            "p",
+            api_endpoint=settings.server,
+        )
 
-    assert cursor.execute("select*") == len(python_query_data)
+        cursor = connection.cursor()
+        assert cursor.connection == connection, "Invalid cursor connection attribute"
+        assert cursor._client == connection._client, "Invalid cursor _client attribute"
 
-    cursor.close()
-    assert (
-        cursor not in connection._cursors
-    ), "Cursor wasn't removed from connection after close"
+        assert cursor.execute("select*") == len(python_query_data)
+
+        cursor.close()
+        assert (
+            cursor not in connection._cursors
+        ), "Cursor wasn't removed from connection after close"

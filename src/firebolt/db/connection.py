@@ -43,6 +43,9 @@ class Connection:
         password: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
+        engine_url = (
+            engine_url if engine_url.startswith("http") else f"https://{engine_url}"
+        )
         self._client = Client(
             auth=(username, password),
             base_url=engine_url,
