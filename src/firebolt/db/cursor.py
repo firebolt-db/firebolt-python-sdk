@@ -205,7 +205,9 @@ class Cursor:
             # Parse data during fetch
             self._rows = query_data["data"]
         except (KeyError, JSONDecodeError) as err:
-            raise QueryError(f"Invalid query data format: {str(err)}")
+            # Empty response is returned for insert query
+            if response.headers.get("content-length", "") != "0":
+                raise QueryError(f"Invalid query data format: {str(err)}")
 
     def _reset(self) -> None:
         """Clear all data stored from previous query."""
@@ -279,7 +281,9 @@ class Cursor:
             and update _idx to point to the end of this range
             """
         )
-        assert self._rows is not None
+        if self._rows is None:
+            # No elements to take
+            return (0, 0)
         with self._idx_lock:
             left = self._idx
             right = min(self._idx + size, len(self._rows))

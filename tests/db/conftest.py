@@ -120,6 +120,16 @@ def query_callback(
 
 
 @fixture
+def insert_query_callback(
+    query_description: List[Column], query_data: List[List[ColType]]
+) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        return to_response(status_code=codes.OK, headers={"content-length": "0"})
+
+    return do_query
+
+
+@fixture
 def query_url(settings: Settings, db_name: str) -> str:
     return URL(
         f"https://{settings.server}?database={db_name}"
