@@ -6,16 +6,11 @@ from pydantic import Field
 from firebolt.model import FireboltBaseModel
 
 
-class RegionKey(FireboltBaseModel, frozen=True):  # type: ignore
-    provider_id: str
-    region_id: str
-
-
-class Region(FireboltBaseModel):
-    key: RegionKey = Field(alias="id")
+class Provider(FireboltBaseModel, frozen=True):  # type: ignore
+    provider_id: str = Field(alias="id")
     name: str
 
     # optional
-    display_name: Optional[str]
     create_time: Optional[datetime]
+    display_name: Optional[str]
     last_update_time: Optional[datetime]

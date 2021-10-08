@@ -2,6 +2,7 @@ from typing import Optional
 
 from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
 from firebolt.common import Settings
+from firebolt.service.provider import get_provider_id
 
 
 class ResourceManager:
@@ -47,6 +48,7 @@ class ResourceManager:
             resource_manager=self, default_region_name=default_region_name
         )
         self.instance_types = InstanceTypeService(resource_manager=self)
+        self.provider_id = get_provider_id(client=self.client)
 
         # Firebolt Resources
         self.databases = DatabaseService(resource_manager=self)
