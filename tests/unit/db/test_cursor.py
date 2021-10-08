@@ -259,6 +259,10 @@ def test_cursor_fetchmany(
         cursor.arraysize = "123"
 
     assert (
+        len(cursor.fetchmany(0)) == 0
+    ), "Invalid count of rows returned by fetchmany for 0 size"
+
+    assert (
         str(excinfo.value) == "Invalid arraysize value type, expected int, got str"
     ), "Invalid value error message"
     cursor.arraysize = 2

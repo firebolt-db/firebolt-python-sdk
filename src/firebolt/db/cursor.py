@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
-JSON_OUTPUT_FORMAT = "FB_JSONCompactLimited"
+JSON_OUTPUT_FORMAT = "JSONCompact"
 
 
 class CursorState(Enum):
@@ -313,7 +313,7 @@ class Cursor:
             """
         )
         with self._query_lock.gen_rlock():
-            size = size or self.arraysize
+            size = size if size is not None else self.arraysize
             left, right = self._get_next_range(size)
             assert self._rows is not None
             rows = self._rows[left:right]
