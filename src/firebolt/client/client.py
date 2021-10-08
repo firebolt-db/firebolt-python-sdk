@@ -44,7 +44,12 @@ class Auth(httpx.Auth):
     ):
         self.username = username
         self.password = password
-        self._api_endpoint = api_endpoint
+        # Add schema to url if it's missing
+        self._api_endpoint = (
+            api_endpoint
+            if api_endpoint.startswith("http")
+            else f"https://{api_endpoint}"
+        )
         self._token: Optional[str] = None
         self._expires: Optional[int] = None
 
@@ -65,7 +70,7 @@ class Auth(httpx.Auth):
         """Get new token using username and password"""
         try:
             response = httpx.post(
-                f"https://{self._api_endpoint}/auth/v1/login",
+                f"{self._api_endpoint}/auth/v1/login",
                 headers={"Content-Type": "application/json;charset=UTF-8"},
                 json={"username": self.username, "password": self.password},
                 timeout=API_REQUEST_TIMEOUT_SECONDS,

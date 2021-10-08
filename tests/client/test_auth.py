@@ -79,43 +79,46 @@ def test_auth_uses_same_token_if_valid(
 def test_auth_error_handling(httpx_mock: HTTPXMock):
     """FireboltAuth handles different error propperly"""
 
-    auth = Auth("user", "password", api_endpoint="host")
+    for api_endpoint in ("https://host", "host"):
+        auth = Auth("user", "password", api_endpoint=api_endpoint)
 
-    # Internal httpx error
-    def http_error(**kwargs):
-        raise httpx.StreamError("httpx")
+        # Internal httpx error
+        def http_error(**kwargs):
+            raise httpx.StreamError("httpx")
 
-    httpx_mock.add_callback(http_error)
-    with pytest.raises(AuthenticationError) as excinfo:
-        auth.token
+        httpx_mock.add_callback(http_error)
+        with pytest.raises(AuthenticationError) as excinfo:
+            auth.token
 
-    assert (
-        str(excinfo.value) == "Failed to authenticate at host: StreamError('httpx')"
-    ), "Invalid authentication error message"
-    httpx_mock.reset(True)
+            assert (
+                str(excinfo.value)
+                == "Failed to authenticate at https://host: StreamError('httpx')"
+            ), "Invalid authentication error message"
+            httpx_mock.reset(True)
 
-    # HTTP error
-    httpx_mock.add_response(status_code=httpx.codes.BAD_REQUEST)
-    with pytest.raises(AuthenticationError) as excinfo:
-        auth.token
+            # HTTP error
+            httpx_mock.add_response(status_code=httpx.codes.BAD_REQUEST)
+            with pytest.raises(AuthenticationError) as excinfo:
+                auth.token
 
-    errmsg = str(excinfo.value)
-    assert (
-        errmsg.startswith("Failed to authenticate at host:") and "Bad Request" in errmsg
-    ), "Invalid authentication error message"
-    httpx_mock.reset(True)
+            errmsg = str(excinfo.value)
+            assert (
+                errmsg.startswith("Failed to authenticate at https://host:")
+                and "Bad Request" in errmsg
+            ), "Invalid authentication error message"
+            httpx_mock.reset(True)
 
-    # Firebolt api error
-    httpx_mock.add_response(
-        status_code=httpx.codes.OK, json={"error": "", "message": "firebolt"}
-    )
-    with pytest.raises(AuthenticationError) as excinfo:
-        auth.token
+            # Firebolt api error
+            httpx_mock.add_response(
+                status_code=httpx.codes.OK, json={"error": "", "message": "firebolt"}
+            )
+            with pytest.raises(AuthenticationError) as excinfo:
+                auth.token
 
-    assert (
-        str(excinfo.value) == "Failed to authenticate at host: firebolt"
-    ), "Invalid authentication error message"
-    httpx_mock.reset(True)
+            assert (
+                str(excinfo.value) == "Failed to authenticate at https://host: firebolt"
+            ), "Invalid authentication error message"
+            httpx_mock.reset(True)
 
 
 def test_auth_adds_header(
