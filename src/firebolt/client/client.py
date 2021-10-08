@@ -11,7 +11,7 @@ from httpx._types import AuthTypes
 from firebolt.common.exception import AuthenticationError
 
 DEFAULT_API_URL: str = "api.app.firebolt.io"
-API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 30
+API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 60
 _REQUEST_ERRORS: Tuple[type[Exception], ...] = (
     httpx.HTTPError,
     httpx.InvalidURL,
