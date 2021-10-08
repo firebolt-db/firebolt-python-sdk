@@ -4,11 +4,14 @@ from inspect import cleandoc
 from types import TracebackType
 from typing import List
 
+from httpx import Timeout
 from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, Client
 from firebolt.common.exception import ConnectionClosedError
 from firebolt.db.cursor import Cursor
+
+DEFAULT_TIMEOUT: int = 5
 
 
 class Connection:
@@ -41,7 +44,10 @@ class Connection:
         api_endpoint: str = DEFAULT_API_URL,
     ):
         self._client = Client(
-            auth=(username, password), base_url=engine_url, api_endpoint=api_endpoint
+            auth=(username, password),
+            base_url=engine_url,
+            api_endpoint=api_endpoint,
+            timeout=Timeout(DEFAULT_TIMEOUT, read=None),
         )
         self.database = database
         self._cursors: List[Cursor] = []
