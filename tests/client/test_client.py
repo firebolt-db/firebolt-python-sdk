@@ -14,7 +14,7 @@ def test_client_retry(
     test_token: str,
 ):
     """
-    Firebolt client retries with new auth token
+    Client retries with new auth token
     if first attempt fails with Unauthorized error
     """
     client = Client(auth=(test_username, test_password))
@@ -54,9 +54,9 @@ def test_client_different_auths(
     test_password: str,
 ):
     """
-    Firebolt propperly handles such auth types:
+    Client propperly handles such auth types:
     - tuple(username, password)
-    - FireboltAuth
+    - Auth
     - None
     All other types should raise TypeError
     """
