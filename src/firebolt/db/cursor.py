@@ -194,6 +194,9 @@ class Cursor:
 
     def _store_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response."""
+        # Empty response is returned for insert query
+        if response.headers.get("content-length", "") == "0":
+            return
         try:
             query_data = response.json()
             self._rowcount = int(query_data["rows"])
@@ -205,9 +208,7 @@ class Cursor:
             # Parse data during fetch
             self._rows = query_data["data"]
         except (KeyError, JSONDecodeError) as err:
-            # Empty response is returned for insert query
-            if response.headers.get("content-length", "") != "0":
-                raise QueryError(f"Invalid query data format: {str(err)}")
+            raise QueryError(f"Invalid query data format: {str(err)}")
 
     def _reset(self) -> None:
         """Clear all data stored from previous query."""
