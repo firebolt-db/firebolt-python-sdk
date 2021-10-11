@@ -3,12 +3,11 @@ from typing import Optional
 
 from pydantic import Field
 
-from firebolt.common.constants import AWS_PROVIDER_ID
 from firebolt.model import FireboltBaseModel
 
 
 class InstanceTypeKey(FireboltBaseModel, frozen=True):  # type: ignore
-    provider_id: str = AWS_PROVIDER_ID
+    provider_id: str
     region_id: str
     instance_type_id: str
 
