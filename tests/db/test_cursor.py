@@ -123,19 +123,21 @@ def test_cursor_execute(
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
     """Cursor is able to execute query, all fields are populated properly."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
 
     for query in (
         lambda: cursor.execute("select *"),
         lambda: cursor.executemany("select *", [None, None]),
     ):
+        # Query with json output
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(query_callback, url=query_url)
         assert query() == len(python_query_data), "Invalid row count returned"
         assert cursor.rowcount == len(python_query_data), "Invalid rowcount value"
         for i, (desc, exp) in enumerate(
@@ -149,6 +151,16 @@ def test_cursor_execute(
             ), f"Invalid data row at position {i}"
 
         assert cursor.fetchone() is None, "Non-empty fetchone after all data received"
+
+        httpx_mock.reset(True)
+
+        # Query with empty output
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(insert_query_callback, url=query_url)
+        assert query() == -1, "Invalid row count for insert query"
+        assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
+        assert cursor.description is None, "Invalid description for insert query"
+        assert cursor.fetchone() is None, "Non-empty fetchone for insert query"
 
 
 def test_cursor_execute_error(
