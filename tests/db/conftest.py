@@ -6,9 +6,8 @@ from pytest import fixture
 from pytest_httpx import to_response
 
 from firebolt.common.settings import Settings
-from firebolt.db import Connection, Cursor
+from firebolt.db import ARRAY, Connection, Cursor
 from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
-from firebolt.db.types import ARRAY
 
 QUERY_ROW_COUNT: int = 10
 
@@ -116,6 +115,16 @@ def query_callback(
             },
         }
         return to_response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
+def insert_query_callback(
+    query_description: List[Column], query_data: List[List[ColType]]
+) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        return to_response(status_code=codes.OK, headers={"content-length": "0"})
 
     return do_query
 

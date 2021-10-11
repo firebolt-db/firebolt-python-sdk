@@ -29,7 +29,7 @@ from firebolt.common.exception import (
     QueryError,
     QueryNotRunError,
 )
-from firebolt.db.types import ColType, RawColType, parse_type, parse_value
+from firebolt.db._types import ColType, RawColType, parse_type, parse_value
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -194,6 +194,9 @@ class Cursor:
 
     def _store_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response."""
+        # Empty response is returned for insert query
+        if response.headers.get("content-length", "") == "0":
+            return
         try:
             query_data = response.json()
             self._rowcount = int(query_data["rows"])
@@ -279,7 +282,9 @@ class Cursor:
             and update _idx to point to the end of this range
             """
         )
-        assert self._rows is not None
+        if self._rows is None:
+            # No elements to take
+            return (0, 0)
         with self._idx_lock:
             left = self._idx
             right = min(self._idx + size, len(self._rows))
