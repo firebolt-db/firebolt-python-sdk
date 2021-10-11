@@ -8,7 +8,9 @@ from pytest_httpx._httpx_internals import Response
 
 from firebolt.common.settings import Settings
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
+from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
+from tests.util import list_to_paginated_response
 
 
 @pytest.fixture
@@ -27,9 +29,23 @@ def access_token() -> str:
 
 
 @pytest.fixture
-def region_1() -> Region:
+def provider() -> Provider:
+    return Provider(
+        provider_id="mock_provider_id",
+        name="mock_provider_name",
+    )
+
+
+@pytest.fixture
+def mock_providers(provider) -> list[Provider]:
+    return [provider]
+
+
+@pytest.fixture
+def region_1(provider) -> Region:
     return Region(
         key=RegionKey(
+            provider_id=provider.provider_id,
             region_id="mock_region_id_1",
         ),
         name="mock_region_1",
@@ -37,9 +53,10 @@ def region_1() -> Region:
 
 
 @pytest.fixture
-def region_2() -> Region:
+def region_2(provider) -> Region:
     return Region(
         key=RegionKey(
+            provider_id=provider.provider_id,
             region_id="mock_region_id_2",
         ),
         name="mock_region_2",
@@ -52,9 +69,10 @@ def mock_regions(region_1, region_2) -> list[Region]:
 
 
 @pytest.fixture
-def instance_type_1(region_1) -> InstanceType:
+def instance_type_1(provider, region_1) -> InstanceType:
     return InstanceType(
         key=InstanceTypeKey(
+            provider_id=provider.provider_id,
             region_id=region_1.key.region_id,
             instance_type_id="instance_type_id_1",
         ),
@@ -63,9 +81,10 @@ def instance_type_1(region_1) -> InstanceType:
 
 
 @pytest.fixture
-def instance_type_2(region_2) -> InstanceType:
+def instance_type_2(provider, region_2) -> InstanceType:
     return InstanceType(
         key=InstanceTypeKey(
+            provider_id=provider.provider_id,
             region_id=region_2.key.region_id,
             instance_type_id="instance_type_id_2",
         ),
@@ -106,6 +125,26 @@ def auth_callback(auth_url: str) -> Callable:
 @pytest.fixture
 def auth_url(settings: Settings) -> str:
     return f"https://{settings.server}/auth/v1/login"
+
+
+@pytest.fixture
+def provider_callback(provider_url: str, mock_providers) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == provider_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response(mock_providers),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def provider_url(settings: Settings) -> str:
+    return f"https://{settings.server}/compute/v1/providers"
 
 
 @pytest.fixture
