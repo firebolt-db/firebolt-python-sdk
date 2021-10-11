@@ -1,6 +1,7 @@
+from datetime import date, datetime
 from typing import Any, List
 
-from firebolt.db import Connection
+from firebolt.db import Connection, Cursor
 from firebolt.db._types import ColType
 from firebolt.db.cursor import Column
 
@@ -41,4 +42,115 @@ def test_select(
         assert len(data) == 1, "Invalid data size returned by fetchmany"
         assert_deep_eq(
             data, all_types_query_response, "Invalid data returned by fetchmany"
+        )
+
+
+def test_drop_create(
+    connection: Connection, create_drop_description: List[Column]
+) -> None:
+    """Create and drop table/index queries are handled propperly"""
+
+    def test_query(c: Cursor, query: str) -> None:
+        assert c.execute(query) == 1, "Invalid row count returned"
+        assert c.rowcount == 1, "Invalid rowcount value"
+        assert_deep_eq(
+            c.description,
+            create_drop_description,
+            "Invalid create table query description",
+        )
+        assert len(c.fetchall()) == 1, "Invalid data returned"
+
+    """Create table query is handled properly"""
+    with connection.cursor() as c:
+        # Cleanup
+        c.execute("DROP JOIN INDEX IF EXISTS test_db_join_idx")
+        c.execute("DROP AGGREGATING INDEX IF EXISTS test_db_agg_idx")
+        c.execute("DROP TABLE IF EXISTS test_tb")
+        c.execute("DROP TABLE IF EXISTS test_tb_dim")
+
+        # Fact table
+        test_query(
+            c,
+            "CREATE FACT TABLE test_tb(id int, sn string null, f float,"
+            "d date, dt datetime, b bool, a array(int)) primary index id",
+        )
+
+        # Dimension table
+        test_query(
+            c,
+            "CREATE DIMENSION TABLE test_tb_dim(id int, sn string null, f float,"
+            "d date, dt datetime, b bool, a array(int))",
+        )
+
+        # Create join index
+        test_query(c, "CREATE JOIN INDEX test_db_join_idx ON test_tb_dim(id, sn, f)")
+
+        # Create aggregating index
+        test_query(
+            c,
+            "CREATE AGGREGATING INDEX test_db_agg_idx ON "
+            "test_tb(id, sum(f), count(dt))",
+        )
+
+        # Drop join index
+        test_query(c, "DROP JOIN INDEX test_db_join_idx")
+
+        # Drop aggregating index
+        test_query(c, "DROP AGGREGATING INDEX test_db_agg_idx")
+
+        # Test drop once again
+        test_query(c, "DROP TABLE test_tb")
+        test_query(c, "DROP TABLE IF EXISTS test_tb")
+
+        test_query(c, "DROP TABLE test_tb_dim")
+        test_query(c, "DROP TABLE IF EXISTS test_tb_dim")
+
+
+def test_insert(connection: Connection) -> None:
+    """Insert and delete queries are handled propperly"""
+
+    def test_empty_query(c: Cursor, query: str) -> None:
+        assert c.execute(query) == -1, "Invalid row count returned"
+        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.description is None, "Invalid description"
+        assert c.fetchone() is None, "Invalid data returned"
+
+    with connection.cursor() as c:
+        c.execute("DROP TABLE IF EXISTS test_tb")
+        c.execute(
+            "CREATE FACT TABLE test_tb(id int, sn string null, f float,"
+            "d date, dt datetime, b bool, a array(int)) primary index id"
+        )
+
+        test_empty_query(
+            c,
+            "INSERT INTO test_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
+            "'2021-01-01 01:01:01', true, [1, 2, 3])",
+        )
+
+        test_empty_query(
+            c,
+            "INSERT INTO test_tb VALUES (2, null, 2.2, '2022-02-02',"
+            "'2022-02-02 02:02:02', false, [1])",
+        )
+
+        assert (
+            c.execute("SELECT * FROM test_tb ORDER BY test_tb.id") == 2
+        ), "Invalid data length in table after insert"
+
+        assert_deep_eq(
+            c.fetchall(),
+            [
+                [
+                    1,
+                    "sn",
+                    1.1,
+                    date(2021, 1, 1),
+                    datetime(2021, 1, 1, 1, 1, 1),
+                    1,
+                    [1, 2, 3],
+                ],
+                [2, None, 2.2, date(2022, 2, 2), datetime(2022, 2, 2, 2, 2, 2), 0, [1]],
+            ],
+            "Invalid data in table after insert",
         )

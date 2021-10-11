@@ -110,3 +110,15 @@ def all_types_query_response() -> List[ColType]:
             None,
         ]
     ]
+
+
+@fixture
+def create_drop_description() -> List[Column]:
+    return [
+        Column("host", str, None, None, None, None, None),
+        Column("port", int, None, None, None, None, None),
+        Column("status", int, None, None, None, None, None),
+        Column("error", str, None, None, None, None, None),
+        Column("num_hosts_remaining", int, None, None, None, None, None),
+        Column("num_hosts_active", int, None, None, None, None, None),
+    ]
