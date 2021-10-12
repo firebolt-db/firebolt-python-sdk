@@ -1,7 +1,5 @@
 from inspect import cleandoc
 
-from httpx import HTTPStatusError
-
 
 class FireboltError(Exception):
     pass
@@ -74,10 +72,6 @@ class QueryNotRunError(CursorError):
 
 
 class QueryError(CursorError):
-    pass
-
-
-class BadRequestError(HTTPStatusError):
     pass
 
 
