@@ -1,6 +1,16 @@
 # Firebolt DB API
 The Firebolt DB API is a Python 3 implementation of PEP-249 for Firebolt.
 
+## Connection parameters
+These parameters are used to connect to a Firebolt database:
+- **engine_url** - url for an engine to make requests to. Can be retrieved from Web UI, or from [engine](../models/engine.py#L57) attribute `endpoint`
+- **database** - name of the database to make queries to
+- **username** - account username
+- **password** - account password
+
+Optional parameters
+- **api_endpoint** - api hostname for logging in. Defaults to `api.app.firebolt.io`.
+
 ## Examples
 See [PEP-249](https://www.python.org/dev/peps/pep-0249) for the DB API reference and specifications. An example [jupyter notebook](examples.ipynb) is included to illustrate the use of the Firebolt API.
 
