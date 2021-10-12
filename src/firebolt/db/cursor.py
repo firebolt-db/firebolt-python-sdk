@@ -213,7 +213,7 @@ class Cursor:
             raise DataError(f"Invalid query data format: {str(err)}")
 
     def _raise_if_error(self, resp: Response) -> None:
-        """Raise a proper error is any"""
+        """Raise a proper error if any"""
         if resp.status_code == codes.INTERNAL_SERVER_ERROR:
             raise OperationalError(
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
