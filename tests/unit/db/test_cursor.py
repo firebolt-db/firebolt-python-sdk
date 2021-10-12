@@ -7,7 +7,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.common.exception import (
     CursorClosedError,
-    QueryError,
+    OperationalError,
     QueryNotRunError,
 )
 from firebolt.db import Cursor
@@ -201,7 +201,7 @@ def test_cursor_execute_error(
             data="Query error message",
             url=query_url,
         )
-        with raises(QueryError) as excinfo:
+        with raises(OperationalError) as excinfo:
             query()
 
         assert (
@@ -257,6 +257,10 @@ def test_cursor_fetchmany(
 
     with raises(TypeError) as excinfo:
         cursor.arraysize = "123"
+
+    assert (
+        len(cursor.fetchmany(0)) == 0
+    ), "Invalid count of rows returned by fetchmany for 0 size"
 
     assert (
         str(excinfo.value) == "Invalid arraysize value type, expected int, got str"
