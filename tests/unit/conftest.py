@@ -10,7 +10,7 @@ from firebolt.common.settings import Settings
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
-from tests.util import list_to_paginated_response
+from tests.unit.util import list_to_paginated_response
 
 
 @pytest.fixture

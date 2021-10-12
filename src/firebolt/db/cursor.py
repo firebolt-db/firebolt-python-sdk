@@ -26,7 +26,9 @@ from readerwriterlock.rwlock import RWLockWrite
 from firebolt.client import Client
 from firebolt.common.exception import (
     CursorClosedError,
-    QueryError,
+    DataError,
+    OperationalError,
+    ProgrammingError,
     QueryNotRunError,
 )
 from firebolt.db._types import ColType, RawColType, parse_type, parse_value
@@ -36,7 +38,7 @@ if TYPE_CHECKING:
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
-JSON_OUTPUT_FORMAT = "FB_JSONCompactLimited"
+JSON_OUTPUT_FORMAT = "JSONCompact"
 
 
 class CursorState(Enum):
@@ -208,7 +210,17 @@ class Cursor:
             # Parse data during fetch
             self._rows = query_data["data"]
         except (KeyError, JSONDecodeError) as err:
-            raise QueryError(f"Invalid query data format: {str(err)}")
+            raise DataError(f"Invalid query data format: {str(err)}")
+
+    def _raise_if_error(self, resp: Response) -> None:
+        """Raise a proper error if any"""
+        if resp.status_code == codes.INTERNAL_SERVER_ERROR:
+            raise OperationalError(
+                f"Error executing query:\n{resp.read().decode('utf-8')}"
+            )
+        if resp.status_code == codes.FORBIDDEN:
+            raise ProgrammingError(resp.read().decode("utf-8"))
+        resp.raise_for_status()
 
     def _reset(self) -> None:
         """Clear all data stored from previous query."""
@@ -231,9 +243,7 @@ class Cursor:
             content=query,
         )
 
-        if resp.status_code == codes.INTERNAL_SERVER_ERROR:
-            raise QueryError(f"Error executing query:\n{resp.read().decode('utf-8')}")
-        resp.raise_for_status()
+        self._raise_if_error(resp)
         return resp
 
     @check_not_closed
@@ -313,7 +323,7 @@ class Cursor:
             """
         )
         with self._query_lock.gen_rlock():
-            size = size or self.arraysize
+            size = size if size is not None else self.arraysize
             left, right = self._get_next_range(size)
             assert self._rows is not None
             rows = self._rows[left:right]
