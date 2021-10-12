@@ -9,6 +9,7 @@ from pydantic import Field
 from firebolt.model import FireboltBaseModel
 from firebolt.model.engine_revision import EngineRevisionKey
 from firebolt.model.region import RegionKey
+from firebolt.service.types import EngineType, WarmupMethod
 
 logger = logging.getLogger(__name__)
 
@@ -32,25 +33,25 @@ class EngineSettings(FireboltBaseModel):
     warm_up: str
 
     @classmethod
-    def analytics_default(cls) -> EngineSettings:
-        """Default settings for the data analytics (querying) use case."""
-        return cls(
-            preset="ENGINE_SETTINGS_PRESET_DATA_ANALYTICS",
-            auto_stop_delay_duration="1200s",
-            minimum_logging_level="ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
-            is_read_only=True,
-            warm_up="ENGINE_SETTINGS_WARM_UP_INDEXES",
-        )
+    def default(
+        cls,
+        engine_type: EngineType = EngineType.GENERAL_PURPOSE,
+        auto_stop_delay_duration: str = "1200s",
+        warm_up: WarmupMethod = WarmupMethod.PRELOAD_INDEXES,
+    ) -> EngineSettings:
+        if engine_type == EngineType.GENERAL_PURPOSE:
+            preset = engine_type.GENERAL_PURPOSE.api_settings_preset_name  # type: ignore # noqa: E501
+            is_read_only = False
+        else:
+            preset = engine_type.DATA_ANALYTICS.api_settings_preset_name  # type: ignore
+            is_read_only = True
 
-    @classmethod
-    def general_purpose_default(cls) -> EngineSettings:
-        """Default settings for the general purpose (data ingestion) use case."""
         return cls(
-            preset="ENGINE_SETTINGS_PRESET_GENERAL_PURPOSE",
-            auto_stop_delay_duration="1200s",
+            preset=preset,
+            auto_stop_delay_duration=auto_stop_delay_duration,
             minimum_logging_level="ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
-            is_read_only=False,
-            warm_up="ENGINE_SETTINGS_WARM_UP_INDEXES",
+            is_read_only=is_read_only,
+            warm_up=warm_up.api_name,
         )
 
 

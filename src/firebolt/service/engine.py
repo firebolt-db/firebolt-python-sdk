@@ -1,14 +1,19 @@
 import json
 import logging
 import time
-from typing import Optional
+from typing import Optional, Union
 
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine, EngineSettings
-from firebolt.model.engine_revision import EngineRevision
+from firebolt.model.engine_revision import (
+    EngineRevision,
+    EngineRevisionSpecification,
+)
+from firebolt.model.region import Region
 from firebolt.service.base import BaseService
+from firebolt.service.types import EngineType, WarmupMethod
 
 logger = logging.getLogger(__name__)
 
@@ -31,110 +36,56 @@ class EngineService(BaseService):
         engine_id = response.json()["engine_id"]["engine_id"]
         return self.get_engine_by_id(engine_id=engine_id)
 
-    def create_analytics_engine(
+    def create(
         self,
         name: str,
-        description: Optional[str] = None,
-        region_name: Optional[str] = None,
-        compute_instance_type_name: Optional[str] = None,
-        compute_instance_count: Optional[int] = None,
+        region: Union[str, Region, None] = None,
+        engine_type: Union[str, EngineType] = EngineType.GENERAL_PURPOSE,
+        scale: int = 2,
+        spec: str = "i3.4xlarge",
+        auto_stop: int = 20,
+        warmup: Union[str, WarmupMethod] = WarmupMethod.PRELOAD_INDEXES,
+        description: str = "",
     ) -> Engine:
-        """
-        Create a new engine on Firebolt, based on default Analytics settings.
+        if isinstance(engine_type, str):
+            engine_type = EngineType[engine_type]
+        if isinstance(warmup, str):
+            warmup = WarmupMethod[warmup]
 
-        (The engine should be used for running queries on Firebolt.)
-
-        Args:
-            name: Name of the engine.
-            description: Long description of the engine.
-            region_name: Name of the region in which to create the engine.
-                If omitted, use the default region.
-            compute_instance_type_name: Name of the instance type to use for the Engine.
-            compute_instance_count: Number of instances to use for the Engine.
-
-        Returns:
-            The newly created engine.
-        """
-        engine = self._default(
-            name=name,
-            settings=EngineSettings.analytics_default(),
-            description=description,
-            region_name=region_name,
-        )
-        return self.create_engine(
-            engine=engine,
-            engine_revision=self.resource_manager.engine_revisions.create_analytics_engine_revision(  # noqa: E501
-                compute_instance_type_name=compute_instance_type_name,
-                compute_instance_count=compute_instance_count,
-            ),
-        )
-
-    def create_general_purpose_engine(
-        self,
-        name: str,
-        description: Optional[str] = None,
-        region_name: Optional[str] = None,
-        compute_instance_type_name: Optional[str] = None,
-        compute_instance_count: Optional[int] = None,
-    ) -> Engine:
-        """
-        Create a new engine on Firebolt, based on default General Purpose settings.
-
-        (The engine should be used for ingesting data into Firebolt.)
-
-        Args:
-            name: Name of the engine.
-            description: Long description of the engine.
-            region_name: Name of the region in which to create the engine.
-                If omitted, use the default region.
-            compute_instance_type_name: Name of the instance type to use for the Engine.
-            compute_instance_count: Number of instances to use for the Engine.
-        Returns:
-            The newly created engine.
-        """
-        engine = self._default(
-            name=name,
-            settings=EngineSettings.general_purpose_default(),
-            description=description,
-            region_name=region_name,
-        )
-        return self.create_engine(
-            engine=engine,
-            engine_revision=self.resource_manager.engine_revisions.create_general_purpose_engine_revision(  # noqa: E501
-                compute_instance_type_name=compute_instance_type_name,
-                compute_instance_count=compute_instance_count,
-            ),
-        )
-
-    def _default(
-        self,
-        name: str,
-        settings: EngineSettings,
-        description: Optional[str] = None,
-        region_name: Optional[str] = None,
-    ) -> Engine:
-        """
-        Create a new local Engine object with default settings.
-
-        Args:
-            name: Name of the engine.
-            settings: Engine revision settings to apply to the engine.
-            description: Description of the engine.
-            region_name: Region in which to create the engine.
-
-        Returns:
-            The new local Engine object.
-        """
-        if region_name is not None:
-            region = self.resource_manager.regions.get_by_name(region_name=region_name)
-        else:
+        if region is None:
             region = self.resource_manager.regions.default_region
-        return Engine(
+        else:
+            if isinstance(region, str):
+                region = self.resource_manager.regions.get_by_name(region_name=region)
+
+        engine = Engine(
             name=name,
             description=description,
             compute_region_key=region.key,
-            settings=settings,
+            settings=EngineSettings.default(
+                engine_type=engine_type,
+                auto_stop_delay_duration=f"{auto_stop * 60}s",
+                warm_up=warmup,
+            ),
         )
+
+        instance_type_key = self.resource_manager.instance_types.get_by_name(
+            instance_type_name=spec
+        ).key
+
+        engine_revision = EngineRevision(
+            specification=EngineRevisionSpecification(
+                db_compute_instances_type_key=instance_type_key,
+                db_compute_instances_count=scale,
+                db_compute_instances_use_spot=False,
+                db_version="",
+                proxy_instances_type_key=instance_type_key,
+                proxy_instances_count=1,
+                proxy_version="",
+            )
+        )
+
+        return self._send_create_engine(engine=engine, engine_revision=engine_revision)
 
     def get_engines_by_ids(self, engine_ids: list[str]) -> list[Engine]:
         """Get multiple Engines from Firebolt by their ids."""
@@ -167,7 +118,7 @@ class EngineService(BaseService):
             engine=engine, database=database, is_default_engine=is_default_engine
         )
 
-    def create_engine(
+    def _send_create_engine(
         self, engine: Engine, engine_revision: Optional[EngineRevision] = None
     ) -> Engine:
         """
