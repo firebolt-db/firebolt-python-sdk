@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+import functools
 import logging
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional
 
 from pydantic import Field, PrivateAttr
 
+from firebolt.common.exception import NoAttachedDatabaseError
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
@@ -65,6 +67,18 @@ class EngineSettings(FireboltBaseModel):
         )
 
 
+def check_attached_to_database(func: Callable) -> Callable:
+    """(Decorator) Ensure the engine is attached to a database."""
+
+    @functools.wraps(func)
+    def inner(self: Engine, *args: Any, **kwargs: Any) -> Any:
+        if self.database is None:
+            raise NoAttachedDatabaseError(method_name=func.__name__)
+        return func(self, *args, **kwargs)
+
+    return inner
+
+
 class Engine(FireboltBaseModel):
     """
     A Firebolt engine. Responsible for performing work (queries, data ingestion).
@@ -114,14 +128,21 @@ class Engine(FireboltBaseModel):
             raise ValueError("engine key is None")
         return self.key.engine_id
 
+    @property
+    def database(self) -> Optional[Database]:
+        return (
+            self._engine_service.resource_manager.bindings.get_database_bound_to_engine(
+                engine=self
+            )
+        )
+
     def attach_to_database(
-        self, engine: Engine, database: Database, is_default_engine: bool
+        self, database: Database, is_default_engine: bool = False
     ) -> Binding:
         """
         Attach this engine to a database.
 
         Args:
-            engine: Engine to attach to the database.
             database: Database to which the engine will be attached.
             is_default_engine:
                 Whether this engine should be used as default for this database.
@@ -129,9 +150,10 @@ class Engine(FireboltBaseModel):
                 This will overwrite any existing default.
         """
         return self._engine_service.resource_manager.bindings.create_binding(
-            engine=engine, database=database, is_default_engine=is_default_engine
+            engine=self, database=database, is_default_engine=is_default_engine
         )
 
+    @check_attached_to_database
     def start(
         self,
         wait_for_startup: bool = True,
@@ -188,6 +210,7 @@ class Engine(FireboltBaseModel):
             status = new_status
         return engine
 
+    @check_attached_to_database
     def stop(self, engine: Engine) -> Engine:
         """Stop an Engine running on Firebolt."""
         response = self._engine_service.client.post(

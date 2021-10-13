@@ -1,11 +1,3 @@
-from firebolt.common.exception import (
-    AlreadyBoundError,
-    DatabaseRequiredError,
-    EndpointRequiredError,
-    FireboltClientRequiredError,
-    FireboltEngineError,
-    FireboltError,
-)
 from firebolt.common.settings import Settings
 
 

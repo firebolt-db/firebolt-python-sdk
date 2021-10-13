@@ -1,6 +1,7 @@
 from typing import Optional
 
-from firebolt.common import AlreadyBoundError, prune_dict
+from firebolt.common import prune_dict
+from firebolt.common.exception import AlreadyBoundError
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
