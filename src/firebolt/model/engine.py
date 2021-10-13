@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 from pydantic import Field, PrivateAttr
 
@@ -72,8 +72,10 @@ class Engine(FireboltBaseModel):
     Engines are configured in Settings and in EngineRevisions.
     """
 
-    _engine_service: Optional[EngineService] = PrivateAttr()
+    # internal
+    _engine_service: EngineService = PrivateAttr()
 
+    # required
     name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
     compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: EngineSettings
@@ -99,6 +101,12 @@ class Engine(FireboltBaseModel):
     endpoint_desired_revision_key: Optional[EngineRevisionKey] = Field(
         alias="endpoint_desired_revision_id"
     )
+
+    @classmethod
+    def parse_obj_with_service(cls, obj: Any, engine_service: EngineService) -> Engine:
+        engine = cls.parse_obj(obj)
+        engine._engine_service = engine_service
+        return engine
 
     @property
     def engine_id(self) -> str:
@@ -126,7 +134,6 @@ class Engine(FireboltBaseModel):
 
     def start(
         self,
-        engine: Engine,
         wait_for_startup: bool = True,
         wait_timeout_seconds: int = 3600,
         print_dots: bool = True,
@@ -135,8 +142,6 @@ class Engine(FireboltBaseModel):
         Start an engine. If it's already started, do nothing.
 
         Args:
-            engine:
-                The engine to start.
             wait_for_startup:
                 If True, wait for startup to complete.
                 If false, return immediately after requesting startup.
@@ -151,9 +156,11 @@ class Engine(FireboltBaseModel):
             The updated Engine from Firebolt.
         """
         response = self._engine_service.client.post(
-            url=f"/core/v1/account/engines/{engine.engine_id}:start",
+            url=f"/core/v1/account/engines/{self.engine_id}:start",
         )
-        engine = self._engine_service.parse_engine_dict(response.json()["engine"])
+        engine = Engine.parse_obj_with_service(
+            obj=response.json()["engine"], engine_service=self._engine_service
+        )
         status = engine.current_status_summary
         logger.info(
             f"Starting Engine engine_id={engine.engine_id} "
@@ -186,7 +193,9 @@ class Engine(FireboltBaseModel):
         response = self._engine_service.client.post(
             url=f"/core/v1/account/engines/{engine.engine_id}:stop",
         )
-        return self._engine_service.parse_engine_dict(response.json()["engine"])
+        return Engine.parse_obj_with_service(
+            obj=response.json()["engine"], engine_service=self._engine_service
+        )
 
     def delete(self, engine: Engine) -> Engine:
         """Delete an Engine from Firebolt."""
@@ -195,4 +204,6 @@ class Engine(FireboltBaseModel):
             f"/accounts/{self._engine_service.account_id}"
             f"/engines/{engine.engine_id}",
         )
-        return self._engine_service.parse_engine_dict(response.json()["engine"])
+        return Engine.parse_obj_with_service(
+            obj=response.json()["engine"], engine_service=self._engine_service
+        )
