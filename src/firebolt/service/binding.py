@@ -68,7 +68,7 @@ class BindingService(BaseService):
     def get_engines_bound_to_database(self, database: Database) -> list[Engine]:
         """Get a list of engines that are bound to a database."""
         bindings = self.list_bindings(database_id=database.database_id)
-        return self.resource_manager.engines.get_engines_by_ids(
+        return self.resource_manager.engines.get_by_ids(
             engine_ids=[b.engine_id for b in bindings]
         )
 

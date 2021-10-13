@@ -25,8 +25,7 @@ def raise_on_4xx_5xx(response: Response) -> None:
     """
     Hook to raise an error on http responses with codes indicating an error.
 
-    If a 400 code is found, raise a follow-on BadRequestError, attempting to
-    indicate more specifically how the request is bad.
+    If an error is message is found raise as an ApiError
     """
     try:
         response.raise_for_status()
@@ -42,6 +41,8 @@ def raise_on_4xx_5xx(response: Response) -> None:
             f"Response: {parsed_response}. "
         )
         if "message" in parsed_response:
-            debug_message += f"Message: {parsed_response['message']}"
+            error_message = parsed_response["message"]
+            logger.debug(f"{debug_message} Message: {error_message}")
+            raise RuntimeError(error_message) from exc
         logger.debug(debug_message)
         raise exc
