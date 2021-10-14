@@ -136,6 +136,10 @@ class Engine(FireboltBaseModel):
             )
         )
 
+    @property
+    def url(self) -> Optional[str]:
+        return self.endpoint
+
     def attach_to_database(
         self, database: Database, is_default_engine: bool = False
     ) -> Binding:
@@ -200,7 +204,7 @@ class Engine(FireboltBaseModel):
                 raise TimeoutError(
                     f"Could not start engine within {wait_timeout_seconds} seconds."
                 )
-            engine = self._engine_service.get_by_id(engine_id=engine.engine_id)
+            engine = self._engine_service.get(engine_id=engine.engine_id)
             new_status = engine.current_status_summary
             if new_status != status:
                 logger.info(f"Engine status_summary={new_status}")

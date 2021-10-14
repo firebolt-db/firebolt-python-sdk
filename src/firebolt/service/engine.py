@@ -2,6 +2,7 @@ import json
 import logging
 from typing import Optional, Union
 
+from firebolt.common import prune_dict
 from firebolt.model import FireboltBaseModel
 from firebolt.model.engine import Engine, EngineSettings
 from firebolt.model.engine_revision import (
@@ -10,13 +11,13 @@ from firebolt.model.engine_revision import (
 )
 from firebolt.model.region import Region
 from firebolt.service.base import BaseService
-from firebolt.service.types import EngineType, WarmupMethod
+from firebolt.service.types import EngineOrder, EngineType, WarmupMethod
 
 logger = logging.getLogger(__name__)
 
 
 class EngineService(BaseService):
-    def get_by_id(self, engine_id: str) -> Engine:
+    def get(self, engine_id: str) -> Engine:
         """Get an Engine from Firebolt by its id."""
         response = self.client.get(
             url=f"/core/v1/accounts/{self.account_id}/engines/{engine_id}",
@@ -47,7 +48,50 @@ class EngineService(BaseService):
             params={"engine_name": engine_name},
         )
         engine_id = response.json()["engine_id"]["engine_id"]
-        return self.get_by_id(engine_id=engine_id)
+        return self.get(engine_id=engine_id)
+
+    def list(
+        self,
+        name_contains: str,
+        current_status_eq: str,
+        current_status_not_eq: str,
+        region_eq: str,
+        order_by: Union[str, EngineOrder],
+    ) -> list[Engine]:
+        """
+        Get a list of engines on Firebolt.
+
+        Args:
+            name_contains: Filter for engines with a name containing this substring.
+            current_status_eq: Filter for engines with this status.
+            current_status_not_eq: Filter for engines that do not have this status.
+            region_eq: Filter for engines by region.
+            order_by: Method by which to order the results. See [EngineOrder].
+
+        Returns:
+            A list of engines matching the filters.
+        """
+        if isinstance(order_by, str):
+            order_by = EngineOrder[order_by]
+        response = self.client.get(
+            url=f"/core/v1/account/engines",
+            params=prune_dict(
+                {
+                    "page.first": 5000,  # FUTURE: pagination support w/ generator
+                    "filter.name_contains": name_contains,
+                    "filter.current_status_eq": current_status_eq,
+                    "filter.current_status_not_eq": current_status_not_eq,
+                    "filter.compute_region_id_region_id_eq": self.resource_manager.regions.get_by_name(  # noqa: E501
+                        region_name=region_eq
+                    ),
+                    "order_by": order_by.name,
+                }
+            ),
+        )
+        return [
+            Engine.parse_obj_with_service(obj=e, engine_service=self)
+            for e in response.json()["engines"]
+        ]
 
     def create(
         self,

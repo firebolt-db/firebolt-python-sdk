@@ -47,7 +47,7 @@ class BindingService(BaseService):
             url=f"/core/v1/accounts/{self.account_id}/bindings",
             params=prune_dict(
                 {
-                    "page.first": 5000,  # FUTURE: consider changing this to a generator
+                    "page.first": 5000,  # FUTURE: pagination support w/ generator
                     "filter.id_database_id_eq": database_id,
                     "filter.id_engine_id_eq": engine_id,
                     "filter.is_system_database_eq": is_system_database,
@@ -60,9 +60,7 @@ class BindingService(BaseService):
         """Get the Database to which an engine is bound, if any."""
         try:
             binding = self.list_bindings(engine_id=engine.engine_id)[0]
-            return self.resource_manager.databases.get_by_id(
-                database_id=binding.database_id
-            )
+            return self.resource_manager.databases.get(database_id=binding.database_id)
         except IndexError:
             return None
 
