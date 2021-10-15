@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -8,7 +9,7 @@ class FireboltBaseModel(BaseModel):
         allow_population_by_field_name = True
         extra = "forbid"
 
-    def jsonable_dict(self, *args, **kwargs) -> dict:
+    def jsonable_dict(self, *args: Any, **kwargs: Any) -> dict:
         """
         Generate a dictionary representation of the service that is contains serialized
         primitive types, and is therefore json-ready.
