@@ -15,6 +15,7 @@ from firebolt.model.database import Database
 from firebolt.model.engine_revision import EngineRevisionKey
 from firebolt.model.region import RegionKey
 from firebolt.service.types import (
+    EngineStatus,
     EngineStatusSummary,
     EngineType,
     WarmupMethod,
@@ -98,8 +99,8 @@ class Engine(FireboltBaseModel):
     key: Optional[EngineKey] = Field(alias="id")
     description: Optional[str]
     emoji: Optional[str]
-    current_status: Optional[str]
-    current_status_summary: Optional[str]
+    current_status: Optional[EngineStatus]
+    current_status_summary: Optional[EngineStatusSummary]
     latest_revision_key: Optional[EngineRevisionKey] = Field(alias="latest_revision_id")
     endpoint: Optional[str]
     endpoint_serving_revision_key: Optional[EngineRevisionKey] = Field(
@@ -139,6 +140,10 @@ class Engine(FireboltBaseModel):
     @property
     def url(self) -> Optional[str]:
         return self.endpoint
+
+    def refresh(self) -> Engine:
+        """Get an up-to-date instance of the Engine from Firebolt."""
+        return self._engine_service.get(engine_id=self.engine_id)
 
     def attach_to_database(
         self, database: Database, is_default_engine: bool = False
@@ -181,37 +186,82 @@ class Engine(FireboltBaseModel):
         Returns:
             The updated Engine from Firebolt.
         """
-        response = self._engine_service.client.post(
-            url=f"/core/v1/account/engines/{self.engine_id}:start",
-        )
-        engine = Engine.parse_obj_with_service(
-            obj=response.json()["engine"], engine_service=self._engine_service
-        )
-        status = engine.current_status_summary
-        logger.info(
-            f"Starting Engine engine_id={engine.engine_id} "
-            f"name={engine.name} status_summary={status}"
-        )
         start_time = time.time()
-        end_time = start_time + wait_timeout_seconds
+        timeout_time = start_time + wait_timeout_seconds
 
+        engine = self.refresh()
+        if (
+            engine.current_status_summary
+            == EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
+        ):
+            logger.info(
+                f"Engine (engine_id={self.engine_id}, name={self.name}) "
+                f"is already running."
+            )
+            return engine
+
+        # wait for engine to stop first, if it's already stopping
+        elif (
+            engine.current_status_summary
+            == EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING
+        ):
+            logger.info(
+                f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
+                f"is in currently stopping, waiting for it to stop first."
+            )
+            while (
+                engine.current_status_summary
+                != EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED
+            ):
+                if time.time() >= timeout_time:
+                    raise TimeoutError(
+                        f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
+                        f"did not stop within {wait_timeout_seconds} seconds."
+                    )
+                time.sleep(5)
+                engine = engine.refresh()
+                if print_dots:
+                    print(".", end="")
+
+            logger.info(
+                f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
+            )
+
+        engine = self._send_start()
+        logger.info(
+            f"Starting Engine (engine_id={engine.engine_id}, name={engine.name})"
+        )
+
+        # wait for engine to start
         while (
             wait_for_startup
-            and status != EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING.name
+            and engine.current_status_summary
+            != EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
         ):
-            if time.time() >= end_time:
+            if time.time() >= timeout_time:
                 raise TimeoutError(
                     f"Could not start engine within {wait_timeout_seconds} seconds."
                 )
-            engine = self._engine_service.get(engine_id=engine.engine_id)
-            new_status = engine.current_status_summary
-            if new_status != status:
-                logger.info(f"Engine status_summary={new_status}")
-            elif print_dots:
-                print(".", end="")
+            previous_status_summary = engine.current_status_summary
             time.sleep(5)
-            status = new_status
+            engine = engine.refresh()
+            if engine.current_status_summary != previous_status_summary:
+                logger.info(
+                    f"Engine status_summary="
+                    f"{getattr(engine.current_status_summary, 'name')}"
+                )
+            if print_dots:
+                print(".", end="")
+
         return engine
+
+    def _send_start(self) -> Engine:
+        response = self._engine_service.client.post(
+            url=f"/core/v1/account/engines/{self.engine_id}:start",
+        )
+        return Engine.parse_obj_with_service(
+            obj=response.json()["engine"], engine_service=self._engine_service
+        )
 
     @check_attached_to_database
     def stop(self, engine: Engine) -> Engine:

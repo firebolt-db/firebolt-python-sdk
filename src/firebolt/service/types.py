@@ -28,8 +28,92 @@ class WarmupMethod(Enum):
         }[self]
 
 
+class EngineStatus(Enum):
+    """
+    Detailed engine status.
+
+    See: https://api.dev.firebolt.io/devDocs#operation/coreV1GetEngine
+    """
+
+    ENGINE_STATUS_UNSPECIFIED = "ENGINE_STATUS_UNSPECIFIED"
+
+    # Logical record is created, however underlying infrastructure is not initialized.
+    # In other words this means that engine is stopped.
+    ENGINE_STATUS_CREATED = "ENGINE_STATUS_CREATED"
+
+    # Engine initialization request was sent.
+    ENGINE_STATUS_PROVISIONING_PENDING = "ENGINE_STATUS_PROVISIONING_PENDING"
+
+    # Engine initialization request was received and initialization process started.
+    ENGINE_STATUS_PROVISIONING_STARTED = "ENGINE_STATUS_PROVISIONING_STARTED"
+
+    # Engine initialization was finished successfully.
+    ENGINE_STATUS_PROVISIONING_FINISHED = "ENGINE_STATUS_PROVISIONING_FINISHED"
+
+    # Engine initialization failed due to error.
+    ENGINE_STATUS_PROVISIONING_FAILED = "ENGINE_STATUS_PROVISIONING_FAILED"
+
+    # Engine is initialized, but there are no running or starting engine revisions.
+    ENGINE_STATUS_RUNNING_IDLE = "ENGINE_STATUS_RUNNING_IDLE"
+
+    # Engine is initialized, there are no running engine revision but it's starting.
+    ENGINE_STATUS_RUNNING_REVISION_STARTING = "ENGINE_STATUS_RUNNING_REVISION_STARTING"
+
+    # Engine is initialized, initial revision is failed to provision or start.
+    ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED = (
+        "ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED"
+    )
+
+    # Engine is ready (serves an engine revision).
+    ENGINE_STATUS_RUNNING_REVISION_SERVING = "ENGINE_STATUS_RUNNING_REVISION_SERVING"
+
+    # Engine is ready (serves an engine revision),
+    # zero-downtime replacement revision is starting.
+    ENGINE_STATUS_RUNNING_REVISION_CHANGING = "ENGINE_STATUS_RUNNING_REVISION_CHANGING"
+
+    # Engine is ready (serves an engine revision),
+    # replacement revision failed to provision or start.
+    ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED = (
+        "ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED"
+    )
+
+    # Engine is initialized, replacement of the revision with a downtime is in progress.
+    ENGINE_STATUS_RUNNING_REVISION_RESTARTING = (
+        "ENGINE_STATUS_RUNNING_REVISION_RESTARTING"
+    )
+
+    # Engine is initialized, replacement revision failed to provision or start.
+    ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED = (
+        "ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED"
+    )
+
+    # Engine is initialized, all child revisions are being terminated.
+    ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING = (
+        "ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING"
+    )
+
+    # Engine termination request was sent.
+    ENGINE_STATUS_TERMINATION_PENDING = "ENGINE_STATUS_TERMINATION_PENDING"
+
+    # Engine termination started.
+    ENGINE_STATUS_TERMINATION_ST = "ENGINE_STATUS_TERMINATION_STARTED"
+
+    # Engine termination finished.
+    ENGINE_STATUS_TERMINATION_FIN = "ENGINE_STATUS_TERMINATION_FINISHED"
+
+    # Engine termination failed.
+    ENGINE_STATUS_TERMINATION_F = "ENGINE_STATUS_TERMINATION_FAILED"
+
+    # Engine is soft-deleted.
+    ENGINE_STATUS_DELETED = "ENGINE_STATUS_DELETED"
+
+
 class EngineStatusSummary(Enum):
-    """Engine summary status. See: https://tinyurl.com/as7a9ru9"""
+    """
+    Engine summary status.
+
+    See: https://api.dev.firebolt.io/devDocs#operation/coreV1GetEngine
+    """
 
     ENGINE_STATUS_SUMMARY_UNSPECIFIED = "ENGINE_STATUS_SUMMARY_UNSPECIFIED"
 
