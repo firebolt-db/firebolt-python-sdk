@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Optional, Union
 
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
@@ -66,28 +66,31 @@ class DatabaseService(BaseService):
             for d in response.json()["databases"]
         ]
 
-    def create(self, database_name: str, region_name: str) -> Database:
+    def create(self, name: str, region: Optional[str] = None) -> Database:
         """
         Create a new Database on Firebolt.
 
         Args:
-            database_name: Name of the database.
-            region_name: Region name in which to create the database.
+            name: Name of the database.
+            region: Region name in which to create the database.
 
         Returns:
             The newly created Database.
         """
 
         class _DatabaseCreateRequest(FireboltBaseModel):
-            """Helper model for sending Database creation requests."""
+            """Helper service for sending Database creation requests."""
 
             account_id: str
             database: Database
 
-        region_key = self.resource_manager.regions.get_by_name(
-            region_name=region_name
-        ).key
-        database = Database(name=database_name, compute_region_key=region_key)
+        if region is None:
+            region_key = self.resource_manager.regions.default_region.key
+        else:
+            region_key = self.resource_manager.regions.get_by_name(
+                region_name=region
+            ).key
+        database = Database(name=name, compute_region_key=region_key)
 
         response = self.client.post(
             url=f"/core/v1/accounts/{self.account_id}/databases",
@@ -95,7 +98,7 @@ class DatabaseService(BaseService):
             json=_DatabaseCreateRequest(
                 account_id=self.account_id,
                 database=database,
-            ).dict(by_alias=True),
+            ).jsonable_dict(by_alias=True),
         )
         return Database.parse_obj_with_service(
             obj=response.json()["database"], database_service=self

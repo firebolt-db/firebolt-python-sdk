@@ -1,8 +1,7 @@
-import json
 import logging
 from typing import Optional, Union
 
-from firebolt.common import prune_dict
+from firebolt.common.util import prune_dict
 from firebolt.model import FireboltBaseModel
 from firebolt.model.engine import Engine, EngineSettings
 from firebolt.model.engine_revision import (
@@ -181,7 +180,7 @@ class EngineService(BaseService):
         """
 
         class _EngineCreateRequest(FireboltBaseModel):
-            """Helper model for sending Engine create requests."""
+            """Helper service for sending Engine create requests."""
 
             account_id: str
             engine: Engine
@@ -190,13 +189,11 @@ class EngineService(BaseService):
         response = self.client.post(
             url="/core/v1/account/engines",
             headers={"Content-type": "application/json"},
-            json=json.loads(
-                _EngineCreateRequest(
-                    account_id=self.account_id,
-                    engine=engine,
-                    engine_revision=engine_revision,
-                ).json(by_alias=True)
-            ),
+            json=_EngineCreateRequest(
+                account_id=self.account_id,
+                engine=engine,
+                engine_revision=engine_revision,
+            ).jsonable_dict(by_alias=True),
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self

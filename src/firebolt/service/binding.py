@@ -1,7 +1,7 @@
 from typing import Optional
 
-from firebolt.common import prune_dict
 from firebolt.common.exception import AlreadyBoundError
+from firebolt.common.util import prune_dict
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
@@ -108,7 +108,7 @@ class BindingService(BaseService):
             url=f"/core/v1/accounts/{self.account_id}"
             f"/databases/{database.database_id}"
             f"/bindings/{engine.engine_id}",
-            json=binding.dict(
+            json=binding.jsonable_dict(
                 by_alias=True, include={"binding_key": ..., "is_default_engine": ...}
             ),
         )
