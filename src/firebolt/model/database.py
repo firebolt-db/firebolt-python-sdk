@@ -1,20 +1,41 @@
 from __future__ import annotations
 
+import functools
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional
 
 from pydantic import Field, PrivateAttr
 
+from firebolt.common.exception import AttachedEngineInUseError
 from firebolt.model import FireboltBaseModel
 from firebolt.model.region import RegionKey
+from firebolt.service.types import EngineStatusSummary
 
 if TYPE_CHECKING:
+    from firebolt.model.binding import Binding
+    from firebolt.model.engine import Engine
     from firebolt.service.database import DatabaseService
 
 
 class DatabaseKey(FireboltBaseModel):
     account_id: str
     database_id: str
+
+
+def check_no_attached_starting_stopping_engines(func: Callable) -> Callable:
+    """(Decorator) Ensure no attached engines are starting/stopping"""
+
+    @functools.wraps(func)
+    def inner(self: Database, *args: Any, **kwargs: Any) -> Any:
+        for engine in self.get_attached_engines():
+            if engine.current_status_summary in {
+                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING,
+                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING,
+            }:
+                raise AttachedEngineInUseError(method_name=func.__name__)
+        return func(self, *args, **kwargs)
+
+    return inner
 
 
 class Database(FireboltBaseModel):
@@ -62,6 +83,30 @@ class Database(FireboltBaseModel):
             return None
         return self.database_key.database_id
 
+    def get_attached_engines(self) -> list[Engine]:
+        """Get a list of engines that are attached to this database."""
+        return self._database_service.resource_manager.bindings.get_engines_bound_to_database(  # noqa: E501
+            database=self
+        )
+
+    def attach_to_engine(
+        self, engine: Engine, is_default_engine: bool = False
+    ) -> Binding:
+        """
+        Attach an engine to this database.
+
+        Args:
+            engine: The engine to attach.
+            is_default_engine:
+                Whether this engine should be used as default for this database.
+                Only one engine can be set as default for a single database.
+                This will overwrite any existing default.
+        """
+        return self._database_service.resource_manager.bindings.create_binding(
+            engine=engine, database=self, is_default_engine=is_default_engine
+        )
+
+    @check_no_attached_starting_stopping_engines
     def delete(self, database_id: str) -> Database:
         """Delete a database from Firebolt."""
         response = self._database_service.client.delete(

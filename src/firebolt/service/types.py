@@ -29,6 +29,8 @@ class WarmupMethod(Enum):
 
 
 class EngineStatusSummary(Enum):
+    """Engine summary status. See: https://tinyurl.com/as7a9ru9"""
+
     ENGINE_STATUS_SUMMARY_UNSPECIFIED = "ENGINE_STATUS_SUMMARY_UNSPECIFIED"
 
     # Fully stopped.

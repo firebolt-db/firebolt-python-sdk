@@ -24,6 +24,21 @@ class AlreadyBoundError(FireboltEngineError):
     pass
 
 
+class FireboltDatabaseError(FireboltError):
+    pass
+
+
+class AttachedEngineInUseError(FireboltDatabaseError):
+    def __init__(self, method_name: str):
+        self.method_name = method_name
+
+    def __str__(self) -> str:
+        return (
+            f"unable to call {self.method_name}: "
+            f"engine must not be in starting or stopping state."
+        )
+
+
 class ConnectionError(FireboltError):
     pass
 

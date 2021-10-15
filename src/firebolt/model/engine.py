@@ -195,7 +195,6 @@ class Engine(FireboltBaseModel):
         start_time = time.time()
         end_time = start_time + wait_timeout_seconds
 
-        # summary statuses: https://tinyurl.com/as7a9ru9
         while (
             wait_for_startup
             and status != EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING.name
