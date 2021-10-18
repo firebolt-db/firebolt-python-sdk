@@ -1,6 +1,6 @@
 import time
 import typing
-from functools import wraps
+from functools import lru_cache, wraps
 from inspect import cleandoc
 from json import JSONDecodeError
 from typing import Any, Optional, Tuple, Type
@@ -154,6 +154,7 @@ class Client(httpx.Client):
             resp = super().send(*args, **kwargs)
         return resp
 
-    @cached_property
+    @property
+    @lru_cache()
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]

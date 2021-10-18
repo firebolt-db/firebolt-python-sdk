@@ -1,5 +1,7 @@
-from logging import getLogger
-from typing import List, Optional, Union
+import json
+import logging
+import time
+from typing import List, Optional
 
 from firebolt.common.util import prune_dict
 from firebolt.model import FireboltBaseModel
@@ -147,20 +149,16 @@ class EngineService(BaseService):
             ),
         )
 
-        instance_type_key = self.resource_manager.instance_types.get_by_name(
-            instance_type_name=spec
-        ).key
-
-        engine_revision = EngineRevision(
-            specification=EngineRevisionSpecification(
-                db_compute_instances_type_key=instance_type_key,
-                db_compute_instances_count=scale,
-                db_compute_instances_use_spot=False,
-                db_version="",
-                proxy_instances_type_key=instance_type_key,
-                proxy_instances_count=1,
-                proxy_version="",
-            )
+    def get_engines_by_ids(self, engine_ids: List[str]) -> List[Engine]:
+        """Get multiple Engines from Firebolt by their ids."""
+        response = self.client.post(
+            url=f"/core/v1/engines:getByIds",
+            json={
+                "engine_ids": [
+                    {"account_id": self.account_id, "engine_id": engine_id}
+                    for engine_id in engine_ids
+                ]
+            },
         )
 
         return self._send_create_engine(engine=engine, engine_revision=engine_revision)

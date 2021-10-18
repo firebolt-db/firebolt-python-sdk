@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Dict, List, NamedTuple, Optional
 
 from firebolt.common.utils import cached_property
@@ -13,7 +14,8 @@ class InstanceTypeLookup(NamedTuple):
 
 
 class InstanceTypeService(BaseService):
-    @cached_property
+    @property
+    @lru_cache()
     def instance_types(self) -> List[InstanceType]:
         """List of instance types available on Firebolt."""
         response = self.client.get(
@@ -21,12 +23,14 @@ class InstanceTypeService(BaseService):
         )
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
 
-    @cached_property
+    @property
+    @lru_cache()
     def instance_types_by_key(self) -> Dict[InstanceTypeKey, InstanceType]:
         """Dict of {InstanceTypeKey: InstanceType}"""
         return {i.key: i for i in self.instance_types}
 
-    @cached_property
+    @property
+    @lru_cache()
     def instance_types_by_name(self) -> Dict[InstanceTypeLookup, InstanceType]:
         """Dict of {InstanceTypeLookup: InstanceType}"""
         return {

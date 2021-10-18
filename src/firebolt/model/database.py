@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import Optional
 
 from pydantic import Field, PrivateAttr
 
@@ -22,17 +22,6 @@ class DatabaseKey(FireboltBaseModel):
 
 
 class Database(FireboltBaseModel):
-    """
-    A Firebolt database.
-
-    Databases belong to a region and have a description,
-    but otherwise are not configurable.
-    """
-
-    # internal
-    _service: DatabaseService = PrivateAttr()
-
-    # required
     name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
     compute_region_key: RegionKey = Field(alias="compute_region_id")
 
