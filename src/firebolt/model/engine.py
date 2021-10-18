@@ -4,7 +4,7 @@ import functools
 import logging
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from pydantic import Field, PrivateAttr
 
@@ -91,7 +91,7 @@ class Engine(FireboltBaseModel):
     _service: EngineService = PrivateAttr()
 
     # required
-    name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
+    name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
     compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: EngineSettings
 

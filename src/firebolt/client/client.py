@@ -1,9 +1,9 @@
 import time
 import typing
-from functools import cached_property, wraps
+from functools import lru_cache, wraps
 from inspect import cleandoc
 from json import JSONDecodeError
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Type
 
 import httpx
 from httpx._types import AuthTypes
@@ -12,7 +12,7 @@ from firebolt.common.exception import AuthenticationError
 
 DEFAULT_API_URL: str = "api.app.firebolt.io"
 API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 60
-_REQUEST_ERRORS: Tuple[type[Exception], ...] = (
+_REQUEST_ERRORS: Tuple[Type, ...] = (
     httpx.HTTPError,
     httpx.InvalidURL,
     httpx.CookieConflict,
@@ -153,6 +153,7 @@ class Client(httpx.Client):
             resp = super().send(*args, **kwargs)
         return resp
 
-    @cached_property
+    @property
+    @lru_cache()
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]

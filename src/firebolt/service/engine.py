@@ -1,5 +1,5 @@
-import logging
-from typing import Optional, Union
+from logging import getLogger
+from typing import Optional, Union, List
 
 from firebolt.common.util import prune_dict
 from firebolt.model import FireboltBaseModel
@@ -12,7 +12,7 @@ from firebolt.model.region import Region
 from firebolt.service.base import BaseService
 from firebolt.service.types import EngineOrder, EngineType, WarmupMethod
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class EngineService(BaseService):
@@ -24,10 +24,10 @@ class EngineService(BaseService):
         engine_entry: dict = response.json()["engine"]
         return Engine.parse_obj_with_service(obj=engine_entry, engine_service=self)
 
-    def get_by_ids(self, ids: list[str]) -> list[Engine]:
+    def get_by_ids(self, ids: List[str]) -> List[Engine]:
         """Get multiple Engines from Firebolt by their ids."""
         response = self.client.post(
-            url=f"/core/v1/engines:getByIds",
+            url="/core/v1/engines:getByIds",
             json={
                 "engine_ids": [
                     {"account_id": self.account_id, "engine_id": engine_id}
@@ -56,7 +56,7 @@ class EngineService(BaseService):
         current_status_not_eq: str,
         region_eq: str,
         order_by: Union[str, EngineOrder],
-    ) -> list[Engine]:
+    ) -> List[Engine]:
         """
         Get a list of engines on Firebolt.
 
@@ -73,7 +73,7 @@ class EngineService(BaseService):
         if isinstance(order_by, str):
             order_by = EngineOrder[order_by]
         response = self.client.get(
-            url=f"/core/v1/account/engines",
+            url="/core/v1/account/engines",
             params=prune_dict(
                 {
                     "page.first": 5000,  # FUTURE: pagination support w/ generator

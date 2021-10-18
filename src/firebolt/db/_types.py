@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
-from functools import cached_property
-from typing import Union, get_args
+from functools import lru_cache
+from typing import Union
 
 from ciso8601 import parse_datetime
 
@@ -53,7 +53,7 @@ class ARRAY:
     _prefix = "Array("
 
     def __init__(self, subtype: Union[type, ARRAY]):
-        assert (subtype in get_args(ColType) and subtype is not list) or isinstance(
+        assert (subtype in ColType.__args__ and subtype is not list) or isinstance(
             subtype, ARRAY
         ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
@@ -101,7 +101,8 @@ class _InternalType(Enum):
     # Nullable(Nothing)
     Nothing = "Nothing"
 
-    @cached_property
+    @property
+    @lru_cache()
     def python_type(self) -> type:
         """Convert internal type to python type."""
         types = {

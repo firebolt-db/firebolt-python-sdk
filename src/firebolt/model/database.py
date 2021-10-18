@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, List
 
 from pydantic import Field, PrivateAttr
 
@@ -33,13 +33,13 @@ class Database(FireboltBaseModel):
     _service: DatabaseService = PrivateAttr()
 
     # required
-    name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
+    name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
     compute_region_key: RegionKey = Field(alias="compute_region_id")
 
     # optional
     database_key: Optional[DatabaseKey] = Field(alias="id")
-    description: Optional[Annotated[str, Field(max_length=255)]]
-    emoji: Optional[Annotated[str, Field(max_length=255)]]
+    description: Optional[str] = Field(max_length=255)
+    emoji: Optional[str] = Field(max_length=255)
     current_status: Optional[str]
     health_status: Optional[str]
     data_size_full: Optional[int]
@@ -66,7 +66,7 @@ class Database(FireboltBaseModel):
             return None
         return self.database_key.database_id
 
-    def get_attached_engines(self) -> list[Engine]:
+    def get_attached_engines(self) -> List[Engine]:
         """Get a list of engines that are attached to this database."""
         return self._service.resource_manager.bindings.get_engines_bound_to_database(  # noqa: E501
             database=self
