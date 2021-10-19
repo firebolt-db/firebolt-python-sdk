@@ -7,25 +7,25 @@ from firebolt.service.types import DatabaseOrder
 
 
 class DatabaseService(BaseService):
-    def get(self, database_id: str) -> Database:
+    def get(self, id_: str) -> Database:
         """Get a Database from Firebolt by its id."""
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/databases/{database_id}",
+            url=f"/core/v1/accounts/{self.account_id}/databases/{id_}",
         )
         return Database.parse_obj_with_service(
             obj=response.json()["database"], database_service=self
         )
 
-    def get_by_name(self, database_name: str) -> Database:
+    def get_by_name(self, name: str) -> Database:
         """Get a Database from Firebolt by its name."""
-        database_id = self.get_id_by_name(database_name=database_name)
-        return self.get(database_id=database_id)
+        database_id = self.get_id_by_name(name=name)
+        return self.get(id_=database_id)
 
-    def get_id_by_name(self, database_name: str) -> str:
+    def get_id_by_name(self, name: str) -> str:
         """Get a Database id from Firebolt by its name."""
         response = self.client.get(
             url=f"/core/v1/account/databases:getIdByName",
-            params={"database_name": database_name},
+            params={"database_name": name},
         )
         database_id = response.json()["database_id"]["database_id"]
         return database_id
@@ -87,9 +87,7 @@ class DatabaseService(BaseService):
         if region is None:
             region_key = self.resource_manager.regions.default_region.key
         else:
-            region_key = self.resource_manager.regions.get_by_name(
-                region_name=region
-            ).key
+            region_key = self.resource_manager.regions.get_by_name(name=region).key
         database = Database(name=name, compute_region_key=region_key)
 
         response = self.client.post(

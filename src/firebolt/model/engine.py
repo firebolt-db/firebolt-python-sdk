@@ -137,7 +137,7 @@ class Engine(FireboltBaseModel):
 
     def get_latest(self) -> Engine:
         """Get an up-to-date instance of the Engine from Firebolt."""
-        return self._service.get(engine_id=self.engine_id)
+        return self._service.get(id_=self.engine_id)
 
     def attach_to_database(
         self, database: Database, is_default_engine: bool = False
@@ -201,6 +201,7 @@ class Engine(FireboltBaseModel):
             return engine
 
         # wait for engine to stop first, if it's already stopping
+        # FUTURE: revisit logging and consider consolidating this if & the while below.
         elif (
             engine.current_status_summary
             == EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING
@@ -258,21 +259,21 @@ class Engine(FireboltBaseModel):
         )
 
     @check_attached_to_database
-    def stop(self, engine: Engine) -> Engine:
+    def stop(self) -> Engine:
         """Stop an Engine running on Firebolt."""
         response = self._service.client.post(
-            url=f"/core/v1/account/engines/{engine.engine_id}:stop",
+            url=f"/core/v1/account/engines/{self.engine_id}:stop",
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
 
-    def delete(self, engine: Engine) -> Engine:
+    def delete(self) -> Engine:
         """Delete an Engine from Firebolt."""
         response = self._service.client.delete(
             url=f"/core/v1"
             f"/accounts/{self._service.account_id}"
-            f"/engines/{engine.engine_id}",
+            f"/engines/{self.engine_id}",
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service

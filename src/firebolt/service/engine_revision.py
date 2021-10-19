@@ -13,20 +13,20 @@ class EngineRevisionService(BaseService):
             )
         )
 
-    def get_by_key(self, engine_revision_key: EngineRevisionKey) -> EngineRevision:
+    def get_by_key(self, key: EngineRevisionKey) -> EngineRevision:
         """
         Fetch an EngineRevision from Firebolt by it's key.
 
         Args:
-            engine_revision_key: Key of the desired EngineRevision.
+            key: Key of the desired EngineRevision.
 
         Returns:
             The requested EngineRevision
         """
         response = self.client.get(
-            url=f"/core/v1/accounts/{engine_revision_key.account_id}"
-            f"/engines/{engine_revision_key.engine_id}"
-            f"/engineRevisions/{engine_revision_key.engine_revision_id}",
+            url=f"/core/v1/accounts/{key.account_id}"
+            f"/engines/{key.engine_id}"
+            f"/engineRevisions/{key.engine_revision_id}",
         )
         engine_spec: dict = response.json()["engine_revision"]
         return EngineRevision.parse_obj(engine_spec)

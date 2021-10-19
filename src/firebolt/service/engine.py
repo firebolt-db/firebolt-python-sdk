@@ -16,22 +16,22 @@ logger = logging.getLogger(__name__)
 
 
 class EngineService(BaseService):
-    def get(self, engine_id: str) -> Engine:
+    def get(self, id_: str) -> Engine:
         """Get an Engine from Firebolt by its id."""
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/engines/{engine_id}",
+            url=f"/core/v1/accounts/{self.account_id}/engines/{id_}",
         )
         engine_entry: dict = response.json()["engine"]
         return Engine.parse_obj_with_service(obj=engine_entry, engine_service=self)
 
-    def get_by_ids(self, engine_ids: list[str]) -> list[Engine]:
+    def get_by_ids(self, ids: list[str]) -> list[Engine]:
         """Get multiple Engines from Firebolt by their ids."""
         response = self.client.post(
             url=f"/core/v1/engines:getByIds",
             json={
                 "engine_ids": [
                     {"account_id": self.account_id, "engine_id": engine_id}
-                    for engine_id in engine_ids
+                    for engine_id in ids
                 ]
             },
         )
@@ -40,14 +40,14 @@ class EngineService(BaseService):
             for e in response.json()["engines"]
         ]
 
-    def get_by_name(self, engine_name: str) -> Engine:
+    def get_by_name(self, name: str) -> Engine:
         """Get an Engine from Firebolt by its name."""
         response = self.client.get(
             url="/core/v1/account/engines:getIdByName",
-            params={"engine_name": engine_name},
+            params={"engine_name": name},
         )
         engine_id = response.json()["engine_id"]["engine_id"]
-        return self.get(engine_id=engine_id)
+        return self.get(id_=engine_id)
 
     def get_many(
         self,
@@ -81,7 +81,7 @@ class EngineService(BaseService):
                     "filter.current_status_eq": current_status_eq,
                     "filter.current_status_not_eq": current_status_not_eq,
                     "filter.compute_region_id_region_id_eq": self.resource_manager.regions.get_by_name(  # noqa: E501
-                        region_name=region_eq
+                        name=region_eq
                     ),
                     "order_by": order_by.name,
                 }
@@ -134,7 +134,7 @@ class EngineService(BaseService):
             region = self.resource_manager.regions.default_region
         else:
             if isinstance(region, str):
-                region = self.resource_manager.regions.get_by_name(region_name=region)
+                region = self.resource_manager.regions.get_by_name(name=region)
 
         engine = Engine(
             name=name,

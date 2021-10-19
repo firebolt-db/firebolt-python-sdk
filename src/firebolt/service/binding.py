@@ -60,7 +60,7 @@ class BindingService(BaseService):
         """Get the Database to which an engine is bound, if any."""
         try:
             binding = self.get_many(engine_id=engine.engine_id)[0]
-            return self.resource_manager.databases.get(database_id=binding.database_id)
+            return self.resource_manager.databases.get(id_=binding.database_id)
         except IndexError:
             return None
 
@@ -68,7 +68,7 @@ class BindingService(BaseService):
         """Get a list of engines that are bound to a database."""
         bindings = self.get_many(database_id=database.database_id)
         return self.resource_manager.engines.get_by_ids(
-            engine_ids=[b.engine_id for b in bindings]
+            ids=[b.engine_id for b in bindings]
         )
 
     def create(

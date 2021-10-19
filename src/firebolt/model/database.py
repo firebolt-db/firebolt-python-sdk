@@ -89,14 +89,11 @@ class Database(FireboltBaseModel):
             engine=engine, database=self, is_default_engine=is_default_engine
         )
 
-    def delete(self, database_id: str) -> Database:
+    def delete(self) -> Database:
         """
         Delete a database from Firebolt.
 
         Raises an error if there are any attached engines.
-
-        Args:
-            database_id: Identifier of the database to delete.
         """
         for engine in self.get_attached_engines():
             if engine.current_status_summary in {
@@ -106,7 +103,7 @@ class Database(FireboltBaseModel):
                 raise AttachedEngineInUseError(method_name="delete")
 
         response = self._service.client.delete(
-            url=f"/core/v1/account/databases/{database_id}",
+            url=f"/core/v1/account/databases/{self.database_id}",
             headers={"Content-type": "application/json"},
         )
         return Database.parse_obj_with_service(
