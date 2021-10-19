@@ -1,9 +1,12 @@
 import time
 
+import pytest
+
 from firebolt.service.manager import ResourceManager
 from firebolt.service.types import EngineStatusSummary
 
 
+@pytest.mark.skip(reason="manual test")
 def test_create_start_stop_engine():
     rm = ResourceManager()
     name = f"integration_test_{int(time.time())}"
@@ -30,6 +33,7 @@ def test_create_start_stop_engine():
     }
 
 
+@pytest.mark.skip(reason="manual test")
 def test_copy_engine():
     rm = ResourceManager()
     name = f"integration_test_{int(time.time())}"
@@ -40,8 +44,6 @@ def test_copy_engine():
     engine.name = f"{engine.name}_copy"
     engine_copy = rm.engines._send_create_engine(
         engine=engine,
-        engine_revision=rm.engine_revisions.get_engine_revision_by_key(
-            engine.latest_revision_key
-        ),
+        engine_revision=rm.engine_revisions.get_by_key(engine.latest_revision_key),
     )
     assert engine_copy

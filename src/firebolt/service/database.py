@@ -30,7 +30,7 @@ class DatabaseService(BaseService):
         database_id = response.json()["database_id"]["database_id"]
         return database_id
 
-    def list(
+    def get_many(
         self,
         name_contains: str,
         attached_engine_name_eq: str,

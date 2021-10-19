@@ -49,7 +49,7 @@ class EngineService(BaseService):
         engine_id = response.json()["engine_id"]["engine_id"]
         return self.get(engine_id=engine_id)
 
-    def list(
+    def get_many(
         self,
         name_contains: str,
         current_status_eq: str,

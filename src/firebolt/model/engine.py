@@ -137,10 +137,6 @@ class Engine(FireboltBaseModel):
             )
         )
 
-    @property
-    def url(self) -> Optional[str]:
-        return self.endpoint
-
     def refresh(self) -> Engine:
         """Get an up-to-date instance of the Engine from Firebolt."""
         return self._engine_service.get(engine_id=self.engine_id)
@@ -158,7 +154,7 @@ class Engine(FireboltBaseModel):
                 Only one engine can be set as default for a single database.
                 This will overwrite any existing default.
         """
-        return self._engine_service.resource_manager.bindings.create_binding(
+        return self._engine_service.resource_manager.bindings.create(
             engine=self, database=database, is_default_engine=is_default_engine
         )
 
@@ -186,18 +182,17 @@ class Engine(FireboltBaseModel):
         Returns:
             The updated Engine from Firebolt.
         """
-        start_time = time.time()
-        timeout_time = start_time + wait_timeout_seconds
+        timeout_time = time.time() + wait_timeout_seconds
 
         engine = self.refresh()
         if (
             engine.current_status_summary
             == EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
         ):
-            logger.info(
-                f"Engine (engine_id={self.engine_id}, name={self.name}) "
-                f"is already running."
-            )
+            # logger.info(
+            #     f"Engine (engine_id={self.engine_id}, name={self.name}) "
+            #     f"is already running."
+            # )
             return engine
 
         # wait for engine to stop first, if it's already stopping
@@ -205,10 +200,10 @@ class Engine(FireboltBaseModel):
             engine.current_status_summary
             == EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING
         ):
-            logger.info(
-                f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
-                f"is in currently stopping, waiting for it to stop first."
-            )
+            # logger.info(
+            #     f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
+            #     f"is in currently stopping, waiting for it to stop first."
+            # )
             while (
                 engine.current_status_summary
                 != EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED
@@ -223,14 +218,14 @@ class Engine(FireboltBaseModel):
                 if print_dots:
                     print(".", end="")
 
-            logger.info(
-                f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
-            )
+            # logger.info(
+            #     f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
+            # )
 
         engine = self._send_start()
-        logger.info(
-            f"Starting Engine (engine_id={engine.engine_id}, name={engine.name})"
-        )
+        # logger.info(
+        #     f"Starting Engine (engine_id={engine.engine_id}, name={engine.name})"
+        # )
 
         # wait for engine to start
         while (
@@ -242,14 +237,14 @@ class Engine(FireboltBaseModel):
                 raise TimeoutError(
                     f"Could not start engine within {wait_timeout_seconds} seconds."
                 )
-            previous_status_summary = engine.current_status_summary
+            # previous_status_summary = engine.current_status_summary
             time.sleep(5)
             engine = engine.refresh()
-            if engine.current_status_summary != previous_status_summary:
-                logger.info(
-                    f"Engine status_summary="
-                    f"{getattr(engine.current_status_summary, 'name')}"
-                )
+            # if engine.current_status_summary != previous_status_summary:
+            #     logger.info(
+            #         f"Engine status_summary="
+            #         f"{getattr(engine.current_status_summary, 'name')}"
+            #     )
             if print_dots:
                 print(".", end="")
 

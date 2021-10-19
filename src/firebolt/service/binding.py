@@ -19,7 +19,7 @@ class BindingService(BaseService):
         binding: dict = response.json()["binding"]
         return Binding.parse_obj(binding)
 
-    def list_bindings(
+    def get_many(
         self,
         database_id: Optional[str] = None,
         engine_id: Optional[str] = None,
@@ -59,19 +59,19 @@ class BindingService(BaseService):
     def get_database_bound_to_engine(self, engine: Engine) -> Optional[Database]:
         """Get the Database to which an engine is bound, if any."""
         try:
-            binding = self.list_bindings(engine_id=engine.engine_id)[0]
+            binding = self.get_many(engine_id=engine.engine_id)[0]
             return self.resource_manager.databases.get(database_id=binding.database_id)
         except IndexError:
             return None
 
     def get_engines_bound_to_database(self, database: Database) -> list[Engine]:
         """Get a list of engines that are bound to a database."""
-        bindings = self.list_bindings(database_id=database.database_id)
+        bindings = self.get_many(database_id=database.database_id)
         return self.resource_manager.engines.get_by_ids(
             engine_ids=[b.engine_id for b in bindings]
         )
 
-    def create_binding(
+    def create(
         self, engine: Engine, database: Database, is_default_engine: bool
     ) -> Binding:
         """

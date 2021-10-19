@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import functools
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 from pydantic import Field, PrivateAttr
 
@@ -20,22 +19,6 @@ if TYPE_CHECKING:
 class DatabaseKey(FireboltBaseModel):
     account_id: str
     database_id: str
-
-
-def check_no_attached_starting_stopping_engines(func: Callable) -> Callable:
-    """(Decorator) Ensure no attached engines are starting/stopping"""
-
-    @functools.wraps(func)
-    def inner(self: Database, *args: Any, **kwargs: Any) -> Any:
-        for engine in self.get_attached_engines():
-            if engine.current_status_summary in {
-                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING,
-                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING,
-            }:
-                raise AttachedEngineInUseError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
 
 
 class Database(FireboltBaseModel):
@@ -102,13 +85,26 @@ class Database(FireboltBaseModel):
                 Only one engine can be set as default for a single database.
                 This will overwrite any existing default.
         """
-        return self._database_service.resource_manager.bindings.create_binding(
+        return self._database_service.resource_manager.bindings.create(
             engine=engine, database=self, is_default_engine=is_default_engine
         )
 
-    @check_no_attached_starting_stopping_engines
     def delete(self, database_id: str) -> Database:
-        """Delete a database from Firebolt."""
+        """
+        Delete a database from Firebolt.
+
+        Raises an error if there are any attached engines.
+
+        Args:
+            database_id: Identifier of the database to delete.
+        """
+        for engine in self.get_attached_engines():
+            if engine.current_status_summary in {
+                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING,
+                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING,
+            }:
+                raise AttachedEngineInUseError(method_name="delete")
+
         response = self._database_service.client.delete(
             url=f"/core/v1/account/databases/{database_id}",
             headers={"Content-type": "application/json"},
