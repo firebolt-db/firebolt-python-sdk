@@ -40,7 +40,7 @@ class EngineSettings(FireboltBaseModel):
     """
 
     preset: str
-    auto_stop_delay_duration: str
+    auto_stop_delay_duration: Annotated[str, Field(regex=r"^[0-9]+[sm]$|^0$")]
     minimum_logging_level: str
     is_read_only: bool
     warm_up: str
@@ -88,7 +88,7 @@ class Engine(FireboltBaseModel):
     """
 
     # internal
-    _engine_service: EngineService = PrivateAttr()
+    _service: EngineService = PrivateAttr()
 
     # required
     name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
@@ -120,7 +120,7 @@ class Engine(FireboltBaseModel):
     @classmethod
     def parse_obj_with_service(cls, obj: Any, engine_service: EngineService) -> Engine:
         engine = cls.parse_obj(obj)
-        engine._engine_service = engine_service
+        engine._service = engine_service
         return engine
 
     @property
@@ -131,15 +131,13 @@ class Engine(FireboltBaseModel):
 
     @property
     def database(self) -> Optional[Database]:
-        return (
-            self._engine_service.resource_manager.bindings.get_database_bound_to_engine(
-                engine=self
-            )
+        return self._service.resource_manager.bindings.get_database_bound_to_engine(
+            engine=self
         )
 
-    def refresh(self) -> Engine:
+    def get_latest(self) -> Engine:
         """Get an up-to-date instance of the Engine from Firebolt."""
-        return self._engine_service.get(engine_id=self.engine_id)
+        return self._service.get(engine_id=self.engine_id)
 
     def attach_to_database(
         self, database: Database, is_default_engine: bool = False
@@ -154,7 +152,7 @@ class Engine(FireboltBaseModel):
                 Only one engine can be set as default for a single database.
                 This will overwrite any existing default.
         """
-        return self._engine_service.resource_manager.bindings.create(
+        return self._service.resource_manager.bindings.create(
             engine=self, database=database, is_default_engine=is_default_engine
         )
 
@@ -163,7 +161,7 @@ class Engine(FireboltBaseModel):
         self,
         wait_for_startup: bool = True,
         wait_timeout_seconds: int = 3600,
-        print_dots: bool = True,
+        verbose: bool = False,
     ) -> Engine:
         """
         Start an engine. If it's already started, do nothing.
@@ -175,7 +173,7 @@ class Engine(FireboltBaseModel):
             wait_timeout_seconds:
                 Number of seconds to wait for startup to complete
                 before raising a TimeoutError.
-            print_dots:
+            verbose:
                 If True, print dots periodically while waiting for engine startup.
                 If false, do not print any dots.
 
@@ -184,7 +182,14 @@ class Engine(FireboltBaseModel):
         """
         timeout_time = time.time() + wait_timeout_seconds
 
-        engine = self.refresh()
+        def wait(seconds: int, error_message: str) -> None:
+            time.sleep(seconds)
+            if time.time() > timeout_time:
+                raise TimeoutError(error_message)
+            if verbose:
+                print(".", end="")
+
+        engine = self.get_latest()
         if (
             engine.current_status_summary
             == EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
@@ -208,15 +213,12 @@ class Engine(FireboltBaseModel):
                 engine.current_status_summary
                 != EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED
             ):
-                if time.time() >= timeout_time:
-                    raise TimeoutError(
-                        f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
-                        f"did not stop within {wait_timeout_seconds} seconds."
-                    )
-                time.sleep(5)
-                engine = engine.refresh()
-                if print_dots:
-                    print(".", end="")
+                wait(
+                    seconds=5,
+                    error_message=f"Engine (engine_id={engine.engine_id}, name={engine.name}) "  # noqa: E501
+                    f"did not stop within {wait_timeout_seconds} seconds.",
+                )
+                engine = engine.get_latest()
 
             # logger.info(
             #     f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
@@ -233,48 +235,45 @@ class Engine(FireboltBaseModel):
             and engine.current_status_summary
             != EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
         ):
-            if time.time() >= timeout_time:
-                raise TimeoutError(
-                    f"Could not start engine within {wait_timeout_seconds} seconds."
-                )
+            wait(
+                seconds=5,
+                error_message=f"Could not start engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+            )
             # previous_status_summary = engine.current_status_summary
-            time.sleep(5)
-            engine = engine.refresh()
+            engine = engine.get_latest()
             # if engine.current_status_summary != previous_status_summary:
             #     logger.info(
             #         f"Engine status_summary="
             #         f"{getattr(engine.current_status_summary, 'name')}"
             #     )
-            if print_dots:
-                print(".", end="")
 
         return engine
 
     def _send_start(self) -> Engine:
-        response = self._engine_service.client.post(
+        response = self._service.client.post(
             url=f"/core/v1/account/engines/{self.engine_id}:start",
         )
         return Engine.parse_obj_with_service(
-            obj=response.json()["engine"], engine_service=self._engine_service
+            obj=response.json()["engine"], engine_service=self._service
         )
 
     @check_attached_to_database
     def stop(self, engine: Engine) -> Engine:
         """Stop an Engine running on Firebolt."""
-        response = self._engine_service.client.post(
+        response = self._service.client.post(
             url=f"/core/v1/account/engines/{engine.engine_id}:stop",
         )
         return Engine.parse_obj_with_service(
-            obj=response.json()["engine"], engine_service=self._engine_service
+            obj=response.json()["engine"], engine_service=self._service
         )
 
     def delete(self, engine: Engine) -> Engine:
         """Delete an Engine from Firebolt."""
-        response = self._engine_service.client.delete(
+        response = self._service.client.delete(
             url=f"/core/v1"
-            f"/accounts/{self._engine_service.account_id}"
+            f"/accounts/{self._service.account_id}"
             f"/engines/{engine.engine_id}",
         )
         return Engine.parse_obj_with_service(
-            obj=response.json()["engine"], engine_service=self._engine_service
+            obj=response.json()["engine"], engine_service=self._service
         )

@@ -30,7 +30,7 @@ class Database(FireboltBaseModel):
     """
 
     # internal
-    _database_service: DatabaseService = PrivateAttr()
+    _service: DatabaseService = PrivateAttr()
 
     # required
     name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
@@ -57,7 +57,7 @@ class Database(FireboltBaseModel):
         cls, obj: Any, database_service: DatabaseService
     ) -> Database:
         database = cls.parse_obj(obj)
-        database._database_service = database_service
+        database._service = database_service
         return database
 
     @property
@@ -68,7 +68,7 @@ class Database(FireboltBaseModel):
 
     def get_attached_engines(self) -> list[Engine]:
         """Get a list of engines that are attached to this database."""
-        return self._database_service.resource_manager.bindings.get_engines_bound_to_database(  # noqa: E501
+        return self._service.resource_manager.bindings.get_engines_bound_to_database(  # noqa: E501
             database=self
         )
 
@@ -85,7 +85,7 @@ class Database(FireboltBaseModel):
                 Only one engine can be set as default for a single database.
                 This will overwrite any existing default.
         """
-        return self._database_service.resource_manager.bindings.create(
+        return self._service.resource_manager.bindings.create(
             engine=engine, database=self, is_default_engine=is_default_engine
         )
 
@@ -105,10 +105,10 @@ class Database(FireboltBaseModel):
             }:
                 raise AttachedEngineInUseError(method_name="delete")
 
-        response = self._database_service.client.delete(
+        response = self._service.client.delete(
             url=f"/core/v1/account/databases/{database_id}",
             headers={"Content-type": "application/json"},
         )
         return Database.parse_obj_with_service(
-            response.json()["database"], self._database_service
+            response.json()["database"], self._service
         )

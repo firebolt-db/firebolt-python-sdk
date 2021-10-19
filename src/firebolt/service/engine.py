@@ -180,7 +180,7 @@ class EngineService(BaseService):
         """
 
         class _EngineCreateRequest(FireboltBaseModel):
-            """Helper service for sending Engine create requests."""
+            """Helper model for sending Engine create requests."""
 
             account_id: str
             engine: Engine

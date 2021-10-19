@@ -79,7 +79,7 @@ class DatabaseService(BaseService):
         """
 
         class _DatabaseCreateRequest(FireboltBaseModel):
-            """Helper service for sending Database creation requests."""
+            """Helper model for sending Database creation requests."""
 
             account_id: str
             database: Database
