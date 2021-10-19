@@ -1,15 +1,17 @@
 # firebolt-sdk
 
-### Installation & Usage
+### Installation
 
 * Requires Python `>=3.9`
-* Clone this repo
-* From the cloned directory: `pip install .`
-* See [examples.ipynb](examples.ipynb) for usage
+* `pip install firebolt-sdk`
+
+### Usage
+
+See: [examples.ipynb](examples.ipynb).
 
 ### Configuration
 
-To use the client, you generally will want to set the following environment variables:
+To use the SDK, you generally will want to set the following environment variables:
 ```
 FIREBOLT_USER='email@domain.com'
 FIREBOLT_PASSWORD='*****'
