@@ -53,7 +53,9 @@ def connect(
 
     if engine_name is not None:
         rm = ResourceManager(
-            Settings(user=username, password=password, server=api_endpoint)
+            Settings(
+                user=username, password=password, server=api_endpoint, default_region=""
+            )
         )
         endpoint = rm.engines.get_engine_by_name(engine_name).endpoint
         if endpoint is None:
