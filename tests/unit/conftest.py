@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, List
 
 import httpx
 import pytest
@@ -37,7 +37,7 @@ def provider() -> Provider:
 
 
 @pytest.fixture
-def mock_providers(provider) -> list[Provider]:
+def mock_providers(provider) -> List[Provider]:
     return [provider]
 
 
@@ -64,7 +64,7 @@ def region_2(provider) -> Region:
 
 
 @pytest.fixture
-def mock_regions(region_1, region_2) -> list[Region]:
+def mock_regions(region_1, region_2) -> List[Region]:
     return [region_1, region_2]
 
 
@@ -93,7 +93,7 @@ def instance_type_2(provider, region_2) -> InstanceType:
 
 
 @pytest.fixture
-def mock_instance_types(instance_type_1, instance_type_2) -> list[InstanceType]:
+def mock_instance_types(instance_type_1, instance_type_2) -> List[InstanceType]:
     return [instance_type_1, instance_type_2]
 
 

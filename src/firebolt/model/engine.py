@@ -4,7 +4,7 @@ import functools
 import logging
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from pydantic import Field, PrivateAttr
 
@@ -40,7 +40,7 @@ class EngineSettings(FireboltBaseModel):
     """
 
     preset: str
-    auto_stop_delay_duration: Annotated[str, Field(regex=r"^[0-9]+[sm]$|^0$")]
+    auto_stop_delay_duration: str = Field(regex=r"^[0-9]+[sm]$|^0$")
     minimum_logging_level: str
     is_read_only: bool
     warm_up: str
@@ -91,7 +91,7 @@ class Engine(FireboltBaseModel):
     _service: EngineService = PrivateAttr()
 
     # required
-    name: Annotated[str, Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")]
+    name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
     compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: EngineSettings
 
