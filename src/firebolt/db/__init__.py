@@ -13,7 +13,7 @@ from firebolt.db._types import (
     Timestamp,
     TimestampFromTicks,
 )
-from firebolt.db.connection import Connection
+from firebolt.db.connection import Connection, connect
 from firebolt.db.cursor import Cursor
 
 apilevel = "2.0"

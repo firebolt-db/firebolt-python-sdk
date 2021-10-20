@@ -2,16 +2,70 @@ from __future__ import annotations
 
 from inspect import cleandoc
 from types import TracebackType
-from typing import List
+from typing import List, Optional
 
 from httpx import Timeout
 from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, Client
-from firebolt.common.exception import ConnectionClosedError
+from firebolt.common.exception import ConnectionClosedError, InterfaceError
+from firebolt.common.settings import Settings
 from firebolt.db.cursor import Cursor
+from firebolt.service.manager import ResourceManager
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
+
+
+def connect(
+    database: str = None,
+    username: str = None,
+    password: str = None,
+    engine_name: Optional[str] = None,
+    engine_url: Optional[str] = None,
+    api_endpoint: str = DEFAULT_API_URL,
+) -> Connection:
+    cleandoc(
+        """
+        Connect to Firebolt database.
+
+        Connection parameters:
+        database - name of the database to connect
+        username - user name to use for authentication
+        password - password to use for authentication
+        engine_name - name of the engine to connect to
+        engine_url - engine endpoint to use
+        note: either engine_name or engine_url should be provided, but not both
+        """
+    )
+    if engine_name and engine_url:
+        raise InterfaceError(
+            "Both engine_name and engine_url are provided. Provide only one to connect"
+        )
+    if not engine_name and not engine_url:
+        raise InterfaceError(
+            "Neither engine_name nor engine_url are provided. Provide one to connect"
+        )
+    # This parameters are optional in function signature, but are required to connect.
+    # It's recomended to make them kwargs by PEP 249
+    assert database, "database_name required"
+    assert username, "username required"
+    assert password, "password required"
+
+    if engine_name is not None:
+        rm = ResourceManager(
+            Settings(user=username, password=password, server=api_endpoint)
+        )
+        endpoint = rm.engines.get_engine_by_name(engine_name).endpoint
+        if endpoint is None:
+            raise InterfaceError("unable to retrieve engine endpoint")
+        else:
+            engine_url = endpoint
+
+    assert engine_url is not None
+    engine_url = (
+        engine_url if engine_url.startswith("http") else f"https://{engine_url}"
+    )
+    return Connection(engine_url, database, username, password, api_endpoint)
 
 
 class Connection:
@@ -20,13 +74,14 @@ class Connection:
         Firebolt database connection class. Implements PEP-249.
 
         Parameters:
+            engine_url - Firebolt database engine REST API url
+            database - Firebolt database name
             username - Firebolt account username
             password - Firebolt account password
-            engine_url - Firebolt database engine REST API url
             api_endpoint(optional) - Firebolt API endpoint. Used for authentication
 
         Methods:
-            cursor - created new Cursor object
+            cursor - create new Cursor object
             close - close the Connection and all it's cursors
 
         Firebolt currenly doesn't support transactions so commit and rollback methods
@@ -43,9 +98,6 @@ class Connection:
         password: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
-        engine_url = (
-            engine_url if engine_url.startswith("http") else f"https://{engine_url}"
-        )
         self._client = Client(
             auth=(username, password),
             base_url=engine_url,
