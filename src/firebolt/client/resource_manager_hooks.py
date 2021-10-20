@@ -2,8 +2,6 @@ from logging import getLogger
 
 from httpx import HTTPStatusError, Request, RequestError, Response
 
-from firebolt.common.exception import BadRequestError
-
 logger = getLogger(__name__)
 
 
@@ -27,25 +25,24 @@ def raise_on_4xx_5xx(response: Response) -> None:
     """
     Hook to raise an error on http responses with codes indicating an error.
 
-    If a 400 code is found, raise a follow-on BadRequestError, attempting to
-    indicate more specifically how the request is bad.
+    If an error is message is found raise as an ApiError
     """
     try:
         response.raise_for_status()
     except RequestError as exc:
-        logger.exception(f"An error occurred while requesting {exc.request.url!r}.")
+        logger.debug(f"An error occurred while requesting {exc.request.url!r}.")
         raise exc
     except HTTPStatusError as exc:
         response.read()  # without this, you can get a ResponseNotRead error
-        logger.exception(
+        parsed_response = exc.response.json()
+        debug_message = (
             f"Error response {exc.response.status_code} "
             f"while requesting {exc.request.url!r}. "
-            f"Response: {exc.response.json()}"
+            f"Response: {parsed_response}. "
         )
-        if exc.response.status_code == 400:
-            raise BadRequestError(
-                message=exc.response.json()["message"],
-                request=exc.request,
-                response=exc.response,
-            ) from exc
+        if "message" in parsed_response:
+            error_message = parsed_response["message"]
+            logger.debug(f"{debug_message} Message: {error_message}")
+            raise RuntimeError(error_message) from exc
+        logger.debug(debug_message)
         raise exc

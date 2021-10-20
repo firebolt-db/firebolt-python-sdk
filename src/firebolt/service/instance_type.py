@@ -32,7 +32,7 @@ class InstanceTypeService(BaseService):
         return {
             InstanceTypeLookup(
                 region_name=self.resource_manager.regions.get_by_id(
-                    region_id=i.key.region_id
+                    id_=i.key.region_id
                 ).name,
                 instance_type_name=i.name,
             ): i
