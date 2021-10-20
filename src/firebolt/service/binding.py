@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List, Optional
 
 from firebolt.common.exception import AlreadyBoundError
 from firebolt.common.util import prune_dict
@@ -24,7 +24,7 @@ class BindingService(BaseService):
         database_id: Optional[str] = None,
         engine_id: Optional[str] = None,
         is_system_database: Optional[bool] = None,
-    ) -> list[Binding]:
+    ) -> List[Binding]:
         """
         List bindings on Firebolt, optionally filtering by database and engine.
 
@@ -64,7 +64,7 @@ class BindingService(BaseService):
         except IndexError:
             return None
 
-    def get_engines_bound_to_database(self, database: Database) -> list[Engine]:
+    def get_engines_bound_to_database(self, database: Database) -> List[Engine]:
         """Get a list of engines that are bound to a database."""
         bindings = self.get_many(database_id=database.database_id)
         return self.resource_manager.engines.get_by_ids(

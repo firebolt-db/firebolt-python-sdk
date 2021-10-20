@@ -2,14 +2,16 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
-from functools import cached_property
-from typing import Union, get_args
+from typing import Union
 
 from ciso8601 import parse_datetime
 
 from firebolt.common.exception import DataError, NotSupportedError
+from firebolt.common.utils import cached_property
 
 _NoneType = type(None)
+_col_types = (int, float, str, datetime, date, bool, list, _NoneType)
+# duplicating this since 3.7 can't unpack Union
 ColType = Union[int, float, str, datetime, date, bool, list, _NoneType]
 RawColType = Union[int, float, str, bool, list, _NoneType]
 
@@ -53,7 +55,7 @@ class ARRAY:
     _prefix = "Array("
 
     def __init__(self, subtype: Union[type, ARRAY]):
-        assert (subtype in get_args(ColType) and subtype is not list) or isinstance(
+        assert (subtype in _col_types and subtype is not list) or isinstance(
             subtype, ARRAY
         ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype

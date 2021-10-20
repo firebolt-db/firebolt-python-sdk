@@ -1,18 +1,19 @@
 import time
 import typing
-from functools import cached_property, wraps
+from functools import wraps
 from inspect import cleandoc
 from json import JSONDecodeError
-from typing import Any, Optional, Tuple
+from typing import Any, Optional, Tuple, Type
 
 import httpx
 from httpx._types import AuthTypes
 
 from firebolt.common.exception import AuthenticationError
+from firebolt.common.utils import cached_property
 
 DEFAULT_API_URL: str = "api.app.firebolt.io"
 API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 60
-_REQUEST_ERRORS: Tuple[type[Exception], ...] = (
+_REQUEST_ERRORS: Tuple[Type, ...] = (
     httpx.HTTPError,
     httpx.InvalidURL,
     httpx.CookieConflict,

@@ -1,5 +1,6 @@
-from functools import cached_property
+from typing import Dict, List
 
+from firebolt.common.utils import cached_property
 from firebolt.model.region import Region, RegionKey
 from firebolt.service.base import BaseService
 from firebolt.service.manager import ResourceManager
@@ -20,7 +21,7 @@ class RegionService(BaseService):
         super().__init__(resource_manager=resource_manager)
 
     @cached_property
-    def regions(self) -> list[Region]:
+    def regions(self) -> List[Region]:
         """List of available AWS Regions on Firebolt."""
         response = self.client.get(
             url="/compute/v1/regions", params={"page.first": 5000}
@@ -28,12 +29,12 @@ class RegionService(BaseService):
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     @cached_property
-    def regions_by_name(self) -> dict[str, Region]:
+    def regions_by_name(self) -> Dict[str, Region]:
         """Dict of {RegionLookup: Region}"""
         return {r.name: r for r in self.regions}
 
     @cached_property
-    def regions_by_key(self) -> dict[RegionKey, Region]:
+    def regions_by_key(self) -> Dict[RegionKey, Region]:
         """Dict of {RegionKey: Region}"""
         return {r.key: r for r in self.regions}
 

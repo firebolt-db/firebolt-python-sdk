@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
@@ -36,7 +36,7 @@ class DatabaseService(BaseService):
         attached_engine_name_eq: str,
         attached_engine_name_contains: str,
         order_by: Union[str, DatabaseOrder],
-    ) -> list[Database]:
+    ) -> List[Database]:
         """
         Get a list of databases on Firebolt.
 
