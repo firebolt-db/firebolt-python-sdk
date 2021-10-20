@@ -47,7 +47,7 @@ def connect(
         )
     # This parameters are optional in function signature, but are required to connect.
     # It's recomended to make them kwargs by PEP 249
-    assert database, "database_name required"
+    assert database, "database required"
     assert username, "username required"
     assert password, "password required"
 

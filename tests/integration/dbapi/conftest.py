@@ -5,7 +5,7 @@ from typing import List
 
 from pytest import fixture
 
-from firebolt.db import ARRAY, Connection
+from firebolt.db import ARRAY, Connection, connect
 from firebolt.db._types import ColType
 from firebolt.db.cursor import Column
 
@@ -53,8 +53,12 @@ def api_endpoint() -> str:
 def connection(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> Connection:
-    return Connection(
-        engine_url, database_name, username, password, api_endpoint=api_endpoint
+    return connect(
+        engine_url=engine_url,
+        database=database_name,
+        username=username,
+        password=password,
+        api_endpoint=api_endpoint,
     )
 
 
