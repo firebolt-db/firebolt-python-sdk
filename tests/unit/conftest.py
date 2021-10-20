@@ -203,7 +203,7 @@ def get_engine_callback(
                     },
                     "settings": {
                         "preset": "",
-                        "auto_stop_delay_duration": "",
+                        "auto_stop_delay_duration": "1s",
                         "minimum_logging_level": "",
                         "is_read_only": False,
                         "warm_up": "",

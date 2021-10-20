@@ -4,7 +4,7 @@ import functools
 import logging
 import time
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from pydantic import Field, PrivateAttr
 
@@ -87,6 +87,10 @@ class Engine(FireboltBaseModel):
     Engines are configured in Settings and in EngineRevisions.
     """
 
+    # internal
+    _service: EngineService = PrivateAttr()
+
+    # required
     name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
     compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: EngineSettings

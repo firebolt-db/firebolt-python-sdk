@@ -57,7 +57,7 @@ def connect(
                 user=username, password=password, server=api_endpoint, default_region=""
             )
         )
-        endpoint = rm.engines.get_engine_by_name(engine_name).endpoint
+        endpoint = rm.engines.get_by_name(engine_name).endpoint
         if endpoint is None:
             raise InterfaceError("unable to retrieve engine endpoint")
         else:
