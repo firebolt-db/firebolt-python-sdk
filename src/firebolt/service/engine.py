@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import Optional, Union, List
+from typing import List, Optional, Union
 
 from firebolt.common.util import prune_dict
 from firebolt.model import FireboltBaseModel
