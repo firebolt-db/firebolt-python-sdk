@@ -30,7 +30,7 @@ class ResourceManager:
         )
         self.client.event_hooks = {
             "request": [log_request],
-            "response": [log_response, raise_on_4xx_5xx],
+            "response": [raise_on_4xx_5xx, log_response],
         }
         self._init_services(default_region_name=settings.default_region)
 

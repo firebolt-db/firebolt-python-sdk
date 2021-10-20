@@ -1,6 +1,7 @@
 from typing import Optional
 
-from firebolt.common import AlreadyBoundError, prune_dict
+from firebolt.common.exception import AlreadyBoundError
+from firebolt.common.util import prune_dict
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
@@ -18,7 +19,7 @@ class BindingService(BaseService):
         binding: dict = response.json()["binding"]
         return Binding.parse_obj(binding)
 
-    def list_bindings(
+    def get_many(
         self,
         database_id: Optional[str] = None,
         engine_id: Optional[str] = None,
@@ -46,7 +47,7 @@ class BindingService(BaseService):
             url=f"/core/v1/accounts/{self.account_id}/bindings",
             params=prune_dict(
                 {
-                    "page.first": 5000,  # FUTURE: consider changing this to a generator
+                    "page.first": 5000,  # FUTURE: pagination support w/ generator
                     "filter.id_database_id_eq": database_id,
                     "filter.id_engine_id_eq": engine_id,
                     "filter.is_system_database_eq": is_system_database,
@@ -58,21 +59,19 @@ class BindingService(BaseService):
     def get_database_bound_to_engine(self, engine: Engine) -> Optional[Database]:
         """Get the Database to which an engine is bound, if any."""
         try:
-            binding = self.list_bindings(engine_id=engine.engine_id)[0]
-            return self.resource_manager.databases.get_by_id(
-                database_id=binding.database_id
-            )
+            binding = self.get_many(engine_id=engine.engine_id)[0]
+            return self.resource_manager.databases.get(id_=binding.database_id)
         except IndexError:
             return None
 
     def get_engines_bound_to_database(self, database: Database) -> list[Engine]:
         """Get a list of engines that are bound to a database."""
-        bindings = self.list_bindings(database_id=database.database_id)
-        return self.resource_manager.engines.get_engines_by_ids(
-            engine_ids=[b.engine_id for b in bindings]
+        bindings = self.get_many(database_id=database.database_id)
+        return self.resource_manager.engines.get_by_ids(
+            ids=[b.engine_id for b in bindings]
         )
 
-    def create_binding(
+    def create(
         self, engine: Engine, database: Database, is_default_engine: bool
     ) -> Binding:
         """
@@ -109,7 +108,7 @@ class BindingService(BaseService):
             url=f"/core/v1/accounts/{self.account_id}"
             f"/databases/{database.database_id}"
             f"/bindings/{engine.engine_id}",
-            json=binding.dict(
+            json=binding.jsonable_dict(
                 by_alias=True, include={"binding_key": ..., "is_default_engine": ...}
             ),
         )

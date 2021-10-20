@@ -1,15 +1,17 @@
 # firebolt-sdk
 
-### Installation & Usage
+### Installation
 
 * Requires Python `>=3.9`
-* Clone this repo
-* From the cloned directory: `pip install .`
-* See [examples.ipynb](examples.ipynb) for usage
+* `pip install firebolt-sdk`
+
+### Usage
+
+See: [examples.ipynb](examples.ipynb).
 
 ### Configuration
 
-To use the client, you generally will want to set the following environment variables:
+To use the SDK, you generally will want to set the following environment variables:
 ```
 FIREBOLT_USER='email@domain.com'
 FIREBOLT_PASSWORD='*****'
@@ -26,8 +28,8 @@ you can initialize a ResourceManager with:
 ```python
 from firebolt.service.manager import ResourceManager
 
-with ResourceManager() as rm:
-    print(rm.regions.default_region) # see your default region
+rm = ResourceManager()
+print(rm.regions.default_region) # see your default region
 ```
 
 Or you can configure settings manually:
@@ -37,13 +39,13 @@ from firebolt.service.manager import ResourceManager
 from firebolt.common.settings import Settings
 from pydantic import SecretStr
 
-with ResourceManager(settings=Settings(
-        server="api.app.firebolt.io",
-        user="email@domain.com",
-        password=SecretStr("*****"),
-        default_region="us-east-1",
-)) as rm:
-    print(rm.client.account_id) # see your account id
+rm = ResourceManager(settings=Settings(
+    server="api.app.firebolt.io",
+    user="email@domain.com",
+    password=SecretStr("*****"),
+    default_region="us-east-1",
+))
+print(rm.client.account_id) # see your account id
 ```
 
 Under the hood, configuration works via Pydantic, 

@@ -1,46 +1,42 @@
 from inspect import cleandoc
 
-from httpx import HTTPStatusError
-
 
 class FireboltError(Exception):
     pass
-
-
-class FireboltClientLookupError(FireboltError):
-    pass
-
-
-class FireboltClientRequiredError(FireboltError):
-    def __init__(
-        self,
-        message: str = cleandoc(
-            """
-            Firebolt Client not found. Start one in a context manager:
-            ```
-            with init_firebolt_client() as fc:
-                ...
-            ```
-            """
-        ),
-    ):
-        super().__init__(message)
 
 
 class FireboltEngineError(FireboltError):
     """Base error for engine errors."""
 
 
+class NoAttachedDatabaseError(FireboltEngineError):
+    def __init__(self, method_name: str):
+        self.method_name = method_name
+
+    def __str__(self) -> str:
+        return (
+            f"unable to call {self.method_name}: "
+            f"engine must to be attached to a database first."
+        )
+
+
 class AlreadyBoundError(FireboltEngineError):
     pass
 
 
-class EndpointRequiredError(FireboltEngineError):
+class FireboltDatabaseError(FireboltError):
     pass
 
 
-class DatabaseRequiredError(FireboltEngineError):
-    pass
+class AttachedEngineInUseError(FireboltDatabaseError):
+    def __init__(self, method_name: str):
+        self.method_name = method_name
+
+    def __str__(self) -> str:
+        return (
+            f"unable to call {self.method_name}: "
+            f"engine must not be in starting or stopping state."
+        )
 
 
 class ConnectionError(FireboltError):
@@ -58,7 +54,6 @@ class CursorError(FireboltError):
 class CursorClosedError(CursorError):
     def __init__(self, method_name: str):
         self.method_name = method_name
-        super.__repr__
 
     def __str__(self) -> str:
         return f"unable to call {self.method_name}: cursor closed"
@@ -67,17 +62,12 @@ class CursorClosedError(CursorError):
 class QueryNotRunError(CursorError):
     def __init__(self, method_name: str):
         self.method_name = method_name
-        super.__repr__
 
     def __str__(self) -> str:
         return f"unable to call {self.method_name}: need to run a query first"
 
 
 class QueryError(CursorError):
-    pass
-
-
-class BadRequestError(HTTPStatusError):
     pass
 
 
