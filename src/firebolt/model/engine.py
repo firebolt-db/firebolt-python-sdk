@@ -40,7 +40,7 @@ class EngineSettings(FireboltBaseModel):
     """
 
     preset: str
-    auto_stop_delay_duration: Annotated[str, Field(regex=r"^[0-9]+[sm]$|^0$")]
+    auto_stop_delay_duration: str = Field(regex=r"^[0-9]+[sm]$|^0$")
     minimum_logging_level: str
     is_read_only: bool
     warm_up: str
