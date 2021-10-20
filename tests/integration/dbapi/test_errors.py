@@ -28,12 +28,31 @@ def test_invalid_credentials(
     ), "Invalid authentication error message"
 
 
-def test_engine_not_exists(
+def test_engine_url_not_exists(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
     """Connection properly reacts to invalid engine url error"""
     connection = connect(
         engine_url=engine_url + "_",
+        database=database_name,
+        username=username,
+        password=password,
+        api_endpoint=api_endpoint,
+    )
+    with raises(ConnectError):
+        connection.cursor().execute("show tables")
+
+
+def test_engine_name_not_exists(
+    engine_name: str,
+    database_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+) -> None:
+    """Connection properly reacts to invalid engine url error"""
+    connection = connect(
+        engine_url=engine_name + "_________",
         database=database_name,
         username=username,
         password=password,
