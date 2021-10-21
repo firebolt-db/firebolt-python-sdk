@@ -67,7 +67,12 @@ def connect(
         else:
             engine_url = endpoint
 
+    # Mypy checks, this should never happen
     assert engine_url is not None
+    assert database is not None
+    assert username is not None
+    assert password is not None
+
     engine_url = (
         engine_url if engine_url.startswith("http") else f"https://{engine_url}"
     )
