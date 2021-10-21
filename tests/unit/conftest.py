@@ -150,3 +150,87 @@ def provider_url(settings: Settings) -> str:
 @pytest.fixture
 def db_name() -> str:
     return "database"
+
+
+@pytest.fixture
+def account_id_url(settings: Settings) -> str:
+    return f"https://{settings.server}/iam/v2/account"
+
+
+@pytest.fixture
+def account_id_callback(account_id: str, account_id_url: str) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == account_id_url
+        return to_response(
+            status_code=httpx.codes.OK, json={"account": {"id": account_id}}
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def engine_id() -> str:
+    return "engine_id"
+
+
+@pytest.fixture
+def get_engine_url(settings: Settings, account_id: str, engine_id: str) -> str:
+    return (
+        f"https://{settings.server}/core/v1/accounts/{account_id}/engines/{engine_id}"
+    )
+
+
+@pytest.fixture
+def get_engine_callback(
+    get_engine_url: str, engine_id: str, settings: Settings
+) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == get_engine_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={
+                "engine": {
+                    "name": "name",
+                    "compute_region_id": {
+                        "provider_id": "provider",
+                        "region_id": "region",
+                    },
+                    "settings": {
+                        "preset": "",
+                        "auto_stop_delay_duration": "1s",
+                        "minimum_logging_level": "",
+                        "is_read_only": False,
+                        "warm_up": "",
+                    },
+                    "endpoint": f"https://{settings.server}",
+                }
+            },
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def get_providers_url(settings: Settings, account_id: str, engine_id: str) -> str:
+    return f"https://{settings.server}/compute/v1/providers"
+
+
+@pytest.fixture
+def get_providers_callback(get_providers_url: str, provider: Provider) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == get_providers_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response([provider]),
+        )
+
+    return do_mock
