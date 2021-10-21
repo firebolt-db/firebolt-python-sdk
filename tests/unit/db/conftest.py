@@ -6,7 +6,7 @@ from pytest import fixture
 from pytest_httpx import to_response
 
 from firebolt.common.settings import Settings
-from firebolt.db import ARRAY, Connection, Cursor
+from firebolt.db import ARRAY, Connection, Cursor, connect
 from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 
 QUERY_ROW_COUNT: int = 10
@@ -139,8 +139,12 @@ def query_url(settings: Settings, db_name: str) -> str:
 
 @fixture
 def connection(settings: Settings, db_name: str) -> Connection:
-    return Connection(
-        f"https://{settings.server}", db_name, "u", "p", api_endpoint=settings.server
+    return connect(
+        engine_url=settings.server,
+        database=db_name,
+        username="u",
+        password="p",
+        api_endpoint=settings.server,
     )
 
 

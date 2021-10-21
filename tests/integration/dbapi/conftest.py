@@ -5,13 +5,14 @@ from typing import List
 
 from pytest import fixture
 
-from firebolt.db import ARRAY, Connection
+from firebolt.db import ARRAY, Connection, connect
 from firebolt.db._types import ColType
 from firebolt.db.cursor import Column
 
 LOGGER = getLogger(__name__)
 
 ENGINE_URL_ENV = "ENGINE_URL"
+ENGINE_NAME_ENV = "ENGINE_NAME"
 DATABASE_NAME_ENV = "DATABASE_NAME"
 USERNAME_ENV = "USERNAME"
 PASSWORD_ENV = "PASSWORD"
@@ -27,6 +28,11 @@ def must_env(var_name: str) -> str:
 @fixture(scope="session")
 def engine_url() -> str:
     return must_env(ENGINE_URL_ENV)
+
+
+@fixture(scope="session")
+def engine_name() -> str:
+    return must_env(ENGINE_NAME_ENV)
 
 
 @fixture(scope="session")
@@ -53,8 +59,29 @@ def api_endpoint() -> str:
 def connection(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> Connection:
-    return Connection(
-        engine_url, database_name, username, password, api_endpoint=api_endpoint
+    return connect(
+        engine_url=engine_url,
+        database=database_name,
+        username=username,
+        password=password,
+        api_endpoint=api_endpoint,
+    )
+
+
+@fixture
+def connection_engine_name(
+    engine_name: str,
+    database_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+) -> Connection:
+    return connect(
+        engine_name=engine_name,
+        database=database_name,
+        username=username,
+        password=password,
+        api_endpoint=api_endpoint,
     )
 
 
