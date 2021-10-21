@@ -50,7 +50,7 @@ def test_engine_name_not_exists(
     password: str,
     api_endpoint: str,
 ) -> None:
-    """Connection properly reacts to invalid engine url error"""
+    """Connection properly reacts to invalid engine name error"""
     connection = connect(
         engine_url=engine_name + "_________",
         database=database_name,
@@ -83,6 +83,7 @@ def test_database_not_exists(
 
 
 def test_sql_error(connection: Connection) -> None:
+    """Connection properly reacts to sql execution error"""
     with connection.cursor() as c:
         with raises(OperationalError) as exc_info:
             c.execute("select ]")

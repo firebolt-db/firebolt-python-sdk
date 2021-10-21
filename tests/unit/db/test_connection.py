@@ -78,13 +78,13 @@ def test_connect_empty_parameters():
     kwargs = {"engine_url": "engine_url", **{p: p for p in params}}
 
     for param in params:
-        with raises(AssertionError) as exc_info:
+        with raises(InterfaceError) as exc_info:
             kwargs = {
                 "engine_url": "engine_url",
                 **{p: p for p in params if p != param},
             }
             connect(**kwargs)
-        assert str(exc_info.value) == f"{param} required"
+        assert str(exc_info.value) == f"{param} is required to connect."
 
 
 def test_connect_engine_name(

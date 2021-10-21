@@ -39,17 +39,21 @@ def connect(
     )
     if engine_name and engine_url:
         raise InterfaceError(
-            "Both engine_name and engine_url are provided. Provide only one to connect"
+            "Both engine_name and engine_url are provided. Provide only one to connect."
         )
     if not engine_name and not engine_url:
         raise InterfaceError(
-            "Neither engine_name nor engine_url are provided. Provide one to connect"
+            "Neither engine_name nor engine_url are provided. Provide one to connect."
         )
     # This parameters are optional in function signature, but are required to connect.
     # It's recomended to make them kwargs by PEP 249
-    assert database, "database required"
-    assert username, "username required"
-    assert password, "password required"
+    for param, name in (
+        (database, "database"),
+        (username, "username"),
+        (password, "password"),
+    ):
+        if not param:
+            raise InterfaceError(f"{name} is required to connect.")
 
     if engine_name is not None:
         rm = ResourceManager(
@@ -59,7 +63,7 @@ def connect(
         )
         endpoint = rm.engines.get_by_name(engine_name).endpoint
         if endpoint is None:
-            raise InterfaceError("unable to retrieve engine endpoint")
+            raise InterfaceError("unable to retrieve engine endpoint.")
         else:
             engine_url = endpoint
 

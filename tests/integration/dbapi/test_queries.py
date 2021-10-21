@@ -21,7 +21,6 @@ def test_connect_engine_name(
     all_types_query_response: List[ColType],
 ) -> None:
     """Connecting with engine name is handled properly."""
-    # Basically run selects on connection with engine name
     test_select(
         connection_engine_name,
         all_types_query,
