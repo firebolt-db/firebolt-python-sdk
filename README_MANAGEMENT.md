@@ -1,13 +1,7 @@
-# firebolt-sdk
-
-### Installation
-
-* Requires Python `>=3.9`
-* `pip install firebolt-sdk`
-
+# Resource Management
 ### Usage
 
-See: [examples.ipynb](examples.ipynb).
+See: [examples.ipynb](https://github.com/firebolt-db/firebolt-sdk/tree/master/examples/management.ipynb).
 
 ### Configuration
 
@@ -53,4 +47,4 @@ see [here](https://pydantic-docs.helpmanual.io/usage/settings/).
 
 ### Contributing
 
-See: [CONTRIBUTING.MD](CONTRIBUTING.MD)
+See: [CONTRIBUTING.MD](https://github.com/firebolt-db/firebolt-sdk/tree/master/CONTRIBUTING.MD)
