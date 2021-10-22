@@ -1,56 +1,28 @@
 # firebolt-sdk
-
 ### Installation
 
 * Requires Python `>=3.9`
 * `pip install firebolt-sdk`
 
-### Usage
 
-See: [examples.ipynb](examples.ipynb).
+## Connection parameters
+These parameters are used to connect to a Firebolt database:
+- **engine_url** - url for an engine to make requests to. Can be retrieved from Web UI, or from [engine](https://github.com/firebolt-db/firebolt-sdk/tree/master/src/firebolt/model/engine.py) attribute `endpoint`
+- **database** - name of the database to make queries to
+- **username** - account username
+- **password** - account password
 
-### Configuration
+Optional parameters
+- **api_endpoint** - api hostname for logging in. Defaults to `api.app.firebolt.io`.
 
-To use the SDK, you generally will want to set the following environment variables:
-```
-FIREBOLT_USER='email@domain.com'
-FIREBOLT_PASSWORD='*****'
-FIREBOLT_SERVER='api.app.firebolt.io'
-FIREBOLT_DEFAULT_REGION='us-east-1'
-```
-
-* You can store these in a `.env` file 
-* environment variables on your system always take precedence over those in `.env`
-
-Once the environment variables are defined (either on your system or in `.env`),
-you can initialize a ResourceManager with:
-
-```python
-from firebolt.service.manager import ResourceManager
-
-rm = ResourceManager()
-print(rm.regions.default_region) # see your default region
-```
-
-Or you can configure settings manually:
-
-```python
-from firebolt.service.manager import ResourceManager
-from firebolt.common.settings import Settings
-from pydantic import SecretStr
-
-rm = ResourceManager(settings=Settings(
-    server="api.app.firebolt.io",
-    user="email@domain.com",
-    password=SecretStr("*****"),
-    default_region="us-east-1",
-))
-print(rm.client.account_id) # see your account id
-```
-
-Under the hood, configuration works via Pydantic, 
-see [here](https://pydantic-docs.helpmanual.io/usage/settings/).
+## Examples
+See [PEP-249](https://www.python.org/dev/peps/pep-0249) for the DB API reference and specifications. An example [jupyter notebook](https://github.com/firebolt-db/firebolt-sdk/tree/master/examples/dbapi.ipynb) is included to illustrate the use of the Firebolt API.
 
 ### Contributing
 
-See: [CONTRIBUTING.MD](CONTRIBUTING.MD)
+See: [CONTRIBUTING.MD](https://github.com/firebolt-db/firebolt-sdk/tree/master/CONTRIBUTING.MD)
+
+## License
+The Firebolt DB API is licensed under the [Apache License Version 2.0](https://github.com/firebolt-db/firebolt-sdk/tree/master/LICENSE) software license.
+
+<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a>
