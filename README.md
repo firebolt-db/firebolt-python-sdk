@@ -24,5 +24,3 @@ See: [CONTRIBUTING.MD](https://github.com/firebolt-db/firebolt-sdk/tree/main/CON
 
 ## License
 The Firebolt DB API is licensed under the [Apache License Version 2.0](https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE) software license.
-
-<a rel="license" href="http://creativecommons.org/licenses/by/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by/4.0/88x31.png" /></a>
