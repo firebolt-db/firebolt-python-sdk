@@ -12,6 +12,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Dict,
     Generator,
     List,
     Optional,
@@ -231,7 +232,10 @@ class Cursor:
         self._idx = 0
 
     def _do_execute_request(
-        self, query: str, parameters: Optional[Sequence[ParameterType]] = None
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        set_parameters: Optional[Dict] = None,
     ) -> Response:
         resp = self._client.request(
             url="/",
@@ -239,6 +243,7 @@ class Cursor:
             params={
                 "database": self.connection.database,
                 "output_format": JSON_OUTPUT_FORMAT,
+                **(set_parameters or dict()),
             },
             content=query,
         )
@@ -248,12 +253,15 @@ class Cursor:
 
     @check_not_closed
     def execute(
-        self, query: str, parameters: Optional[Sequence[ParameterType]] = None
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        set_parameters: Optional[Dict] = None,
     ) -> int:
         """Prepare and execute a database query. Return row count."""
         with self._query_lock.gen_wlock():
             self._reset()
-            resp = self._do_execute_request(query, parameters)
+            resp = self._do_execute_request(query, parameters, set_parameters)
             self._store_query_data(resp)
             self._state = CursorState.DONE
             return self.rowcount
