@@ -1,5 +1,4 @@
 import typing
-from functools import wraps
 from inspect import cleandoc
 from typing import Any
 
@@ -46,23 +45,6 @@ class Client(httpx.Client):
             )
         else:
             raise TypeError(f'Invalid "auth" argument: {auth!r}')
-
-    @wraps(httpx.Client.send)
-    def send(self, *args: Any, **kwargs: Any) -> httpx.Response:
-        cleandoc(
-            """
-            Try to send request and if it fails with UNAUTHORIZED retry once
-            with new token. Overrides httpx.Client.send
-            """
-        )
-        resp = super().send(*args, **kwargs)
-        if resp.status_code == httpx.codes.UNAUTHORIZED and isinstance(
-            self._auth, Auth
-        ):
-            # get new token and try to send the request again
-            self._auth.get_new_token()
-            resp = super().send(*args, **kwargs)
-        return resp
 
     @cached_property
     def account_id(self) -> str:

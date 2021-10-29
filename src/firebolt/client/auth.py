@@ -3,13 +3,9 @@ from time import time
 from typing import Generator, Optional
 
 from httpx import Auth as xAuth
-from httpx import Request, Response, post
+from httpx import Request, Response, codes
 
-from firebolt.client.constants import (
-    _REQUEST_ERRORS,
-    API_REQUEST_TIMEOUT_SECONDS,
-    DEFAULT_API_URL,
-)
+from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
 from firebolt.common.exception import AuthenticationError
 
 
@@ -28,6 +24,8 @@ class Auth(xAuth):
         "_token",
         "_expires",
     )
+
+    requires_response_body = True
 
     def __init__(
         self, username: str, password: str, api_endpoint: str = DEFAULT_API_URL
@@ -48,22 +46,23 @@ class Auth(xAuth):
 
     @property
     def token(self) -> Optional[str]:
-        if not self._token or self.expired:
-            self.get_new_token()
         return self._token
 
     @property
     def expired(self) -> Optional[int]:
         return self._expires is not None and self._expires <= int(time())
 
-    def get_new_token(self) -> None:
+    def get_new_token_generator(self) -> Generator[Request, Response, None]:
         """Get new token using username and password"""
         try:
-            response = post(
+            response = yield Request(
+                "POST",
                 f"{self._api_endpoint}/auth/v1/login",
-                headers={"Content-Type": "application/json;charset=UTF-8"},
+                headers={
+                    "Content-Type": "application/json;charset=UTF-8",
+                    "User-Agent": "firebolt-sdk",
+                },
                 json={"username": self.username, "password": self.password},
-                timeout=API_REQUEST_TIMEOUT_SECONDS,
             )
             response.raise_for_status()
 
@@ -77,8 +76,14 @@ class Auth(xAuth):
 
     def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         """Add authorization token to request headers. Overrides httpx.Auth.auth_flow"""
+        if not self.token or self.expired:
+            yield from self.get_new_token_generator()
         request.headers["Authorization"] = f"Bearer {self.token}"
-        yield request
+        response = yield request
+        if response.status_code == codes.UNAUTHORIZED:
+            yield from self.get_new_token_generator()
+            request.headers["Authorization"] = f"Bearer {self.token}"
+            yield request
 
     def _check_response_error(self, response: dict) -> None:
         if "error" in response:
