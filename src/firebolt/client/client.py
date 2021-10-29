@@ -2,7 +2,9 @@ import typing
 from inspect import cleandoc
 from typing import Any
 
-import httpx
+from httpx import AsyncClient as xAsyncClient
+from httpx import Client as xClient
+from httpx import _types
 from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
@@ -10,20 +12,7 @@ from firebolt.client.constants import DEFAULT_API_URL
 from firebolt.common.utils import cached_property
 
 
-class Client(httpx.Client):
-    cleandoc(
-        """
-        An http client, based on httpx.Client, that handles the authentication
-        for Firebolt database.
-
-        Authentication can be passed through auth keyword as a tuple or as a
-        FireboltAuth instance
-
-        httpx.Client:
-        """
-        + (httpx.Client.__doc__ or "")
-    )
-
+class FireboltClientMixin:
     def __init__(
         self,
         *args: Any,
@@ -34,7 +23,7 @@ class Client(httpx.Client):
         self._api_endpoint = api_endpoint
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(self, auth: httpx._types.AuthTypes) -> typing.Optional[Auth]:
+    def _build_auth(self, auth: _types.AuthTypes) -> typing.Optional[Auth]:
         if auth is None or isinstance(auth, Auth):
             return auth
         elif isinstance(auth, tuple):
@@ -49,3 +38,33 @@ class Client(httpx.Client):
     @cached_property
     def account_id(self) -> str:
         return self.get(url="/iam/v2/account").json()["account"]["id"]
+
+
+class Client(FireboltClientMixin, xClient):
+    cleandoc(
+        """
+        An http client, based on httpx.Client, that handles the authentication
+        for Firebolt database.
+
+        Authentication can be passed through auth keyword as a tuple or as a
+        FireboltAuth instance
+
+        httpx.Client:
+        """
+        + (xClient.__doc__ or "")
+    )
+
+
+class AsyncClient(FireboltClientMixin, xAsyncClient):
+    cleandoc(
+        """
+        An http client, based on httpx.AsyncClient, that asyncronously handles
+        authentication for Firebolt database.
+
+        Authentication can be passed through auth keyword as a tuple or as a
+        FireboltAuth instance
+
+        httpx.AsyncClient:
+        """
+        + (xAsyncClient.__doc__ or "")
+    )
