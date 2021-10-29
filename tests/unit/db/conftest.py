@@ -1,5 +1,6 @@
 from datetime import date, datetime
-from typing import Callable, Dict, List
+from json import dumps as jdumps
+from typing import Any, Callable, Dict, List
 
 from httpx import URL, Request, Response, codes
 from pytest import fixture
@@ -120,6 +121,38 @@ def query_callback(
 
 
 @fixture
+def query_with_params_callback(
+    query_description: List[Column],
+    query_data: List[List[ColType]],
+    set_params: Dict,
+) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        set_parameters = request.url.params
+        for k, v in set_params.items():
+            assert k in set_parameters and set_parameters[k] == encode_param(
+                v
+            ), "Invalid set parameters passed"
+        query_response = {
+            "meta": [{"name": c.name, "type": c.type_code} for c in query_description],
+            "data": query_data,
+            "rows": len(query_data),
+            # Real example of statistics field value, not used by our code
+            "statistics": {
+                "elapsed": 0.002983335,
+                "time_before_execution": 0.002729331,
+                "time_to_execute": 0.000215215,
+                "rows_read": 1,
+                "bytes_read": 1,
+                "scanned_bytes_cache": 0,
+                "scanned_bytes_storage": 0,
+            },
+        }
+        return to_response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
 def insert_query_callback(
     query_description: List[Column], query_data: List[List[ColType]]
 ) -> Callable:
@@ -129,12 +162,27 @@ def insert_query_callback(
     return do_query
 
 
+def encode_param(p: Any) -> str:
+    return jdumps(p).strip('"')
+
+
+@fixture
+def set_params() -> Dict:
+    return {"param1": 1, "param2": "2", "param3": True}
+
+
 @fixture
 def query_url(settings: Settings, db_name: str) -> str:
     return URL(
         f"https://{settings.server}?database={db_name}"
         f"&output_format={JSON_OUTPUT_FORMAT}"
     )
+
+
+@fixture
+def query_with_params_url(query_url: str, set_params: str) -> str:
+    params_encoded = "&".join([f"{k}={encode_param(v)}" for k, v in set_params.items()])
+    query_url = f"{query_url}&{params_encoded}"
 
 
 @fixture
