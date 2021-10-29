@@ -21,7 +21,7 @@ def test_auth_basic(
 
     httpx_mock.add_callback(check_credentials_callback)
 
-    mocker.patch("time.time", return_value=0)
+    mocker.patch("firebolt.client.auth.time", return_value=0)
     auth = Auth(test_username, test_password)
     assert auth.token == test_token, "invalid access token"
     assert auth._expires == 2 ** 32, "invalid expiration value"

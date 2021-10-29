@@ -1,104 +1,14 @@
-import time
 import typing
 from functools import wraps
 from inspect import cleandoc
-from json import JSONDecodeError
-from typing import Any, Optional, Tuple, Type
+from typing import Any
 
 import httpx
 from httpx._types import AuthTypes
 
-from firebolt.common.exception import AuthenticationError
+from firebolt.client.auth import Auth
+from firebolt.client.constants import DEFAULT_API_URL
 from firebolt.common.utils import cached_property
-
-DEFAULT_API_URL: str = "api.app.firebolt.io"
-API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 60
-_REQUEST_ERRORS: Tuple[Type, ...] = (
-    httpx.HTTPError,
-    httpx.InvalidURL,
-    httpx.CookieConflict,
-    httpx.StreamError,
-    JSONDecodeError,
-    KeyError,
-    ValueError,
-)
-
-
-class Auth(httpx.Auth):
-    cleandoc(
-        """
-        Authentication class for Firebolt database. Get's authentication token using
-        provided credentials and updates it when it expires
-        """
-    )
-
-    __slots__ = (
-        "username",
-        "password",
-        "api_url",
-        "_token",
-        "_expires",
-    )
-
-    def __init__(
-        self, username: str, password: str, api_endpoint: str = DEFAULT_API_URL
-    ):
-        self.username = username
-        self.password = password
-        # Add schema to url if it's missing
-        self._api_endpoint = (
-            api_endpoint
-            if api_endpoint.startswith("http")
-            else f"https://{api_endpoint}"
-        )
-        self._token: Optional[str] = None
-        self._expires: Optional[int] = None
-
-    def copy(self) -> "Auth":
-        return Auth(self.username, self.password, self._api_endpoint)
-
-    @property
-    def token(self) -> Optional[str]:
-        if not self._token or self.expired:
-            self.get_new_token()
-        return self._token
-
-    @property
-    def expired(self) -> Optional[int]:
-        return self._expires is not None and self._expires <= int(time.time())
-
-    def get_new_token(self) -> None:
-        """Get new token using username and password"""
-        try:
-            response = httpx.post(
-                f"{self._api_endpoint}/auth/v1/login",
-                headers={"Content-Type": "application/json;charset=UTF-8"},
-                json={"username": self.username, "password": self.password},
-                timeout=API_REQUEST_TIMEOUT_SECONDS,
-            )
-            response.raise_for_status()
-
-            parsed = response.json()
-            self._check_response_error(parsed)
-
-            self._token = parsed["access_token"]
-            self._expires = int(time.time()) + int(parsed["expires_in"])
-        except _REQUEST_ERRORS as e:
-            raise AuthenticationError(repr(e), self._api_endpoint)
-
-    def auth_flow(
-        self, request: httpx.Request
-    ) -> typing.Generator[httpx.Request, httpx.Response, None]:
-        """Add authorization token to request headers. Overrides httpx.Auth.auth_flow"""
-        request.headers["Authorization"] = f"Bearer {self.token}"
-        yield request
-
-    def _check_response_error(self, response: dict) -> None:
-        if "error" in response:
-            raise AuthenticationError(
-                response.get("message", "unknown server error"),
-                self._api_endpoint,
-            )
 
 
 class Client(httpx.Client):
