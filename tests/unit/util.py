@@ -1,6 +1,6 @@
-from typing import Dict, Generator, List
+from typing import AsyncGenerator, Dict, Generator, List
 
-from httpx import Client, Request, Response
+from httpx import AsyncClient, Client, Request, Response
 
 from firebolt.model import FireboltBaseModel
 
@@ -18,4 +18,18 @@ def execute_generator_requests(requests: Generator[Request, Response, None]) -> 
             try:
                 request = requests.send(response)
             except StopIteration:
+                break
+
+
+async def async_execute_generator_requests(
+    requests: AsyncGenerator[Request, Response]
+) -> None:
+    request = await requests.__anext__()
+
+    async with AsyncClient() as client:
+        while True:
+            response = await client.send(request)
+            try:
+                request = await requests.asend(response)
+            except StopAsyncIteration:
                 break
