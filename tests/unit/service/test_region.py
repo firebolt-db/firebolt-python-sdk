@@ -12,13 +12,15 @@ from tests.unit.util import list_to_paginated_response
 def test_region(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
+    auth_url: str,
     provider_callback: Callable,
+    provider_url: str,
     settings: Settings,
     mock_regions: List[Region],
 ):
-    httpx_mock.add_callback(auth_callback)
-    httpx_mock.add_callback(provider_callback)
-    httpx_mock.add_callback(auth_callback)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_response(
         url=f"https://{settings.server}/compute/v1/regions?page.first=5000",
         status_code=httpx.codes.OK,
