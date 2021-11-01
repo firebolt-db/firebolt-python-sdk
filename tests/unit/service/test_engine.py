@@ -62,8 +62,6 @@ def test_get_connection(
     engine_callback: Callable,
     engine_url: str,
     db_name: str,
-    databases_callback: Callable,
-    databases_url: str,
     database_callback: Callable,
     database_url: str,
     bindings_callback: Callable,
@@ -76,15 +74,12 @@ def test_get_connection(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(engine_callback, url=engine_url, method="POST")
-    httpx_mock.add_callback(databases_callback, url=databases_url, method="POST")
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
 
     httpx_mock.add_callback(database_callback, url=database_url)
 
     manager = ResourceManager(settings=settings)
     engine = manager.engines.create(name=engine_name)
-
-    manager.databases.create(name=db_name)
 
     connection = engine.get_connection()
     assert connection
