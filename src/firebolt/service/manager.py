@@ -20,21 +20,20 @@ class ResourceManager:
     """
 
     def __init__(self, settings: Optional[Settings] = None):
-        if settings is None:
-            settings = Settings()
+        self.settings = settings or Settings()
 
         self.client = Client(
-            auth=(settings.user, settings.password.get_secret_value()),
-            base_url=f"https://{settings.server}",
-            api_endpoint=settings.server,
+            auth=(self.settings.user, self.settings.password.get_secret_value()),
+            base_url=f"https://{ self.settings.server}",
+            api_endpoint=self.settings.server,
         )
         self.client.event_hooks = {
             "request": [log_request],
             "response": [raise_on_4xx_5xx, log_response],
         }
-        self._init_services(default_region_name=settings.default_region)
+        self._init_services()
 
-    def _init_services(self, default_region_name: str) -> None:
+    def _init_services(self) -> None:
         # avoid circular import
         from firebolt.service.binding import BindingService
         from firebolt.service.database import DatabaseService
@@ -43,10 +42,8 @@ class ResourceManager:
         from firebolt.service.instance_type import InstanceTypeService
         from firebolt.service.region import RegionService
 
-        # Cloud Platform Resources (AWS, etc)
-        self.regions = RegionService(
-            resource_manager=self, default_region_name=default_region_name
-        )
+        # Cloud Platform Resources (AWS)
+        self.regions = RegionService(resource_manager=self)
         self.instance_types = InstanceTypeService(resource_manager=self)
         self.provider_id = get_provider_id(client=self.client)
 

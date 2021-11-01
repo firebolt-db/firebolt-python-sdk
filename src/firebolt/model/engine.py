@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 from pydantic import Field, PrivateAttr
 
 from firebolt.common.exception import NoAttachedDatabaseError
+from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
@@ -154,6 +155,17 @@ class Engine(FireboltBaseModel):
         """
         return self._service.resource_manager.bindings.create(
             engine=self, database=database, is_default_engine=is_default_engine
+        )
+
+    @check_attached_to_database
+    def get_connection(self) -> Connection:
+        """Get a connection to the attached database, for running queries."""
+        return connect(
+            engine_url=self.endpoint,
+            database=self.database.name,  # type: ignore # already checked by decorator
+            username=self._service.settings.user,
+            password=self._service.settings.password.get_secret_value(),
+            api_endpoint=self._service.settings.server,
         )
 
     @check_attached_to_database

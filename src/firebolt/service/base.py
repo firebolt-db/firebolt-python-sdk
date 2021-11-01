@@ -1,4 +1,5 @@
 from firebolt.client import Client
+from firebolt.common import Settings
 from firebolt.service.manager import ResourceManager
 
 
@@ -13,3 +14,7 @@ class BaseService:
     @property
     def account_id(self) -> str:
         return self.client.account_id
+
+    @property
+    def settings(self) -> Settings:
+        return self.resource_manager.settings

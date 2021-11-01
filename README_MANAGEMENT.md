@@ -1,7 +1,7 @@
 # Resource Management
 ### Usage
 
-See: [examples.ipynb](https://github.com/firebolt-db/firebolt-sdk/tree/master/examples/management.ipynb).
+See: [examples/management.ipynb](https://github.com/firebolt-db/firebolt-sdk/tree/main/examples/management.ipynb).
 
 ### Configuration
 
@@ -47,4 +47,4 @@ see [here](https://pydantic-docs.helpmanual.io/usage/settings/).
 
 ### Contributing
 
-See: [CONTRIBUTING.MD](https://github.com/firebolt-db/firebolt-sdk/tree/master/CONTRIBUTING.MD)
+See: [CONTRIBUTING.MD](https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD)
