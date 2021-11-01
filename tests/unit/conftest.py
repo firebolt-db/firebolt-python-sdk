@@ -7,6 +7,7 @@ from pytest_httpx import to_response
 from pytest_httpx._httpx_internals import Response
 
 from firebolt.common.settings import Settings
+from firebolt.model.engine import Engine, EngineSettings
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
@@ -28,6 +29,9 @@ def access_token() -> str:
     return "mock_access_token"
 
 
+# Provider
+
+
 @pytest.fixture
 def provider() -> Provider:
     return Provider(
@@ -39,6 +43,9 @@ def provider() -> Provider:
 @pytest.fixture
 def mock_providers(provider) -> List[Provider]:
     return [provider]
+
+
+# Region
 
 
 @pytest.fixture
@@ -68,6 +75,31 @@ def mock_regions(region_1, region_2) -> List[Region]:
     return [region_1, region_2]
 
 
+# Engine
+
+
+@pytest.fixture
+def engine_name() -> str:
+    return "my_engine"
+
+
+@pytest.fixture
+def engine_settings() -> EngineSettings:
+    return EngineSettings.default()
+
+
+@pytest.fixture
+def mock_engine(engine_name, region_1, engine_settings) -> Engine:
+    return Engine(
+        name=engine_name,
+        compute_region_key=region_1.key,
+        settings=engine_settings,
+    )
+
+
+# Instance
+
+
 @pytest.fixture
 def instance_type_1(provider, region_1) -> InstanceType:
     return InstanceType(
@@ -76,7 +108,7 @@ def instance_type_1(provider, region_1) -> InstanceType:
             region_id=region_1.key.region_id,
             instance_type_id="instance_type_id_1",
         ),
-        name="instance_type_1",
+        name="i3.4xlarge",
     )
 
 
@@ -88,7 +120,7 @@ def instance_type_2(provider, region_2) -> InstanceType:
             region_id=region_2.key.region_id,
             instance_type_id="instance_type_id_2",
         ),
-        name="instance_type_2",
+        name="i3.8xlarge",
     )
 
 
@@ -98,12 +130,12 @@ def mock_instance_types(instance_type_1, instance_type_2) -> List[InstanceType]:
 
 
 @pytest.fixture
-def settings(server) -> Settings:
+def settings(server, region_1) -> Settings:
     return Settings(
         server=server,
         user="email@domain.com",
         password=SecretStr("*****"),
-        default_region="us-mock-1",
+        default_region=region_1.name,
     )
 
 

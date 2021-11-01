@@ -20,9 +20,7 @@ class ResourceManager:
     """
 
     def __init__(self, settings: Optional[Settings] = None):
-        if settings is None:
-            settings = Settings()
-        self.settings = settings
+        self.settings = settings or Settings()
 
         self.client = Client(
             auth=(self.settings.user, self.settings.password.get_secret_value()),
