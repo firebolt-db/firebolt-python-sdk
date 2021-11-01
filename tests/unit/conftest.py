@@ -220,6 +220,26 @@ def instance_type_url(settings: Settings) -> str:
 
 
 @pytest.fixture
+def engine_callback(engine_url: str, mock_engine) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == engine_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"engine": mock_engine.dict()},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def engine_url(settings: Settings) -> str:
+    return f"https://{settings.server}/core/v1/account/engines"
+
+
+@pytest.fixture
 def db_name() -> str:
     return "database"
 
