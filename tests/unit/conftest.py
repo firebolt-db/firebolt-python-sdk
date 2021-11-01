@@ -180,6 +180,46 @@ def provider_url(settings: Settings) -> str:
 
 
 @pytest.fixture
+def region_callback(region_url: str, mock_regions) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == region_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response(mock_regions),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def region_url(settings: Settings) -> str:
+    return f"https://{settings.server}/compute/v1/regions?page.first=5000"
+
+
+@pytest.fixture
+def instance_type_callback(instance_type_url: str, mock_instance_types) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == instance_type_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response(mock_instance_types),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def instance_type_url(settings: Settings) -> str:
+    return f"https://{settings.server}/compute/v1/instanceTypes?page.first=5000"
+
+
+@pytest.fixture
 def db_name() -> str:
     return "database"
 
