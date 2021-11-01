@@ -7,7 +7,9 @@ from pytest_httpx import to_response
 from pytest_httpx._httpx_internals import Response
 
 from firebolt.common.settings import Settings
-from firebolt.model.engine import Engine, EngineSettings
+from firebolt.model.binding import Binding, BindingKey
+from firebolt.model.database import Database, DatabaseKey
+from firebolt.model.engine import Engine, EngineKey, EngineSettings
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
@@ -29,9 +31,6 @@ def access_token() -> str:
     return "mock_access_token"
 
 
-# Provider
-
-
 @pytest.fixture
 def provider() -> Provider:
     return Provider(
@@ -43,9 +42,6 @@ def provider() -> Provider:
 @pytest.fixture
 def mock_providers(provider) -> List[Provider]:
     return [provider]
-
-
-# Region
 
 
 @pytest.fixture
@@ -75,9 +71,6 @@ def mock_regions(region_1, region_2) -> List[Region]:
     return [region_1, region_2]
 
 
-# Engine
-
-
 @pytest.fixture
 def engine_name() -> str:
     return "my_engine"
@@ -89,15 +82,14 @@ def engine_settings() -> EngineSettings:
 
 
 @pytest.fixture
-def mock_engine(engine_name, region_1, engine_settings) -> Engine:
+def mock_engine(engine_name, region_1, engine_settings, account_id, settings) -> Engine:
     return Engine(
         name=engine_name,
         compute_region_key=region_1.key,
         settings=engine_settings,
+        key=EngineKey(account_id=account_id, engine_id="mock_engine_id_1"),
+        endpoint=f"https://{settings.server}",
     )
-
-
-# Instance
 
 
 @pytest.fixture
@@ -237,6 +229,89 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
 @pytest.fixture
 def engine_url(settings: Settings) -> str:
     return f"https://{settings.server}/core/v1/account/engines"
+
+
+@pytest.fixture
+def mock_database(db_name, region_1, account_id) -> Database:
+    return Database(
+        name=db_name,
+        compute_region_key=region_1.key,
+        database_key=DatabaseKey(
+            account_id=account_id, database_id="mock_database_id_1"
+        ),
+    )
+
+
+@pytest.fixture
+def databases_callback(databases_url: str, mock_database) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == databases_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"database": mock_database.dict()},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def databases_url(settings: Settings, account_id: str) -> str:
+    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases"
+
+
+@pytest.fixture
+def database_callback(database_url: str, mock_database) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == database_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"database": mock_database.dict()},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def database_url(settings: Settings, account_id: str, mock_database) -> str:
+    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases/{mock_database.database_id}"  # noqa: E501
+
+
+@pytest.fixture
+def binding(account_id, mock_engine, mock_database) -> Binding:
+    return Binding(
+        binding_key=BindingKey(
+            account_id=account_id,
+            database_id=mock_database.database_id,
+            engine_id=mock_engine.engine_id,
+        ),
+        is_default_engine=True,
+    )
+
+
+@pytest.fixture
+def bindings_callback(bindings_url: str, binding) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == bindings_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response([binding]),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def bindings_url(settings: Settings, account_id: str, mock_engine: Engine) -> str:
+    return f"https://{settings.server}/core/v1/accounts/{account_id}/bindings?page.first=5000&filter.id_engine_id_eq={mock_engine.engine_id}"  # noqa: E501
 
 
 @pytest.fixture
