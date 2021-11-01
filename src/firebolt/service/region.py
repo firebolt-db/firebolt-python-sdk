@@ -7,17 +7,13 @@ from firebolt.service.manager import ResourceManager
 
 
 class RegionService(BaseService):
-    def __init__(
-        self, resource_manager: ResourceManager, default_region_name: str = None
-    ):
+    def __init__(self, resource_manager: ResourceManager):
         """
         Service to manage AWS Regions (us-east-1, etc).
 
         Args:
             resource_manager: Resource manager to use.
-            default_region_name: AWS Region to use as a default.
         """
-        self.default_region_name = default_region_name
         super().__init__(resource_manager=resource_manager)
 
     @cached_property
@@ -42,11 +38,11 @@ class RegionService(BaseService):
     def default_region(self) -> Region:
         """Default AWS Region, could be provided from environment."""
 
-        if not self.default_region_name:
+        if not self.settings.default_region:
             raise ValueError(
                 "The environment variable FIREBOLT_DEFAULT_REGION must be set."
             )
-        return self.get_by_name(name=self.default_region_name)
+        return self.get_by_name(name=self.settings.default_region)
 
     def get_by_name(self, name: str) -> Region:
         """Get an AWS region by its name (eg. us-east-1)."""
