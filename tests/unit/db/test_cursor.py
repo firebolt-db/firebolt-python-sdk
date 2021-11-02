@@ -1,5 +1,5 @@
 from inspect import cleandoc
-from typing import Callable, List
+from typing import Callable, Dict, List
 
 from httpx import HTTPStatusError, StreamError, codes
 from pytest import raises
@@ -319,3 +319,20 @@ def test_cursor_fetchall(
     assert (
         len(cursor.fetchall()) == 0
     ), "fetchmany should return empty result set when no rows left to fetch"
+
+
+# This tests a temporary functionality, needs to be removed when the
+# functionality is removed
+def test_set_parameters(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_with_params_url: str,
+    query_with_params_callback: Callable,
+    cursor: Cursor,
+    set_params: Dict,
+):
+    """Cursor passes provided set parameters to engine"""
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_with_params_callback, url=query_with_params_url)
+    cursor.execute("select 1", set_parameters=set_params)
