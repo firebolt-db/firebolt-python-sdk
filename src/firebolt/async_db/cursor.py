@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from asyncio import Lock
 from collections import namedtuple
 from datetime import date, datetime
 from enum import Enum
@@ -13,7 +12,6 @@ from typing import (
     Any,
     Callable,
     Dict,
-    Generator,
     List,
     Optional,
     Sequence,
@@ -146,7 +144,6 @@ class Cursor:
         self._arraysize = self.default_arraysize
         self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
-        self._idx_lock = Lock()
         self._query_lock = RWLock()
         self._reset()
 
@@ -199,7 +196,8 @@ class Cursor:
     def close(self) -> None:
         """Terminate an ongoing query (if any) and mark connection as closed."""
         self._state = CursorState.CLOSED
-        self.connection._remove_cursor(self)
+        # remove typecheck skip  after connection is implemented
+        self.connection._remove_cursor(self)  # type: ignore
 
     def _store_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response."""
@@ -265,7 +263,7 @@ class Cursor:
         set_parameters: Optional[Dict] = None,
     ) -> int:
         """Prepare and execute a database query. Return row count."""
-        async with self._query_lock.writer_lock:
+        async with self._query_lock.writer:
             self._reset()
             resp = await self._do_execute_request(query, parameters, set_parameters)
             self._store_query_data(resp)
@@ -282,7 +280,7 @@ class Cursor:
             sequences provided. Return last query row count.
             """
         )
-        async with self._query_lock.writer_lock:
+        async with self._query_lock.writer:
             self._reset()
             resp = None
             for parameters in parameters_seq:
@@ -309,17 +307,16 @@ class Cursor:
         if self._rows is None:
             # No elements to take
             return (0, 0)
-        with self._idx_lock:
-            left = self._idx
-            right = min(self._idx + size, len(self._rows))
-            self._idx = right
-            return left, right
+        left = self._idx
+        right = min(self._idx + size, len(self._rows))
+        self._idx = right
+        return left, right
 
     @check_not_closed
     @check_query_executed
     async def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set."""
-        async with self._query_lock.reader_lock:
+        async with self._query_lock.reader:
             left, right = self._get_next_range(1)
             if left == right:
                 # We are out of elements
@@ -336,7 +333,7 @@ class Cursor:
             cursor.arraysize is default size.
             """
         )
-        async with self._query_lock.reader_lock:
+        async with self._query_lock.reader:
             size = size if size is not None else self.arraysize
             left, right = self._get_next_range(size)
             assert self._rows is not None
@@ -347,7 +344,7 @@ class Cursor:
     @check_query_executed
     async def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result."""
-        async with self._query_lock.reader_lock:
+        async with self._query_lock.reader:
             assert self._rows is not None
             left, right = self._get_next_range(len(self._rows))
             rows = self._rows[left:right]
@@ -364,7 +361,7 @@ class Cursor:
     # Iteration support
     @check_not_closed
     @check_query_executed
-    def __aiter__(self) -> Generator[List[ColType], None, None]:
+    def __aiter__(self) -> Cursor:
         return self
 
     @check_not_closed
