@@ -9,7 +9,6 @@ import httpx
 from httpx._types import AuthTypes
 
 from firebolt.common.exception import AuthenticationError
-from firebolt.common.utils import cached_property
 
 DEFAULT_API_URL: str = "api.app.firebolt.io"
 API_REQUEST_TIMEOUT_SECONDS: Optional[int] = 60
@@ -153,7 +152,3 @@ class Client(httpx.Client):
             self._auth.get_new_token()
             resp = super().send(*args, **kwargs)
         return resp
-
-    @cached_property
-    def account_id(self) -> str:
-        return self.get(url="/iam/v2/account").json()["account"]["id"]

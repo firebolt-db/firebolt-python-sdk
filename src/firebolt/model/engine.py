@@ -264,7 +264,9 @@ class Engine(FireboltBaseModel):
 
     def _send_start(self) -> Engine:
         response = self._service.client.post(
-            url=f"/core/v1/account/engines/{self.engine_id}:start",
+            url=f"/core/v1"
+            f"/accounts/{self._service.account_id}"
+            f"/engines/{self.engine_id}:start",
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
@@ -274,7 +276,9 @@ class Engine(FireboltBaseModel):
     def stop(self) -> Engine:
         """Stop an Engine running on Firebolt."""
         response = self._service.client.post(
-            url=f"/core/v1/account/engines/{self.engine_id}:stop",
+            url=f"/core/v1"
+            f"/accounts/{self._service.account_id}"
+            f"/engines/{self.engine_id}:stop",
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service

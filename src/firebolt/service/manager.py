@@ -2,6 +2,7 @@ from typing import Optional
 
 from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
 from firebolt.common import Settings
+from firebolt.common.utils import cached_property
 from firebolt.service.provider import get_provider_id
 
 
@@ -19,8 +20,11 @@ class ResourceManager:
     - instance types (AWS instance types which engines can use)
     """
 
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(
+        self, settings: Optional[Settings] = None, account_name: Optional[str] = None
+    ):
         self.settings = settings or Settings()
+        self.account_name = account_name
 
         self.client = Client(
             auth=(self.settings.user, self.settings.password.get_secret_value()),
@@ -52,3 +56,11 @@ class ResourceManager:
         self.engines = EngineService(resource_manager=self)
         self.engine_revisions = EngineRevisionService(resource_manager=self)
         self.bindings = BindingService(resource_manager=self)
+
+    @cached_property
+    def account_id(self):
+        if self.account_name is None:
+            return self.client.get(url="/iam/v2/account").json()["account"]["id"]
+        return self.client.get(
+            url=f"/iam/v2/accounts:getIdByName?account_name={self.account_name}"
+        ).json()["account_id"]
