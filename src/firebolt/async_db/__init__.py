@@ -13,6 +13,7 @@ from firebolt.async_db._types import (
     Timestamp,
     TimestampFromTicks,
 )
+from firebolt.async_db.connection import Connection, connect
 from firebolt.async_db.cursor import Cursor
 
 apilevel = "2.0"

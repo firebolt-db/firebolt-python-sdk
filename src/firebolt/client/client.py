@@ -1,7 +1,7 @@
-import typing
 from inspect import cleandoc
-from typing import Any
+from typing import Any, Optional
 
+from async_property import async_cached_property
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
 from httpx import _types
@@ -9,7 +9,7 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
 from firebolt.client.constants import DEFAULT_API_URL
-from firebolt.common.util import mixin_for
+from firebolt.common.util import cached_property, mixin_for
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
@@ -25,7 +25,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
         self._api_endpoint = api_endpoint
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(self, auth: _types.AuthTypes) -> typing.Optional[Auth]:
+    def _build_auth(self, auth: _types.AuthTypes) -> Optional[Auth]:
         if auth is None or isinstance(auth, Auth):
             return auth
         elif isinstance(auth, tuple):
@@ -52,6 +52,10 @@ class Client(FireboltClientMixin, HttpxClient):
         + (HttpxClient.__doc__ or "")
     )
 
+    @cached_property
+    def account_id(self) -> str:
+        return self.get(url="/iam/v2/account").json()["account"]["id"]
+
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     cleandoc(
@@ -66,3 +70,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
         """
         + (HttpxAsyncClient.__doc__ or "")
     )
+
+    @async_cached_property
+    async def account_id(self) -> str:
+        return (await self.get(url="/iam/v2/account")).json()["account"]["id"]
