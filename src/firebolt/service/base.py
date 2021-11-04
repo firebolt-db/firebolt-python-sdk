@@ -13,7 +13,7 @@ class BaseService:
 
     @property
     def account_id(self) -> str:
-        return self.client.account_id
+        return self.resource_manager.account_id
 
     @property
     def settings(self) -> Settings:

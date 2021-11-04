@@ -103,7 +103,9 @@ class Database(FireboltBaseModel):
                 raise AttachedEngineInUseError(method_name="delete")
 
         response = self._service.client.delete(
-            url=f"/core/v1/account/databases/{self.database_id}",
+            url=f"/core/v1"
+            f"/accounts/{self._service.account_id}"
+            f"/databases/{self.database_id}",
             headers={"Content-type": "application/json"},
         )
         return Database.parse_obj_with_service(
