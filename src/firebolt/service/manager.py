@@ -58,7 +58,7 @@ class ResourceManager:
         self.bindings = BindingService(resource_manager=self)
 
     @cached_property
-    def account_id(self):
+    def account_id(self) -> str:
         if self.account_name is None:
             return self.client.get(url="/iam/v2/account").json()["account"]["id"]
         return self.client.get(
