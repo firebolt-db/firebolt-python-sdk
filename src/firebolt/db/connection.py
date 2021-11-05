@@ -10,6 +10,7 @@ from readerwriterlock.rwlock import RWLockWrite
 from firebolt.client import DEFAULT_API_URL, Client
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.settings import Settings
+from firebolt.common.util import fix_url_schema
 from firebolt.db.cursor import Cursor
 from firebolt.service.manager import ResourceManager
 
@@ -73,9 +74,7 @@ def connect(
     assert username is not None
     assert password is not None
 
-    engine_url = (
-        engine_url if engine_url.startswith("http") else f"https://{engine_url}"
-    )
+    engine_url = fix_url_schema(engine_url)
     return Connection(engine_url, database, username, password, api_endpoint)
 
 

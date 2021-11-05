@@ -11,6 +11,7 @@ from readerwriterlock.rwlock import RWLockWrite
 from firebolt.async_db.cursor import Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
+from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 
@@ -18,9 +19,6 @@ DEFAULT_TIMEOUT_SECONDS: int = 5
 async def _resolve_engine_url(
     engine_name: str, username: str, password: str, api_endpoint: str
 ) -> str:
-    api_endpoint = (
-        api_endpoint if api_endpoint.startswith("http") else f"https://{api_endpoint}"
-    )
     async with AsyncClient(
         auth=(username, password),
         base_url=api_endpoint,
@@ -76,6 +74,8 @@ def connect_factory(connection_class: Type) -> Callable:
                 "Neither engine_name nor engine_url are provided."
                 "Provide one to connect."
             )
+
+        api_endpoint = fix_url_schema(api_endpoint)
         # This parameters are optional in function signature,
         # but are required to connect.
         # It's recomended to make them kwargs by PEP 249
@@ -101,9 +101,7 @@ def connect_factory(connection_class: Type) -> Callable:
         assert username is not None
         assert password is not None
 
-        engine_url = (
-            engine_url if engine_url.startswith("http") else f"https://{engine_url}"
-        )
+        engine_url = fix_url_schema(engine_url)
         return connection_class(engine_url, database, username, password, api_endpoint)
 
     return connect_inner

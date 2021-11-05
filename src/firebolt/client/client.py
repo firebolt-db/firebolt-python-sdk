@@ -9,7 +9,7 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
 from firebolt.client.constants import DEFAULT_API_URL
-from firebolt.common.util import cached_property, mixin_for
+from firebolt.common.util import cached_property, fix_url_schema, mixin_for
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
@@ -22,7 +22,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
         auth: AuthTypes = None,
         **kwargs: Any,
     ):
-        self._api_endpoint = api_endpoint
+        self._api_endpoint = fix_url_schema(api_endpoint)
         super().__init__(*args, auth=auth, **kwargs)
 
     def _build_auth(self, auth: _types.AuthTypes) -> Optional[Auth]:

@@ -29,3 +29,7 @@ def mixin_for(baseclass: Type[TMix]) -> Type[TMix]:
     if TYPE_CHECKING:
         return baseclass
     return object
+
+
+def fix_url_schema(url: str) -> str:
+    return url if url.startswith("http") else f"https://{url}"

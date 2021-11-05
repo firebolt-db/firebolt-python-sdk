@@ -1,10 +1,12 @@
-import typing
+from typing import Callable
 
 from httpx import codes
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
+from firebolt.common import Settings
+from firebolt.common.util import fix_url_schema
 
 
 @mark.asyncio
@@ -50,8 +52,8 @@ async def test_client_retry(
 @mark.asyncio
 async def test_client_different_auths(
     httpx_mock: HTTPXMock,
-    check_credentials_callback: typing.Callable,
-    check_token_callback: typing.Callable,
+    check_credentials_callback: Callable,
+    check_token_callback: Callable,
     test_username: str,
     test_password: str,
 ):
@@ -87,3 +89,26 @@ async def test_client_different_auths(
     assert str(excinfo.value).startswith(
         'Invalid "auth" argument'
     ), "invalid auth validation error message"
+
+
+@mark.asyncio
+async def test_client_account_id(
+    httpx_mock: HTTPXMock,
+    test_username: str,
+    test_password: str,
+    account_id: str,
+    account_id_url: str,
+    account_id_callback: Callable,
+    auth_url: str,
+    auth_callback: Callable,
+    settings: Settings,
+):
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    async with AsyncClient(
+        auth=(test_username, test_password),
+        base_url=fix_url_schema(settings.server),
+        api_endpoint=settings.server,
+    ) as c:
+        assert await c.account_id == account_id, "Invalid account id returned"
