@@ -2,8 +2,8 @@ import typing
 from inspect import cleandoc
 from typing import Any
 
-from httpx import AsyncClient as xAsyncClient
-from httpx import Client as xClient
+from httpx import AsyncClient as HttpxAsyncClient
+from httpx import Client as HttpxClient
 from httpx import _types
 from httpx._types import AuthTypes
 
@@ -11,7 +11,7 @@ from firebolt.client.auth import Auth
 from firebolt.client.constants import DEFAULT_API_URL
 from firebolt.common.util import cached_property, mixin_for
 
-FireboltClientMixinBase = mixin_for(xClient)  # type: Any
+FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
 
 class FireboltClientMixin(FireboltClientMixinBase):
@@ -42,7 +42,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
         return self.get(url="/iam/v2/account").json()["account"]["id"]
 
 
-class Client(FireboltClientMixin, xClient):
+class Client(FireboltClientMixin, HttpxClient):
     cleandoc(
         """
         An http client, based on httpx.Client, that handles the authentication
@@ -53,11 +53,11 @@ class Client(FireboltClientMixin, xClient):
 
         httpx.Client:
         """
-        + (xClient.__doc__ or "")
+        + (HttpxClient.__doc__ or "")
     )
 
 
-class AsyncClient(FireboltClientMixin, xAsyncClient):
+class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     cleandoc(
         """
         An http client, based on httpx.AsyncClient, that asyncronously handles
@@ -68,5 +68,5 @@ class AsyncClient(FireboltClientMixin, xAsyncClient):
 
         httpx.AsyncClient:
         """
-        + (xAsyncClient.__doc__ or "")
+        + (HttpxAsyncClient.__doc__ or "")
     )
