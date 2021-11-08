@@ -24,7 +24,7 @@ class DatabaseService(BaseService):
     def get_id_by_name(self, name: str) -> str:
         """Get a Database id from Firebolt by its name."""
         response = self.client.get(
-            url=f"/core/v1/account/databases:getIdByName",
+            url=f"/core/v1/accounts/{self.account_id}/databases:getIdByName",
             params={"database_name": name},
         )
         database_id = response.json()["database_id"]["database_id"]
@@ -53,7 +53,7 @@ class DatabaseService(BaseService):
         if isinstance(order_by, str):
             order_by = DatabaseOrder[order_by]
         response = self.client.get(
-            url=f"/core/v1/account/databases",
+            url=f"/core/v1/accounts/{self.account_id}/databases",
             params={
                 "filter.name_contains": name_contains,
                 "filter.attached_engine_name_eq": attached_engine_name_eq,

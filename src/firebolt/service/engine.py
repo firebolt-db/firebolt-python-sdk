@@ -43,7 +43,7 @@ class EngineService(BaseService):
     def get_by_name(self, name: str) -> Engine:
         """Get an Engine from Firebolt by its name."""
         response = self.client.get(
-            url="/core/v1/account/engines:getIdByName",
+            url=f"/core/v1/accounts/{self.account_id}/engines:getIdByName",
             params={"engine_name": name},
         )
         engine_id = response.json()["engine_id"]["engine_id"]
@@ -73,7 +73,7 @@ class EngineService(BaseService):
         if isinstance(order_by, str):
             order_by = EngineOrder[order_by]
         response = self.client.get(
-            url="/core/v1/account/engines",
+            url=f"/core/v1/accounts/{self.account_id}/engines",
             params=prune_dict(
                 {
                     "page.first": 5000,  # FUTURE: pagination support w/ generator
@@ -187,7 +187,7 @@ class EngineService(BaseService):
             engine_revision: Optional[EngineRevision]
 
         response = self.client.post(
-            url="/core/v1/account/engines",
+            url=f"/core/v1/accounts/{self.account_id}/engines",
             headers={"Content-type": "application/json"},
             json=_EngineCreateRequest(
                 account_id=self.account_id,

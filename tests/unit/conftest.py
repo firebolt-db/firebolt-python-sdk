@@ -227,8 +227,8 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
 
 
 @pytest.fixture
-def engine_url(settings: Settings) -> str:
-    return f"https://{settings.server}/core/v1/account/engines"
+def engine_url(settings: Settings, account_id) -> str:
+    return f"https://{settings.server}/core/v1/accounts/{account_id}/engines"
 
 
 @pytest.fixture
