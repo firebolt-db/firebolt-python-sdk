@@ -283,6 +283,46 @@ def database_url(settings: Settings, account_id: str, mock_database) -> str:
 
 
 @pytest.fixture
+def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == database_get_by_name_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"database_id": {"database_id": mock_database.database_id}},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def database_get_by_name_url(settings: Settings, account_id: str, mock_database) -> str:
+    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases:getIdByName?database_name={mock_database.name}"  # noqa: E501
+
+
+@pytest.fixture
+def database_get_callback(database_get_url, mock_database) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == database_get_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"database": mock_database.dict()},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def database_get_url(settings: Settings, account_id: str, mock_database) -> str:
+    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases/{mock_database.database_id}"  # noqa: E501
+
+
+@pytest.fixture
 def binding(account_id, mock_engine, mock_database) -> Binding:
     return Binding(
         binding_key=BindingKey(
