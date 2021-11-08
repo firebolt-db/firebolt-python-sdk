@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import namedtuple
 from datetime import date, datetime
 from enum import Enum
 from typing import Union
@@ -47,6 +48,19 @@ STRING = BINARY = str
 NUMBER = int
 DATETIME = datetime
 ROWID = int
+
+Column = namedtuple(
+    "Column",
+    (
+        "name",
+        "type_code",
+        "display_size",
+        "internal_size",
+        "precision",
+        "scale",
+        "null_ok",
+    ),
+)
 
 
 class ARRAY:
