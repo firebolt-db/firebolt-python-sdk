@@ -19,7 +19,9 @@ class ResourceManager:
     - instance types (AWS instance types which engines can use)
     """
 
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(
+        self, settings: Optional[Settings] = None, account_name: Optional[str] = None
+    ):
         self.settings = settings or Settings()
 
         self.client = Client(
@@ -31,6 +33,8 @@ class ResourceManager:
             "request": [log_request],
             "response": [raise_on_4xx_5xx, log_response],
         }
+
+        self.account_id = self._get_account_id(account_name=account_name)
         self._init_services()
 
     def _init_services(self) -> None:
@@ -52,3 +56,17 @@ class ResourceManager:
         self.engines = EngineService(resource_manager=self)
         self.engine_revisions = EngineRevisionService(resource_manager=self)
         self.bindings = BindingService(resource_manager=self)
+
+    def _get_account_id(self, account_name: Optional[str]) -> str:
+        """
+        Given account_name, look up account_id. If account_name is None,
+        get the default account_id.
+
+        Args:
+            account_name: Name of the account.
+        """
+        if account_name is None:
+            return self.client.get(url="/iam/v2/account").json()["account"]["id"]
+        return self.client.get(
+            url=f"/iam/v2/accounts:getIdByName?account_name={account_name.lower()}"
+        ).json()["account_id"]
