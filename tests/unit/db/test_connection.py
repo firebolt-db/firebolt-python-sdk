@@ -133,7 +133,6 @@ def test_connect_engine_name(
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(get_engine_callback, url=get_engine_url)
-    httpx_mock.add_callback(get_providers_callback, url=get_providers_url)
 
     engine_name = settings.server.split(".")[0]
 

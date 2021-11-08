@@ -1,4 +1,5 @@
-from functools import lru_cache
+from asyncio import get_event_loop
+from functools import lru_cache, wraps
 from typing import TYPE_CHECKING, Callable, Type, TypeVar
 
 T = TypeVar("T")
@@ -33,3 +34,11 @@ def mixin_for(baseclass: Type[TMix]) -> Type[TMix]:
 
 def fix_url_schema(url: str) -> str:
     return url if url.startswith("http") else f"https://{url}"
+
+
+def async_to_sync(f: Callable) -> Callable:
+    @wraps(f)
+    def sync(*args, **kwargs):
+        return get_event_loop().run_until_complete(f(*args, **kwargs))
+
+    return sync

@@ -41,7 +41,7 @@ async def _resolve_engine_url(
             raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
 
 
-def connect_factory(connection_class: Type) -> Callable:
+def async_connect_factory(connection_class: Type) -> Callable:
     async def connect_inner(
         database: str = None,
         username: str = None,
@@ -108,28 +108,9 @@ def connect_factory(connection_class: Type) -> Callable:
     return connect_inner
 
 
-class Connection:
-    cleandoc(
-        """
-        Firebolt database connection class. Implements PEP-249.
-
-        Parameters:
-            engine_url - Firebolt database engine REST API url
-            database - Firebolt database name
-            username - Firebolt account username
-            password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
-
-        Methods:
-            cursor - create new Cursor object
-            close - close the Connection and all it's cursors
-
-        Firebolt currenly doesn't support transactions so commit and rollback methods
-        are not implemented.
-        """
-    )
-    client_class = AsyncClient
-    cursor_class = Cursor
+class BaseConnection:
+    client_class: type
+    cursor_class: type
     __slots__ = ("_client", "_cursors", "database", "_is_closed", "_closing_lock")
 
     def __init__(
@@ -181,9 +162,6 @@ class Connection:
                 c.close()
             self._is_closed = True
 
-    async def close_client(self) -> None:
-        await self._client.aclose()
-
     @property
     def closed(self) -> bool:
         """True if connection is closed, False otherwise."""
@@ -195,6 +173,37 @@ class Connection:
             self._cursors.remove(cursor)
         except ValueError:
             pass
+
+    def __del__(self):
+        self.close()
+
+
+class Connection(BaseConnection):
+    cleandoc(
+        """
+        Firebolt asyncronous database connection class. Implements PEP-249.
+
+        Parameters:
+            engine_url - Firebolt database engine REST API url
+            database - Firebolt database name
+            username - Firebolt account username
+            password - Firebolt account password
+            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+
+        Methods:
+            cursor - create new Cursor object
+            close - close the Connection and all it's cursors
+
+        Firebolt currenly doesn't support transactions so commit and rollback methods
+        are not implemented.
+        """
+    )
+
+    client_class = AsyncClient
+    cursor_class = Cursor
+
+    async def close_client(self) -> None:
+        await self._client.aclose()
 
     # Context manager support
     async def __aenter__(self) -> Connection:
@@ -208,8 +217,5 @@ class Connection:
         self.close()
         await self.close_client()
 
-    def __del__(self) -> None:
-        self.close()
 
-
-connect = connect_factory(Connection)
+connect = async_connect_factory(Connection)
