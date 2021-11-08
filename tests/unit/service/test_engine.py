@@ -42,10 +42,6 @@ def test_engine_create(
     assert engine.name == engine_name
 
 
-def test_attach_engine_to_database():
-    pass
-
-
 def test_get_connection(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
