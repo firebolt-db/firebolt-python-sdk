@@ -57,7 +57,7 @@ class ResourceManager:
         self.engine_revisions = EngineRevisionService(resource_manager=self)
         self.bindings = BindingService(resource_manager=self)
 
-    def _get_account_id(self, account_name: str) -> str:
+    def _get_account_id(self, account_name: Optional[str]) -> str:
         """
         Given account_name, look up account_id. If account_name is None,
         get the default account_id.

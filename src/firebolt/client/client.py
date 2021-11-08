@@ -9,7 +9,7 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
 from firebolt.client.constants import DEFAULT_API_URL
-from firebolt.common.util import cached_property, mixin_for
+from firebolt.common.util import mixin_for
 
 FireboltClientMixinBase = mixin_for(xClient)  # type: Any
 
@@ -36,10 +36,6 @@ class FireboltClientMixin(FireboltClientMixinBase):
             )
         else:
             raise TypeError(f'Invalid "auth" argument: {auth!r}')
-
-    @cached_property
-    def account_id(self) -> str:
-        return self.get(url="/iam/v2/account").json()["account"]["id"]
 
 
 class Client(FireboltClientMixin, xClient):
