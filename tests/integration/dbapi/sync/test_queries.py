@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from typing import Any, List
 
+from firebolt.async_db._types import ColType
 from firebolt.db import Connection, Cursor
-from firebolt.db._types import ColType
 from firebolt.db.cursor import Column
 
 

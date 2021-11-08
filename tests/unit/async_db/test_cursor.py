@@ -6,13 +6,13 @@ from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
+from firebolt.async_db._types import Column
 from firebolt.async_db.cursor import ColType, CursorState
 from firebolt.common.exception import (
     CursorClosedError,
     OperationalError,
     QueryNotRunError,
 )
-from firebolt.db._types import Column
 
 
 @mark.asyncio

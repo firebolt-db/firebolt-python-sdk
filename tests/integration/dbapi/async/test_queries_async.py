@@ -4,7 +4,7 @@ from typing import Any, List
 from pytest import mark
 
 from firebolt.async_db import Connection, Cursor
-from firebolt.db._types import ColType, Column
+from firebolt.async_db._types import ColType, Column
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:

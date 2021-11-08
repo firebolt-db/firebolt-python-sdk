@@ -23,6 +23,13 @@ from typing import (
 from httpx import Response, codes
 from readerwriterlock.rwlock import RWLockWrite
 
+from firebolt.async_db._types import (
+    ColType,
+    Column,
+    RawColType,
+    parse_type,
+    parse_value,
+)
 from firebolt.client import Client
 from firebolt.common.exception import (
     CursorClosedError,
@@ -30,13 +37,6 @@ from firebolt.common.exception import (
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
-)
-from firebolt.db._types import (
-    ColType,
-    Column,
-    RawColType,
-    parse_type,
-    parse_value,
 )
 
 if TYPE_CHECKING:

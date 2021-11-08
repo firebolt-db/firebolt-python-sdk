@@ -5,8 +5,8 @@ from typing import List
 
 from pytest import fixture
 
+from firebolt.async_db._types import ColType
 from firebolt.db import ARRAY
-from firebolt.db._types import ColType
 from firebolt.db.cursor import Column
 
 LOGGER = getLogger(__name__)

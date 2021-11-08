@@ -5,9 +5,9 @@ from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Connection, connect
+from firebolt.async_db._types import ColType
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.settings import Settings
-from firebolt.db._types import ColType
 
 
 @mark.asyncio
