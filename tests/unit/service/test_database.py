@@ -1,10 +1,8 @@
-from typing import Callable, List
+from typing import Callable
 
 from pytest_httpx import HTTPXMock
 
 from firebolt.common import Settings
-from firebolt.model.engine import Engine
-from firebolt.model.instance_type import InstanceType
 from firebolt.service.manager import ResourceManager
 
 
@@ -14,19 +12,11 @@ def test_database_create(
     auth_url: str,
     provider_callback: Callable,
     provider_url: str,
-    instance_type_callback: Callable,
-    instance_type_url: str,
     region_callback: Callable,
     region_url: str,
     settings: Settings,
-    mock_instance_types: List[InstanceType],
-    mock_regions,
-    mock_engine: Engine,
-    engine_name: str,
     account_id_callback: Callable,
     account_id_url: str,
-    engine_callback: Callable,
-    engine_url: str,
     databases_callback: Callable,
     databases_url: str,
     db_name: str,
@@ -49,19 +39,9 @@ def test_database_get_by_name(
     auth_url: str,
     provider_callback: Callable,
     provider_url: str,
-    instance_type_callback: Callable,
-    instance_type_url: str,
-    region_callback: Callable,
-    region_url: str,
     settings: Settings,
-    mock_instance_types: List[InstanceType],
-    mock_regions,
-    mock_engine: Engine,
-    engine_name: str,
     account_id_callback: Callable,
     account_id_url: str,
-    engine_callback: Callable,
-    engine_url: str,
     database_get_by_name_callback: Callable,
     database_get_by_name_url: str,
     database_get_callback: Callable,
