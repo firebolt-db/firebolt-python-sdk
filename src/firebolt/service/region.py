@@ -1,6 +1,6 @@
 from typing import Dict, List
 
-from firebolt.common.utils import cached_property
+from firebolt.common.util import cached_property
 from firebolt.model.region import Region, RegionKey
 from firebolt.service.base import BaseService
 from firebolt.service.manager import ResourceManager

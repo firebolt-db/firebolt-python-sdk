@@ -7,7 +7,7 @@ from typing import Union
 from ciso8601 import parse_datetime
 
 from firebolt.common.exception import DataError, NotSupportedError
-from firebolt.common.utils import cached_property
+from firebolt.common.util import cached_property
 
 _NoneType = type(None)
 _col_types = (int, float, str, datetime, date, bool, list, _NoneType)
