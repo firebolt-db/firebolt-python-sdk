@@ -145,12 +145,11 @@ def test_connect_engine_name(
         json={"engine_id": {"engine_id": engine_id}},
     )
 
-    cursor = connect(
+    with connect(
         engine_name=engine_name,
         database=db_name,
         username="u",
         password="p",
         api_endpoint=settings.server,
-    ).cursor()
-
-    assert cursor.execute("select*") == len(python_query_data)
+    ) as connection:
+        assert connection.cursor().execute("select*") == len(python_query_data)

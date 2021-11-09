@@ -45,11 +45,11 @@ async def test_closed_cursor(cursor: Cursor):
     """Most of cursor methods are unavailable for closed cursor."""
     fields = ("description", "rowcount")
     async_methods = (
-        "execute",
-        "executemany",
-        "fetchone",
-        "fetchmany",
-        "fetchall",
+        ("execute", (cursor,)),
+        ("executemany", (cursor, [])),
+        ("fetchone", ()),
+        ("fetchmany", ()),
+        ("fetchall", ()),
     )
     methods = (
         "setinputsizes",
@@ -66,9 +66,9 @@ async def test_closed_cursor(cursor: Cursor):
         with raises(CursorClosedError):
             getattr(cursor, method)(cursor)
 
-    for amethod in async_methods:
+    for amethod, args in async_methods:
         with raises(CursorClosedError):
-            await getattr(cursor, amethod)(cursor)
+            await getattr(cursor, amethod)(*args)
 
     with raises(CursorClosedError):
         with cursor:
@@ -103,7 +103,7 @@ async def test_cursor_no_query(
 
     for amethod in async_methods:
         with raises(QueryNotRunError):
-            await getattr(cursor, amethod)(cursor)
+            await getattr(cursor, amethod)()
 
     with raises(QueryNotRunError):
         [r async for r in cursor]

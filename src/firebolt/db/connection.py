@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from functools import wraps
 from inspect import cleandoc
 from types import TracebackType
 
-from firebolt.async_db.connection import Connection as AsyncConnection
+from readerwriterlock.rwlock import RWLockWrite
+
+from firebolt.async_db.connection import BaseConnection as AsyncBaseConnection
 from firebolt.async_db.connection import async_connect_factory
-from firebolt.client import Client
 from firebolt.common.exception import ConnectionClosedError
 from firebolt.common.util import async_to_sync
 from firebolt.db.cursor import Cursor
@@ -13,7 +15,7 @@ from firebolt.db.cursor import Cursor
 DEFAULT_TIMEOUT_SECONDS: int = 5
 
 
-class Connection(AsyncConnection):
+class Connection(AsyncBaseConnection):
     cleandoc(
         """
         Firebolt database connection class. Implements PEP-249.
@@ -34,8 +36,25 @@ class Connection(AsyncConnection):
         """
     )
 
-    client_class = Client
+    __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock",)
+
     cursor_class = Cursor
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Holding this lock for write means that connection is closing itself.
+        # cursor() should hold this lock for read to read/write state
+        self._closing_lock = RWLockWrite()
+
+    @wraps(AsyncBaseConnection.cursor)
+    def cursor(self) -> Cursor:
+        with self._closing_lock.gen_rlock():
+            return super().cursor()
+
+    @wraps(AsyncBaseConnection.aclose)
+    def close(self) -> None:
+        with self._closing_lock.gen_wlock():
+            return async_to_sync(super().aclose)()
 
     # Context manager support
     def __enter__(self) -> Connection:
@@ -46,6 +65,9 @@ class Connection(AsyncConnection):
     def __exit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
+        self.close()
+
+    def __del__(self):
         self.close()
 
 

@@ -6,7 +6,6 @@ from types import TracebackType
 from typing import Callable, List, Optional, Type
 
 from httpx import HTTPStatusError, RequestError, Timeout
-from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.async_db.cursor import Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
@@ -111,7 +110,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
 class BaseConnection:
     client_class: type
     cursor_class: type
-    __slots__ = ("_client", "_cursors", "database", "_is_closed", "_closing_lock")
+    __slots__ = ("_client", "_cursors", "database", "_is_closed")
 
     def __init__(
         self,
@@ -121,7 +120,7 @@ class BaseConnection:
         password: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
-        self._client = self.client_class(
+        self._client = AsyncClient(
             auth=(username, password),
             base_url=engine_url,
             api_endpoint=api_endpoint,
@@ -130,37 +129,31 @@ class BaseConnection:
         self.database = database
         self._cursors: List[Cursor] = []
         self._is_closed = False
-        # Holding this lock for write means that connection is closing itself.
-        # cursor() should hold this lock for read to read/write state
-        self._closing_lock = RWLockWrite()
 
     def cursor(self) -> Cursor:
         """Create new cursor object."""
-        with self._closing_lock.gen_rlock():
-            if self.closed:
-                raise ConnectionClosedError(
-                    "Unable to create cursor: connection closed"
-                )
+        if self.closed:
+            raise ConnectionClosedError("Unable to create cursor: connection closed")
 
-            c = self.cursor_class(self._client, self)
-            self._cursors.append(c)
-            return c
+        c = self.cursor_class(self._client, self)
+        self._cursors.append(c)
+        return c
 
-    def close(self) -> None:
+    async def aclose(self) -> None:
         """Close connection and all underlying cursors."""
-        with self._closing_lock.gen_wlock():
-            if self.closed:
-                return
+        if self.closed:
+            return
 
-            # self._cursors is going to be changed during closing cursors
-            # after this point no cursors would be added to _cursors, only removed since
-            # closing lock is held, and later connection will be marked as closed
-            cursors = self._cursors[:]
-            for c in cursors:
-                # Here c can already be closed by another thread,
-                # but it shouldn't raise an error in this case
-                c.close()
-            self._is_closed = True
+        # self._cursors is going to be changed during closing cursors
+        # after this point no cursors would be added to _cursors, only removed since
+        # closing lock is held, and later connection will be marked as closed
+        cursors = self._cursors[:]
+        for c in cursors:
+            # Here c can already be closed by another thread,
+            # but it shouldn't raise an error in this case
+            c.close()
+        await self._client.aclose()
+        self._is_closed = True
 
     @property
     def closed(self) -> bool:
@@ -173,9 +166,6 @@ class BaseConnection:
             self._cursors.remove(cursor)
         except ValueError:
             pass
-
-    def __del__(self):
-        self.close()
 
 
 class Connection(BaseConnection):
@@ -199,11 +189,7 @@ class Connection(BaseConnection):
         """
     )
 
-    client_class = AsyncClient
     cursor_class = Cursor
-
-    async def close_client(self) -> None:
-        await self._client.aclose()
 
     # Context manager support
     async def __aenter__(self) -> Connection:
@@ -214,8 +200,7 @@ class Connection(BaseConnection):
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
-        self.close()
-        await self.close_client()
+        await self.aclose()
 
 
 connect = async_connect_factory(Connection)
