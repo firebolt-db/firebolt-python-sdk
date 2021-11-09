@@ -20,7 +20,9 @@ class ResourceManager:
     """
 
     def __init__(
-        self, settings: Optional[Settings] = None, account_name: Optional[str] = None
+        self,
+        settings: Optional[Settings] = None,
+        account_name: Optional[str] = None
     ):
         self.settings = settings or Settings()
 

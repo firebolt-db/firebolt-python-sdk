@@ -22,6 +22,7 @@ def connect(
     password: str = None,
     engine_name: Optional[str] = None,
     engine_url: Optional[str] = None,
+    account_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
 ) -> Connection:
     cleandoc(
@@ -59,7 +60,8 @@ def connect(
         rm = ResourceManager(
             Settings(
                 user=username, password=password, server=api_endpoint, default_region=""
-            )
+            ),
+            account_name=account_name,
         )
         endpoint = rm.engines.get_by_name(engine_name).endpoint
         if endpoint is None:
