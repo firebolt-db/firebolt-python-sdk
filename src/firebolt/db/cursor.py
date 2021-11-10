@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from inspect import cleandoc
 from threading import Lock
-from typing import Dict, Generator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 
 from readerwriterlock.rwlock import RWLockWrite
 
@@ -47,7 +47,7 @@ class Cursor(AsyncBaseCursor):
 
     __slots__ = AsyncBaseCursor.__slots__ + ("_query_lock", "_idx_lock")
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._query_lock = RWLockWrite()
         self._idx_lock = Lock()
         super().__init__(*args, **kwargs)

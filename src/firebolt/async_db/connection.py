@@ -7,7 +7,7 @@ from typing import Callable, List, Optional, Type
 
 from httpx import HTTPStatusError, RequestError, Timeout
 
-from firebolt.async_db.cursor import Cursor
+from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.util import fix_url_schema
@@ -127,10 +127,10 @@ class BaseConnection:
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         )
         self.database = database
-        self._cursors: List[Cursor] = []
+        self._cursors: List[BaseCursor] = []
         self._is_closed = False
 
-    def cursor(self) -> Cursor:
+    def cursor(self) -> BaseCursor:
         """Create new cursor object."""
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed")
@@ -192,6 +192,11 @@ class Connection(BaseConnection):
     cursor_class = Cursor
 
     aclose = BaseConnection._aclose
+
+    def cursor(self) -> Cursor:
+        c = super().cursor()
+        assert isinstance(c, Cursor)  # typecheck
+        return c
 
     # Context manager support
     async def __aenter__(self) -> Connection:

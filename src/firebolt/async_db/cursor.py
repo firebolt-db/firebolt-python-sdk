@@ -350,7 +350,7 @@ class Cursor(BaseCursor):
 
     __slots__ = BaseCursor.__slots__ + ("_async_query_lock",)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._async_query_lock = RWLock()
         super().__init__(*args, **kwargs)
 

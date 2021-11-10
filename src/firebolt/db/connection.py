@@ -3,6 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from inspect import cleandoc
 from types import TracebackType
+from typing import Any
 
 from readerwriterlock.rwlock import RWLockWrite
 
@@ -40,7 +41,7 @@ class Connection(AsyncBaseConnection):
 
     cursor_class = Cursor
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         # Holding this lock for write means that connection is closing itself.
         # cursor() should hold this lock for read to read/write state
@@ -49,7 +50,9 @@ class Connection(AsyncBaseConnection):
     @wraps(AsyncBaseConnection.cursor)
     def cursor(self) -> Cursor:
         with self._closing_lock.gen_rlock():
-            return super().cursor()
+            c = super().cursor()
+            assert isinstance(c, Cursor)  # typecheck
+            return c
 
     @wraps(AsyncBaseConnection._aclose)
     def close(self) -> None:
@@ -67,7 +70,7 @@ class Connection(AsyncBaseConnection):
     ) -> None:
         self.close()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
 
