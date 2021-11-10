@@ -19,9 +19,10 @@ TMix = TypeVar("TMix")
 def mixin_for(baseclass: Type[TMix]) -> Type[TMix]:
     """
     Useful function to make mixins with baseclass typehint
+    Should be used as a mixin base class to fix typehints
 
     ```
-    class ReadonlyMixin(mixin_for(BaseAdmin))):
+    class ReadonlyMixin(mixin_for(BaseClass))):
         ...
     ```
     """

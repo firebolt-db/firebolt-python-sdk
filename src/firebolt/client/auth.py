@@ -2,17 +2,17 @@ from inspect import cleandoc
 from time import time
 from typing import Generator, Optional
 
-from httpx import Auth as xAuth
+from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
 from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
 from firebolt.common.exception import AuthenticationError
 
 
-class Auth(xAuth):
+class Auth(HttpxAuth):
     cleandoc(
         """
-        Authentication class for Firebolt database. Get's authentication token using
+        Authentication class for Firebolt database. Gets authentication token using
         provided credentials and updates it when it expires
         """
     )
