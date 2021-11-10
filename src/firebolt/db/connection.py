@@ -51,10 +51,10 @@ class Connection(AsyncBaseConnection):
         with self._closing_lock.gen_rlock():
             return super().cursor()
 
-    @wraps(AsyncBaseConnection.aclose)
+    @wraps(AsyncBaseConnection._aclose)
     def close(self) -> None:
         with self._closing_lock.gen_wlock():
-            return async_to_sync(super().aclose)()
+            return async_to_sync(super()._aclose)()
 
     # Context manager support
     def __enter__(self) -> Connection:

@@ -139,8 +139,7 @@ def test_connect_engine_name(
     # Mock engine id lookup by name
     httpx_mock.add_response(
         url=f"https://{settings.server}/core/v1"
-        f"/accounts/{account_id}"
-        f"/engines:getIdByName?engine_name={engine_name}",
+        f"/account/engines:getIdByName?engine_name={engine_name}",
         status_code=codes.OK,
         json={"engine_id": {"engine_id": engine_id}},
     )

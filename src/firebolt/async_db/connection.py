@@ -139,7 +139,7 @@ class BaseConnection:
         self._cursors.append(c)
         return c
 
-    async def aclose(self) -> None:
+    async def _aclose(self) -> None:
         """Close connection and all underlying cursors."""
         if self.closed:
             return
@@ -191,6 +191,8 @@ class Connection(BaseConnection):
 
     cursor_class = Cursor
 
+    aclose = BaseConnection._aclose
+
     # Context manager support
     async def __aenter__(self) -> Connection:
         if self.closed:
@@ -200,7 +202,7 @@ class Connection(BaseConnection):
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
-        await self.aclose()
+        await self._aclose()
 
 
 connect = async_connect_factory(Connection)
