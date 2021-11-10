@@ -38,8 +38,7 @@ from firebolt.db._types import (
 )
 
 if TYPE_CHECKING:
-    # TODO: Use async_db connection
-    from firebolt.db.connection import Connection
+    from firebolt.async_db.connection import Connection
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 

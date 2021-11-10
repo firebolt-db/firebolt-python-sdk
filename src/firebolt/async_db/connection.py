@@ -87,19 +87,20 @@ def connect_factory(connection_class: Type) -> Callable:
             if not param:
                 raise InterfaceError(f"{name} is required to connect.")
 
-            if engine_name is not None:
-                engine_url = await _resolve_engine_url(
-                    engine_name,
-                    username,
-                    password,
-                    api_endpoint,
-                )
-
         # Mypy checks, this should never happen
-        assert engine_url is not None
         assert database is not None
         assert username is not None
         assert password is not None
+
+        if engine_name is not None:
+            engine_url = await _resolve_engine_url(
+                engine_name,
+                username,
+                password,
+                api_endpoint,
+            )
+
+        assert engine_url is not None
 
         engine_url = fix_url_schema(engine_url)
         return connection_class(engine_url, database, username, password, api_endpoint)
@@ -207,7 +208,7 @@ class Connection:
         self.close()
         await self.close_client()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.close()
 
 

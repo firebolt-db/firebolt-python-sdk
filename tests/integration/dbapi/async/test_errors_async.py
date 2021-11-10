@@ -14,19 +14,19 @@ async def test_invalid_credentials(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
     """Connection properly reacts to invalid credentials error"""
-    connection = await connect(
+    async with await connect(
         engine_url=engine_url,
         database=database_name,
         username=username + "_",
         password=password + "_",
         api_endpoint=api_endpoint,
-    )
-    with raises(AuthenticationError) as exc_info:
-        await connection.cursor().execute("show tables")
+    ) as connection:
+        with raises(AuthenticationError) as exc_info:
+            await connection.cursor().execute("show tables")
 
-    assert str(exc_info.value).startswith(
-        "Failed to authenticate"
-    ), "Invalid authentication error message"
+        assert str(exc_info.value).startswith(
+            "Failed to authenticate"
+        ), "Invalid authentication error message"
 
 
 @mark.asyncio
@@ -34,15 +34,15 @@ async def test_engine_url_not_exists(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
     """Connection properly reacts to invalid engine url error"""
-    connection = await connect(
+    async with await connect(
         engine_url=engine_url + "_",
         database=database_name,
         username=username,
         password=password,
         api_endpoint=api_endpoint,
-    )
-    with raises(ConnectError):
-        await connection.cursor().execute("show tables")
+    ) as connection:
+        with raises(ConnectError):
+            await connection.cursor().execute("show tables")
 
 
 @mark.asyncio
@@ -54,15 +54,15 @@ async def test_engine_name_not_exists(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
-    connection = await connect(
+    async with await connect(
         engine_url=engine_name + "_________",
         database=database_name,
         username=username,
         password=password,
         api_endpoint=api_endpoint,
-    )
-    with raises(ConnectError):
-        await connection.cursor().execute("show tables")
+    ) as connection:
+        with raises(ConnectError):
+            await connection.cursor().execute("show tables")
 
 
 @mark.asyncio
@@ -71,19 +71,19 @@ async def test_database_not_exists(
 ) -> None:
     """Connection properly reacts to invalid database error"""
     new_db_name = database_name + "_"
-    connection = await connect(
+    async with await connect(
         engine_url=engine_url,
         database=new_db_name,
         username=username,
         password=password,
         api_endpoint=api_endpoint,
-    )
-    with raises(ProgrammingError) as exc_info:
-        await connection.cursor().execute("show tables")
+    ) as connection:
+        with raises(ProgrammingError) as exc_info:
+            await connection.cursor().execute("show tables")
 
-    assert (
-        str(exc_info.value) == f"Invalid database '{new_db_name}'"
-    ), "Invalid database name error message"
+        assert (
+            str(exc_info.value) == f"Invalid database '{new_db_name}'"
+        ), "Invalid database name error message"
 
 
 @mark.asyncio
