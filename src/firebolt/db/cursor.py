@@ -251,8 +251,6 @@ class Cursor:
     ) -> int:
         """Prepare and execute a database query. Return row count."""
         with self._query_lock.gen_wlock():
-            with open("../../../query_log.log", "a") as log_file:
-                log_file.write(query + "\n")
             self._reset()
             resp = self._do_execute_request(query, parameters, set_parameters)
             self._store_query_data(resp)
