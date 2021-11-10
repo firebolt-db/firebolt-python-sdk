@@ -22,7 +22,6 @@ class ResourceManager:
     def __init__(
         self,
         settings: Optional[Settings] = None,
-        account_name: Optional[str] = None
     ):
         self.settings = settings or Settings()
 
@@ -36,7 +35,7 @@ class ResourceManager:
             "response": [raise_on_4xx_5xx, log_response],
         }
 
-        self.account_id = self._get_account_id(account_name=account_name)
+        self.account_id = self._get_account_id(self.settings.account_name)
         self._init_services()
 
     def _init_services(self) -> None:

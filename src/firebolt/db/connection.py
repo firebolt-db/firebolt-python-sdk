@@ -35,6 +35,7 @@ def connect(
         password - password to use for authentication
         engine_name - name of the engine to connect to
         engine_url - engine endpoint to use
+        account_name - this must be specified for users with multiple accounts
         note: either engine_name or engine_url should be provided, but not both
         """
     )
@@ -46,8 +47,8 @@ def connect(
         raise InterfaceError(
             "Neither engine_name nor engine_url are provided. Provide one to connect."
         )
-    # This parameters are optional in function signature, but are required to connect.
-    # It's recomended to make them kwargs by PEP 249
+    # These parameters are optional in the function signature, but are required to connect.
+    # PEP 249 recomends they be kwargs.
     for param, name in (
         (database, "database"),
         (username, "username"),
@@ -59,9 +60,12 @@ def connect(
     if engine_name is not None:
         rm = ResourceManager(
             Settings(
-                user=username, password=password, server=api_endpoint, default_region=""
-            ),
-            account_name=account_name,
+                user=username,
+                password=password,
+                server=api_endpoint,
+                default_region="",
+                account_name=account_name,
+            )
         )
         endpoint = rm.engines.get_by_name(engine_name).endpoint
         if endpoint is None:
@@ -91,13 +95,13 @@ class Connection:
             database - Firebolt database name
             username - Firebolt account username
             password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+            api_endpoint(optional) - Firebolt API endpoint. Used for authentication.
 
         Methods:
             cursor - create new Cursor object
-            close - close the Connection and all it's cursors
+            close - close the Connection and all its cursors
 
-        Firebolt currenly doesn't support transactions so commit and rollback methods
+        Firebolt currenly doesn't support transactions, so commit and rollback methods
         are not implemented.
         """
     )

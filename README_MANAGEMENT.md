@@ -10,6 +10,7 @@ To use the SDK, you generally will want to set the following environment variabl
 FIREBOLT_USER='email@domain.com'
 FIREBOLT_PASSWORD='*****'
 FIREBOLT_SERVER='api.app.firebolt.io'
+FIREBOLT_ACCOUNT='account_name'
 FIREBOLT_DEFAULT_REGION='us-east-1'
 ```
 
@@ -38,6 +39,7 @@ rm = ResourceManager(settings=Settings(
     user="email@domain.com",
     password=SecretStr("*****"),
     default_region="us-east-1",
+    account_name="*****"
 ))
 print(rm.client.account_id) # see your account id
 ```
