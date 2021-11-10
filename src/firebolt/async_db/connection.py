@@ -91,7 +91,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         assert username is not None
         assert password is not None
 
-        if engine_name is not None:
+        if engine_name:
             engine_url = await _resolve_engine_url(
                 engine_name,
                 username,
