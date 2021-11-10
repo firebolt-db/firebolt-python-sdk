@@ -113,14 +113,12 @@ def test_attach_to_database(
     bindings_callback: Callable,
     bindings_url: str,
 ):
-    from functools import partial
-
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(partial(bindings_callback, bindings=[]), url=bindings_url)
+    httpx_mock.add_callback(bindings_callback, url=bindings_url)
     httpx_mock.add_callback(databases_callback, url=databases_url, method="POST")
     httpx_mock.add_callback(database_not_found_callback, url=database_url, method="GET")
 

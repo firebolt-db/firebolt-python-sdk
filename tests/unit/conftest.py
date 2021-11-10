@@ -1,4 +1,4 @@
-from typing import Callable, List, Optional
+from typing import Callable, List
 
 import httpx
 import pytest
@@ -350,21 +350,15 @@ def binding(account_id, mock_engine, mock_database) -> Binding:
 
 
 @pytest.fixture
-def bindings_callback(
-    bindings_url: str, binding, bindings: Optional[List[Binding]] = None
-) -> Callable:
+def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
     def do_mock(
         request: httpx.Request = None,
-        _bindings=bindings,
         **kwargs,
     ) -> Response:
-        if _bindings is None:
-            _bindings = [binding]
-
         assert request.url == bindings_url
         return to_response(
             status_code=httpx.codes.OK,
-            json=list_to_paginated_response(_bindings),
+            json=list_to_paginated_response([binding]),
         )
 
     return do_mock
