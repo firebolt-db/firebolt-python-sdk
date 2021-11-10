@@ -77,7 +77,12 @@ def test_engine_name_not_exists(
 
 
 def test_database_not_exists(
-    engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
+    engine_url: str,
+    database_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+    account_name: str,
 ) -> None:
     """Connection properly reacts to invalid database error"""
     new_db_name = database_name + "_"
