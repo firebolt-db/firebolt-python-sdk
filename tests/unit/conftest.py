@@ -1,4 +1,4 @@
-from typing import Callable, List
+from typing import Callable, List, Optional
 
 import httpx
 import pytest
@@ -278,6 +278,21 @@ def database_callback(database_url: str, mock_database) -> Callable:
 
 
 @pytest.fixture
+def database_not_found_callback(database_url: str) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == database_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
 def database_url(settings: Settings, account_id: str, mock_database) -> str:
     return f"https://{settings.server}/core/v1/accounts/{account_id}/databases/{mock_database.database_id}"  # noqa: E501
 
@@ -335,15 +350,21 @@ def binding(account_id, mock_engine, mock_database) -> Binding:
 
 
 @pytest.fixture
-def bindings_callback(bindings_url: str, binding) -> Callable:
+def bindings_callback(
+    bindings_url: str, binding, bindings: Optional[List[Binding]] = None
+) -> Callable:
     def do_mock(
         request: httpx.Request = None,
+        _bindings=bindings,
         **kwargs,
     ) -> Response:
+        if _bindings is None:
+            _bindings = [binding]
+
         assert request.url == bindings_url
         return to_response(
             status_code=httpx.codes.OK,
-            json=list_to_paginated_response([binding]),
+            json=list_to_paginated_response(_bindings),
         )
 
     return do_mock
@@ -352,6 +373,33 @@ def bindings_callback(bindings_url: str, binding) -> Callable:
 @pytest.fixture
 def bindings_url(settings: Settings, account_id: str, mock_engine: Engine) -> str:
     return f"https://{settings.server}/core/v1/accounts/{account_id}/bindings?page.first=5000&filter.id_engine_id_eq={mock_engine.engine_id}"  # noqa: E501
+
+
+@pytest.fixture
+def create_binding_callback(create_binding_url: str, binding) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == create_binding_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"binding": binding.dict()},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def create_binding_url(
+    settings: Settings, account_id: str, mock_database: Database, mock_engine: Engine
+) -> str:
+    return (
+        f"https://{settings.server}"
+        f"/core/v1/accounts/{account_id}"
+        f"/databases/{mock_database.database_id}"
+        f"/bindings/{mock_engine.engine_id}"
+    )
 
 
 @pytest.fixture
