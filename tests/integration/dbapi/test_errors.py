@@ -10,7 +10,12 @@ from firebolt.db import Connection, connect
 
 
 def test_invalid_credentials(
-    engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
+    engine_url: str,
+    database_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+    account_name: str,
 ) -> None:
     """Connection properly reacts to invalid credentials error"""
     connection = connect(
@@ -19,6 +24,7 @@ def test_invalid_credentials(
         username=username + "_",
         password=password + "_",
         api_endpoint=api_endpoint,
+        account_name=account_name,
     )
     with raises(AuthenticationError) as exc_info:
         connection.cursor().execute("show tables")
@@ -29,7 +35,12 @@ def test_invalid_credentials(
 
 
 def test_engine_url_not_exists(
-    engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
+    engine_url: str,
+    database_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+    account_name: str,
 ) -> None:
     """Connection properly reacts to invalid engine url error"""
     connection = connect(
@@ -38,6 +49,7 @@ def test_engine_url_not_exists(
         username=username,
         password=password,
         api_endpoint=api_endpoint,
+        account_name=account_name,
     )
     with raises(ConnectError):
         connection.cursor().execute("show tables")
@@ -49,6 +61,7 @@ def test_engine_name_not_exists(
     username: str,
     password: str,
     api_endpoint: str,
+    account_name: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
     connection = connect(
@@ -57,6 +70,7 @@ def test_engine_name_not_exists(
         username=username,
         password=password,
         api_endpoint=api_endpoint,
+        account_name=account_name,
     )
     with raises(ConnectError):
         connection.cursor().execute("show tables")
@@ -73,6 +87,7 @@ def test_database_not_exists(
         username=username,
         password=password,
         api_endpoint=api_endpoint,
+        account_name=account_name,
     )
     with raises(ProgrammingError) as exc_info:
         connection.cursor().execute("show tables")
