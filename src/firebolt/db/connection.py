@@ -47,8 +47,8 @@ def connect(
         raise InterfaceError(
             "Neither engine_name nor engine_url are provided. Provide one to connect."
         )
-    # These parameters are optional in the function signature, but are required to connect.
-    # PEP 249 recomends they be kwargs.
+    # These parameters are optional in the function signature, but are
+    # required for connections. PEP 249 recommends they be kwargs.
     for param, name in (
         (database, "database"),
         (username, "username"),
