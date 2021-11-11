@@ -51,14 +51,14 @@ def test_engine_name_not_exists(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
-    connection = connect(
-        engine_url=engine_name + "_________",
-        database=database_name,
-        username=username,
-        password=password,
-        api_endpoint=api_endpoint,
-    )
-    with raises(ConnectError):
+    with raises(RuntimeError):
+        connection = connect(
+            engine_name=engine_name + "_________",
+            database=database_name,
+            username=username,
+            password=password,
+            api_endpoint=api_endpoint,
+        )
         connection.cursor().execute("show tables")
 
 
