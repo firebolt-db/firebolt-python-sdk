@@ -61,7 +61,7 @@ class BindingService(BaseService):
         try:
             binding = self.get_many(engine_id=engine.engine_id)[0]
             return self.resource_manager.databases.get(id_=binding.database_id)
-        except IndexError:
+        except KeyError:
             return None
 
     def get_engines_bound_to_database(self, database: Database) -> List[Engine]:
