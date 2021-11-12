@@ -7,6 +7,7 @@ from httpx import Request, Response, codes
 
 from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
 from firebolt.common.exception import AuthenticationError
+from firebolt.common.urls import AUTH_URL
 from firebolt.common.util import fix_url_schema
 
 
@@ -54,7 +55,7 @@ class Auth(HttpxAuth):
         try:
             response = yield Request(
                 "POST",
-                f"{self._api_endpoint}/auth/v1/login",
+                AUTH_URL.format(api_endpoint=self._api_endpoint),
                 headers={
                     "Content-Type": "application/json;charset=UTF-8",
                     "User-Agent": "firebolt-sdk",
