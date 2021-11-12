@@ -10,7 +10,7 @@ from httpx import HTTPStatusError, RequestError, Timeout
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
-from firebolt.common.urls import GET_ENGINE_BY_NAME_URL, GET_ENGINE_URL
+from firebolt.common.urls import ENGINE_URL, GET_ENGINE_BY_NAME_URL
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
@@ -33,7 +33,7 @@ async def _resolve_engine_url(
             engine_id = response.json()["engine_id"]["engine_id"]
             account_id = await client.account_id
             response = await client.get(
-                url=GET_ENGINE_URL.format(account_id=account_id, engine_id=engine_id),
+                url=ENGINE_URL.format(account_id=account_id, engine_id=engine_id),
             )
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]

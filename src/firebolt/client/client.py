@@ -9,7 +9,7 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
 from firebolt.client.constants import DEFAULT_API_URL
-from firebolt.common.urls import GET_ACCOUNT_URL
+from firebolt.common.urls import ACCOUNT_URL
 from firebolt.common.util import cached_property, fix_url_schema, mixin_for
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
@@ -55,7 +55,7 @@ class Client(FireboltClientMixin, HttpxClient):
 
     @cached_property
     def account_id(self) -> str:
-        return self.get(url=GET_ACCOUNT_URL).json()["account"]["id"]
+        return self.get(url=ACCOUNT_URL).json()["account"]["id"]
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
@@ -74,4 +74,4 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
     @async_cached_property
     async def account_id(self) -> str:
-        return (await self.get(url=GET_ACCOUNT_URL)).json()["account"]["id"]
+        return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
