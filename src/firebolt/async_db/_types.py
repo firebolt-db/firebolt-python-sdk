@@ -8,7 +8,7 @@ from typing import Union
 try:
     from ciso8601 import parse_datetime
 except ImportError:
-    parse_datetime = datetime.fromisoformat
+    parse_datetime = datetime.fromisoformat  # type: ignore
 
 
 from firebolt.common.exception import DataError, NotSupportedError
