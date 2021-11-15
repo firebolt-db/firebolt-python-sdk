@@ -6,6 +6,17 @@ from pytest_httpx import to_response
 from pytest_httpx._httpx_internals import Response
 
 from firebolt.common.settings import Settings
+from firebolt.common.urls import (
+    ACCOUNT_BINDINGS_URL,
+    ACCOUNT_DATABASE_BINDING_URL,
+    ACCOUNT_DATABASE_BY_NAME_URL,
+    ACCOUNT_DATABASE_URL,
+    ACCOUNT_DATABASES_URL,
+    ACCOUNT_ENGINES_URL,
+    INSTANCE_TYPES_URL,
+    PROVIDERS_URL,
+    REGIONS_URL,
+)
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database, DatabaseKey
 from firebolt.model.engine import Engine, EngineKey, EngineSettings
@@ -80,7 +91,7 @@ def provider_callback(provider_url: str, mock_providers) -> Callable:
 
 @pytest.fixture
 def provider_url(settings: Settings) -> str:
-    return f"https://{settings.server}/compute/v1/providers"
+    return f"https://{settings.server}{PROVIDERS_URL}"
 
 
 @pytest.fixture
@@ -100,7 +111,7 @@ def region_callback(region_url: str, mock_regions) -> Callable:
 
 @pytest.fixture
 def region_url(settings: Settings) -> str:
-    return f"https://{settings.server}/compute/v1/regions?page.first=5000"
+    return f"https://{settings.server}{REGIONS_URL}?page.first=5000"
 
 
 @pytest.fixture
@@ -120,7 +131,7 @@ def instance_type_callback(instance_type_url: str, mock_instance_types) -> Calla
 
 @pytest.fixture
 def instance_type_url(settings: Settings) -> str:
-    return f"https://{settings.server}/compute/v1/instanceTypes?page.first=5000"
+    return f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000"
 
 
 @pytest.fixture
@@ -140,7 +151,9 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
 
 @pytest.fixture
 def engine_url(settings: Settings, account_id) -> str:
-    return f"https://{settings.server}/core/v1/accounts/{account_id}/engines"
+    return f"https://{settings.server}" + ACCOUNT_ENGINES_URL.format(
+        account_id=account_id
+    )
 
 
 @pytest.fixture
@@ -171,7 +184,9 @@ def databases_callback(databases_url: str, mock_database) -> Callable:
 
 @pytest.fixture
 def databases_url(settings: Settings, account_id: str) -> str:
-    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases"
+    return f"https://{settings.server}" + ACCOUNT_DATABASES_URL.format(
+        account_id=account_id
+    )
 
 
 @pytest.fixture
@@ -206,7 +221,9 @@ def database_not_found_callback(database_url: str) -> Callable:
 
 @pytest.fixture
 def database_url(settings: Settings, account_id: str, mock_database) -> str:
-    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases/{mock_database.database_id}"  # noqa: E501
+    return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
+        account_id=account_id, database_id=mock_database.database_id
+    )
 
 
 @pytest.fixture
@@ -226,7 +243,11 @@ def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Ca
 
 @pytest.fixture
 def database_get_by_name_url(settings: Settings, account_id: str, mock_database) -> str:
-    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases:getIdByName?database_name={mock_database.name}"  # noqa: E501
+    return (
+        f"https://{settings.server}"
+        + ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)
+        + f"?database_name={mock_database.name}"
+    )
 
 
 @pytest.fixture
@@ -244,9 +265,12 @@ def database_get_callback(database_get_url, mock_database) -> Callable:
     return do_mock
 
 
+# duplicates database_url
 @pytest.fixture
 def database_get_url(settings: Settings, account_id: str, mock_database) -> str:
-    return f"https://{settings.server}/core/v1/accounts/{account_id}/databases/{mock_database.database_id}"  # noqa: E501
+    return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
+        account_id=account_id, database_id=mock_database.database_id
+    )
 
 
 @pytest.fixture
@@ -278,7 +302,11 @@ def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
 
 @pytest.fixture
 def bindings_url(settings: Settings, account_id: str, mock_engine: Engine) -> str:
-    return f"https://{settings.server}/core/v1/accounts/{account_id}/bindings?page.first=5000&filter.id_engine_id_eq={mock_engine.engine_id}"  # noqa: E501
+    return (
+        f"https://{settings.server}"
+        + ACCOUNT_BINDINGS_URL.format(account_id=account_id)
+        + f"?page.first=5000&filter.id_engine_id_eq={mock_engine.engine_id}"
+    )
 
 
 @pytest.fixture
@@ -300,9 +328,8 @@ def create_binding_callback(create_binding_url: str, binding) -> Callable:
 def create_binding_url(
     settings: Settings, account_id: str, mock_database: Database, mock_engine: Engine
 ) -> str:
-    return (
-        f"https://{settings.server}"
-        f"/core/v1/accounts/{account_id}"
-        f"/databases/{mock_database.database_id}"
-        f"/bindings/{mock_engine.engine_id}"
+    return f"https://{settings.server}" + ACCOUNT_DATABASE_BINDING_URL.format(
+        account_id=account_id,
+        database_id=mock_database.database_id,
+        engine_id=mock_engine.engine_id,
     )
