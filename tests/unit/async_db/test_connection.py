@@ -93,7 +93,8 @@ async def test_connect_empty_parameters():
                 "engine_url": "engine_url",
                 **{p: p for p in params if p != param},
             }
-            await connect(**kwargs)
+            async with await connect(**kwargs):
+                pass
         assert str(exc_info.value) == f"{param} is required to connect."
 
 
@@ -119,23 +120,25 @@ async def test_connect_engine_name(
     """connect properly handles engine_name"""
 
     with raises(InterfaceError) as exc_info:
-        await connect(
+        async with await connect(
             engine_url="engine_url",
             engine_name="engine_name",
             database="db",
             username="username",
             password="password",
-        )
+        ):
+            pass
     assert str(exc_info.value).startswith(
         "Both engine_name and engine_url are provided"
     )
 
     with raises(InterfaceError) as exc_info:
-        await connect(
+        async with await connect(
             database="db",
             username="username",
             password="password",
-        )
+        ):
+            pass
     assert str(exc_info.value).startswith(
         "Neither engine_name nor engine_url are provided"
     )
