@@ -6,9 +6,9 @@ from httpx import URL, Request, Response, codes
 from pytest import fixture
 from pytest_httpx import to_response
 
+from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.common.settings import Settings
 from firebolt.db import ARRAY, Connection, Cursor, connect
-from firebolt.db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 
 QUERY_ROW_COUNT: int = 10
 
@@ -187,13 +187,14 @@ def query_with_params_url(query_url: str, set_params: str) -> str:
 
 @fixture
 def connection(settings: Settings, db_name: str) -> Connection:
-    return connect(
+    with connect(
         engine_url=settings.server,
         database=db_name,
         username="u",
         password="p",
         api_endpoint=settings.server,
-    )
+    ) as connection:
+        yield connection
 
 
 @fixture

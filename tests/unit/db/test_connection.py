@@ -4,10 +4,10 @@ from httpx import codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
+from firebolt.async_db._types import ColType
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.settings import Settings
 from firebolt.db import Connection, connect
-from firebolt.db._types import ColType
 
 
 def test_closed_connection(connection: Connection) -> None:
@@ -133,25 +133,22 @@ def test_connect_engine_name(
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(get_engine_callback, url=get_engine_url)
-    httpx_mock.add_callback(get_providers_callback, url=get_providers_url)
 
     engine_name = settings.server.split(".")[0]
 
     # Mock engine id lookup by name
     httpx_mock.add_response(
         url=f"https://{settings.server}/core/v1"
-        f"/accounts/{account_id}"
-        f"/engines:getIdByName?engine_name={engine_name}",
+        f"/account/engines:getIdByName?engine_name={engine_name}",
         status_code=codes.OK,
         json={"engine_id": {"engine_id": engine_id}},
     )
 
-    cursor = connect(
+    with connect(
         engine_name=engine_name,
         database=db_name,
         username="u",
         password="p",
         api_endpoint=settings.server,
-    ).cursor()
-
-    assert cursor.execute("select*") == len(python_query_data)
+    ) as connection:
+        assert connection.cursor().execute("select*") == len(python_query_data)

@@ -21,6 +21,13 @@ from typing import (
 from aiorwlock import RWLock
 from httpx import Response, codes
 
+from firebolt.async_db._types import (
+    ColType,
+    Column,
+    RawColType,
+    parse_type,
+    parse_value,
+)
 from firebolt.client import AsyncClient
 from firebolt.common.exception import (
     CursorClosedError,
@@ -28,13 +35,6 @@ from firebolt.common.exception import (
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
-)
-from firebolt.db._types import (
-    ColType,
-    Column,
-    RawColType,
-    parse_type,
-    parse_value,
 )
 
 if TYPE_CHECKING:
@@ -80,34 +80,7 @@ def check_query_executed(func: Callable) -> Callable:
     return inner
 
 
-class Cursor:
-    cleandoc(
-        """
-        Class, responsible for executing asyncio queries to Firebolt Database.
-        Should not be created directly, use connection.cursor()
-
-        Properties:
-        - description - information about a single result row
-        - rowcount - the number of rows produced by last query
-        - closed - True if connection is closed, False otherwise
-        - arraysize - Read/Write, specifies the number of rows to fetch at a time
-        with .fetchmany method
-
-        Methods:
-        - close - terminate an ongoing query (if any) and mark connection as closed
-        - execute - prepare and execute a database query
-        - executemany - prepare and execute a database query against all parameter
-          sequences provided
-        - fetchone - fetch the next row of a query result set
-        - fetchmany - fetch the next set of rows of a query result,
-          size is cursor.arraysize by default
-        - fetchall - fetch all remaining rows of a query result
-        - setinputsizes - predefine memory areas for query parameters (does nothing)
-        - setoutputsize - set a column buffer size for fetches of large columns
-          (does nothing)
-        """
-    )
-
+class BaseCursor:
     __slots__ = (
         "connection",
         "_arraysize",
@@ -118,7 +91,6 @@ class Cursor:
         "_rows",
         "_idx",
         "_idx_lock",
-        "_query_lock",
     )
 
     default_arraysize = 1
@@ -129,7 +101,6 @@ class Cursor:
         self._arraysize = self.default_arraysize
         self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
-        self._query_lock = RWLock()
         self._reset()
 
     def __del__(self) -> None:
@@ -248,12 +219,11 @@ class Cursor:
         set_parameters: Optional[Dict] = None,
     ) -> int:
         """Prepare and execute a database query. Return row count."""
-        async with self._query_lock.writer:
-            self._reset()
-            resp = await self._do_execute_request(query, parameters, set_parameters)
-            self._store_query_data(resp)
-            self._state = CursorState.DONE
-            return self.rowcount
+        self._reset()
+        resp = await self._do_execute_request(query, parameters, set_parameters)
+        self._store_query_data(resp)
+        self._state = CursorState.DONE
+        return self.rowcount
 
     @check_not_closed
     async def executemany(
@@ -265,15 +235,14 @@ class Cursor:
             sequences provided. Return last query row count.
             """
         )
-        async with self._query_lock.writer:
-            self._reset()
-            resp = None
-            for parameters in parameters_seq:
-                resp = await self._do_execute_request(query, parameters)
-                if resp is not None:
-                    self._store_query_data(resp)
-                    self._state = CursorState.DONE
-            return self.rowcount
+        self._reset()
+        resp = None
+        for parameters in parameters_seq:
+            resp = await self._do_execute_request(query, parameters)
+            if resp is not None:
+                self._store_query_data(resp)
+                self._state = CursorState.DONE
+        return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
         """Parse a single data row based on query column types"""
@@ -299,41 +268,38 @@ class Cursor:
 
     @check_not_closed
     @check_query_executed
-    async def fetchone(self) -> Optional[List[ColType]]:
+    def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set."""
-        async with self._query_lock.reader:
-            left, right = self._get_next_range(1)
-            if left == right:
-                # We are out of elements
-                return None
-            assert self._rows is not None
-            return self._parse_row(self._rows[left])
+        left, right = self._get_next_range(1)
+        if left == right:
+            # We are out of elements
+            return None
+        assert self._rows is not None
+        return self._parse_row(self._rows[left])
 
     @check_not_closed
     @check_query_executed
-    async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
+    def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         cleandoc(
             """
             Fetch the next set of rows of a query result,
             cursor.arraysize is default size.
             """
         )
-        async with self._query_lock.reader:
-            size = size if size is not None else self.arraysize
-            left, right = self._get_next_range(size)
-            assert self._rows is not None
-            rows = self._rows[left:right]
-            return [self._parse_row(row) for row in rows]
+        size = size if size is not None else self.arraysize
+        left, right = self._get_next_range(size)
+        assert self._rows is not None
+        rows = self._rows[left:right]
+        return [self._parse_row(row) for row in rows]
 
     @check_not_closed
     @check_query_executed
-    async def fetchall(self) -> List[List[ColType]]:
+    def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result."""
-        async with self._query_lock.reader:
-            assert self._rows is not None
-            left, right = self._get_next_range(len(self._rows))
-            rows = self._rows[left:right]
-            return [self._parse_row(row) for row in rows]
+        assert self._rows is not None
+        left, right = self._get_next_range(len(self._rows))
+        rows = self._rows[left:right]
+        return [self._parse_row(row) for row in rows]
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:
@@ -342,6 +308,83 @@ class Cursor:
     @check_not_closed
     def setoutputsize(self, size: int, column: Optional[int] = None) -> None:
         """Set a column buffer size for fetches of large columns (does nothing)."""
+
+    # Context manager support
+    @check_not_closed
+    def __enter__(self) -> BaseCursor:
+        return self
+
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()
+
+
+class Cursor(BaseCursor):
+    cleandoc(
+        """
+        Class, responsible for executing asyncio queries to Firebolt Database.
+        Should not be created directly, use connection.cursor()
+
+        Properties:
+        - description - information about a single result row
+        - rowcount - the number of rows produced by last query
+        - closed - True if connection is closed, False otherwise
+        - arraysize - Read/Write, specifies the number of rows to fetch at a time
+        with .fetchmany method
+
+        Methods:
+        - close - terminate an ongoing query (if any) and mark connection as closed
+        - execute - prepare and execute a database query
+        - executemany - prepare and execute a database query against all parameter
+          sequences provided
+        - fetchone - fetch the next row of a query result set
+        - fetchmany - fetch the next set of rows of a query result,
+          size is cursor.arraysize by default
+        - fetchall - fetch all remaining rows of a query result
+        - setinputsizes - predefine memory areas for query parameters (does nothing)
+        - setoutputsize - set a column buffer size for fetches of large columns
+          (does nothing)
+        """
+    )
+
+    __slots__ = BaseCursor.__slots__ + ("_async_query_lock",)
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self._async_query_lock = RWLock()
+        super().__init__(*args, **kwargs)
+
+    @wraps(BaseCursor.execute)
+    async def execute(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        set_parameters: Optional[Dict] = None,
+    ) -> int:
+        async with self._async_query_lock.writer:
+            return await super().execute(query, parameters, set_parameters)
+
+    @wraps(BaseCursor.executemany)
+    async def executemany(
+        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
+    ) -> int:
+        async with self._async_query_lock.writer:
+            return await super().executemany(query, parameters_seq)
+
+    @wraps(BaseCursor.fetchone)
+    async def fetchone(self) -> Optional[List[ColType]]:
+        async with self._async_query_lock.reader:
+            return super().fetchone()
+
+    @wraps(BaseCursor.fetchmany)
+    async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
+        async with self._async_query_lock.reader:
+            return super().fetchmany(size)
+
+    @wraps(BaseCursor.fetchall)
+    async def fetchall(self) -> List[List[ColType]]:
+        async with self._async_query_lock.reader:
+            return super().fetchall()
 
     # Iteration support
     @check_not_closed
@@ -356,13 +399,3 @@ class Cursor:
         if row is None:
             raise StopAsyncIteration
         return row
-
-    # Context manager support
-    @check_not_closed
-    def __enter__(self) -> Cursor:
-        return self
-
-    def __exit__(
-        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
-    ) -> None:
-        self.close()

@@ -5,15 +5,15 @@ from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Connection, connect
+from firebolt.async_db._types import ColType
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.settings import Settings
-from firebolt.db._types import ColType
 
 
 @mark.asyncio
 async def test_closed_connection(connection: Connection) -> None:
     """Connection methods are unavailable for closed connection."""
-    connection.close()
+    await connection.aclose()
 
     with raises(ConnectionClosedError):
         connection.cursor()
@@ -22,8 +22,7 @@ async def test_closed_connection(connection: Connection) -> None:
         async with connection:
             pass
 
-    connection.close()
-    await connection.close_client()
+    await connection.aclose()
 
 
 @mark.asyncio
@@ -34,12 +33,12 @@ async def test_cursors_closed_on_close(connection: Connection) -> None:
         len(connection._cursors) == 2
     ), "Invalid number of cursors stored in connection"
 
-    connection.close()
+    await connection.aclose()
     assert connection.closed, "Connection was not closed on close"
     assert c1.closed, "Cursor was not closed on connection close"
     assert c2.closed, "Cursor was not closed on connection close"
     assert len(connection._cursors) == 0, "Cursors left in connection after close"
-    await connection.close_client()
+    await connection.aclose()
 
 
 @mark.asyncio
