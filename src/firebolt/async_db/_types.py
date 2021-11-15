@@ -6,7 +6,7 @@ from enum import Enum
 from typing import Union
 
 try:
-    from ciso8601 import parse_datetime
+    from ciso8601 import parse_datetime  # type: ignore
 except ImportError:
     parse_datetime = datetime.fromisoformat  # type: ignore
 
