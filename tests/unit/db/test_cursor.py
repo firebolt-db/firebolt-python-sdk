@@ -5,13 +5,13 @@ from httpx import HTTPStatusError, StreamError, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
+from firebolt.async_db.cursor import ColType, Column, CursorState
 from firebolt.common.exception import (
     CursorClosedError,
     OperationalError,
     QueryNotRunError,
 )
 from firebolt.db import Cursor
-from firebolt.db.cursor import ColType, Column, CursorState
 
 
 def test_cursor_state(
@@ -42,13 +42,13 @@ def test_closed_cursor(cursor: Cursor):
     """Most of cursor methods are unavailable for closed cursor."""
     fields = ("description", "rowcount")
     methods = (
-        "execute",
-        "executemany",
-        "fetchone",
-        "fetchmany",
-        "fetchall",
-        "setinputsizes",
-        "setoutputsize",
+        ("execute", (cursor)),
+        ("executemany", (cursor, [])),
+        ("fetchone", ()),
+        ("fetchmany", ()),
+        ("fetchall", ()),
+        ("setinputsizes", (cursor, [0])),
+        ("setoutputsize", (cursor, 0)),
     )
 
     cursor.close()
@@ -57,9 +57,9 @@ def test_closed_cursor(cursor: Cursor):
         with raises(CursorClosedError):
             getattr(cursor, field)
 
-    for method in methods:
+    for method, args in methods:
         with raises(CursorClosedError):
-            getattr(cursor, method)(cursor)
+            getattr(cursor, method)(*args)
 
     with raises(CursorClosedError):
         with cursor:
@@ -93,7 +93,7 @@ def test_cursor_no_query(
 
     for method in methods:
         with raises(QueryNotRunError):
-            getattr(cursor, method)(cursor)
+            getattr(cursor, method)()
 
     with raises(QueryNotRunError):
         list(cursor)

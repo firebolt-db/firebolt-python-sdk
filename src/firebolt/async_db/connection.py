@@ -6,9 +6,8 @@ from types import TracebackType
 from typing import Callable, List, Optional, Type
 
 from httpx import HTTPStatusError, RequestError, Timeout
-from readerwriterlock.rwlock import RWLockWrite
 
-from firebolt.async_db.cursor import Cursor
+from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.util import fix_url_schema
@@ -41,7 +40,7 @@ async def _resolve_engine_url(
             raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
 
 
-def connect_factory(connection_class: Type) -> Callable:
+def async_connect_factory(connection_class: Type) -> Callable:
     async def connect_inner(
         database: str = None,
         username: str = None,
@@ -92,7 +91,7 @@ def connect_factory(connection_class: Type) -> Callable:
         assert username is not None
         assert password is not None
 
-        if engine_name is not None:
+        if engine_name:
             engine_url = await _resolve_engine_url(
                 engine_name,
                 username,
@@ -108,10 +107,71 @@ def connect_factory(connection_class: Type) -> Callable:
     return connect_inner
 
 
-class Connection:
+class BaseConnection:
+    client_class: type
+    cursor_class: type
+    __slots__ = ("_client", "_cursors", "database", "_is_closed")
+
+    def __init__(
+        self,
+        engine_url: str,
+        database: str,  # TODO: Get by engine name
+        username: str,
+        password: str,
+        api_endpoint: str = DEFAULT_API_URL,
+    ):
+        self._client = AsyncClient(
+            auth=(username, password),
+            base_url=engine_url,
+            api_endpoint=api_endpoint,
+            timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+        )
+        self.database = database
+        self._cursors: List[BaseCursor] = []
+        self._is_closed = False
+
+    def cursor(self) -> BaseCursor:
+        """Create new cursor object."""
+        if self.closed:
+            raise ConnectionClosedError("Unable to create cursor: connection closed")
+
+        c = self.cursor_class(self._client, self)
+        self._cursors.append(c)
+        return c
+
+    async def _aclose(self) -> None:
+        """Close connection and all underlying cursors."""
+        if self.closed:
+            return
+
+        # self._cursors is going to be changed during closing cursors
+        # after this point no cursors would be added to _cursors, only removed since
+        # closing lock is held, and later connection will be marked as closed
+        cursors = self._cursors[:]
+        for c in cursors:
+            # Here c can already be closed by another thread,
+            # but it shouldn't raise an error in this case
+            c.close()
+        await self._client.aclose()
+        self._is_closed = True
+
+    @property
+    def closed(self) -> bool:
+        """True if connection is closed, False otherwise."""
+        return self._is_closed
+
+    def _remove_cursor(self, cursor: Cursor) -> None:
+        # This way it's atomic
+        try:
+            self._cursors.remove(cursor)
+        except ValueError:
+            pass
+
+
+class Connection(BaseConnection):
     cleandoc(
         """
-        Firebolt database connection class. Implements PEP-249.
+        Firebolt asyncronous database connection class. Implements PEP-249.
 
         Parameters:
             engine_url - Firebolt database engine REST API url
@@ -128,73 +188,15 @@ class Connection:
         are not implemented.
         """
     )
-    client_class = AsyncClient
-    cursor_class = Cursor
-    __slots__ = ("_client", "_cursors", "database", "_is_closed", "_closing_lock")
 
-    def __init__(
-        self,
-        engine_url: str,
-        database: str,  # TODO: Get by engine name
-        username: str,
-        password: str,
-        api_endpoint: str = DEFAULT_API_URL,
-    ):
-        self._client = self.client_class(
-            auth=(username, password),
-            base_url=engine_url,
-            api_endpoint=api_endpoint,
-            timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        )
-        self.database = database
-        self._cursors: List[Cursor] = []
-        self._is_closed = False
-        # Holding this lock for write means that connection is closing itself.
-        # cursor() should hold this lock for read to read/write state
-        self._closing_lock = RWLockWrite()
+    cursor_class = Cursor
+
+    aclose = BaseConnection._aclose
 
     def cursor(self) -> Cursor:
-        """Create new cursor object."""
-        with self._closing_lock.gen_rlock():
-            if self.closed:
-                raise ConnectionClosedError(
-                    "Unable to create cursor: connection closed"
-                )
-
-            c = self.cursor_class(self._client, self)
-            self._cursors.append(c)
-            return c
-
-    def close(self) -> None:
-        """Close connection and all underlying cursors."""
-        with self._closing_lock.gen_wlock():
-            if self.closed:
-                return
-
-            # self._cursors is going to be changed during closing cursors
-            # after this point no cursors would be added to _cursors, only removed since
-            # closing lock is held, and later connection will be marked as closed
-            cursors = self._cursors[:]
-            for c in cursors:
-                # Here c can already be closed by another thread,
-                # but it shouldn't raise an error in this case
-                c.close()
-            self._is_closed = True
-
-    async def close_client(self) -> None:
-        await self._client.aclose()
-
-    @property
-    def closed(self) -> bool:
-        """True if connection is closed, False otherwise."""
-        return self._is_closed
-
-    def _remove_cursor(self, cursor: Cursor) -> None:
-        # This way it's atomic
-        try:
-            self._cursors.remove(cursor)
-        except ValueError:
-            pass
+        c = super().cursor()
+        assert isinstance(c, Cursor)  # typecheck
+        return c
 
     # Context manager support
     async def __aenter__(self) -> Connection:
@@ -205,11 +207,7 @@ class Connection:
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
-        self.close()
-        await self.close_client()
-
-    def __del__(self) -> None:
-        self.close()
+        await self._aclose()
 
 
-connect = connect_factory(Connection)
+connect = async_connect_factory(Connection)

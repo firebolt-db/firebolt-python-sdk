@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from typing import Any, List
 
+from firebolt.async_db._types import ColType
+from firebolt.async_db.cursor import Column
 from firebolt.db import Connection, Cursor
-from firebolt.db._types import ColType
-from firebolt.db.cursor import Column
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:

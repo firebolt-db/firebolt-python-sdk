@@ -3,6 +3,7 @@ from pytest import raises
 
 from firebolt.common.exception import (
     AuthenticationError,
+    InterfaceError,
     OperationalError,
     ProgrammingError,
 )
@@ -51,7 +52,7 @@ def test_engine_name_not_exists(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
-    with raises(RuntimeError):
+    with raises(InterfaceError):
         connection = connect(
             engine_name=engine_name + "_________",
             database=database_name,
