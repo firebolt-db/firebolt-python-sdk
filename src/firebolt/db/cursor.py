@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import namedtuple
 from datetime import date, datetime
 from enum import Enum
 from functools import wraps
@@ -32,7 +31,13 @@ from firebolt.common.exception import (
     ProgrammingError,
     QueryNotRunError,
 )
-from firebolt.db._types import ColType, RawColType, parse_type, parse_value
+from firebolt.db._types import (
+    ColType,
+    Column,
+    RawColType,
+    parse_type,
+    parse_value,
+)
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -75,20 +80,6 @@ def check_query_executed(func: Callable) -> Callable:
         return func(self, *args, **kwargs)
 
     return inner
-
-
-Column = namedtuple(
-    "Column",
-    (
-        "name",
-        "type_code",
-        "display_size",
-        "internal_size",
-        "precision",
-        "scale",
-        "null_ok",
-    ),
-)
 
 
 class Cursor:

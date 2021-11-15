@@ -1,4 +1,6 @@
-from firebolt.async_db._types import (
+from firebolt.async_db.connection import Connection, connect
+from firebolt.async_db.cursor import Cursor
+from firebolt.db._types import (
     ARRAY,
     BINARY,
     DATETIME,
@@ -13,9 +15,8 @@ from firebolt.async_db._types import (
     Timestamp,
     TimestampFromTicks,
 )
-from firebolt.async_db.cursor import Cursor
 
 apilevel = "2.0"
-# threads may only share the module, connections and cursors should noy be shared
-threadsafety = 1
+# threads may only share the module and connections, cursors should not be shared
+threadsafety = 2
 paramstyle = "qmark"

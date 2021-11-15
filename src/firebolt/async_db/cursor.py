@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import namedtuple
 from datetime import date, datetime
 from enum import Enum
 from functools import wraps
@@ -22,12 +21,6 @@ from typing import (
 from aiorwlock import RWLock
 from httpx import Response, codes
 
-from firebolt.async_db._types import (
-    ColType,
-    RawColType,
-    parse_type,
-    parse_value,
-)
 from firebolt.client import AsyncClient
 from firebolt.common.exception import (
     CursorClosedError,
@@ -36,10 +29,16 @@ from firebolt.common.exception import (
     ProgrammingError,
     QueryNotRunError,
 )
+from firebolt.db._types import (
+    ColType,
+    Column,
+    RawColType,
+    parse_type,
+    parse_value,
+)
 
 if TYPE_CHECKING:
-    # TODO: Use async_db connection
-    from firebolt.db.connection import Connection
+    from firebolt.async_db.connection import Connection
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
@@ -79,20 +78,6 @@ def check_query_executed(func: Callable) -> Callable:
         return func(self, *args, **kwargs)
 
     return inner
-
-
-Column = namedtuple(
-    "Column",
-    (
-        "name",
-        "type_code",
-        "display_size",
-        "internal_size",
-        "precision",
-        "scale",
-        "null_ok",
-    ),
-)
 
 
 class Cursor:

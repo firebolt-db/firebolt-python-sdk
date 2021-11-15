@@ -2,16 +2,13 @@ from datetime import date, datetime
 from json import dumps as jdumps
 from typing import Any, Callable, Dict, List
 
-from httpx import URL, Request, Response, Timeout, codes
+from httpx import URL, Request, Response, codes
 from pytest import fixture
 from pytest_httpx import to_response
 
-from firebolt.async_db import ARRAY, Cursor
+from firebolt.async_db import ARRAY, Connection, Cursor, connect
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
-from firebolt.client import AsyncClient
 from firebolt.common.settings import Settings
-from firebolt.db import Connection, connect
-from firebolt.db.connection import DEFAULT_TIMEOUT_SECONDS
 
 QUERY_ROW_COUNT: int = 10
 
@@ -189,31 +186,22 @@ def query_with_params_url(query_url: str, set_params: str) -> str:
 
 
 @fixture
-def connection(settings: Settings, db_name: str) -> Connection:
-    return connect(
-        engine_url=settings.server,
-        database=db_name,
-        username="u",
-        password="p",
-        api_endpoint=settings.server,
-    )
+async def connection(settings: Settings, db_name: str) -> Connection:
+    async with (
+        await connect(
+            engine_url=settings.server,
+            database=db_name,
+            username="u",
+            password="p",
+            api_endpoint=settings.server,
+        )
+    ) as connection:
+        yield connection
 
 
 @fixture
 async def cursor(connection: Connection, settings: Settings) -> Cursor:
-    url = (
-        settings.server
-        if settings.server.startswith("http")
-        else f"https://{settings.server}"
-    )
-    client = AsyncClient(
-        auth=(settings.user, settings.password.get_secret_value()),
-        base_url=url,
-        api_endpoint=url,
-        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-    )
-    yield Cursor(client, connection)
-    await client.aclose()
+    return connection.cursor()
 
 
 @fixture

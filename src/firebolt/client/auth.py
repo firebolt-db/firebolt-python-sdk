@@ -7,6 +7,7 @@ from httpx import Request, Response, codes
 
 from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
 from firebolt.common.exception import AuthenticationError
+from firebolt.common.util import fix_url_schema
 
 
 class Auth(HttpxAuth):
@@ -33,11 +34,7 @@ class Auth(HttpxAuth):
         self.username = username
         self.password = password
         # Add schema to url if it's missing
-        self._api_endpoint = (
-            api_endpoint
-            if api_endpoint.startswith("http")
-            else f"https://{api_endpoint}"
-        )
+        self._api_endpoint = fix_url_schema(api_endpoint)
         self._token: Optional[str] = None
         self._expires: Optional[int] = None
 
