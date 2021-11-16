@@ -9,7 +9,7 @@ from httpx import HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.common.exception import ConnectionClosedError, InterfaceError
+from firebolt.common.exception import ConnectionClosedError, InterfaceError, FireboltEngineError
 from firebolt.common.urls import ACCOUNT_ENGINE_URL, ENGINE_BY_NAME_URL
 from firebolt.common.util import cached_property, fix_url_schema
 
@@ -39,7 +39,9 @@ async def _resolve_engine_url(
             )
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
-        except (JSONDecodeError, RequestError, HTTPStatusError, RuntimeError) as e:
+        except HTTPStatusError as e:
+            raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist")
+        except (JSONDecodeError, RequestError, RuntimeError) as e:
             raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
 
 
