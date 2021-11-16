@@ -5,7 +5,11 @@ from datetime import date, datetime
 from enum import Enum
 from typing import Union
 
-from ciso8601 import parse_datetime
+try:
+    from ciso8601 import parse_datetime  # type: ignore
+except ImportError:
+    parse_datetime = datetime.fromisoformat  # type: ignore
+
 
 from firebolt.common.exception import DataError, NotSupportedError
 from firebolt.common.util import cached_property
