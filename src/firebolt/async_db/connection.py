@@ -11,7 +11,7 @@ from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.urls import ACCOUNT_ENGINE_URL, ENGINE_BY_NAME_URL
-from firebolt.common.util import fix_url_schema
+from firebolt.common.util import cached_property, fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 
@@ -113,7 +113,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
 class BaseConnection:
     client_class: type
     cursor_class: type
-    __slots__ = ("_client", "_cursors", "database", "_is_closed")
+    __slots__ = ("_client", "_cursors", "database", "engine_url", "api_endpoint", "_is_closed")
 
     def __init__(
         self,
@@ -129,6 +129,8 @@ class BaseConnection:
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         )
+        self.api_endpoint = api_endpoint
+        self.engine_url = engine_url
         self.database = database
         self._cursors: List[BaseCursor] = []
         self._is_closed = False
@@ -157,6 +159,10 @@ class BaseConnection:
             c.close()
         await self._client.aclose()
         self._is_closed = True
+
+    @cached_property
+    def engine_name(self) -> str:
+        return self.engine_url.split('.')[0]
 
     @property
     def closed(self) -> bool:

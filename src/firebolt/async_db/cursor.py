@@ -35,6 +35,7 @@ from firebolt.common.exception import (
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
+    EngineNotRunningError,
 )
 
 if TYPE_CHECKING:
@@ -173,7 +174,7 @@ class BaseCursor:
         except (KeyError, JSONDecodeError) as err:
             raise DataError(f"Invalid query data format: {str(err)}")
 
-    def _raise_if_error(self, resp: Response) -> None:
+    async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
         if resp.status_code == codes.INTERNAL_SERVER_ERROR:
             raise OperationalError(
@@ -181,7 +182,24 @@ class BaseCursor:
             )
         if resp.status_code == codes.FORBIDDEN:
             raise ProgrammingError(resp.read().decode("utf-8"))
+        if resp.status_code == codes.SERVICE_UNAVAILABLE:
+            if not await self._is_engine_running():
+                raise EngineNotRunningError("Engine needs to be running to run queries against it")
         resp.raise_for_status()
+
+    async def _is_engine_running(self) -> bool:
+        """Verify if the engine is running"""
+        resp = await self._client.request(
+            # Full URL overrides the client url, which contains engine as a prefix
+            url=self.connection.api_endpoint + "/core/v1/account/engines",
+            method="GET",
+            params={
+                "filter.name_contains": self.connection.engine_name,
+                "filter.current_status_eq": "ENGINE_STATUS_RUNNING",
+            }
+        )
+        resp.raise_for_status()
+        return len(resp.json()["edges"]) > 0
 
     def _reset(self) -> None:
         """Clear all data stored from previous query."""
@@ -208,7 +226,7 @@ class BaseCursor:
             content=query,
         )
 
-        self._raise_if_error(resp)
+        await self._raise_if_error(resp)
         return resp
 
     @check_not_closed

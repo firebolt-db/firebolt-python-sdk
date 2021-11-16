@@ -1,5 +1,6 @@
 from logging import getLogger
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Callable, Any
+from functools import wraps
 
 from firebolt.common.urls import (
     ACCOUNT_ENGINE_BY_NAME_URL,
@@ -19,6 +20,7 @@ from firebolt.service.base import BaseService
 from firebolt.service.types import EngineOrder, EngineType, WarmupMethod
 
 logger = getLogger(__name__)
+
 
 
 class EngineService(BaseService):
