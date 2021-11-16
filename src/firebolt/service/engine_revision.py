@@ -1,3 +1,4 @@
+from firebolt.common.urls import ACCOUNT_ENGINE_REVISION_URL
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 from firebolt.service.base import BaseService
 
@@ -24,9 +25,11 @@ class EngineRevisionService(BaseService):
             The requested EngineRevision
         """
         response = self.client.get(
-            url=f"/core/v1/accounts/{key.account_id}"
-            f"/engines/{key.engine_id}"
-            f"/engineRevisions/{key.engine_revision_id}",
+            url=ACCOUNT_ENGINE_REVISION_URL.format(
+                account_id=key.account_id,
+                engine_id=key.engine_id,
+                revision_id=key.engine_revision_id,
+            ),
         )
         engine_spec: dict = response.json()["engine_revision"]
         return EngineRevision.parse_obj(engine_spec)

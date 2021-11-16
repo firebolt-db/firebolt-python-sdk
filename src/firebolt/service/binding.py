@@ -1,6 +1,10 @@
 from typing import List, Optional
 
 from firebolt.common.exception import AlreadyBoundError
+from firebolt.common.urls import (
+    ACCOUNT_BINDINGS_URL,
+    ACCOUNT_DATABASE_BINDING_URL,
+)
 from firebolt.common.util import prune_dict
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database
@@ -12,9 +16,11 @@ class BindingService(BaseService):
     def get_by_key(self, binding_key: BindingKey) -> Binding:
         """Get a binding by it's BindingKey"""
         response = self.client.get(
-            url=f"/core/v1/accounts/{binding_key.account_id}"
-            f"/databases/{binding_key.database_id}"
-            f"/bindings/{binding_key.engine_id}"
+            url=ACCOUNT_DATABASE_BINDING_URL.format(
+                account_id=binding_key.account_id,
+                database_id=binding_key.database_id,
+                engine_id=binding_key.engine_id,
+            )
         )
         binding: dict = response.json()["binding"]
         return Binding.parse_obj(binding)
@@ -44,7 +50,7 @@ class BindingService(BaseService):
             List of bindings matching the filter parameters.
         """
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/bindings",
+            url=ACCOUNT_BINDINGS_URL.format(account_id=self.account_id),
             params=prune_dict(
                 {
                     "page.first": 5000,  # FUTURE: pagination support w/ generator
@@ -105,9 +111,11 @@ class BindingService(BaseService):
         )
 
         response = self.client.post(
-            url=f"/core/v1/accounts/{self.account_id}"
-            f"/databases/{database.database_id}"
-            f"/bindings/{engine.engine_id}",
+            url=ACCOUNT_DATABASE_BINDING_URL.format(
+                account_id=self.account_id,
+                database_id=database.database_id,
+                engine_id=engine.engine_id,
+            ),
             json=binding.jsonable_dict(
                 by_alias=True, include={"binding_key": ..., "is_default_engine": ...}
             ),

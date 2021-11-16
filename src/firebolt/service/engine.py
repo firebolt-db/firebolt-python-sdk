@@ -1,6 +1,12 @@
 from logging import getLogger
 from typing import List, Optional, Union
 
+from firebolt.common.urls import (
+    ACCOUNT_ENGINE_BY_NAME_URL,
+    ACCOUNT_ENGINE_URL,
+    ACCOUNT_ENGINES_URL,
+    ENGINES_BY_IDS_URL,
+)
 from firebolt.common.util import prune_dict
 from firebolt.model import FireboltBaseModel
 from firebolt.model.engine import Engine, EngineSettings
@@ -19,7 +25,7 @@ class EngineService(BaseService):
     def get(self, id_: str) -> Engine:
         """Get an Engine from Firebolt by its id."""
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/engines/{id_}",
+            url=ACCOUNT_ENGINE_URL.format(account_id=self.account_id, engine_id=id_),
         )
         engine_entry: dict = response.json()["engine"]
         return Engine.parse_obj_with_service(obj=engine_entry, engine_service=self)
@@ -27,7 +33,7 @@ class EngineService(BaseService):
     def get_by_ids(self, ids: List[str]) -> List[Engine]:
         """Get multiple Engines from Firebolt by their ids."""
         response = self.client.post(
-            url="/core/v1/engines:getByIds",
+            url=ENGINES_BY_IDS_URL,
             json={
                 "engine_ids": [
                     {"account_id": self.account_id, "engine_id": engine_id}
@@ -43,7 +49,7 @@ class EngineService(BaseService):
     def get_by_name(self, name: str) -> Engine:
         """Get an Engine from Firebolt by its name."""
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/engines:getIdByName",
+            url=ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=self.account_id),
             params={"engine_name": name},
         )
         engine_id = response.json()["engine_id"]["engine_id"]
@@ -73,7 +79,7 @@ class EngineService(BaseService):
         if isinstance(order_by, str):
             order_by = EngineOrder[order_by]
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/engines",
+            url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),
             params=prune_dict(
                 {
                     "page.first": 5000,  # FUTURE: pagination support w/ generator
@@ -187,7 +193,7 @@ class EngineService(BaseService):
             engine_revision: Optional[EngineRevision]
 
         response = self.client.post(
-            url=f"/core/v1/accounts/{self.account_id}/engines",
+            url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),
             headers={"Content-type": "application/json"},
             json=_EngineCreateRequest(
                 account_id=self.account_id,
