@@ -36,6 +36,7 @@ from firebolt.common.exception import (
     ProgrammingError,
     QueryNotRunError,
     EngineNotRunningError,
+    FireboltDatabaseError,
 )
 
 if TYPE_CHECKING:
@@ -183,9 +184,24 @@ class BaseCursor:
         if resp.status_code == codes.FORBIDDEN:
             raise ProgrammingError(resp.read().decode("utf-8"))
         if resp.status_code == codes.SERVICE_UNAVAILABLE:
+            if not await self._is_db_available():
+                raise FireboltDatabaseError(f"Database {self.connection.database} does not exist")
             if not await self._is_engine_running():
-                raise EngineNotRunningError("Engine needs to be running to run queries against it")
+                raise EngineNotRunningError(f"Engine {self.connection.engine_name} needs to be running to run queries against it")
         resp.raise_for_status()
+
+    async def _is_db_available(self) -> bool:
+        """Verify if the engine is running"""
+        resp = await self._client.request(
+            # Full URL overrides the client url, which contains engine as a prefix
+            url=self.connection.api_endpoint + "/core/v1/account/databases",
+            method="GET",
+            params={
+                "filter.name_contains": self.connection.database,
+            }
+        )
+        resp.raise_for_status()
+        return len(resp.json()["edges"]) > 0
 
     async def _is_engine_running(self) -> bool:
         """Verify if the engine is running"""
