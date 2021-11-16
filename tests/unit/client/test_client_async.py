@@ -6,6 +6,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
 from firebolt.common import Settings
+from firebolt.common.urls import AUTH_URL
 from firebolt.common.util import fix_url_schema
 
 
@@ -67,7 +68,7 @@ async def test_client_different_auths(
 
     httpx_mock.add_callback(
         check_credentials_callback,
-        url=f"https://{DEFAULT_API_URL}/auth/v1/login",
+        url=AUTH_URL.format(api_endpoint=f"https://{DEFAULT_API_URL}"),
     )
 
     httpx_mock.add_callback(check_token_callback, url="https://url")

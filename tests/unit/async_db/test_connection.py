@@ -8,6 +8,7 @@ from firebolt.async_db import Connection, connect
 from firebolt.async_db._types import ColType
 from firebolt.common.exception import ConnectionClosedError, InterfaceError
 from firebolt.common.settings import Settings
+from firebolt.common.urls import ENGINE_BY_NAME_URL
 
 
 @mark.asyncio
@@ -149,8 +150,9 @@ async def test_connect_engine_name(
 
     # Mock engine id lookup by name
     httpx_mock.add_response(
-        url=f"https://{settings.server}/core/v1/account/engines:getIdByName?"
-        f"engine_name={engine_name}",
+        url=f"https://{settings.server}"
+        + ENGINE_BY_NAME_URL
+        + f"?engine_name={engine_name}",
         status_code=codes.OK,
         json={"engine_id": {"engine_id": engine_id}},
     )

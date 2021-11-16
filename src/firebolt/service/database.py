@@ -1,5 +1,10 @@
 from typing import List, Optional, Union
 
+from firebolt.common.urls import (
+    ACCOUNT_DATABASE_BY_NAME_URL,
+    ACCOUNT_DATABASE_URL,
+    ACCOUNT_DATABASES_URL,
+)
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
 from firebolt.service.base import BaseService
@@ -10,7 +15,7 @@ class DatabaseService(BaseService):
     def get(self, id_: str) -> Database:
         """Get a Database from Firebolt by its id."""
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/databases/{id_}",
+            url=ACCOUNT_DATABASE_URL.format(account_id=self.account_id, database_id=id_)
         )
         return Database.parse_obj_with_service(
             obj=response.json()["database"], database_service=self
@@ -24,7 +29,7 @@ class DatabaseService(BaseService):
     def get_id_by_name(self, name: str) -> str:
         """Get a Database id from Firebolt by its name."""
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/databases:getIdByName",
+            url=ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=self.account_id),
             params={"database_name": name},
         )
         database_id = response.json()["database_id"]["database_id"]
@@ -53,7 +58,7 @@ class DatabaseService(BaseService):
         if isinstance(order_by, str):
             order_by = DatabaseOrder[order_by]
         response = self.client.get(
-            url=f"/core/v1/accounts/{self.account_id}/databases",
+            url=ACCOUNT_DATABASES_URL.format(account_id=self.account_id),
             params={
                 "filter.name_contains": name_contains,
                 "filter.attached_engine_name_eq": attached_engine_name_eq,
@@ -91,7 +96,7 @@ class DatabaseService(BaseService):
         database = Database(name=name, compute_region_key=region_key)
 
         response = self.client.post(
-            url=f"/core/v1/accounts/{self.account_id}/databases",
+            url=ACCOUNT_DATABASES_URL.format(account_id=self.account_id),
             headers={"Content-type": "application/json"},
             json=_DatabaseCreateRequest(
                 account_id=self.account_id,
