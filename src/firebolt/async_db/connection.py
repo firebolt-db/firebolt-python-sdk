@@ -5,7 +5,7 @@ from json import JSONDecodeError
 from types import TracebackType
 from typing import Callable, List, Optional, Type
 
-from httpx import HTTPStatusError, RequestError, Timeout
+from httpx import HTTPStatusError, RequestError, Timeout, URL
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
@@ -164,7 +164,7 @@ class BaseConnection:
 
     @cached_property
     def engine_name(self) -> str:
-        return self.engine_url.split('.')[0]
+        return URL(self.engine_url).host.split('.')[0]
 
     @property
     def closed(self) -> bool:
