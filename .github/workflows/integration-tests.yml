@@ -58,8 +58,8 @@ jobs:
           ENGINE_NAME: {{ steps.engine.outputs.name }}
           ENGINE_URL: {{ steps.engine.outputs.url }}
           API_ENDPOINT: "api.dev.firebolt.io"
-          run: |
-            pytest -o log_cli=true -o log_cli_level=INFO tests/integration
+        run: |
+          pytest -o log_cli=true -o log_cli_level=INFO tests/integration
       - name: Stop engine and database
         env:
           FIREBOLT_USER: {{ secrets.FIREBOLT_USERNAME }}
