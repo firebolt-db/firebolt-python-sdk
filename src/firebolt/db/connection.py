@@ -26,13 +26,15 @@ class Connection(AsyncBaseConnection):
             database - Firebolt database name
             username - Firebolt account username
             password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+            account_name - Firebolt account name. This must be specified for users with
+                           multiple accounts.
+            api_endpoint(optional) - Firebolt API endpoint. Used for authentication.
 
         Methods:
             cursor - create new Cursor object
-            close - close the Connection and all it's cursors
+            close - close the Connection and all its cursors
 
-        Firebolt currenly doesn't support transactions so commit and rollback methods
+        Firebolt doesn't currently support transactions, so commit and rollback methods
         are not implemented.
         """
     )
@@ -49,6 +51,7 @@ class Connection(AsyncBaseConnection):
 
     @wraps(AsyncBaseConnection.cursor)
     def cursor(self) -> Cursor:
+        """Create new cursor object."""
         with self._closing_lock.gen_rlock():
             c = super().cursor()
             assert isinstance(c, Cursor)  # typecheck
@@ -56,6 +59,7 @@ class Connection(AsyncBaseConnection):
 
     @wraps(AsyncBaseConnection._aclose)
     def close(self) -> None:
+        """Close connection and all underlying cursors."""
         with self._closing_lock.gen_wlock():
             return async_to_sync(super()._aclose)()
 

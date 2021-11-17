@@ -66,26 +66,46 @@ class Cursor(AsyncBaseCursor):
     def executemany(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
+        cleandoc(
+            """
+            Prepare and execute a database query against all parameter
+            sequences provided. Return last query row count.
+            """
+        )
         with self._query_lock.gen_wlock():
             return async_to_sync(super().executemany)(query, parameters_seq)
 
     @wraps(AsyncBaseCursor._get_next_range)
     def _get_next_range(self, size: int) -> Tuple[int, int]:
+        cleandoc(
+            """
+            Return range of next rows of size (if possible),
+            and update _idx to point to the end of this range
+            """
+        )
         with self._idx_lock:
             return super()._get_next_range(size)
 
     @wraps(AsyncBaseCursor.fetchone)
     def fetchone(self) -> Optional[List[ColType]]:
+        """Fetch the next row of a query result set."""
         with self._query_lock.gen_rlock():
             return super().fetchone()
 
     @wraps(AsyncBaseCursor.fetchmany)
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
+        cleandoc(
+            """
+            Fetch the next set of rows of a query result,
+            cursor.arraysize is default size.
+            """
+        )
         with self._query_lock.gen_rlock():
             return super().fetchmany(size)
 
     @wraps(AsyncBaseCursor.fetchall)
     def fetchall(self) -> List[List[ColType]]:
+        """Fetch all remaining rows of a query result."""
         with self._query_lock.gen_rlock():
             return super().fetchall()
 

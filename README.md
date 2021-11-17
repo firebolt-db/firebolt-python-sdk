@@ -13,7 +13,8 @@ These parameters are used to connect to a Firebolt database:
 - **password** - account password
 
 Optional parameters
-- **api_endpoint** - api hostname for logging in. Defaults to `api.app.firebolt.io`.
+- **api_endpoint** - API hostname for logging in. Defaults to `api.app.firebolt.io`.
+- **account_name** - For users with more than one account. If not specified uses default account.
 
 ## Examples
 See [PEP-249](https://www.python.org/dev/peps/pep-0249) for the DB API reference and specifications. An example [jupyter notebook](https://github.com/firebolt-db/firebolt-sdk/tree/main/examples/dbapi.ipynb) is included to illustrate the use of the Firebolt API.

@@ -10,10 +10,11 @@ To use the SDK, you generally will want to set the following environment variabl
 FIREBOLT_USER='email@domain.com'
 FIREBOLT_PASSWORD='*****'
 FIREBOLT_SERVER='api.app.firebolt.io'
+FIREBOLT_ACCOUNT='account_name'
 FIREBOLT_DEFAULT_REGION='us-east-1'
 ```
 
-* You can store these in a `.env` file 
+* You can store these in a `.env` file.
 * environment variables on your system always take precedence over those in `.env`
 
 Once the environment variables are defined (either on your system or in `.env`),
@@ -38,11 +39,12 @@ rm = ResourceManager(settings=Settings(
     user="email@domain.com",
     password=SecretStr("*****"),
     default_region="us-east-1",
+    account_name="*****"
 ))
 print(rm.client.account_id) # see your account id
 ```
 
-Under the hood, configuration works via Pydantic, 
+Under the hood, configuration works via Pydantic,
 see [here](https://pydantic-docs.helpmanual.io/usage/settings/).
 
 ### Contributing

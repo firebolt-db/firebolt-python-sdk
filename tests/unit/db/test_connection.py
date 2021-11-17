@@ -139,7 +139,8 @@ def test_connect_engine_name(
     # Mock engine id lookup by name
     httpx_mock.add_response(
         url=f"https://{settings.server}/core/v1"
-        f"/account/engines:getIdByName?engine_name={engine_name}",
+        f"/accounts/{account_id}"
+        f"/engines:getIdByName?engine_name={engine_name}",
         status_code=codes.OK,
         json={"engine_id": {"engine_id": engine_id}},
     )
@@ -150,5 +151,6 @@ def test_connect_engine_name(
         username="u",
         password="p",
         api_endpoint=settings.server,
+        account_name=settings.account_name,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)

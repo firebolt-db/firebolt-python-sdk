@@ -64,6 +64,7 @@ async def test_cursor_initialized(
                 username="u",
                 password="p",
                 api_endpoint=settings.server,
+                account_name=settings.account_name,
             )
         ) as connection:
             cursor = connection.cursor()
@@ -161,5 +162,6 @@ async def test_connect_engine_name(
         username="u",
         password="p",
         api_endpoint=settings.server,
+        account_name=settings.account_name,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
