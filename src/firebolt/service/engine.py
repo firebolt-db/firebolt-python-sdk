@@ -1,6 +1,5 @@
 from logging import getLogger
 from typing import List, Optional, Union
-from functools import wraps
 
 from firebolt.common.urls import (
     ACCOUNT_ENGINE_BY_NAME_URL,
