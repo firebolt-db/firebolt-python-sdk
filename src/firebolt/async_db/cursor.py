@@ -191,7 +191,8 @@ class BaseCursor:
                 )
             if not await self.is_engine_running():
                 raise EngineNotRunningError(
-                    f"Engine {self.connection.engine_name} needs to be running to run queries against it"
+                    f"Firebolt engine {self.connection.engine_name} "
+                    "needs to be running to run queries against it"
                 )
         resp.raise_for_status()
 
