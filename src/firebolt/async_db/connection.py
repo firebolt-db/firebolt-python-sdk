@@ -5,11 +5,15 @@ from json import JSONDecodeError
 from types import TracebackType
 from typing import Callable, List, Optional, Type
 
-from httpx import HTTPStatusError, RequestError, Timeout, URL
+from httpx import URL, HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.common.exception import ConnectionClosedError, InterfaceError, FireboltEngineError
+from firebolt.common.exception import (
+    ConnectionClosedError,
+    FireboltEngineError,
+    InterfaceError,
+)
 from firebolt.common.urls import ACCOUNT_ENGINE_URL, ENGINE_BY_NAME_URL
 from firebolt.common.util import cached_property, fix_url_schema
 
@@ -115,7 +119,14 @@ def async_connect_factory(connection_class: Type) -> Callable:
 class BaseConnection:
     client_class: type
     cursor_class: type
-    __slots__ = ("_client", "_cursors", "database", "engine_url", "api_endpoint", "_is_closed")
+    __slots__ = (
+        "_client",
+        "_cursors",
+        "database",
+        "engine_url",
+        "api_endpoint",
+        "_is_closed",
+    )
 
     def __init__(
         self,
@@ -164,7 +175,7 @@ class BaseConnection:
 
     @cached_property
     def engine_name(self) -> str:
-        return URL(self.engine_url).host.split('.')[0]
+        return URL(self.engine_url).host.split(".")[0]
 
     @property
     def closed(self) -> bool:

@@ -32,11 +32,11 @@ from firebolt.client import AsyncClient
 from firebolt.common.exception import (
     CursorClosedError,
     DataError,
+    EngineNotRunningError,
+    FireboltDatabaseError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
-    EngineNotRunningError,
-    FireboltDatabaseError,
 )
 from firebolt.common.urls import DATABASES_URL, ENGINES_URL
 
@@ -186,35 +186,42 @@ class BaseCursor:
             raise ProgrammingError(resp.read().decode("utf-8"))
         if resp.status_code == codes.SERVICE_UNAVAILABLE:
             if not await self.is_db_available():
-                raise FireboltDatabaseError(f"Database {self.connection.database} does not exist")
+                raise FireboltDatabaseError(
+                    f"Database {self.connection.database} does not exist"
+                )
             if not await self.is_engine_running():
-                raise EngineNotRunningError(f"Engine {self.connection.engine_name} needs to be running to run queries against it")
+                raise EngineNotRunningError(
+                    f"Engine {self.connection.engine_name} needs to be running to run queries against it"
+                )
         resp.raise_for_status()
 
     async def is_db_available(self) -> bool:
         """Verify if the database exists"""
-        resp = await self._filter_request(DATABASES_URL, {
-                "filter.name_contains": self.connection.database
-            })
+        resp = await self._filter_request(
+            DATABASES_URL, {"filter.name_contains": self.connection.database}
+        )
         resp.raise_for_status()
         return len(resp.json()["edges"]) > 0
 
     async def is_engine_running(self) -> bool:
         """Verify if the engine is running"""
-        resp = await self._filter_request(ENGINES_URL, {
+        resp = await self._filter_request(
+            ENGINES_URL,
+            {
                 "filter.name_contains": self.connection.engine_name,
                 "filter.current_status_eq": "ENGINE_STATUS_RUNNING",
-            })
+            },
+        )
         resp.raise_for_status()
         return len(resp.json()["edges"]) > 0
 
     async def _filter_request(self, endpoint: str, filters: dict) -> Response:
         resp = await self._client.request(
-                    # Full URL overrides the client url, which contains engine as a prefix
-                    url=self.connection.api_endpoint + endpoint,
-                    method="GET",
-                    params=filters
-                )
+            # Full URL overrides the client url, which contains engine as a prefix
+            url=self.connection.api_endpoint + endpoint,
+            method="GET",
+            params=filters,
+        )
         return resp
 
     def _reset(self) -> None:

@@ -10,10 +10,10 @@ from firebolt.async_db._types import Column
 from firebolt.async_db.cursor import ColType, CursorState
 from firebolt.common.exception import (
     CursorClosedError,
+    EngineNotRunningError,
+    FireboltDatabaseError,
     OperationalError,
     QueryNotRunError,
-    FireboltDatabaseError,
-    EngineNotRunningError,
 )
 
 
@@ -233,8 +233,8 @@ async def test_cursor_execute_error(
             url=query_url,
         )
         httpx_mock.add_response(
-            json={"edges":[]},
-            url=get_databases_url+"?filter.name_contains=database",
+            json={"edges": []},
+            url=get_databases_url + "?filter.name_contains=database",
         )
         with raises(FireboltDatabaseError) as excinfo:
             await query()
@@ -246,14 +246,15 @@ async def test_cursor_execute_error(
             url=query_url,
         )
         httpx_mock.add_response(
-            json={"edges":["dummy"]}, # indicate db exists
-            url=get_databases_url+"?filter.name_contains=database",
+            json={"edges": ["dummy"]},  # indicate db exists
+            url=get_databases_url + "?filter.name_contains=database",
         )
         httpx_mock.add_response(
-            json={"edges":[]},
-            url= (get_engines_url +
-                  "?filter.name_contains=api"
-                  "&filter.current_status_eq=ENGINE_STATUS_RUNNING"),
+            json={"edges": []},
+            url=(
+                get_engines_url + "?filter.name_contains=api"
+                "&filter.current_status_eq=ENGINE_STATUS_RUNNING"
+            ),
         )
         with raises(EngineNotRunningError) as excinfo:
             await query()

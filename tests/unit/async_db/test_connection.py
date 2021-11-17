@@ -6,7 +6,11 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Connection, connect
 from firebolt.async_db._types import ColType
-from firebolt.common.exception import ConnectionClosedError, InterfaceError, FireboltEngineError
+from firebolt.common.exception import (
+    ConnectionClosedError,
+    FireboltEngineError,
+    InterfaceError,
+)
 from firebolt.common.settings import Settings
 from firebolt.common.urls import ENGINE_BY_NAME_URL
 
