@@ -30,7 +30,7 @@ jobs:
           FIREBOLT_SERVER: "api.dev.firebolt.io"
           DATABASE: "{{ steps.database.outputs.name }}"
         run: |
-          python start_database.py 
+          python .github/workflows/start_database.py
 
       - name: Create engine
         id: engine
@@ -41,7 +41,7 @@ jobs:
           FIREBOLT_SERVER: "api.dev.firebolt.io"
           DATABASE: "{{ steps.database.outputs.name }}"
         run: |
-          output=$(python start_engine.py)
+          output=$(python .github/workflows/start_engine.py)
           arr=($output)
           engine_name="${arr[0]}"
           engine_url="${arr[1]}"
@@ -66,5 +66,5 @@ jobs:
           FIREBOLT_SERVER: "api.dev.firebolt.io"
           DATABASE: "{{ steps.database.outputs.name }}"
         run: |
-          python stop_all.py
+          python .github/workflows/stop_all.py
         
