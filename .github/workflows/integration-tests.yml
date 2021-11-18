@@ -52,7 +52,7 @@ jobs:
         env:
           USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
           PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
-          DATABASE: ${{ steps.database.outputs.name }}
+          DATABASE_NAME: ${{ steps.database.outputs.name }}
           ENGINE_NAME: ${{ steps.engine.outputs.name }}
           ENGINE_URL: ${{ steps.engine.outputs.url }}
           API_ENDPOINT: "api.dev.firebolt.io"
