@@ -1,11 +1,9 @@
 name: Run integration tests
-
-on: [workflow_dispatch]
-
+on:
+  workflow_dispatch:
 jobs:
   tests:
     runs-on: ubuntu-latest
-
     steps:
       - name: Check out code
         uses: actions/checkout@v2
