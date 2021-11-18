@@ -80,7 +80,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         api_endpoint = fix_url_schema(api_endpoint)
         # This parameters are optional in function signature,
         # but are required to connect.
-        # It's recomended to make them kwargs by PEP 249
+        # It's recommended to make them kwargs by PEP 249
         for param, name in (
             (database, "database"),
             (username, "username"),

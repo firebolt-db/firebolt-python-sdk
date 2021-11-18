@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional
 
 from firebolt.common.exception import AlreadyBoundError
@@ -10,6 +11,8 @@ from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
 from firebolt.service.base import BaseService
+
+logger = logging.getLogger(__name__)
 
 
 class BindingService(BaseService):
@@ -66,6 +69,9 @@ class BindingService(BaseService):
         """Get the Database to which an engine is bound, if any."""
         try:
             binding = self.get_many(engine_id=engine.engine_id)[0]
+        except IndexError:
+            return None
+        try:
             return self.resource_manager.databases.get(id_=binding.database_id)
         except KeyError:
             return None
@@ -101,6 +107,11 @@ class BindingService(BaseService):
                 f"to {existing_database.name}!"
             )
 
+        logger.info(
+            f"Attaching Engine (engine_id={engine.engine_id}, name={engine.name}) "
+            f"to Database (database_id={database.database_id}, "
+            f"name={database.name})"
+        )
         binding = Binding(
             binding_key=BindingKey(
                 account_id=self.account_id,

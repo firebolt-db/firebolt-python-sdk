@@ -211,10 +211,10 @@ class Engine(FireboltBaseModel):
             engine.current_status_summary
             == EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
         ):
-            # logger.info(
-            #     f"Engine (engine_id={self.engine_id}, name={self.name}) "
-            #     f"is already running."
-            # )
+            logger.info(
+                f"Engine (engine_id={self.engine_id}, name={self.name}) "
+                f"is already running."
+            )
             return engine
 
         # wait for engine to stop first, if it's already stopping
@@ -223,29 +223,30 @@ class Engine(FireboltBaseModel):
             engine.current_status_summary
             == EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING
         ):
-            # logger.info(
-            #     f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
-            #     f"is in currently stopping, waiting for it to stop first."
-            # )
+            logger.info(
+                f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
+                f"is in currently stopping, waiting for it to stop first."
+            )
             while (
                 engine.current_status_summary
                 != EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED
             ):
                 wait(
                     seconds=5,
-                    error_message=f"Engine (engine_id={engine.engine_id}, name={engine.name}) "  # noqa: E501
+                    error_message=f"Engine "
+                    f"(engine_id={engine.engine_id}, name={engine.name}) "
                     f"did not stop within {wait_timeout_seconds} seconds.",
                 )
                 engine = engine.get_latest()
 
-            # logger.info(
-            #     f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
-            # )
+            logger.info(
+                f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
+            )
 
         engine = self._send_start()
-        # logger.info(
-        #     f"Starting Engine (engine_id={engine.engine_id}, name={engine.name})"
-        # )
+        logger.info(
+            f"Starting Engine (engine_id={engine.engine_id}, name={engine.name})"
+        )
 
         # wait for engine to start
         while (
@@ -257,13 +258,13 @@ class Engine(FireboltBaseModel):
                 seconds=5,
                 error_message=f"Could not start engine within {wait_timeout_seconds} seconds.",  # noqa: E501
             )
-            # previous_status_summary = engine.current_status_summary
+            previous_status_summary = engine.current_status_summary
             engine = engine.get_latest()
-            # if engine.current_status_summary != previous_status_summary:
-            #     logger.info(
-            #         f"Engine status_summary="
-            #         f"{getattr(engine.current_status_summary, 'name')}"
-            #     )
+            if engine.current_status_summary != previous_status_summary:
+                logger.info(
+                    f"Engine status_summary="
+                    f"{getattr(engine.current_status_summary, 'name')}"
+                )
 
         return engine
 
@@ -285,6 +286,7 @@ class Engine(FireboltBaseModel):
                 account_id=self._service.account_id, engine_id=self.engine_id
             )
         )
+        logger.info(f"Stopping Engine (engine_id={self.engine_id}, name={self.name})")
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
@@ -296,6 +298,7 @@ class Engine(FireboltBaseModel):
                 account_id=self._service.account_id, engine_id=self.engine_id
             ),
         )
+        logger.info(f"Deleting Engine (engine_id={self.engine_id}, name={self.name})")
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
