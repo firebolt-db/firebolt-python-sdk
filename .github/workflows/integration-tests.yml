@@ -32,7 +32,7 @@ jobs:
         run: |
           python .github/workflows/start_database.py
 
-      - name: Create xengine
+      - name: Create engine
         id: engine
         env:
           FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
