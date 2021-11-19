@@ -5,7 +5,7 @@ from json import JSONDecodeError
 from types import TracebackType
 from typing import Callable, List, Optional, Type
 
-from httpx import URL, HTTPStatusError, RequestError, Timeout
+from httpx import HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
@@ -15,7 +15,7 @@ from firebolt.common.exception import (
     InterfaceError,
 )
 from firebolt.common.urls import ACCOUNT_ENGINE_URL, ENGINE_BY_NAME_URL
-from firebolt.common.util import cached_property, fix_url_schema
+from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 
@@ -52,7 +52,6 @@ async def _resolve_engine_url(
             # missing engine
             raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist")
         except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
-            print("Re-raised")
             raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
 
 
@@ -179,11 +178,6 @@ class BaseConnection:
             c.close()
         await self._client.aclose()
         self._is_closed = True
-
-    @cached_property
-    def _engine_name(self) -> str:
-        """Set to private since url not guaranteed to always be in this format."""
-        return URL(self.engine_url).host.split(".")[0]
 
     @property
     def closed(self) -> bool:

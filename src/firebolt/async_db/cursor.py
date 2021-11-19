@@ -189,11 +189,9 @@ class BaseCursor:
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
                 )
-            if not await is_engine_running(
-                self.connection, self.connection._engine_name
-            ):
+            if not await is_engine_running(self.connection, self.connection.engine_url):
                 raise EngineNotRunningError(
-                    f"Firebolt engine {self.connection._engine_name} "
+                    f"Firebolt engine {self.connection.engine_url} "
                     "needs to be running to run queries against it"
                 )
         resp.raise_for_status()
