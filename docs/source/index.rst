@@ -11,6 +11,8 @@ Welcome to firebolt-python-sdk's documentation!
    :caption: Contents:
 
 
+   firebolt
+
 
 Indices and tables
 ==================
