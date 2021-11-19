@@ -59,12 +59,8 @@ jobs:
         run: |
           pytest -o log_cli=true -o log_cli_level=INFO tests/integration
 
-  teardown:
-    if: always()
-    needs: [tests]
-    runs-on: ubuntu-latest
-    steps:
       - name: Stop engine and database
+        if: always()
         env:
           FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
           FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
