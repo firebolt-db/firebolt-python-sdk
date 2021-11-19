@@ -28,6 +28,7 @@ from firebolt.async_db._types import (
     parse_type,
     parse_value,
 )
+from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.client import AsyncClient
 from firebolt.common.exception import (
     CursorClosedError,
@@ -38,7 +39,6 @@ from firebolt.common.exception import (
     ProgrammingError,
     QueryNotRunError,
 )
-from firebolt.common.urls import DATABASES_URL, ENGINES_URL
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
@@ -185,45 +185,18 @@ class BaseCursor:
         if resp.status_code == codes.FORBIDDEN:
             raise ProgrammingError(resp.read().decode("utf-8"))
         if resp.status_code == codes.SERVICE_UNAVAILABLE:
-            if not await self.is_db_available():
+            if not await is_db_available(self.connection, self.connection.database):
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
                 )
-            if not await self.is_engine_running():
+            if not await is_engine_running(
+                self.connection, self.connection._engine_name
+            ):
                 raise EngineNotRunningError(
-                    f"Firebolt engine {self.connection.engine_name} "
+                    f"Firebolt engine {self.connection._engine_name} "
                     "needs to be running to run queries against it"
                 )
         resp.raise_for_status()
-
-    async def is_db_available(self) -> bool:
-        """Verify if the database exists"""
-        resp = await self._filter_request(
-            DATABASES_URL, {"filter.name_contains": self.connection.database}
-        )
-        resp.raise_for_status()
-        return len(resp.json()["edges"]) > 0
-
-    async def is_engine_running(self) -> bool:
-        """Verify if the engine is running"""
-        resp = await self._filter_request(
-            ENGINES_URL,
-            {
-                "filter.name_contains": self.connection.engine_name,
-                "filter.current_status_eq": "ENGINE_STATUS_RUNNING",
-            },
-        )
-        resp.raise_for_status()
-        return len(resp.json()["edges"]) > 0
-
-    async def _filter_request(self, endpoint: str, filters: dict) -> Response:
-        resp = await self._client.request(
-            # Full URL overrides the client url, which contains engine as a prefix
-            url=self.connection.api_endpoint + endpoint,
-            method="GET",
-            params=filters,
-        )
-        return resp
 
     def _reset(self) -> None:
         """Clear all data stored from previous query."""

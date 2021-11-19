@@ -160,7 +160,7 @@ async def test_connect_engine_name(
         url=f"https://{settings.server}"
         + ENGINE_BY_NAME_URL
         + f"?engine_name={engine_name}",
-        status_code=codes.INTERNAL_SERVER_ERROR,
+        status_code=codes.NOT_FOUND,
     )
 
     with raises(FireboltEngineError) as exc_info:

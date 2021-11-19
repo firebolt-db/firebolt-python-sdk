@@ -43,9 +43,16 @@ async def _resolve_engine_url(
             )
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
-        except HTTPStatusError:
+        except HTTPStatusError as e:
+            # Engine error would be 404
+            if e.response.status_code != 404:
+                raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
+            # Once this is point is reached we've already authenticated with
+            # the backend so it's safe to assume the cause of the error is
+            # missing engine
             raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist")
-        except (JSONDecodeError, RequestError, RuntimeError) as e:
+        except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
+            print("Re-raised")
             raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
 
 
@@ -174,7 +181,8 @@ class BaseConnection:
         self._is_closed = True
 
     @cached_property
-    def engine_name(self) -> str:
+    def _engine_name(self) -> str:
+        """Set to private since url not guaranteed to always be in this format."""
         return URL(self.engine_url).host.split(".")[0]
 
     @property
