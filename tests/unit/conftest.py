@@ -11,6 +11,8 @@ from firebolt.common.urls import (
     ACCOUNT_ENGINE_URL,
     ACCOUNT_URL,
     AUTH_URL,
+    DATABASES_URL,
+    ENGINES_URL,
     PROVIDERS_URL,
 )
 from firebolt.model.provider import Provider
@@ -190,3 +192,13 @@ def get_providers_callback(get_providers_url: str, provider: Provider) -> Callab
         )
 
     return do_mock
+
+
+@pytest.fixture
+def get_engines_url(settings: Settings) -> str:
+    return f"https://{settings.server}{ENGINES_URL}"
+
+
+@pytest.fixture
+def get_databases_url(settings: Settings) -> str:
+    return f"https://{settings.server}{DATABASES_URL}"
