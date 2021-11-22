@@ -48,6 +48,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
+        account_name: str = None,
     ) -> Connection:
         cleandoc(
             """
@@ -57,6 +58,8 @@ def async_connect_factory(connection_class: Type) -> Callable:
             database - name of the database to connect
             username - user name to use for authentication
             password - password to use for authentication
+            account_name - for clients with multiple accounts;
+                if None uses default account
             engine_name - name of the engine to connect to
             engine_url - engine endpoint to use
             note: either engine_name or engine_url should be provided, but not both
@@ -102,7 +105,14 @@ def async_connect_factory(connection_class: Type) -> Callable:
         assert engine_url is not None
 
         engine_url = fix_url_schema(engine_url)
-        return connection_class(engine_url, database, username, password, api_endpoint)
+        return connection_class(
+            engine_url,
+            database,
+            username,
+            password,
+            api_endpoint,
+            account_name,
+        )
 
     return connect_inner
 
