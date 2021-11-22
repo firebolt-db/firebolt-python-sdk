@@ -1,0 +1,72 @@
+name: Run integration tests
+on:
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+    
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+    
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+
+      - name: Generate database name
+        id: database
+        run: echo "::set-output name=name::integration_testing_$(date +'%s')"
+
+      - name: Create database
+        env:
+          FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
+          FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+          FIREBOLT_DEFAULT_REGION: "us-east-1"
+          FIREBOLT_SERVER: "api.dev.firebolt.io"
+          DATABASE: ${{ steps.database.outputs.name }}
+        run: |
+          python .github/workflows/start_database.py
+
+      - name: Create engine
+        id: engine
+        env:
+          FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
+          FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+          FIREBOLT_DEFAULT_REGION: "us-east-1"
+          FIREBOLT_SERVER: "api.dev.firebolt.io"
+          DATABASE: ${{ steps.database.outputs.name }}
+        run: |
+          output=$(python .github/workflows/start_engine.py)
+          arr=($output)
+          engine_name="${arr[0]}"
+          engine_url="${arr[1]}"
+          echo "::set-output name=name::$engine_name"
+          echo "::set-output name=url::$engine_url"
+
+      - name: Run integration tests
+        env:
+          USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
+          PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+          DATABASE_NAME: ${{ steps.database.outputs.name }}
+          ENGINE_NAME: ${{ steps.engine.outputs.name }}
+          ENGINE_URL: ${{ steps.engine.outputs.url }}
+          API_ENDPOINT: "api.dev.firebolt.io"
+        run: |
+          pytest -o log_cli=true -o log_cli_level=INFO tests/integration
+
+      - name: Stop engine and database
+        if: always()
+        env:
+          FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
+          FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+          FIREBOLT_DEFAULT_REGION: "us-east-1"
+          FIREBOLT_SERVER: "api.dev.firebolt.io"
+          DATABASE: ${{ steps.database.outputs.name }}
+        run: |
+          python .github/workflows/stop_all.py
+        

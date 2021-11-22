@@ -12,6 +12,7 @@ from firebolt.common.exception import NoAttachedDatabaseError
 from firebolt.common.urls import (
     ACCOUNT_ENGINE_START_URL,
     ACCOUNT_ENGINE_STOP_URL,
+    ACCOUNT_ENGINE_URL,
 )
 from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
@@ -291,9 +292,9 @@ class Engine(FireboltBaseModel):
     def delete(self) -> Engine:
         """Delete an Engine from Firebolt."""
         response = self._service.client.delete(
-            url=f"/core/v1"
-            f"/accounts/{self._service.account_id}"
-            f"/engines/{self.engine_id}",
+            url=ACCOUNT_ENGINE_URL.format(
+                account_id=self._service.account_id, engine_id=self.engine_id
+            ),
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
