@@ -1,5 +1,6 @@
 from typing import Dict, List, NamedTuple, Optional
 
+from firebolt.common.urls import INSTANCE_TYPES_URL
 from firebolt.common.util import cached_property
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.service.base import BaseService
@@ -16,9 +17,7 @@ class InstanceTypeService(BaseService):
     @cached_property
     def instance_types(self) -> List[InstanceType]:
         """List of instance types available on Firebolt."""
-        response = self.client.get(
-            url="/compute/v1/instanceTypes", params={"page.first": 5000}
-        )
+        response = self.client.get(url=INSTANCE_TYPES_URL, params={"page.first": 5000})
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     @cached_property

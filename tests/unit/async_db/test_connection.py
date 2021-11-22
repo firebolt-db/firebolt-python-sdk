@@ -6,8 +6,13 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Connection, connect
 from firebolt.async_db._types import ColType
-from firebolt.common.exception import ConnectionClosedError, InterfaceError
+from firebolt.common.exception import (
+    ConnectionClosedError,
+    FireboltEngineError,
+    InterfaceError,
+)
 from firebolt.common.settings import Settings
+from firebolt.common.urls import ENGINE_BY_NAME_URL
 
 
 @mark.asyncio
@@ -94,7 +99,8 @@ async def test_connect_empty_parameters():
                 "engine_url": "engine_url",
                 **{p: p for p in params if p != param},
             }
-            await connect(**kwargs)
+            async with await connect(**kwargs):
+                pass
         assert str(exc_info.value) == f"{param} is required to connect."
 
 
@@ -120,23 +126,25 @@ async def test_connect_engine_name(
     """connect properly handles engine_name"""
 
     with raises(InterfaceError) as exc_info:
-        await connect(
+        async with await connect(
             engine_url="engine_url",
             engine_name="engine_name",
             database="db",
             username="username",
             password="password",
-        )
+        ):
+            pass
     assert str(exc_info.value).startswith(
         "Both engine_name and engine_url are provided"
     )
 
     with raises(InterfaceError) as exc_info:
-        await connect(
+        async with await connect(
             database="db",
             username="username",
             password="password",
-        )
+        ):
+            pass
     assert str(exc_info.value).startswith(
         "Neither engine_name nor engine_url are provided"
     )
@@ -148,10 +156,30 @@ async def test_connect_engine_name(
 
     engine_name = settings.server.split(".")[0]
 
+    # Mock engine id lookup error
+    httpx_mock.add_response(
+        url=f"https://{settings.server}"
+        + ENGINE_BY_NAME_URL
+        + f"?engine_name={engine_name}",
+        status_code=codes.NOT_FOUND,
+    )
+
+    with raises(FireboltEngineError) as exc_info:
+        async with await connect(
+            database="db",
+            username="username",
+            password="password",
+            engine_name=engine_name,
+            api_endpoint=settings.server,
+            account_name=settings.account_name,
+        ):
+            pass
+
     # Mock engine id lookup by name
     httpx_mock.add_response(
-        url=f"https://{settings.server}/core/v1/account/engines:getIdByName?"
-        f"engine_name={engine_name}",
+        url=f"https://{settings.server}"
+        + ENGINE_BY_NAME_URL
+        + f"?engine_name={engine_name}",
         status_code=codes.OK,
         json={"engine_id": {"engine_id": engine_id}},
     )

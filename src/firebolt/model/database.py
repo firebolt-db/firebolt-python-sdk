@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from pydantic import Field, PrivateAttr
 
 from firebolt.common.exception import AttachedEngineInUseError
+from firebolt.common.urls import ACCOUNT_DATABASE_URL
 from firebolt.model import FireboltBaseModel
 from firebolt.model.region import RegionKey
 from firebolt.service.types import EngineStatusSummary
@@ -103,9 +104,9 @@ class Database(FireboltBaseModel):
                 raise AttachedEngineInUseError(method_name="delete")
 
         response = self._service.client.delete(
-            url=f"/core/v1"
-            f"/accounts/{self._service.account_id}"
-            f"/databases/{self.database_id}",
+            url=ACCOUNT_DATABASE_URL.format(
+                account_id=self._service.account_id, database_id=self.database_id
+            ),
             headers={"Content-type": "application/json"},
         )
         return Database.parse_obj_with_service(

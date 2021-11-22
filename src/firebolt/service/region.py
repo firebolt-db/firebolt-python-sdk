@@ -1,5 +1,6 @@
 from typing import Dict, List
 
+from firebolt.common.urls import REGIONS_URL
 from firebolt.common.util import cached_property
 from firebolt.model.region import Region, RegionKey
 from firebolt.service.base import BaseService
@@ -19,9 +20,7 @@ class RegionService(BaseService):
     @cached_property
     def regions(self) -> List[Region]:
         """List of available AWS Regions on Firebolt."""
-        response = self.client.get(
-            url="/compute/v1/regions", params={"page.first": 5000}
-        )
+        response = self.client.get(url=REGIONS_URL, params={"page.first": 5000})
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     @cached_property

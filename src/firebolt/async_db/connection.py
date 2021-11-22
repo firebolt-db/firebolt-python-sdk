@@ -9,7 +9,12 @@ from httpx import HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.common.exception import ConnectionClosedError, InterfaceError
+from firebolt.common.exception import (
+    ConnectionClosedError,
+    FireboltEngineError,
+    InterfaceError,
+)
+from firebolt.common.urls import ACCOUNT_ENGINE_URL, ENGINE_BY_NAME_URL
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
@@ -25,18 +30,28 @@ async def _resolve_engine_url(
     ) as client:
         try:
             response = await client.get(
-                url="/core/v1/account/engines:getIdByName",
+                url=ENGINE_BY_NAME_URL,
                 params={"engine_name": engine_name},
             )
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
             account_id = await client.account_id
             response = await client.get(
-                url=f"/core/v1/accounts/{account_id}/engines/{engine_id}",
+                url=ACCOUNT_ENGINE_URL.format(
+                    account_id=account_id, engine_id=engine_id
+                ),
             )
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
-        except (JSONDecodeError, RequestError, HTTPStatusError, RuntimeError) as e:
+        except HTTPStatusError as e:
+            # Engine error would be 404
+            if e.response.status_code != 404:
+                raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
+            # Once this is point is reached we've already authenticated with
+            # the backend so it's safe to assume the cause of the error is
+            # missing engine
+            raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist")
+        except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
             raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
 
 
@@ -120,7 +135,15 @@ def async_connect_factory(connection_class: Type) -> Callable:
 class BaseConnection:
     client_class: type
     cursor_class: type
-    __slots__ = ("_client", "_cursors", "database", "_is_closed")
+    __slots__ = (
+        "_client",
+        "_cursors",
+        "database",
+        "engine_url",
+        "api_endpoint",
+        "account_name",
+        "_is_closed",
+    )
 
     def __init__(
         self,
@@ -136,6 +159,8 @@ class BaseConnection:
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         )
+        self.api_endpoint = api_endpoint
+        self.engine_url = engine_url
         self.database = database
         self._cursors: List[BaseCursor] = []
         self._is_closed = False

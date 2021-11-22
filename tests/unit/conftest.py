@@ -7,6 +7,14 @@ from pytest_httpx import to_response
 from pytest_httpx._httpx_internals import Response
 
 from firebolt.common.settings import Settings
+from firebolt.common.urls import (
+    ACCOUNT_ENGINE_URL,
+    ACCOUNT_URL,
+    AUTH_URL,
+    DATABASES_URL,
+    ENGINES_URL,
+    PROVIDERS_URL,
+)
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
 from tests.unit.util import list_to_paginated_response
@@ -94,7 +102,7 @@ def auth_callback(auth_url: str) -> Callable:
 
 @pytest.fixture
 def auth_url(settings: Settings) -> str:
-    return f"https://{settings.server}/auth/v1/login"
+    return AUTH_URL.format(api_endpoint=f"https://{settings.server}")
 
 
 @pytest.fixture
@@ -104,7 +112,7 @@ def db_name() -> str:
 
 @pytest.fixture
 def account_id_url(settings: Settings) -> str:
-    return f"https://{settings.server}/iam/v2/account"
+    return f"https://{settings.server}{ACCOUNT_URL}"
 
 
 @pytest.fixture
@@ -128,8 +136,8 @@ def engine_id() -> str:
 
 @pytest.fixture
 def get_engine_url(settings: Settings, account_id: str, engine_id: str) -> str:
-    return (
-        f"https://{settings.server}/core/v1/accounts/{account_id}/engines/{engine_id}"
+    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
+        account_id=account_id, engine_id=engine_id
     )
 
 
@@ -168,7 +176,7 @@ def get_engine_callback(
 
 @pytest.fixture
 def get_providers_url(settings: Settings, account_id: str, engine_id: str) -> str:
-    return f"https://{settings.server}/compute/v1/providers"
+    return f"https://{settings.server}{PROVIDERS_URL}"
 
 
 @pytest.fixture
@@ -184,3 +192,13 @@ def get_providers_callback(get_providers_url: str, provider: Provider) -> Callab
         )
 
     return do_mock
+
+
+@pytest.fixture
+def get_engines_url(settings: Settings) -> str:
+    return f"https://{settings.server}{ENGINES_URL}"
+
+
+@pytest.fixture
+def get_databases_url(settings: Settings) -> str:
+    return f"https://{settings.server}{DATABASES_URL}"

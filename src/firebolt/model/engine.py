@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 from pydantic import Field, PrivateAttr
 
 from firebolt.common.exception import NoAttachedDatabaseError
+from firebolt.common.urls import (
+    ACCOUNT_ENGINE_START_URL,
+    ACCOUNT_ENGINE_STOP_URL,
+)
 from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
@@ -264,9 +268,9 @@ class Engine(FireboltBaseModel):
 
     def _send_start(self) -> Engine:
         response = self._service.client.post(
-            url=f"/core/v1"
-            f"/accounts/{self._service.account_id}"
-            f"/engines/{self.engine_id}:start",
+            url=ACCOUNT_ENGINE_START_URL.format(
+                account_id=self._service.account_id, engine_id=self.engine_id
+            )
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
@@ -276,9 +280,9 @@ class Engine(FireboltBaseModel):
     def stop(self) -> Engine:
         """Stop an Engine running on Firebolt."""
         response = self._service.client.post(
-            url=f"/core/v1"
-            f"/accounts/{self._service.account_id}"
-            f"/engines/{self.engine_id}:stop",
+            url=ACCOUNT_ENGINE_STOP_URL.format(
+                account_id=self._service.account_id, engine_id=self.engine_id
+            )
         )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
