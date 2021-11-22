@@ -6,7 +6,11 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Connection, connect
 from firebolt.async_db._types import ColType
-from firebolt.common.exception import ConnectionClosedError, InterfaceError
+from firebolt.common.exception import (
+    ConnectionClosedError,
+    FireboltEngineError,
+    InterfaceError,
+)
 from firebolt.common.settings import Settings
 from firebolt.common.urls import ENGINE_BY_NAME_URL
 
@@ -150,6 +154,24 @@ async def test_connect_engine_name(
     httpx_mock.add_callback(get_engine_callback, url=get_engine_url)
 
     engine_name = settings.server.split(".")[0]
+
+    # Mock engine id lookup error
+    httpx_mock.add_response(
+        url=f"https://{settings.server}"
+        + ENGINE_BY_NAME_URL
+        + f"?engine_name={engine_name}",
+        status_code=codes.NOT_FOUND,
+    )
+
+    with raises(FireboltEngineError) as exc_info:
+        async with await connect(
+            database="db",
+            username="username",
+            password="password",
+            engine_name=engine_name,
+            api_endpoint=settings.server,
+        ):
+            pass
 
     # Mock engine id lookup by name
     httpx_mock.add_response(

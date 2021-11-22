@@ -28,10 +28,13 @@ from firebolt.async_db._types import (
     parse_type,
     parse_value,
 )
+from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.client import AsyncClient
 from firebolt.common.exception import (
     CursorClosedError,
     DataError,
+    EngineNotRunningError,
+    FireboltDatabaseError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -173,7 +176,7 @@ class BaseCursor:
         except (KeyError, JSONDecodeError) as err:
             raise DataError(f"Invalid query data format: {str(err)}")
 
-    def _raise_if_error(self, resp: Response) -> None:
+    async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
         if resp.status_code == codes.INTERNAL_SERVER_ERROR:
             raise OperationalError(
@@ -181,6 +184,16 @@ class BaseCursor:
             )
         if resp.status_code == codes.FORBIDDEN:
             raise ProgrammingError(resp.read().decode("utf-8"))
+        if resp.status_code == codes.SERVICE_UNAVAILABLE:
+            if not await is_db_available(self.connection, self.connection.database):
+                raise FireboltDatabaseError(
+                    f"Database {self.connection.database} does not exist"
+                )
+            if not await is_engine_running(self.connection, self.connection.engine_url):
+                raise EngineNotRunningError(
+                    f"Firebolt engine {self.connection.engine_url} "
+                    "needs to be running to run queries against it"
+                )
         resp.raise_for_status()
 
     def _reset(self) -> None:
@@ -208,7 +221,7 @@ class BaseCursor:
             content=query,
         )
 
-        self._raise_if_error(resp)
+        await self._raise_if_error(resp)
         return resp
 
     @check_not_closed

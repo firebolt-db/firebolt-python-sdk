@@ -9,6 +9,10 @@ class FireboltEngineError(FireboltError):
     """Base error for engine errors."""
 
 
+class EngineNotRunningError(FireboltEngineError):
+    pass
+
+
 class NoAttachedDatabaseError(FireboltEngineError):
     def __init__(self, method_name: str):
         self.method_name = method_name
