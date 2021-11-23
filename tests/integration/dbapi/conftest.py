@@ -13,8 +13,10 @@ LOGGER = getLogger(__name__)
 
 ENGINE_URL_ENV = "ENGINE_URL"
 ENGINE_NAME_ENV = "ENGINE_NAME"
+STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
+STOPPED_ENGINE_NAME_ENV = "STOPPED_ENGINE_NAME_URL"
 DATABASE_NAME_ENV = "DATABASE_NAME"
-USERNAME_ENV = "USERNAME"
+USERNAME_ENV = "username"
 PASSWORD_ENV = "PASSWORD"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 
@@ -31,8 +33,18 @@ def engine_url() -> str:
 
 
 @fixture(scope="session")
+def stopped_engine_url() -> str:
+    return must_env(STOPPED_ENGINE_URL_ENV)
+
+
+@fixture(scope="session")
 def engine_name() -> str:
     return must_env(ENGINE_NAME_ENV)
+
+
+@fixture(scope="session")
+def stopped_engine_name() -> str:
+    return must_env(STOPPED_ENGINE_URL_ENV)
 
 
 @fixture(scope="session")

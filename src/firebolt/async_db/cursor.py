@@ -183,12 +183,12 @@ class BaseCursor:
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            raise ProgrammingError(resp.read().decode("utf-8"))
-        if resp.status_code == codes.SERVICE_UNAVAILABLE:
             if not await is_db_available(self.connection, self.connection.database):
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
                 )
+            raise ProgrammingError(resp.read().decode("utf-8"))
+        if resp.status_code == codes.SERVICE_UNAVAILABLE:
             if not await is_engine_running(self.connection, self.connection.engine_url):
                 raise EngineNotRunningError(
                     f"Firebolt engine {self.connection.engine_url} "
