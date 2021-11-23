@@ -1,3 +1,4 @@
+import logging
 from typing import List, Optional, Union
 
 from firebolt.common.urls import (
@@ -9,6 +10,8 @@ from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
 from firebolt.service.base import BaseService
 from firebolt.service.types import DatabaseOrder
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseService(BaseService):
@@ -95,6 +98,7 @@ class DatabaseService(BaseService):
             region_key = self.resource_manager.regions.get_by_name(name=region).key
         database = Database(name=name, compute_region_key=region_key)
 
+        logger.info(f"Creating Database (name={name})")
         response = self.client.post(
             url=ACCOUNT_DATABASES_URL.format(account_id=self.account_id),
             headers={"Content-type": "application/json"},

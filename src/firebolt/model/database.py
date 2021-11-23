@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 
@@ -15,6 +16,8 @@ if TYPE_CHECKING:
     from firebolt.model.binding import Binding
     from firebolt.model.engine import Engine
     from firebolt.service.database import DatabaseService
+
+logger = logging.getLogger(__name__)
 
 
 class DatabaseKey(FireboltBaseModel):
@@ -103,6 +106,9 @@ class Database(FireboltBaseModel):
             }:
                 raise AttachedEngineInUseError(method_name="delete")
 
+        logger.info(
+            f"Deleting Database (database_id={self.database_id}, name={self.name})"
+        )
         response = self._service.client.delete(
             url=ACCOUNT_DATABASE_URL.format(
                 account_id=self._service.account_id, database_id=self.database_id
