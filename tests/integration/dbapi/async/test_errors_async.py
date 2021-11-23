@@ -4,7 +4,7 @@ from pytest import mark, raises
 from firebolt.async_db import Connection, connect
 from firebolt.common.exception import (
     AuthenticationError,
-    InterfaceError,
+    FireboltEngineError,
     OperationalError,
     ProgrammingError,
 )
@@ -55,7 +55,7 @@ async def test_engine_name_not_exists(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
-    with raises(InterfaceError):
+    with raises(FireboltEngineError):
         async with await connect(
             engine_name=engine_name + "_________",
             database=database_name,

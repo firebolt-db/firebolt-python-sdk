@@ -18,55 +18,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Generate database name
-        id: database
-        run: echo "::set-output name=name::integration_testing_$(date +'%s')"
-
-      - name: Create database
-        env:
-          FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
-          FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
-          FIREBOLT_DEFAULT_REGION: "us-east-1"
-          FIREBOLT_SERVER: "api.dev.firebolt.io"
-          DATABASE: ${{ steps.database.outputs.name }}
-        run: |
-          python .github/workflows/start_database.py
-
-      - name: Create engine
-        id: engine
-        env:
-          FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
-          FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
-          FIREBOLT_DEFAULT_REGION: "us-east-1"
-          FIREBOLT_SERVER: "api.dev.firebolt.io"
-          DATABASE: ${{ steps.database.outputs.name }}
-        run: |
-          output=$(python .github/workflows/start_engine.py)
-          arr=($output)
-          engine_name="${arr[0]}"
-          engine_url="${arr[1]}"
-          echo "::set-output name=name::$engine_name"
-          echo "::set-output name=url::$engine_url"
+      - name: Setup database and engine
+        id: setup
+        uses: firebolt-db/integration-testing-setup@master
+        with:
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
+          api-endpoint: "api.dev.firebolt.io"
+          region: "us-east-1"
 
       - name: Run integration tests
         env:
           USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
           PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
-          DATABASE_NAME: ${{ steps.database.outputs.name }}
-          ENGINE_NAME: ${{ steps.engine.outputs.name }}
-          ENGINE_URL: ${{ steps.engine.outputs.url }}
+          DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
+          ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
+          ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
           API_ENDPOINT: "api.dev.firebolt.io"
         run: |
           pytest -o log_cli=true -o log_cli_level=INFO tests/integration
-
-      - name: Stop engine and database
-        if: always()
-        env:
-          FIREBOLT_USER: ${{ secrets.FIREBOLT_USERNAME }}
-          FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
-          FIREBOLT_DEFAULT_REGION: "us-east-1"
-          FIREBOLT_SERVER: "api.dev.firebolt.io"
-          DATABASE: ${{ steps.database.outputs.name }}
-        run: |
-          python .github/workflows/stop_all.py
         
