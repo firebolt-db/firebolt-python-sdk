@@ -71,7 +71,7 @@ def test_engine_stopped(
     password: str,
     api_endpoint: str,
 ) -> None:
-    """Connection properly reacts to invalid engine name error"""
+    """Connection properly reacts to engine not running error"""
     with raises(EngineNotRunningError):
         connection = connect(
             engine_url=stopped_engine_url,
