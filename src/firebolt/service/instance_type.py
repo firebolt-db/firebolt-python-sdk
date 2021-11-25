@@ -24,7 +24,11 @@ class BaseFilter(ABC):
 class HasStorage(BaseFilter):
     @staticmethod
     def filter(instances: Dict[Any, InstanceType]) -> Dict[Any, InstanceType]:
-        return {k: v for k, v in instances.items() if v.storage_size_bytes != "0"}
+        return {
+            k: v
+            for k, v in instances.items()
+            if v.storage_size_bytes and v.storage_size_bytes != "0"
+        }
 
 
 class InstanceTypeService(BaseService):
@@ -55,8 +59,9 @@ class InstanceTypeService(BaseService):
     @cached_property
     def instance_types_by_cost(self) -> Dict[float, InstanceType]:
         return {
-            i.price_per_hour_cents if i.price_per_hour_cents else 0.0: i
+            i.price_per_hour_cents: i
             for i in self.instance_types
+            if i.price_per_hour_cents
         }
 
     @staticmethod
