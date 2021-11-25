@@ -188,7 +188,10 @@ class BaseCursor:
                     f"Database {self.connection.database} does not exist"
                 )
             raise ProgrammingError(resp.read().decode("utf-8"))
-        if resp.status_code == codes.SERVICE_UNAVAILABLE:
+        if (
+            resp.status_code == codes.SERVICE_UNAVAILABLE
+            or resp.status_code == codes.NOT_FOUND
+        ):
             if not await is_engine_running(self.connection, self.connection.engine_url):
                 raise EngineNotRunningError(
                     f"Firebolt engine {self.connection.engine_url} "
