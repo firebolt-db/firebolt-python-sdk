@@ -30,8 +30,22 @@ def test_instance_type(
     manager = ResourceManager(settings=settings)
     assert manager.instance_types.instance_types == mock_instance_types
 
+    # Make sure test conditions are met
+    assert (
+        mock_instance_types[0].price_per_hour_cents
+        < mock_instance_types[1].price_per_hour_cents
+    )
+    assert not mock_instance_types[2].price_per_hour_cents
+
+    # Get cheapest instance
     assert manager.instance_types.get_cheapest() == mock_instance_types[0]
 
+    # Make sure test conditions are met
+    assert (
+        not mock_instance_types[0].storage_size_bytes
+        or mock_instance_types[0].storage_size_bytes == "0"
+    )
+    # Get cheapest instance that also has storage
     assert (
         manager.instance_types.get_cheapest(filters=[HasStorage])
         == mock_instance_types[1]
