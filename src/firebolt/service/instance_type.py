@@ -1,4 +1,5 @@
-from typing import Dict, List, NamedTuple, Optional
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, NamedTuple, Optional
 
 from firebolt.common.urls import INSTANCE_TYPES_URL
 from firebolt.common.util import cached_property
@@ -11,6 +12,19 @@ class InstanceTypeLookup(NamedTuple):
 
     region_name: str
     instance_type_name: str
+
+
+class BaseFilter(ABC):
+    @staticmethod
+    @abstractmethod
+    def filter(instances: Dict[Any, InstanceType]) -> Dict[Any, InstanceType]:
+        pass
+
+
+class HasStorage(BaseFilter):
+    @staticmethod
+    def filter(instances: Dict[Any, InstanceType]) -> Dict[Any, InstanceType]:
+        return {k: v for k, v in instances.items() if v.storage_size_bytes != "0"}
 
 
 class InstanceTypeService(BaseService):
@@ -40,17 +54,23 @@ class InstanceTypeService(BaseService):
 
     @cached_property
     def instance_types_by_cost(self) -> Dict[float, InstanceType]:
-        return {i.price_per_hour_cents: i for i in self.instance_types}
+        return {
+            i.price_per_hour_cents if i.price_per_hour_cents else 0.0: i
+            for i in self.instance_types
+        }
 
-    def get_cheapest(self, with_storage=False):
-        instances = (
-            {
-                k: v
-                for k, v in self.instance_types_by_cost.items()
-                if v.storage_size_bytes != "0"
-            }
-            if with_storage
-            else self.instance_types_by_cost
+    @staticmethod
+    def filter_instances(
+        filters: List[BaseFilter], instances: Dict[Any, InstanceType]
+    ) -> Dict[Any, InstanceType]:
+        result = instances
+        for my_filter in filters:
+            result = my_filter.filter(result)
+        return result
+
+    def get_cheapest(self, filters: List[BaseFilter] = []) -> InstanceType:
+        instances = InstanceTypeService.filter_instances(
+            filters, self.instance_types_by_cost
         )
         return instances[min(instances)]
 
