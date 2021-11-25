@@ -38,6 +38,22 @@ class InstanceTypeService(BaseService):
             for i in self.instance_types
         }
 
+    @cached_property
+    def instance_types_by_cost(self) -> Dict[float, InstanceType]:
+        return {i.price_per_hour_cents: i for i in self.instance_types}
+
+    def get_cheapest(self, with_storage=False):
+        instances = (
+            {
+                k: v
+                for k, v in self.instance_types_by_cost.items()
+                if v.storage_size_bytes != "0"
+            }
+            if with_storage
+            else self.instance_types_by_cost
+        )
+        return instances[min(instances)]
+
     def get_by_key(self, instance_type_key: InstanceTypeKey) -> InstanceType:
         """Get an instance type by key."""
         return self.instance_types_by_key[instance_type_key]
