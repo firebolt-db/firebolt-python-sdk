@@ -1,5 +1,5 @@
 name: Run Sonar check
-on:
+тon:
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
       - name: Calculate unit test coverage
         run: |
           pytest --cov --cov-report xml:coverage-reports/coverage.xml tests/unit
-          sed -i "s/<source>\/home\/runner\/work\/firebolt-python-sdk/firebolt-python-sdk<\/source>/<source>\/github\/workspace<\/source>/g" coverage-reports/coverage.xml
+          sed -i "s/<source>\/home\/runner\/work\/firebolt-python-sdk\/firebolt-python-sdk<\/source>/<source>\/github\/workspace<\/source>/g" coverage-reports/coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
