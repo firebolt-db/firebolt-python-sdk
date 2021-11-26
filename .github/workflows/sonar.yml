@@ -2,7 +2,7 @@ name: Run Sonar check
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-  workflow-dispatch:
+  workflow_dispatch:
 jobs:
   check:
     runs-on: ubuntu-latest
