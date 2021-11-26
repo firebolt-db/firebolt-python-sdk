@@ -62,8 +62,8 @@ def async_connect_factory(connection_class: Type) -> Callable:
         password: str = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
-        api_endpoint: str = DEFAULT_API_URL,
         account_name: str = None,
+        api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
         cleandoc(
             """
@@ -125,8 +125,8 @@ def async_connect_factory(connection_class: Type) -> Callable:
             database,
             username,
             password,
-            api_endpoint,
             account_name,
+            api_endpoint,
         )
 
     return connect_inner
@@ -140,8 +140,8 @@ class BaseConnection:
         "_cursors",
         "database",
         "engine_url",
-        "api_endpoint",
         "account_name",
+        "api_endpoint",
         "_is_closed",
     )
 
@@ -151,6 +151,7 @@ class BaseConnection:
         database: str,  # TODO: Get by engine name
         username: str,
         password: str,
+        account_name: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
         self._client = AsyncClient(

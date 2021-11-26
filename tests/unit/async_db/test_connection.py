@@ -68,8 +68,8 @@ async def test_cursor_initialized(
                 database=db_name,
                 username="u",
                 password="p",
-                api_endpoint=settings.server,
                 account_name=settings.account_name,
+                api_endpoint=settings.server,
             )
         ) as connection:
             cursor = connection.cursor()
@@ -132,6 +132,7 @@ async def test_connect_engine_name(
             database="db",
             username="username",
             password="password",
+            account_name="account_name",
         ):
             pass
     assert str(exc_info.value).startswith(

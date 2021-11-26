@@ -14,14 +14,14 @@ LOGGER = getLogger(__name__)
 ENGINE_URL_ENV = "ENGINE_URL"
 ENGINE_NAME_ENV = "ENGINE_NAME"
 DATABASE_NAME_ENV = "DATABASE_NAME"
-USERNAME_ENV = "USERNAME"
+USER_NAME_ENV = "USER_NAME"
 PASSWORD_ENV = "PASSWORD"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 
 
 def must_env(var_name: str) -> str:
-    assert var_name in environ, f"Expected {var_name} to be provided in environment"
+    assert var_name in environ, f"Expected {var_name} to be provided in environment."
     LOGGER.info(f"{var_name}: {environ[var_name]}")
     return environ[var_name]
 
@@ -43,12 +43,18 @@ def database_name() -> str:
 
 @fixture(scope="session")
 def username() -> str:
-    return must_env(USERNAME_ENV)
+    print(USER_NAME_ENV)
+    return must_env(USER_NAME_ENV)
 
 
 @fixture(scope="session")
 def password() -> str:
     return must_env(PASSWORD_ENV)
+
+
+@fixture(scope="session")
+def account_name() -> str:
+    return must_env(ACCOUNT_NAME_ENV)
 
 
 @fixture(scope="session")
