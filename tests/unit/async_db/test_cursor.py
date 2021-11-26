@@ -228,7 +228,7 @@ async def test_cursor_execute_error(
 
         # Database does not exist error
         httpx_mock.add_response(
-            status_code=codes.SERVICE_UNAVAILABLE,
+            status_code=codes.FORBIDDEN,
             data="Query error message",
             url=query_url,
         )
@@ -244,10 +244,6 @@ async def test_cursor_execute_error(
             status_code=codes.SERVICE_UNAVAILABLE,
             data="Query error message",
             url=query_url,
-        )
-        httpx_mock.add_response(
-            json={"edges": ["dummy"]},  # indicate db exists
-            url=get_databases_url + "?filter.name_contains=database",
         )
         httpx_mock.add_response(
             json={"edges": []},
