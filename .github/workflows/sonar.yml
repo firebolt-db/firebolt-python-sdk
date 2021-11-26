@@ -23,7 +23,7 @@ jobs:
         run: |
           pytest --cov-report xml:coverage-reports/coverage.xml --cov src tests/unit
           # Fix source path in report for sonar to properly handle it
-          sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk</source>#<source>/github/workspace</source>#g" coverage-reports/coverage.xml
+          sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src</source>#<source>/github/workspace/src</source>#g" coverage-reports/coverage.xml
       - name: Upload coverage report
         uses: actions/upload-artifact@v2
         with:
