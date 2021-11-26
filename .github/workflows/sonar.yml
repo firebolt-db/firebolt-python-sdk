@@ -28,3 +28,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=firebolt-db
+            -Dsonar.projectKey=firebolt-db_firebolt-python-sdk
+            -Dsonar.sources=src
+            -Dsonar.python.coverage.reportPaths=coverage-reports/coverage.xml
