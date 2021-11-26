@@ -4,9 +4,10 @@ from pytest import mark, raises
 from firebolt.async_db import Connection, connect
 from firebolt.common.exception import (
     AuthenticationError,
+    EngineNotRunningError,
+    FireboltDatabaseError,
     FireboltEngineError,
     OperationalError,
-    ProgrammingError,
 )
 
 
@@ -67,6 +68,26 @@ async def test_engine_name_not_exists(
 
 
 @mark.asyncio
+async def test_engine_stopped(
+    stopped_engine_url: str,
+    database_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+) -> None:
+    """Connection properly reacts to invalid engine name error"""
+    with raises(EngineNotRunningError):
+        async with await connect(
+            engine_url=stopped_engine_url,
+            database=database_name,
+            username=username,
+            password=password,
+            api_endpoint=api_endpoint,
+        ) as connection:
+            await connection.cursor().execute("show tables")
+
+
+@mark.asyncio
 async def test_database_not_exists(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
@@ -79,11 +100,11 @@ async def test_database_not_exists(
         password=password,
         api_endpoint=api_endpoint,
     ) as connection:
-        with raises(ProgrammingError) as exc_info:
+        with raises(FireboltDatabaseError) as exc_info:
             await connection.cursor().execute("show tables")
 
         assert (
-            str(exc_info.value) == f"Invalid database '{new_db_name}'"
+            str(exc_info.value) == f"Database {new_db_name} does not exist"
         ), "Invalid database name error message"
 
 
