@@ -22,6 +22,7 @@ jobs:
       - name: Calculate unit test coverage
         run: |
           pytest --cov-report xml:coverage-reports/coverage.xml --cov src tests/unit
+          cat coverage-reports/coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
