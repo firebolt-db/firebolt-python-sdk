@@ -40,3 +40,9 @@ jobs:
     - name: Test with pytest
       run: |
         pytest tests/unit
+        
+    - name: Convetional Commits Pull Request Title
+      uses: jef/conventional-commits-pr-action@v1.0.0
+      if: github.event_name == 'pull_request'
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
