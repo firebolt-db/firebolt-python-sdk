@@ -30,7 +30,6 @@ jobs:
           ls
           ls $GITHUB_WORKSPACE
           echo $GITHUB_WORKSPACE
-          head /github/workspace/coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
