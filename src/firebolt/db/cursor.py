@@ -48,9 +48,9 @@ class Cursor(AsyncBaseCursor):
     __slots__ = AsyncBaseCursor.__slots__ + ("_query_lock", "_idx_lock")
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        self._query_lock = RWLockWrite()
-        self._idx_lock = Lock()
-        super().__init__(*args, **kwargs)
+        self._query_lock = RWLockWrite()  # TEST
+        self._idx_lock = Lock()  # TEST
+        super().__init__(*args, **kwargs)  # TEST
 
     @wraps(AsyncBaseCursor.execute)
     def execute(
@@ -59,42 +59,42 @@ class Cursor(AsyncBaseCursor):
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
     ) -> int:
-        with self._query_lock.gen_wlock():
+        with self._query_lock.gen_wlock():  # TEST
             return async_to_sync(super().execute)(query, parameters, set_parameters)
 
     @wraps(AsyncBaseCursor.executemany)
     def executemany(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
-        with self._query_lock.gen_wlock():
+        with self._query_lock.gen_wlock():  # TEST
             return async_to_sync(super().executemany)(query, parameters_seq)
 
     @wraps(AsyncBaseCursor._get_next_range)
     def _get_next_range(self, size: int) -> Tuple[int, int]:
         with self._idx_lock:
-            return super()._get_next_range(size)
+            return super()._get_next_range(size)  # TEST
 
     @wraps(AsyncBaseCursor.fetchone)
     def fetchone(self) -> Optional[List[ColType]]:
-        with self._query_lock.gen_rlock():
-            return super().fetchone()
+        with self._query_lock.gen_rlock():  # TEST
+            return super().fetchone()  # TEST
 
     @wraps(AsyncBaseCursor.fetchmany)
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        with self._query_lock.gen_rlock():
-            return super().fetchmany(size)
+        with self._query_lock.gen_rlock():  # TEST
+            return super().fetchmany(size)  # TEST
 
     @wraps(AsyncBaseCursor.fetchall)
     def fetchall(self) -> List[List[ColType]]:
-        with self._query_lock.gen_rlock():
-            return super().fetchall()
+        with self._query_lock.gen_rlock():  # TEST
+            return super().fetchall()  # TEST
 
     # Iteration support
     @check_not_closed
     @check_query_executed
     def __iter__(self) -> Generator[List[ColType], None, None]:
         while True:
-            row = self.fetchone()
+            row = self.fetchone()  # TEST
             if row is None:
                 return
             yield row

@@ -32,28 +32,28 @@ class Auth(HttpxAuth):
     def __init__(
         self, username: str, password: str, api_endpoint: str = DEFAULT_API_URL
     ):
-        self.username = username  # TEST
-        self.password = password  # TEST
-        # Add schema to url if it's missing  # TEST
-        self._api_endpoint = fix_url_schema(api_endpoint)  # TEST
-        self._token: Optional[str] = None  # TEST
-        self._expires: Optional[int] = None  # TEST
+        self.username = username
+        self.password = password
+        # Add schema to url if it's missing
+        self._api_endpoint = fix_url_schema(api_endpoint)
+        self._token: Optional[str] = None
+        self._expires: Optional[int] = None
 
     def copy(self) -> "Auth":
-        return Auth(self.username, self.password, self._api_endpoint)  # TEST
+        return Auth(self.username, self.password, self._api_endpoint)
 
     @property
     def token(self) -> Optional[str]:
-        return self._token  # TEST
+        return self._token
 
     @property
     def expired(self) -> Optional[int]:
-        return self._expires is not None and self._expires <= int(time())  # TEST
+        return self._expires is not None and self._expires <= int(time())
 
     def get_new_token_generator(self) -> Generator[Request, Response, None]:
         """Get new token using username and password"""
         try:
-            response = yield Request(  # TEST
+            response = yield Request(
                 "POST",
                 AUTH_URL.format(api_endpoint=self._api_endpoint),
                 headers={
@@ -62,23 +62,23 @@ class Auth(HttpxAuth):
                 },
                 json={"username": self.username, "password": self.password},
             )
-            response.raise_for_status()  # TEST
+            response.raise_for_status()
 
-            parsed = response.json()  # TEST
-            self._check_response_error(parsed)  # TEST
+            parsed = response.json()
+            self._check_response_error(parsed)
 
-            self._token = parsed["access_token"]  # TEST
-            self._expires = int(time()) + int(parsed["expires_in"])  # TEST
-        except _REQUEST_ERRORS as e:  # TEST
-            raise AuthenticationError(repr(e), self._api_endpoint)  # TEST
+            self._token = parsed["access_token"]
+            self._expires = int(time()) + int(parsed["expires_in"])
+        except _REQUEST_ERRORS as e:
+            raise AuthenticationError(repr(e), self._api_endpoint)
 
     def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         """Add authorization token to request headers. Overrides httpx.Auth.auth_flow"""
         if not self.token or self.expired:
             yield from self.get_new_token_generator()
-        request.headers["Authorization"] = f"Bearer {self.token}"  # TEST
-        response = yield request  # TEST
-        if response.status_code == codes.UNAUTHORIZED:  # TEST
+        request.headers["Authorization"] = f"Bearer {self.token}"
+        response = yield request
+        if response.status_code == codes.UNAUTHORIZED:
             yield from self.get_new_token_generator()
             request.headers["Authorization"] = f"Bearer {self.token}"
             yield request
