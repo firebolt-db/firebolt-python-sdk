@@ -25,7 +25,7 @@ jobs:
           coverage run --branch --source=$GITHUB_WORKSPACE,$GITHUB_WORKSPACE/src/,$GITHUB_WORKSPACE/src/firebolt/ -m pytest tests/unit
           coverage xml
           # Fix source path in report for sonar to properly handle it
-          # sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk</source>#<source>/github/workspace</source>#g" coverage.xml
+          sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk</source>#<source>/github/workspace</source>#g" coverage.xml
           head coverage.xml
           ls
           ls $GITHUB_WORKSPACE
@@ -36,6 +36,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_WORKSPACE: ${{ github.workspace }}
         with:
           args: >
             -Dsonar.organization=firebolt-db
