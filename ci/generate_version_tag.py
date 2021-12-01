@@ -40,7 +40,7 @@ def main(changes: str, old_tag: str, prerelease_tag: str, major_release: bool):
         # Breaking changes are of form <tag>!: <description>
         # To avoid automatically publishing major version they need to be
         # explicitly specified
-        breaking = [c for c in changes.split("\n") if "!:" in c]
+        breaking = [c for c in changes.split("\n") if c.split(":", 1)[0].endswith("!")]
         if breaking:
             raise Exception(
                 "Breaking changes detected, please make sure "
