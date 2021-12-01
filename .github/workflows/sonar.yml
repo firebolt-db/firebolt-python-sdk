@@ -23,7 +23,8 @@ jobs:
       - name: Calculate unit test coverage
         run: |
           coverage erase
-          coverage run --branch --source=$GITHUB_WORKSPACE/src -m pytest tests/unit
+          echo $GITHUB_WORKSPACE
+          coverage run --branch --source=$GITHUB_WORKSPACE/src/firebolt -m pytest tests/unit
           coverage xml
           # Fix source path in report for sonar to properly handle it
           sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk</source>#<source>/github/workspace</source>#g" coverage.xml
