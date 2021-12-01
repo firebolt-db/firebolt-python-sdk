@@ -29,6 +29,7 @@ jobs:
           head coverage.xml
           ls
           ls $GITHUB_WORKSPACE
+          echo $GITHUB_WORKSPACE
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
@@ -39,6 +40,5 @@ jobs:
           args: >
             -Dsonar.organization=firebolt-db
             -Dsonar.projectKey=firebolt-db_firebolt-python-sdk
-            -Dsonar.sources=$GITHUB_WORKSPACE,$GITHUB_WORKSPACE/src/,$GITHUB_WORKSPACE/src/firebolt/
             -Dsonar.python.coverage.reportPaths=$GITHUB_WORKSPACE/coverage.xml
             -Dsonar.python.version=3.7
