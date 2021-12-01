@@ -11,8 +11,12 @@ on:
         description: 'Trigger a major release (optional). Leave empty for regular release.'
 
 jobs:
+  integration-tests:
+    uses: firebolt-db/firebolt-python-sdk/.github/workflows/integration-tests.yml@main
+
   publish:
     runs-on: ubuntu-latest
+    needs: integration-tests
     steps:    
     - name: Check out code
       uses: actions/checkout@v2
