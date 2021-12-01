@@ -22,6 +22,7 @@ jobs:
 
       - name: Calculate unit test coverage
         run: |
+          coverage erase
           coverage run --branch --source=$GITHUB_WORKSPACE/src -m pytest tests/unit
           coverage xml
           # Fix source path in report for sonar to properly handle it
