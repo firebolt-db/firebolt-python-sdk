@@ -27,6 +27,8 @@ jobs:
           # Fix source path in report for sonar to properly handle it
           sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk</source>#<source>$GITHUB_WORKSPACE</source>#g" coverage.xml
           head coverage.xml
+          ls
+          ls $GITHUB_WORKSPACE
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
