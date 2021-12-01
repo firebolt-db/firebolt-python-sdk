@@ -18,18 +18,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install ".[dev]"
-          pip install coverage
 
       - name: Calculate unit test coverage
         run: |
-          coverage erase
-          echo $GITHUB_WORKSPACE
           pytest tests/unit
-          coverage run --branch --source=$GITHUB_WORKSPACE,$GITHUB_WORKSPACE/src/,$GITHUB_WORKSPACE/src/firebolt/ -m pytest tests/unit
-          coverage xml
+          pytest --cov-report xml:coverage-reports/coverage.xml --cov src tests/unit
           # Fix source path in report for sonar to properly handle it
-          sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk</source>#<source>/github/workspace</source>#g" coverage.xml
-          head coverage.xml
+          sed -i "s#<source>/home/runner/work/firebolt-python-sdk/firebolt-python-sdk</source>#<source>/github/workspace</source>#g" coverage-reports/coverage.xml
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
@@ -41,5 +36,4 @@ jobs:
             -Dsonar.organization=firebolt-db
             -Dsonar.projectKey=firebolt-db_firebolt-python-sdk
             -Dsonar.sources=src
-            -Dsonar.python.coverage.reportPaths=coverage.xml
-            -Dsonar.python.version=3.7
+            -Dsonar.python.coverage.reportPaths=coverage-reports/coverage.xml
