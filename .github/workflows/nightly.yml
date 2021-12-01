@@ -1,6 +1,7 @@
 name: Nightly code check
 on:
-  - cron: '0 3 * * *' # 3 am UTC every day
+  schedule:
+    - cron: '0 3 * * *' # 3 am UTC every day
 jobs:
   code-check:
     runs-on: ${{ matrix.os }}
