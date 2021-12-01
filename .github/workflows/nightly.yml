@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run code checks
-        using: .github/workflows/code-checks
+        using: .github/workflows/code-checks.yml
         
   tests:
     runs-on: ${{ matrix.os }}
@@ -36,5 +36,5 @@ jobs:
           pytest tests/unit
 
       - name: Run integration tests:
-        uses: .github/workflows/integration-tests
+        uses: .github/workflows/integration-tests.yml
         
