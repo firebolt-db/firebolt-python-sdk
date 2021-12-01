@@ -42,7 +42,7 @@ jobs:
           args: >
             -Dsonar.organization=firebolt-db
             -Dsonar.projectKey=firebolt-db_firebolt-python-sdk
-            -Dsonar.sources=src
-            -Dsonar.tests=tests
+            -Dsonar.sources=/github/workspace/src
+            -Dsonar.tests=/github/workspace/tests
             -Dsonar.python.coverage.reportPaths="${GITHUB_WORKSPACE}/coverage.xml"
             -Dsonar.python.version=3.7
