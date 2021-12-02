@@ -1,8 +1,8 @@
+==========================
 firebolt.async\_db package
 ==========================
 
-Submodules
-----------
+
 
 firebolt.async\_db.connection module
 ------------------------------------

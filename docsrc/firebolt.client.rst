@@ -1,8 +1,7 @@
+=======================
 firebolt.client package
 =======================
 
-Submodules
-----------
 
 firebolt.client.auth module
 ---------------------------
@@ -36,10 +35,4 @@ firebolt.client.resource\_manager\_hooks module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: firebolt.client
-   :members:
-   :undoc-members:
-   :show-inheritance:
