@@ -1,8 +1,7 @@
+========================
 firebolt.service package
 ========================
 
-Submodules
-----------
 
 firebolt.service.base module
 ----------------------------
@@ -84,10 +83,4 @@ firebolt.service.types module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: firebolt.service
-   :members:
-   :undoc-members:
-   :show-inheritance:

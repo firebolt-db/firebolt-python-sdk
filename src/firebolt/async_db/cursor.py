@@ -109,6 +109,20 @@ class BaseCursor:
     @property  # type: ignore
     @check_not_closed
     def description(self) -> Optional[List[Column]]:
+        """
+        Provides information about a single result row of a query
+        
+        Attributes:
+
+        * ``name``
+        * ``type_code``
+        * ``display_size``
+        * ``internal_size``
+        * ``precision``
+        * ``scale``
+        * ``null_ok``
+        """
+
         cleandoc(
             """
             Provides information about a single result row of a query
@@ -218,7 +232,9 @@ class BaseCursor:
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
     ) -> int:
-        """Prepare and execute a database query. Return row count."""
+        """Prepare and execute a database query. 
+
+        :return: Row count."""
         self._reset()
         resp = await self._do_execute_request(query, parameters, set_parameters)
         self._store_query_data(resp)
@@ -229,6 +245,13 @@ class BaseCursor:
     async def executemany(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
+
+        """
+        Prepare and execute a database query against all parameter
+        sequences provided. 
+
+        :return: last query row count.
+        """
         cleandoc(
             """
             Prepare and execute a database query against all parameter
@@ -280,6 +303,11 @@ class BaseCursor:
     @check_not_closed
     @check_query_executed
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
+        """
+        Fetch the next set of rows of a query result,
+        cursor.arraysize is the default size.
+        """
+
         cleandoc(
             """
             Fetch the next set of rows of a query result,
@@ -321,6 +349,33 @@ class BaseCursor:
 
 
 class Cursor(BaseCursor):
+    """
+    Class, responsible for executing asyncio queries to Firebolt Database.
+    Should not be created directly. Instead use connection.cursor()
+
+    **Properties:** 
+
+        * ``description`` - information about a single result row
+        * ``rowcount`` - the number of rows produced by last query
+        * ``closed`` - True if connection is closed, False otherwise
+        * ``arraysize`` - Read/Write, specifies the number of rows to fetch at a time with .fetchmany method
+
+    **Methods:**
+
+        * ``close`` - terminate an ongoing query (if any) and mark connection as closed
+        * ``execute`` - prepare and execute a database query
+        * ``executemany`` - prepare and execute a database query against all parameter
+          sequences provided
+        * ``fetchone`` - fetch the next row of a query result set
+        * ``fetchmany`` - fetch the next set of rows of a query result,
+          size is cursor.arraysize by default
+        * ``fetchall`` - fetch all remaining rows of a query result
+        * ``setinputsizes`` - predefine memory areas for query parameters (does nothing)
+        * ``setoutputsize`` - set a column buffer size for fetches of large columns
+          (does nothing)
+
+    """
+
     cleandoc(
         """
         Class, responsible for executing asyncio queries to Firebolt Database.

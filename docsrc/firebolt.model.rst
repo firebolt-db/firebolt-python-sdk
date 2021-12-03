@@ -1,8 +1,7 @@
+======================
 firebolt.model package
 ======================
 
-Submodules
-----------
 
 firebolt.model.binding module
 -----------------------------
@@ -60,10 +59,4 @@ firebolt.model.region module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: firebolt.model
-   :members:
-   :undoc-members:
-   :show-inheritance:
