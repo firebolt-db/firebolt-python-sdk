@@ -19,9 +19,6 @@ firebolt.client.client module
    :undoc-members:
    :show-inheritance:
 
-firebolt.client.constants module
---------------------------------
-
 .. automodule:: firebolt.client.constants
    :members:
    :undoc-members:

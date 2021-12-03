@@ -19,9 +19,6 @@ firebolt.common.settings module
    :undoc-members:
    :show-inheritance:
 
-firebolt.common.urls module
----------------------------
-
 .. automodule:: firebolt.common.urls
    :members:
    :undoc-members:

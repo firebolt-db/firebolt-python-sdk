@@ -1,8 +1,7 @@
+=======================
 firebolt.common package
 =======================
 
-Submodules
-----------
 
 firebolt.common.exception module
 --------------------------------
@@ -20,9 +19,6 @@ firebolt.common.settings module
    :undoc-members:
    :show-inheritance:
 
-firebolt.common.urls module
----------------------------
-
 .. automodule:: firebolt.common.urls
    :members:
    :undoc-members:
@@ -36,10 +32,5 @@ firebolt.common.util module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: firebolt.common
-   :members:
-   :undoc-members:
-   :show-inheritance:
+

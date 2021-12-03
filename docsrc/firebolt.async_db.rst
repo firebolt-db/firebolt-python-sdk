@@ -8,7 +8,7 @@ firebolt.async\_db.connection module
 ------------------------------------
 
 .. automodule:: firebolt.async_db.connection
-   :members:
+   :members: BaseConnection, Connection, connect
    :undoc-members:
    :show-inheritance:
 

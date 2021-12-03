@@ -52,10 +52,25 @@ def async_connect_factory(connection_class: Type) -> Callable:
         engine_url: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
+        """
+        Connect to Firebolt database.
+
+        :param database: name of the database to connect
+        :type database: str
+        :param username: user name to use for authentication
+        :type username: str
+        :param password: password to use for authentication
+        :type password: str
+        :param engine_name: The name of the engine to connect to
+        :type engine_name: str, optional
+        :param engine_url: The engine endpoint to use
+        :type engine_url: str, optional
+
+        .. note:: either `engine_name` or `engine_url` should be provided, but not both
+        """
         cleandoc(
             """
             Connect to Firebolt database.
-
             Connection parameters:
             database - name of the database to connect
             username - user name to use for authentication
@@ -172,6 +187,27 @@ class BaseConnection:
 
 
 class Connection(BaseConnection):
+    """
+        Firebolt asyncronous database connection class. Implements PEP-249.
+
+        :param engine_url: Firebolt database engine REST API url
+        :type engine_url: str
+        :param database: Firebolt database name
+        :type database: str
+        :param username: Firebolt account username
+        :type username: str    
+        :param password: Firebolt account password
+        :type password: str
+        :param api_endpoint: Firebolt API endpoint. Used for authentication
+        :type api_endpoint: str, optional
+
+        **Methods:**
+
+        * ``cursor`` - create new Cursor object
+        * ``close`` - close the Connection and all its cursors
+
+        .. note:: Firebolt currenly doesn't support transactions so commit and rollback methods are not implemented.
+    """
     cleandoc(
         """
         Firebolt asyncronous database connection class. Implements PEP-249.

@@ -1,8 +1,7 @@
+===================
 firebolt.db package
 ===================
 
-Submodules
-----------
 
 firebolt.db.connection module
 -----------------------------
@@ -20,10 +19,6 @@ firebolt.db.cursor module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
 
-.. automodule:: firebolt.db
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+
