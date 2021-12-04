@@ -120,19 +120,14 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>engine_url</strong> (<em>str</em>) – Firebolt database engine REST API url</p></li>
-<li><p><strong>database</strong> (<em>str</em>) – Firebolt database name</p></li>
-<li><p><strong>username</strong> (<em>str</em>) – Firebolt account username</p></li>
-<li><p><strong>password</strong> (<em>str</em>) – Firebolt account password</p></li>
-<li><p><strong>api_endpoint</strong> (<em>str</em><em>, </em><em>optional</em>) – Firebolt API endpoint. Used for authentication</p></li>
+<li><p><strong>engine_url</strong> – Firebolt database engine REST API url</p></li>
+<li><p><strong>database</strong> – Firebolt database name</p></li>
+<li><p><strong>username</strong> – Firebolt account username</p></li>
+<li><p><strong>password</strong> – Firebolt account password</p></li>
+<li><p><strong>api_endpoint</strong> (<em>optional</em>) – Firebolt API endpoint. Used for authentication</p></li>
 </ul>
 </dd>
 </dl>
-<p><strong>Methods:</strong></p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">cursor</span></code> - create new Cursor object</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">close</span></code> - close the Connection and all its cursors</p></li>
-</ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Firebolt currenly doesn’t support transactions so commit and rollback methods are not implemented.</p>
@@ -168,17 +163,22 @@
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="firebolt.async_db.connection.async_connect_factory">
+<span class="sig-prename descclassname"><span class="pre">firebolt.async_db.connection.</span></span><span class="sig-name descname"><span class="pre">async_connect_factory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">connection_class</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="headerlink" href="#firebolt.async_db.connection.async_connect_factory" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="firebolt.async_db.connection.connect">
 <em class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.async_db.connection.</span></span><span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">username</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">password</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'api.app.firebolt.io'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.async_db.connection.Connection" title="firebolt.async_db.connection.Connection"><span class="pre">firebolt.async_db.connection.Connection</span></a></span></span><a class="headerlink" href="#firebolt.async_db.connection.connect" title="Permalink to this definition"></a></dt>
 <dd><p>Connect to Firebolt database.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>database</strong> (<em>str</em>) – name of the database to connect</p></li>
-<li><p><strong>username</strong> (<em>str</em>) – user name to use for authentication</p></li>
-<li><p><strong>password</strong> (<em>str</em>) – password to use for authentication</p></li>
-<li><p><strong>engine_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of the engine to connect to</p></li>
-<li><p><strong>engine_url</strong> (<em>str</em><em>, </em><em>optional</em>) – The engine endpoint to use</p></li>
+<li><p><strong>database</strong> – name of the database to connect</p></li>
+<li><p><strong>username</strong> – user name to use for authentication</p></li>
+<li><p><strong>password</strong> – password to use for authentication</p></li>
+<li><p><strong>engine_name</strong> (<em>optional</em>) – The name of the engine to connect to</p></li>
+<li><p><strong>engine_url</strong> (<em>optional</em>) – The engine endpoint to use</p></li>
 </ul>
 </dd>
 </dl>
@@ -306,30 +306,14 @@ cursor.arraysize is the default size.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.async_db.cursor.</span></span><span class="sig-name descname"><span class="pre">Cursor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.async_db.cursor.BaseCursor" title="firebolt.async_db.cursor.BaseCursor"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.async_db.cursor.BaseCursor</span></code></a></p>
 <p>Class, responsible for executing asyncio queries to Firebolt Database.
-Should not be created directly. Instead use connection.cursor()</p>
+Should not be created directly. Instead use <code class="docutils literal notranslate"><span class="pre">connection.cursor()</span></code></p>
 <p><strong>Properties:</strong></p>
 <blockquote>
 <div><ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">description</span></code> - information about a single result row</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">rowcount</span></code> - the number of rows produced by last query</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">closed</span></code> - True if connection is closed, False otherwise</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">arraysize</span></code> - Read/Write, specifies the number of rows to fetch at a time with .fetchmany method</p></li>
-</ul>
-</div></blockquote>
-<p><strong>Methods:</strong></p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">close</span></code> - terminate an ongoing query (if any) and mark connection as closed</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">execute</span></code> - prepare and execute a database query</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">executemany</span></code> - prepare and execute a database query against all parameter
-sequences provided</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fetchone</span></code> - fetch the next row of a query result set</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fetchmany</span></code> - fetch the next set of rows of a query result,
-size is cursor.arraysize by default</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">fetchall</span></code> - fetch all remaining rows of a query result</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">setinputsizes</span></code> - predefine memory areas for query parameters (does nothing)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">setoutputsize</span></code> - set a column buffer size for fetches of large columns
-(does nothing)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">arraysize</span></code> - Read/Write, specifies the number of rows to fetch at a time with <code class="docutils literal notranslate"><span class="pre">.fetchmany</span></code> method</p></li>
 </ul>
 </div></blockquote>
 <dl class="py attribute">
@@ -412,7 +396,9 @@ cursor.arraysize is the default size.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.check_query_executed">
 <span class="sig-prename descclassname"><span class="pre">firebolt.async_db.cursor.</span></span><span class="sig-name descname"><span class="pre">check_query_executed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.check_query_executed" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>(Decorator) ensure that some query has been executed before
+calling cursor method.</p>
+</dd></dl>
 
 </section>
 <section id="module-firebolt.async_db">

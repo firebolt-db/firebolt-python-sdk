@@ -261,13 +261,10 @@ The scale can be any int from 1 to 128.</p></li>
 <li><p><strong>spec</strong> – The AWS EC2 instance type.</p></li>
 <li><p><strong>auto_stop</strong> – The amount of time (in minutes) after which
 the engine automatically stops.</p></li>
-<li><p><strong>warmup</strong> – <p>The warmup method that should be used.
-MINIMAL: On-demand loading (both indexes and tables’ data).
-PRELOAD_INDEXES: Load indexes only.
-PRELOAD_ALL_DATA: Full data auto-load</p>
-<blockquote>
-<div><p>(both indexes and table data - full warmup).</p>
-</div></blockquote>
+<li><p><strong>warmup</strong> – <p>The warmup method that should be used.</p>
+<p><code class="docutils literal notranslate"><span class="pre">MINIMAL</span></code>: On-demand loading (both indexes and tables’ data).</p>
+<p><code class="docutils literal notranslate"><span class="pre">PRELOAD_INDEXES</span></code>: Load indexes only.</p>
+<p>PRELOAD_ALL_DATA: Full data auto-load (both indexes and table data - full warmup).</p>
 </p></li>
 <li><p><strong>description</strong> – A short description of the engine’s purpose.</p></li>
 </ul>
@@ -406,23 +403,13 @@ If not provided, use the default region name from the client.</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeService.instance_types_by_key">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instance_types_by_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceTypeKey" title="firebolt.model.instance_type.InstanceTypeKey"><span class="pre">firebolt.model.instance_type.InstanceTypeKey</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.instance_types_by_key" title="Permalink to this definition"></a></dt>
-<dd><p>InstanceType}</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>Dict of {InstanceTypeKey</p>
-</dd>
-</dl>
+<dd><p>Dict of {InstanceTypeKey to InstanceType}</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeService.instance_types_by_name">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instance_types_by_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#firebolt.service.instance_type.InstanceTypeLookup" title="firebolt.service.instance_type.InstanceTypeLookup"><span class="pre">firebolt.service.instance_type.InstanceTypeLookup</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.instance_types_by_name" title="Permalink to this definition"></a></dt>
-<dd><p>InstanceType}</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>Dict of {InstanceTypeLookup</p>
-</dd>
-</dl>
+<dd><p>Dict of {InstanceTypeLookup to InstanceType}</p>
 </dd></dl>
 
 </dd></dl>
@@ -441,9 +428,11 @@ If not provided, use the default region name from the client.</p></li>
 <li><p>bindings (the bindings between an engine and a database)</p></li>
 <li><p>engine revisions (versions of an engine)</p></li>
 </ul>
-<p>Also provides listings of:
-- regions (AWS regions in which engines can run)
-- instance types (AWS instance types which engines can use)</p>
+<p>Also provides listings of:</p>
+<ul class="simple">
+<li><p>regions (AWS regions in which engines can run)</p></li>
+<li><p>instance types (AWS instance types which engines can use)</p></li>
+</ul>
 </dd></dl>
 
 </section>
@@ -495,23 +484,13 @@ If not provided, use the default region name from the client.</p></li>
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.region.RegionService.regions_by_key">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">regions_by_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.RegionKey" title="firebolt.model.region.RegionKey"><span class="pre">firebolt.model.region.RegionKey</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.region.RegionService.regions_by_key" title="Permalink to this definition"></a></dt>
-<dd><p>Region}</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>Dict of {RegionKey</p>
-</dd>
-</dl>
+<dd><p>Dict of {RegionKey to Region}</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.region.RegionService.regions_by_name">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">regions_by_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.region.RegionService.regions_by_name" title="Permalink to this definition"></a></dt>
-<dd><p>Region}</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type</dt>
-<dd class="field-odd"><p>Dict of {RegionLookup</p>
-</dd>
-</dl>
+<dd><p>Dict of {RegionLookup to Region}</p>
 </dd></dl>
 
 </dd></dl>
@@ -732,116 +711,117 @@ If not provided, use the default region name from the client.</p></li>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_CREATED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_CREATED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_CREATED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_CREATED" title="Permalink to this definition"></a></dt>
-<dd><p>Engine initialization request was sent.</p>
+<dd><p>Engine status was created.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_DELETED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_DELETED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_DELETED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_DELETED" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Engine is soft-deleted.</p>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_FAILED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_PROVISIONING_FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_PROVISIONING_FAILED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_FAILED" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is initialized, but there are no running or starting engine revisions.</p>
+<dd><p>Engine initialization failed due to error.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_FINISHED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_PROVISIONING_FINISHED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_PROVISIONING_FINISHED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_FINISHED" title="Permalink to this definition"></a></dt>
-<dd><p>Engine initialization failed due to error.</p>
+<dd><p>Engine initialization was finished successfully.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_PENDING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_PROVISIONING_PENDING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_PROVISIONING_PENDING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_PENDING" title="Permalink to this definition"></a></dt>
-<dd><p>Engine initialization request was received and initialization process started.</p>
+<dd><p>Engine initialization request was sent.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_STARTED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_PROVISIONING_STARTED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_PROVISIONING_STARTED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_PROVISIONING_STARTED" title="Permalink to this definition"></a></dt>
-<dd><p>Engine initialization was finished successfully.</p>
+<dd><p>Engine initialization request was received and initialization process started.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_IDLE">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_IDLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_IDLE'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_IDLE" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is initialized, there are no running engine revision but it’s starting.</p>
+<dd><p>Engine is initialized, but there are no running or starting engine revisions.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING" title="Permalink to this definition"></a></dt>
-<dd><p>Engine termination request was sent.</p>
+<dd><p>Engine is initialized, all child revisions are being terminated.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is initialized, replacement of the revision with a downtime is in progress.</p>
+<dd><p>Engine is ready (serves an engine revision),
+replacement revision failed to provision or start.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_CHANGING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISION_CHANGING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISION_CHANGING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_CHANGING" title="Permalink to this definition"></a></dt>
 <dd><p>Engine is ready (serves an engine revision),
-replacement revision failed to provision or start.</p>
+zero-downtime replacement revision is starting.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_RESTARTING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISION_RESTARTING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISION_RESTARTING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_RESTARTING" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is initialized, replacement revision failed to provision or start.</p>
+<dd><p>Engine is initialized, replacement of the revision with a downtime is in progress.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is initialized, all child revisions are being terminated.</p>
+<dd><p>Engine is initialized, replacement revision failed to provision or start.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_SERVING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISION_SERVING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISION_SERVING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_SERVING" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is ready (serves an engine revision),
-zero-downtime replacement revision is starting.</p>
+<dd><p>Engine is ready (serves an engine revision).</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_STARTING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISION_STARTING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISION_STARTING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_STARTING" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is initialized, initial revision is failed to provision or start.</p>
+<dd><p>Engine is initialized, there are no running engine revision but it’s starting.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is ready (serves an engine revision).</p>
+<dd><p>Engine is initialized, initial revision is failed to provision or start.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_F">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_TERMINATION_F</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_TERMINATION_FAILED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_F" title="Permalink to this definition"></a></dt>
-<dd><p>Engine is soft-deleted.</p>
+<dd><p>Engine termination failed.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_FIN">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_TERMINATION_FIN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_TERMINATION_FINISHED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_FIN" title="Permalink to this definition"></a></dt>
-<dd><p>Engine termination failed.</p>
+<dd><p>Engine termination finished.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_PENDING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_TERMINATION_PENDING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_TERMINATION_PENDING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_PENDING" title="Permalink to this definition"></a></dt>
-<dd><p>Engine termination started.</p>
+<dd><p>Engine termination request was sent.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_ST">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_TERMINATION_ST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_TERMINATION_STARTED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatus.ENGINE_STATUS_TERMINATION_ST" title="Permalink to this definition"></a></dt>
-<dd><p>Engine termination finished.</p>
+<dd><p>Engine termination started.</p>
 </dd></dl>
 
 <dl class="py attribute">
@@ -862,6 +842,19 @@ In other words this means that engine is stopped.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_DELETED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_DELETED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_DELETED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_DELETED" title="Permalink to this definition"></a></dt>
+<dd><p>Infrastructure is terminated, engine data is deleted.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_DELETING">
+<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_DELETING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_DELETING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_DELETING" title="Permalink to this definition"></a></dt>
+<dd><p>Termination is in progress.
+All infrastructure that belongs to this engine will be completely destroyed.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED">
+<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_FAILED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED" title="Permalink to this definition"></a></dt>
 <dd><p>Failed to start or stop.
 This status only indicates that there were issues during provisioning operations.
 If engine enters this status,
@@ -869,25 +862,22 @@ all infrastructure should be stopped/terminated already.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_DELETING">
-<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_DELETING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_DELETING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_DELETING" title="Permalink to this definition"></a></dt>
-<dd><p>Infrastructure is terminated, engine data is deleted.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED">
-<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_FAILED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_FAILED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_REPAIRING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_REPAIRING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_REPAIRING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_REPAIRING" title="Permalink to this definition"></a></dt>
-<dd><p>Stop is in progress.</p>
+<dd><p>Underlying infrastructure has issues and is being repaired.
+Engine is still running, but it’s not fully healthy and some queries may fail.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RESTARTING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_RESTARTING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_RESTARTING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RESTARTING" title="Permalink to this definition"></a></dt>
+<dd><p>Hard restart (full stop/start cycle) is in progress.
+Underlying infrastructure is being recreated.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING">
+<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING" title="Permalink to this definition"></a></dt>
 <dd><p>Hard restart (full stop/start cycle) is in progress.
 Underlying infrastructure is ready, waiting for
 PackDB cluster to initialize and start.
@@ -896,59 +886,50 @@ but used during restart cycle.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING">
-<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING" title="Permalink to this definition"></a></dt>
-<dd><p>Underlying infrastructure has issues and is being repaired.
-Engine is still running, but it’s not fully healthy and some queries may fail.</p>
-</dd></dl>
-
-<dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_RUNNING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_RUNNING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING" title="Permalink to this definition"></a></dt>
-<dd><p>Version of the PackDB is changing.
-This is zero downtime operation that does not affect engine work.s
-This status is reserved for future use (not used fow now).</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING">
-<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_STARTING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_STARTING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING" title="Permalink to this definition"></a></dt>
-<dd><p>Provisioning process is complete.
-We are now waiting for PackDB cluster to initialize and start.</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING">
-<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING" title="Permalink to this definition"></a></dt>
 <dd><p>Fully started.
 Engine is ready to serve requests.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED">
-<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_STOPPED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_STOPPED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING">
+<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_STARTING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_STARTING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING" title="Permalink to this definition"></a></dt>
 <dd><p>Provisioning process is in progress.
 We are creating cloud infra for this engine.</p>
 </dd></dl>
 
 <dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING">
+<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING" title="Permalink to this definition"></a></dt>
+<dd><p>Provisioning process is complete.
+We are now waiting for PackDB cluster to initialize and start.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED">
+<span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_STOPPED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_STOPPED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED" title="Permalink to this definition"></a></dt>
+<dd><p>Fully stopped.</p>
+</dd></dl>
+
+<dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_STOPPING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_STOPPING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING" title="Permalink to this definition"></a></dt>
-<dd><p>Termination is in progress.
-All infrastructure that belongs to this engine will be completely destroyed.</p>
+<dd><p>Stop is in progress.</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_UNSPECIFIED">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_UNSPECIFIED</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_UNSPECIFIED'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_UNSPECIFIED" title="Permalink to this definition"></a></dt>
-<dd><p>Fully stopped.</p>
+<dd><p>Status unspecified</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_UPGRADING">
 <span class="sig-name descname"><span class="pre">ENGINE_STATUS_SUMMARY_UPGRADING</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ENGINE_STATUS_SUMMARY_UPGRADING'</span></em><a class="headerlink" href="#firebolt.service.types.EngineStatusSummary.ENGINE_STATUS_SUMMARY_UPGRADING" title="Permalink to this definition"></a></dt>
-<dd><p>Hard restart (full stop/start cycle) is in progress.
-Underlying infrastructure is being recreated.</p>
+<dd><p>Version of the PackDB is changing.
+This is zero downtime operation that does not affect engine work.s
+This status is reserved for future use (not used fow now).</p>
 </dd></dl>
 
 </dd></dl>

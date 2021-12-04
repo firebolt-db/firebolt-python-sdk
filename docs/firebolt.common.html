@@ -126,6 +126,8 @@
 <dt class="sig sig-object py" id="firebolt.common.exception.DataError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">DataError</span></span><a class="headerlink" href="#firebolt.common.exception.DataError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.common.exception.DatabaseError" title="firebolt.common.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.common.exception.DatabaseError</span></code></a></p>
+<p>Exception raised for errors that are due to problems with the processed data
+like division by zero, numeric value out of range, etc.</p>
 </dd></dl>
 
 <dl class="py exception">
@@ -164,18 +166,24 @@
 <dt class="sig sig-object py" id="firebolt.common.exception.IntegrityError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">IntegrityError</span></span><a class="headerlink" href="#firebolt.common.exception.IntegrityError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.common.exception.DatabaseError" title="firebolt.common.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.common.exception.DatabaseError</span></code></a></p>
+<p>Exception raised when the relational integrity of the database is affected,
+e.g. a foreign key check fails.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="firebolt.common.exception.InterfaceError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">InterfaceError</span></span><a class="headerlink" href="#firebolt.common.exception.InterfaceError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.common.exception.FireboltError" title="firebolt.common.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.common.exception.FireboltError</span></code></a></p>
+<p>Exception raised for errors that are related to the database interface
+rather than the database itself.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="firebolt.common.exception.InternalError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">InternalError</span></span><a class="headerlink" href="#firebolt.common.exception.InternalError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.common.exception.DatabaseError" title="firebolt.common.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.common.exception.DatabaseError</span></code></a></p>
+<p>Exception raised when the database encounters an internal error,
+e.g. the cursor is not valid anymore, the transaction is out of sync, etc.</p>
 </dd></dl>
 
 <dl class="py exception">
@@ -188,18 +196,26 @@
 <dt class="sig sig-object py" id="firebolt.common.exception.NotSupportedError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">NotSupportedError</span></span><a class="headerlink" href="#firebolt.common.exception.NotSupportedError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.common.exception.DatabaseError" title="firebolt.common.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.common.exception.DatabaseError</span></code></a></p>
+<p>Exception raised when the database encounters an internal error,
+e.g. the cursor is not valid anymore, the transaction is out of sync, etc.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="firebolt.common.exception.OperationalError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">OperationalError</span></span><a class="headerlink" href="#firebolt.common.exception.OperationalError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.common.exception.DatabaseError" title="firebolt.common.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.common.exception.DatabaseError</span></code></a></p>
+<p>Exception raised for errors that are related to the database’s operation
+and not necessarily under the control of the programmer, e.g. an unexpected
+disconnect occurs, the data source name is not found, a transaction could not
+be processed, a memory allocation error occurred during processing, etc.</p>
 </dd></dl>
 
 <dl class="py exception">
 <dt class="sig sig-object py" id="firebolt.common.exception.ProgrammingError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">ProgrammingError</span></span><a class="headerlink" href="#firebolt.common.exception.ProgrammingError" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.common.exception.DatabaseError" title="firebolt.common.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.common.exception.DatabaseError</span></code></a></p>
+<p>Exception raised when the database encounters an internal error,
+e.g. the cursor is not valid anymore, the transaction is out of sync, etc.</p>
 </dd></dl>
 
 <dl class="py exception">
@@ -218,6 +234,8 @@
 <dt class="sig sig-object py" id="firebolt.common.exception.Warning">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.exception.</span></span><span class="sig-name descname"><span class="pre">Warning</span></span><a class="headerlink" href="#firebolt.common.exception.Warning" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Exception raised for important warnings
+like data truncations while inserting, etc.</p>
 </dd></dl>
 
 </section>

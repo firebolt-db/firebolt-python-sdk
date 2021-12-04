@@ -56,30 +56,15 @@ def async_connect_factory(connection_class: Type) -> Callable:
         Connect to Firebolt database.
 
         :param database: name of the database to connect
-        :type database: str
         :param username: user name to use for authentication
-        :type username: str
         :param password: password to use for authentication
-        :type password: str
         :param engine_name: The name of the engine to connect to
-        :type engine_name: str, optional
+        :type engine_name: optional
         :param engine_url: The engine endpoint to use
-        :type engine_url: str, optional
+        :type engine_url: optional
 
         .. note:: either `engine_name` or `engine_url` should be provided, but not both
         """
-        cleandoc(
-            """
-            Connect to Firebolt database.
-            Connection parameters:
-            database - name of the database to connect
-            username - user name to use for authentication
-            password - password to use for authentication
-            engine_name - name of the engine to connect to
-            engine_url - engine endpoint to use
-            note: either engine_name or engine_url should be provided, but not both
-            """
-        )
 
         if engine_name and engine_url:
             raise InterfaceError(
@@ -191,42 +176,14 @@ class Connection(BaseConnection):
         Firebolt asyncronous database connection class. Implements PEP-249.
 
         :param engine_url: Firebolt database engine REST API url
-        :type engine_url: str
         :param database: Firebolt database name
-        :type database: str
-        :param username: Firebolt account username
-        :type username: str    
+        :param username: Firebolt account username  
         :param password: Firebolt account password
-        :type password: str
         :param api_endpoint: Firebolt API endpoint. Used for authentication
-        :type api_endpoint: str, optional
-
-        **Methods:**
-
-        * ``cursor`` - create new Cursor object
-        * ``close`` - close the Connection and all its cursors
+        :type api_endpoint: optional
 
         .. note:: Firebolt currenly doesn't support transactions so commit and rollback methods are not implemented.
     """
-    cleandoc(
-        """
-        Firebolt asyncronous database connection class. Implements PEP-249.
-
-        Parameters:
-            engine_url - Firebolt database engine REST API url
-            database - Firebolt database name
-            username - Firebolt account username
-            password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
-
-        Methods:
-            cursor - create new Cursor object
-            close - close the Connection and all it's cursors
-
-        Firebolt currenly doesn't support transactions so commit and rollback methods
-        are not implemented.
-        """
-    )
 
     cursor_class = Cursor
 

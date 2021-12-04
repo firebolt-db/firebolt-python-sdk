@@ -22,12 +22,12 @@ class InstanceTypeService(BaseService):
 
     @cached_property
     def instance_types_by_key(self) -> Dict[InstanceTypeKey, InstanceType]:
-        """Dict of {InstanceTypeKey: InstanceType}"""
+        """Dict of {InstanceTypeKey to InstanceType}"""
         return {i.key: i for i in self.instance_types}
 
     @cached_property
     def instance_types_by_name(self) -> Dict[InstanceTypeLookup, InstanceType]:
-        """Dict of {InstanceTypeLookup: InstanceType}"""
+        """Dict of {InstanceTypeLookup to InstanceType}"""
         return {
             InstanceTypeLookup(
                 region_name=self.resource_manager.regions.get_by_id(
