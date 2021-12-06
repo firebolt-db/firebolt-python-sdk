@@ -166,8 +166,8 @@ def test_get_connection(
     manager = ResourceManager(settings=settings)
     engine = manager.engines.create(name=engine_name)
 
-    connection = engine.get_connection()
-    assert connection
+    with engine.get_connection() as connection:
+        assert connection
 
 
 def test_attach_to_database(

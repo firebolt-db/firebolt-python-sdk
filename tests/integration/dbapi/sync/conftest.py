@@ -7,13 +7,15 @@ from firebolt.db import Connection, connect
 def connection(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> Connection:
-    return connect(
+    connection = connect(
         engine_url=engine_url,
         database=database_name,
         username=username,
         password=password,
         api_endpoint=api_endpoint,
     )
+    yield connection
+    connection.close()
 
 
 @fixture
@@ -24,10 +26,12 @@ def connection_engine_name(
     password: str,
     api_endpoint: str,
 ) -> Connection:
-    return connect(
+    connection = connect(
         engine_name=engine_name,
         database=database_name,
         username=username,
         password=password,
         api_endpoint=api_endpoint,
     )
+    yield connection
+    connection.close()
