@@ -59,8 +59,9 @@ class Connection(AsyncBaseConnection):
     @wraps(AsyncBaseConnection._aclose)
     def close(self) -> None:
         with self._closing_lock.gen_wlock():
-            self._loop.run_until_complete(self._aclose())
-            self._loop.close()
+            if not self.closed:
+                self._loop.run_until_complete(self._aclose())
+                self._loop.close()
 
     # Context manager support
     def __enter__(self) -> Connection:
