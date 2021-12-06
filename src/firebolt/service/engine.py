@@ -127,7 +127,7 @@ class EngineService(BaseService):
                 
                 ``PRELOAD_INDEXES``: Load indexes only.
                 
-                PRELOAD_ALL_DATA: Full data auto-load (both indexes and table data - full warmup).
+                ``PRELOAD_ALL_DATA``: Full data auto-load (both indexes and table data - full warmup).
             description: A short description of the engine's purpose.
 
         Returns:

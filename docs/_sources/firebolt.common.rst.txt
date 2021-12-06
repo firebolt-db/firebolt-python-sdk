@@ -24,10 +24,9 @@ firebolt.common.settings module
    :undoc-members:
    :show-inheritance:
 
-firebolt.common.util module
----------------------------
 
 .. automodule:: firebolt.common.util
+   :exclude-members: async_to_sync, cached_property, fix_url_schema, mixin_for, prune_dict
    :members:
    :undoc-members:
    :show-inheritance:

@@ -16,6 +16,7 @@ firebolt.client.client module
 
 .. automodule:: firebolt.client.client
    :members:
+   :exclude-members: FireboltClientMixin
    :undoc-members:
    :show-inheritance:
 

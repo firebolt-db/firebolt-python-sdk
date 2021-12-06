@@ -43,7 +43,6 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">firebolt.common package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.common.exception">firebolt.common.exception module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.common.settings">firebolt.common.settings module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.common.util">firebolt.common.util module</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="firebolt.db.html">firebolt.db package</a></li>
@@ -278,44 +277,7 @@ like data truncations while inserting, etc.</p>
 
 </dd></dl>
 
-<span class="target" id="module-firebolt.common.urls"></span></section>
-<section id="module-firebolt.common.util">
-<span id="firebolt-common-util-module"></span><h2>firebolt.common.util module<a class="headerlink" href="#module-firebolt.common.util" title="Permalink to this headline"></a></h2>
-<dl class="py function">
-<dt class="sig sig-object py" id="firebolt.common.util.async_to_sync">
-<span class="sig-prename descclassname"><span class="pre">firebolt.common.util.</span></span><span class="sig-name descname"><span class="pre">async_to_sync</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="headerlink" href="#firebolt.common.util.async_to_sync" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="firebolt.common.util.cached_property">
-<span class="sig-prename descclassname"><span class="pre">firebolt.common.util.</span></span><span class="sig-name descname"><span class="pre">cached_property</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">firebolt.common.util.T</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">firebolt.common.util.T</span></span></span><a class="headerlink" href="#firebolt.common.util.cached_property" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="firebolt.common.util.fix_url_schema">
-<span class="sig-prename descclassname"><span class="pre">firebolt.common.util.</span></span><span class="sig-name descname"><span class="pre">fix_url_schema</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#firebolt.common.util.fix_url_schema" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="firebolt.common.util.mixin_for">
-<span class="sig-prename descclassname"><span class="pre">firebolt.common.util.</span></span><span class="sig-name descname"><span class="pre">mixin_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baseclass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">firebolt.common.util.TMix</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Type</span><span class="p"><span class="pre">[</span></span><span class="pre">firebolt.common.util.TMix</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.common.util.mixin_for" title="Permalink to this definition"></a></dt>
-<dd><p>Useful function to make mixins with baseclass typehint
-Should be used as a mixin base class to fix typehints</p>
-<p><a href="#id1"><span class="problematic" id="id2">``</span></a>`
-class ReadonlyMixin(mixin_for(BaseClass))):</p>
-<blockquote>
-<div><p>…</p>
-</div></blockquote>
-<p><a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a></p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="firebolt.common.util.prune_dict">
-<span class="sig-prename descclassname"><span class="pre">firebolt.common.util.</span></span><span class="sig-name descname"><span class="pre">prune_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#firebolt.common.util.prune_dict" title="Permalink to this definition"></a></dt>
-<dd><p>Prune items from dictionaries where value is None</p>
-</dd></dl>
-
-</section>
+<span class="target" id="module-firebolt.common.urls"></span><span class="target" id="module-firebolt.common.util"></span></section>
 </section>
 
 

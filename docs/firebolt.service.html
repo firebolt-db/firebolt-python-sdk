@@ -43,11 +43,8 @@
 <li class="toctree-l1"><a class="reference internal" href="firebolt.db.html">firebolt.db package</a></li>
 <li class="toctree-l1"><a class="reference internal" href="firebolt.model.html">firebolt.model package</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">firebolt.service package</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.base">firebolt.service.base module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.binding">firebolt.service.binding module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.database">firebolt.service.database module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.engine">firebolt.service.engine module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.engine_revision">firebolt.service.engine_revision module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.instance_type">firebolt.service.instance_type module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.manager">firebolt.service.manager module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.service.provider">firebolt.service.provider module</a></li>
@@ -81,107 +78,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="firebolt-service-package">
-<h1>firebolt.service package<a class="headerlink" href="#firebolt-service-package" title="Permalink to this headline"></a></h1>
-<section id="module-firebolt.service.base">
-<span id="firebolt-service-base-module"></span><h2>firebolt.service.base module<a class="headerlink" href="#module-firebolt.service.base" title="Permalink to this headline"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="firebolt.service.base.BaseService">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.base.</span></span><span class="sig-name descname"><span class="pre">BaseService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.service.manager.ResourceManager" title="firebolt.service.manager.ResourceManager"><span class="pre">firebolt.service.manager.ResourceManager</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.base.BaseService" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<dl class="py property">
-<dt class="sig sig-object py" id="firebolt.service.base.BaseService.account_id">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">account_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.service.base.BaseService.account_id" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="firebolt.service.base.BaseService.client">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">client</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="firebolt.client.html#firebolt.client.client.Client" title="firebolt.client.client.Client"><span class="pre">firebolt.client.client.Client</span></a></em><a class="headerlink" href="#firebolt.service.base.BaseService.client" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="firebolt.service.base.BaseService.settings">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">settings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="firebolt.common.html#firebolt.common.settings.Settings" title="firebolt.common.settings.Settings"><span class="pre">firebolt.common.settings.Settings</span></a></em><a class="headerlink" href="#firebolt.service.base.BaseService.settings" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-</section>
-<section id="module-firebolt.service.binding">
-<span id="firebolt-service-binding-module"></span><h2>firebolt.service.binding module<a class="headerlink" href="#module-firebolt.service.binding" title="Permalink to this headline"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="firebolt.service.binding.BindingService">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.binding.</span></span><span class="sig-name descname"><span class="pre">BindingService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.service.manager.ResourceManager" title="firebolt.service.manager.ResourceManager"><span class="pre">firebolt.service.manager.ResourceManager</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.binding.BindingService" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#firebolt.service.base.BaseService" title="firebolt.service.base.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="firebolt.service.binding.BindingService.create">
-<span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">firebolt.model.engine.Engine</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">database</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">firebolt.model.database.Database</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_default_engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.binding.Binding" title="firebolt.model.binding.Binding"><span class="pre">firebolt.model.binding.Binding</span></a></span></span><a class="headerlink" href="#firebolt.service.binding.BindingService.create" title="Permalink to this definition"></a></dt>
-<dd><p>Create a new binding between an engine and a database.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>engine</strong> – Engine to bind.</p></li>
-<li><p><strong>database</strong> – Database to bind.</p></li>
-<li><p><strong>is_default_engine</strong> – Whether this engine should be used as default for this database.
-Only one engine can be set as default for a single database.
-This will overwrite any existing default.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>New binding between the engine and database.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="firebolt.service.binding.BindingService.get_by_key">
-<span class="sig-name descname"><span class="pre">get_by_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">binding_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.binding.BindingKey" title="firebolt.model.binding.BindingKey"><span class="pre">firebolt.model.binding.BindingKey</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.binding.Binding" title="firebolt.model.binding.Binding"><span class="pre">firebolt.model.binding.Binding</span></a></span></span><a class="headerlink" href="#firebolt.service.binding.BindingService.get_by_key" title="Permalink to this definition"></a></dt>
-<dd><p>Get a binding by it’s BindingKey</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="firebolt.service.binding.BindingService.get_database_bound_to_engine">
-<span class="sig-name descname"><span class="pre">get_database_bound_to_engine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">firebolt.model.engine.Engine</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="firebolt.model.html#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">firebolt.model.database.Database</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.service.binding.BindingService.get_database_bound_to_engine" title="Permalink to this definition"></a></dt>
-<dd><p>Get the Database to which an engine is bound, if any.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="firebolt.service.binding.BindingService.get_engines_bound_to_database">
-<span class="sig-name descname"><span class="pre">get_engines_bound_to_database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">firebolt.model.database.Database</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="firebolt.model.html#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">firebolt.model.engine.Engine</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.service.binding.BindingService.get_engines_bound_to_database" title="Permalink to this definition"></a></dt>
-<dd><p>Get a list of engines that are bound to a database.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="firebolt.service.binding.BindingService.get_many">
-<span class="sig-name descname"><span class="pre">get_many</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_system_database</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="firebolt.model.html#firebolt.model.binding.Binding" title="firebolt.model.binding.Binding"><span class="pre">firebolt.model.binding.Binding</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.service.binding.BindingService.get_many" title="Permalink to this definition"></a></dt>
-<dd><p>List bindings on Firebolt, optionally filtering by database and engine.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>database_id</strong> – Return bindings matching the database_id.
-If None, match any databases.</p></li>
-<li><p><strong>engine_id</strong> – Return bindings matching the engine_id.
-If None, match any engines.</p></li>
-<li><p><strong>is_system_database</strong> – If True, return only system databases.
-If False, return only non-system databases.
-If None, do not filter on this parameter.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>List of bindings matching the filter parameters.</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</section>
-<section id="module-firebolt.service.database">
+  <section id="module-firebolt.service.base">
+<span id="firebolt-service-package"></span><h1>firebolt.service package<a class="headerlink" href="#module-firebolt.service.base" title="Permalink to this headline"></a></h1>
+<span class="target" id="module-firebolt.service.binding"></span><section id="module-firebolt.service.database">
 <span id="firebolt-service-database-module"></span><h2>firebolt.service.database module<a class="headerlink" href="#module-firebolt.service.database" title="Permalink to this headline"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="firebolt.service.database.DatabaseService">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.database.</span></span><span class="sig-name descname"><span class="pre">DatabaseService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.service.manager.ResourceManager" title="firebolt.service.manager.ResourceManager"><span class="pre">firebolt.service.manager.ResourceManager</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.database.DatabaseService" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#firebolt.service.base.BaseService" title="firebolt.service.base.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.service.database.DatabaseService.create">
 <span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">firebolt.model.database.Database</span></a></span></span><a class="headerlink" href="#firebolt.service.database.DatabaseService.create" title="Permalink to this definition"></a></dt>
@@ -245,7 +149,7 @@ name containing this substring.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="firebolt.service.engine.EngineService">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.engine.</span></span><span class="sig-name descname"><span class="pre">EngineService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.service.manager.ResourceManager" title="firebolt.service.manager.ResourceManager"><span class="pre">firebolt.service.manager.ResourceManager</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.engine.EngineService" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#firebolt.service.base.BaseService" title="firebolt.service.base.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.service.engine.EngineService.create">
 <span class="sig-name descname"><span class="pre">create</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">region</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#firebolt.service.types.EngineType" title="firebolt.service.types.EngineType"><span class="pre">firebolt.service.types.EngineType</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">EngineType.GENERAL_PURPOSE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'i3.4xlarge'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#firebolt.service.types.WarmupMethod" title="firebolt.service.types.WarmupMethod"><span class="pre">firebolt.service.types.WarmupMethod</span></a><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">WarmupMethod.PRELOAD_INDEXES</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">firebolt.model.engine.Engine</span></a></span></span><a class="headerlink" href="#firebolt.service.engine.EngineService.create" title="Permalink to this definition"></a></dt>
@@ -264,7 +168,7 @@ the engine automatically stops.</p></li>
 <li><p><strong>warmup</strong> – <p>The warmup method that should be used.</p>
 <p><code class="docutils literal notranslate"><span class="pre">MINIMAL</span></code>: On-demand loading (both indexes and tables’ data).</p>
 <p><code class="docutils literal notranslate"><span class="pre">PRELOAD_INDEXES</span></code>: Load indexes only.</p>
-<p>PRELOAD_ALL_DATA: Full data auto-load (both indexes and table data - full warmup).</p>
+<p><code class="docutils literal notranslate"><span class="pre">PRELOAD_ALL_DATA</span></code>: Full data auto-load (both indexes and table data - full warmup).</p>
 </p></li>
 <li><p><strong>description</strong> – A short description of the engine’s purpose.</p></li>
 </ul>
@@ -315,64 +219,16 @@ the engine automatically stops.</p></li>
 
 </dd></dl>
 
-</section>
-<section id="module-firebolt.service.engine_revision">
-<span id="firebolt-service-engine-revision-module"></span><h2>firebolt.service.engine_revision module<a class="headerlink" href="#module-firebolt.service.engine_revision" title="Permalink to this headline"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="firebolt.service.engine_revision.EngineRevisionService">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.engine_revision.</span></span><span class="sig-name descname"><span class="pre">EngineRevisionService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.service.manager.ResourceManager" title="firebolt.service.manager.ResourceManager"><span class="pre">firebolt.service.manager.ResourceManager</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.engine_revision.EngineRevisionService" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#firebolt.service.base.BaseService" title="firebolt.service.base.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></a></p>
-<dl class="py method">
-<dt class="sig sig-object py" id="firebolt.service.engine_revision.EngineRevisionService.get_by_id">
-<span class="sig-name descname"><span class="pre">get_by_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_revision_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.engine_revision.EngineRevision" title="firebolt.model.engine_revision.EngineRevision"><span class="pre">firebolt.model.engine_revision.EngineRevision</span></a></span></span><a class="headerlink" href="#firebolt.service.engine_revision.EngineRevisionService.get_by_id" title="Permalink to this definition"></a></dt>
-<dd><p>Get an EngineRevision from Firebolt by engine_id and engine_revision_id.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="firebolt.service.engine_revision.EngineRevisionService.get_by_key">
-<span class="sig-name descname"><span class="pre">get_by_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.engine_revision.EngineRevisionKey" title="firebolt.model.engine_revision.EngineRevisionKey"><span class="pre">firebolt.model.engine_revision.EngineRevisionKey</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.engine_revision.EngineRevision" title="firebolt.model.engine_revision.EngineRevision"><span class="pre">firebolt.model.engine_revision.EngineRevision</span></a></span></span><a class="headerlink" href="#firebolt.service.engine_revision.EngineRevisionService.get_by_key" title="Permalink to this definition"></a></dt>
-<dd><p>Fetch an EngineRevision from Firebolt by it’s key.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>key</strong> – Key of the desired EngineRevision.</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The requested EngineRevision</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</section>
+<span class="target" id="module-firebolt.service.engine_revision"></span></section>
 <section id="module-firebolt.service.instance_type">
 <span id="firebolt-service-instance-type-module"></span><h2>firebolt.service.instance_type module<a class="headerlink" href="#module-firebolt.service.instance_type" title="Permalink to this headline"></a></h2>
 <dl class="py class">
-<dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeLookup">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.instance_type.</span></span><span class="sig-name descname"><span class="pre">InstanceTypeLookup</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">region_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">instance_type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeLookup" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">NamedTuple</span></code></p>
-<p>Helper tuple for looking up instance types by names</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeLookup.instance_type_name">
-<span class="sig-name descname"><span class="pre">instance_type_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeLookup.instance_type_name" title="Permalink to this definition"></a></dt>
-<dd><p>Alias for field number 1</p>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeLookup.region_name">
-<span class="sig-name descname"><span class="pre">region_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeLookup.region_name" title="Permalink to this definition"></a></dt>
-<dd><p>Alias for field number 0</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="py class">
 <dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeService">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.instance_type.</span></span><span class="sig-name descname"><span class="pre">InstanceTypeService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.service.manager.ResourceManager" title="firebolt.service.manager.ResourceManager"><span class="pre">firebolt.service.manager.ResourceManager</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#firebolt.service.base.BaseService" title="firebolt.service.base.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeService.get_by_key">
-<span class="sig-name descname"><span class="pre">get_by_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance_type_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceTypeKey" title="firebolt.model.instance_type.InstanceTypeKey"><span class="pre">firebolt.model.instance_type.InstanceTypeKey</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a></span></span><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.get_by_key" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_by_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance_type_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">firebolt.model.instance_type.InstanceTypeKey</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a></span></span><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.get_by_key" title="Permalink to this definition"></a></dt>
 <dd><p>Get an instance type by key.</p>
 </dd></dl>
 
@@ -402,13 +258,13 @@ If not provided, use the default region name from the client.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeService.instance_types_by_key">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instance_types_by_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceTypeKey" title="firebolt.model.instance_type.InstanceTypeKey"><span class="pre">firebolt.model.instance_type.InstanceTypeKey</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.instance_types_by_key" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instance_types_by_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">firebolt.model.instance_type.InstanceTypeKey</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.instance_types_by_key" title="Permalink to this definition"></a></dt>
 <dd><p>Dict of {InstanceTypeKey to InstanceType}</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.instance_type.InstanceTypeService.instance_types_by_name">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instance_types_by_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#firebolt.service.instance_type.InstanceTypeLookup" title="firebolt.service.instance_type.InstanceTypeLookup"><span class="pre">firebolt.service.instance_type.InstanceTypeLookup</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.instance_types_by_name" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instance_types_by_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">firebolt.service.instance_type.InstanceTypeLookup</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.instance_type.InstanceType" title="firebolt.model.instance_type.InstanceType"><span class="pre">firebolt.model.instance_type.InstanceType</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.instance_type.InstanceTypeService.instance_types_by_name" title="Permalink to this definition"></a></dt>
 <dd><p>Dict of {InstanceTypeLookup to InstanceType}</p>
 </dd></dl>
 
@@ -450,7 +306,7 @@ If not provided, use the default region name from the client.</p></li>
 <dl class="py class">
 <dt class="sig sig-object py" id="firebolt.service.region.RegionService">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.service.region.</span></span><span class="sig-name descname"><span class="pre">RegionService</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resource_manager</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.service.manager.ResourceManager" title="firebolt.service.manager.ResourceManager"><span class="pre">firebolt.service.manager.ResourceManager</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.service.region.RegionService" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#firebolt.service.base.BaseService" title="firebolt.service.base.BaseService"><code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></a></p>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">firebolt.service.base.BaseService</span></code></p>
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.region.RegionService.default_region">
 <em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">default_region</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a></em><a class="headerlink" href="#firebolt.service.region.RegionService.default_region" title="Permalink to this definition"></a></dt>
@@ -465,7 +321,7 @@ If not provided, use the default region name from the client.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.service.region.RegionService.get_by_key">
-<span class="sig-name descname"><span class="pre">get_by_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.model.html#firebolt.model.region.RegionKey" title="firebolt.model.region.RegionKey"><span class="pre">firebolt.model.region.RegionKey</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a></span></span><a class="headerlink" href="#firebolt.service.region.RegionService.get_by_key" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">get_by_key</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">firebolt.model.region.RegionKey</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a></span></span><a class="headerlink" href="#firebolt.service.region.RegionService.get_by_key" title="Permalink to this definition"></a></dt>
 <dd><p>Get an AWS Region by its key.</p>
 </dd></dl>
 
@@ -483,7 +339,7 @@ If not provided, use the default region name from the client.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="firebolt.service.region.RegionService.regions_by_key">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">regions_by_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.RegionKey" title="firebolt.model.region.RegionKey"><span class="pre">firebolt.model.region.RegionKey</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.region.RegionService.regions_by_key" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">regions_by_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">firebolt.model.region.RegionKey</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="firebolt.model.html#firebolt.model.region.Region" title="firebolt.model.region.Region"><span class="pre">firebolt.model.region.Region</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#firebolt.service.region.RegionService.regions_by_key" title="Permalink to this definition"></a></dt>
 <dd><p>Dict of {RegionKey to Region}</p>
 </dd></dl>
 
