@@ -1,7 +1,7 @@
 from typing import Callable, List
 
 from httpx import codes
-from pytest import raises
+from pytest import raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db._types import ColType
@@ -158,3 +158,13 @@ def test_connect_engine_name(
         api_endpoint=settings.server,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
+
+
+def test_connection_unclosed_warnings():
+    c = Connection("", "", "", "", "")
+    with warns(UserWarning) as winfo:
+        del c
+
+    assert "Unclosed" in str(
+        winfo.list[0].message
+    ), "Invalid unclosed connection warning"
