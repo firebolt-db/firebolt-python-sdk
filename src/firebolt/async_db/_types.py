@@ -94,7 +94,9 @@ class _InternalType(Enum):
     """Enum of all internal firebolt types except for array."""
 
     # INT, INTEGER
+    Int8 = "Int8"
     UInt8 = "UInt8"
+    Int16 = "Int16"
     UInt16 = "UInt16"
     Int32 = "Int32"
     UInt32 = "UInt32"
@@ -125,7 +127,9 @@ class _InternalType(Enum):
     def python_type(self) -> type:
         """Convert internal type to python type."""
         types = {
+            _InternalType.Int8: int,
             _InternalType.UInt8: int,
+            _InternalType.Int16: int,
             _InternalType.UInt16: int,
             _InternalType.Int32: int,
             _InternalType.UInt32: int,

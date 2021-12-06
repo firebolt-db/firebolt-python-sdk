@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from asyncio import new_event_loop
 from functools import wraps
 from inspect import cleandoc
 from types import TracebackType
 from typing import Any
+from warnings import warn
 
 from readerwriterlock.rwlock import RWLockWrite
 
@@ -38,7 +38,7 @@ class Connection(AsyncBaseConnection):
         """
     )
 
-    __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock", "_loop")
+    __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock",)
 
     cursor_class = Cursor
 
@@ -47,7 +47,6 @@ class Connection(AsyncBaseConnection):
         # Holding this lock for write means that connection is closing itself.
         # cursor() should hold this lock for read to read/write state
         self._closing_lock = RWLockWrite()
-        self._loop = new_event_loop()
 
     @wraps(AsyncBaseConnection.cursor)
     def cursor(self) -> Cursor:
@@ -59,9 +58,7 @@ class Connection(AsyncBaseConnection):
     @wraps(AsyncBaseConnection._aclose)
     def close(self) -> None:
         with self._closing_lock.gen_wlock():
-            if not self.closed:
-                self._loop.run_until_complete(self._aclose())
-                self._loop.close()
+            async_to_sync(self._aclose)()
 
     # Context manager support
     def __enter__(self) -> Connection:
@@ -75,7 +72,8 @@ class Connection(AsyncBaseConnection):
         self.close()
 
     def __del__(self) -> None:
-        self.close()
+        if not self.closed:
+            warn(f"Unclosed {self!r}", UserWarning)
 
 
 connect = async_to_sync(async_connect_factory(Connection))
