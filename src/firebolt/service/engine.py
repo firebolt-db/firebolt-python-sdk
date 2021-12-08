@@ -131,6 +131,8 @@ class EngineService(BaseService):
         Returns:
             Engine with the specified settings.
         """
+        logger.info(f"Creating Engine (name={name})")
+
         if isinstance(engine_type, str):
             engine_type = EngineType[engine_type]
         if isinstance(warmup, str):

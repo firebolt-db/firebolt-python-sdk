@@ -32,6 +32,19 @@ Working Directory: $ProjectFileDir$
 Note: while there is a `mypy` hook for pre-commit, 
 I found it too buggy to be worthwhile, so I just run mypy manually. 
 
+### PR procedures
+
+ 1. When a pull request is created a set of automated tests are run. If any of those fail they will need to be fixed before any of the maintainers can review the PR. The checks here include:
+ - Unit tests
+ - Linting
+ - Type checks
+ - PR title correctness
+
+2. If all automated tests have succeeded, the change is reviewed by one of the maintainers, assesing the need for the change and adding suggestions.
+3. Maintainer kicks off integration tests. Those can only be submitted by the maintainers in order to avoid an abuse of resources.
+4. If the integration tests pass and the change looks good to the maintainer they approve it.
+5. Merge into the main branch. Only the maintainers have the ability to merge a PR. They will do so at the earliest convenience, with regards to the impact of the change as well as the release planning.
+
 ### Docstrings
 
 Use the Google format for docstrings. Do not include types or an indication 

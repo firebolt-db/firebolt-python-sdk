@@ -1,7 +1,7 @@
 from typing import Callable, List
 
 from httpx import codes
-from pytest import raises
+from pytest import raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db._types import ColType
@@ -54,24 +54,28 @@ def test_cursor_initialized(
     httpx_mock.add_callback(query_callback, url=query_url)
 
     for url in (settings.server, f"https://{settings.server}"):
-        connection = connect(
+        with connect(
             engine_url=url,
             database=db_name,
             username="u",
             password="p",
             api_endpoint=settings.server,
-        )
+        ) as connection:
 
-        cursor = connection.cursor()
-        assert cursor.connection == connection, "Invalid cursor connection attribute"
-        assert cursor._client == connection._client, "Invalid cursor _client attribute"
+            cursor = connection.cursor()
+            assert (
+                cursor.connection == connection
+            ), "Invalid cursor connection attribute"
+            assert (
+                cursor._client == connection._client
+            ), "Invalid cursor _client attribute"
 
-        assert cursor.execute("select*") == len(python_query_data)
+            assert cursor.execute("select*") == len(python_query_data)
 
-        cursor.close()
-        assert (
-            cursor not in connection._cursors
-        ), "Cursor wasn't removed from connection after close"
+            cursor.close()
+            assert (
+                cursor not in connection._cursors
+            ), "Cursor wasn't removed from connection after close"
 
 
 def test_connect_empty_parameters():
@@ -155,3 +159,13 @@ def test_connect_engine_name(
         account_name=settings.account_name,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
+
+
+def test_connection_unclosed_warnings():
+    c = Connection("", "", "", "", "")
+    with warns(UserWarning) as winfo:
+        del c
+
+    assert "Unclosed" in str(
+        winfo.list[0].message
+    ), "Invalid unclosed connection warning"

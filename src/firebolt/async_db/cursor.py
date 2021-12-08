@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import logging
+import re
+import time
 from datetime import date, datetime
 from enum import Enum
 from functools import wraps
@@ -42,6 +45,8 @@ from firebolt.common.exception import (
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
+
+logger = logging.getLogger(__name__)
 
 ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
@@ -183,12 +188,15 @@ class BaseCursor:
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            raise ProgrammingError(resp.read().decode("utf-8"))
-        if resp.status_code == codes.SERVICE_UNAVAILABLE:
             if not await is_db_available(self.connection, self.connection.database):
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
                 )
+            raise ProgrammingError(resp.read().decode("utf-8"))
+        if (
+            resp.status_code == codes.SERVICE_UNAVAILABLE
+            or resp.status_code == codes.NOT_FOUND
+        ):
             if not await is_engine_running(self.connection, self.connection.engine_url):
                 raise EngineNotRunningError(
                     f"Firebolt engine {self.connection.engine_url} "
@@ -232,10 +240,21 @@ class BaseCursor:
         set_parameters: Optional[Dict] = None,
     ) -> int:
         """Prepare and execute a database query. Return row count."""
+        start_time = time.time()
+
+        # our CREATE EXTERNAL TABLE queries currently require credentials,
+        # so we will skip logging those queries.
+        # https://docs.firebolt.io/sql-reference/commands/ddl-commands#create-external-table
+        if not re.search("aws_key_id|credentials", query, flags=re.IGNORECASE):
+            logger.debug(f"Running query: {query}")
+
         self._reset()
         resp = await self._do_execute_request(query, parameters, set_parameters)
         self._store_query_data(resp)
         self._state = CursorState.DONE
+        logger.info(
+            f"Query fetched {self.rowcount} rows in {time.time() - start_time} seconds"
+        )
         return self.rowcount
 
     @check_not_closed

@@ -12,7 +12,7 @@ def connection(
     api_endpoint: str,
     account_name: str,
 ) -> Connection:
-    return connect(
+    connection = connect(
         engine_url=engine_url,
         database=database_name,
         username=username,
@@ -20,6 +20,8 @@ def connection(
         api_endpoint=api_endpoint,
         account_name=account_name,
     )
+    yield connection
+    connection.close()
 
 
 @fixture
@@ -31,7 +33,7 @@ def connection_engine_name(
     api_endpoint: str,
     account_name: str,
 ) -> Connection:
-    return connect(
+    connection = connect(
         engine_name=engine_name,
         database=database_name,
         username=username,
@@ -39,3 +41,5 @@ def connection_engine_name(
         api_endpoint=api_endpoint,
         account_name=account_name,
     )
+    yield connection
+    connection.close()

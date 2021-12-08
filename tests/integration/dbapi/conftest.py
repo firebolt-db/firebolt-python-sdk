@@ -13,6 +13,8 @@ LOGGER = getLogger(__name__)
 
 ENGINE_URL_ENV = "ENGINE_URL"
 ENGINE_NAME_ENV = "ENGINE_NAME"
+STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
+STOPPED_ENGINE_NAME_ENV = "STOPPED_ENGINE_NAME"
 DATABASE_NAME_ENV = "DATABASE_NAME"
 USER_NAME_ENV = "USER_NAME"
 PASSWORD_ENV = "PASSWORD"
@@ -32,8 +34,18 @@ def engine_url() -> str:
 
 
 @fixture(scope="session")
+def stopped_engine_url() -> str:
+    return must_env(STOPPED_ENGINE_URL_ENV)
+
+
+@fixture(scope="session")
 def engine_name() -> str:
     return must_env(ENGINE_NAME_ENV)
+
+
+@fixture(scope="session")
+def stopped_engine_name() -> str:
+    return must_env(STOPPED_ENGINE_URL_ENV)
 
 
 @fixture(scope="session")
@@ -65,12 +77,12 @@ def api_endpoint() -> str:
 @fixture
 def all_types_query() -> str:
     return (
-        "select 1 as uint8, 258 as uint16, 80000 as uint32, -30000 as int32,"
-        "30000000000 as uint64, -30000000000 as int64, cast(1.23 AS FLOAT) as float32,"
-        " 1.2345678901234 as float64, 'text' as \"string\", "
-        "CAST('2021-03-28' AS DATE) as \"date\", "
-        'CAST(\'2019-07-31 01:01:01\' AS DATETIME) as "datetime", true as "bool",'
-        '[1,2,3,4] as "array", cast(null as int) as nullable'
+        "select 1 as uint8, -1 as int8, 257 as uint16, -257 as int16, 80000 as uint32,"
+        " -80000 as int32, 30000000000 as uint64, -30000000000 as int64, cast(1.23 AS"
+        " FLOAT) as float32, 1.2345678901234 as float64, 'text' as \"string\","
+        " CAST('2021-03-28' AS DATE) as \"date\", CAST('2019-07-31 01:01:01' AS"
+        ' DATETIME) as "datetime", true as "bool",[1,2,3,4] as "array", cast(null as'
+        " int) as nullable"
     )
 
 
@@ -78,7 +90,9 @@ def all_types_query() -> str:
 def all_types_query_description() -> List[Column]:
     return [
         Column("uint8", int, None, None, None, None, None),
+        Column("int8", int, None, None, None, None, None),
         Column("uint16", int, None, None, None, None, None),
+        Column("int16", int, None, None, None, None, None),
         Column("uint32", int, None, None, None, None, None),
         Column("int32", int, None, None, None, None, None),
         Column("uint64", int, None, None, None, None, None),
@@ -99,9 +113,11 @@ def all_types_query_response() -> List[ColType]:
     return [
         [
             1,
-            258,
+            -1,
+            257,
+            -257,
             80000,
-            -30000,
+            -80000,
             30000000000,
             -30000000000,
             1.23,

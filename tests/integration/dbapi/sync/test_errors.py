@@ -3,9 +3,10 @@ from pytest import raises
 
 from firebolt.common.exception import (
     AuthenticationError,
-    InterfaceError,
+    EngineNotRunningError,
+    FireboltDatabaseError,
+    FireboltEngineError,
     OperationalError,
-    ProgrammingError,
 )
 from firebolt.db import Connection, connect
 
@@ -19,20 +20,20 @@ def test_invalid_credentials(
     account_name: str,
 ) -> None:
     """Connection properly reacts to invalid credentials error"""
-    connection = connect(
+    with connect(
         engine_url=engine_url,
         database=database_name,
         username=username + "_",
         password=password + "_",
         api_endpoint=api_endpoint,
         account_name=account_name,
-    )
-    with raises(AuthenticationError) as exc_info:
-        connection.cursor().execute("show tables")
+    ) as connection:
+        with raises(AuthenticationError) as exc_info:
+            connection.cursor().execute("show tables")
 
-    assert str(exc_info.value).startswith(
-        "Failed to authenticate"
-    ), "Invalid authentication error message"
+        assert str(exc_info.value).startswith(
+            "Failed to authenticate"
+        ), "Invalid authentication error message"
 
 
 def test_engine_url_not_exists(
@@ -44,16 +45,16 @@ def test_engine_url_not_exists(
     account_name: str,
 ) -> None:
     """Connection properly reacts to invalid engine url error"""
-    connection = connect(
+    with connect(
         engine_url=engine_url + "_",
         database=database_name,
         username=username,
         password=password,
         api_endpoint=api_endpoint,
         account_name=account_name,
-    )
-    with raises(ConnectError):
-        connection.cursor().execute("show tables")
+    ) as connection:
+        with raises(ConnectError):
+            connection.cursor().execute("show tables")
 
 
 def test_engine_name_not_exists(
@@ -65,16 +66,37 @@ def test_engine_name_not_exists(
     account_name: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
-    with raises(InterfaceError):
-        connection = connect(
+    with raises(FireboltEngineError):
+        with connect(
             engine_name=engine_name + "_________",
             database=database_name,
             username=username,
             password=password,
             api_endpoint=api_endpoint,
             account_name=account_name,
-        )
-        connection.cursor().execute("show tables")
+        ) as connection:
+            connection.cursor().execute("show tables")
+
+
+def test_engine_stopped(
+    stopped_engine_url: str,
+    database_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+    account_name: str,
+) -> None:
+    """Connection properly reacts to engine not running error"""
+    with raises(EngineNotRunningError):
+        with connect(
+            engine_url=stopped_engine_url,
+            database=database_name,
+            username=username,
+            password=password,
+            api_endpoint=api_endpoint,
+            account_name=account_name,
+        ) as connection:
+            connection.cursor().execute("show tables")
 
 
 def test_database_not_exists(
@@ -87,20 +109,20 @@ def test_database_not_exists(
 ) -> None:
     """Connection properly reacts to invalid database error"""
     new_db_name = database_name + "_"
-    connection = connect(
+    with connect(
         engine_url=engine_url,
         database=new_db_name,
         username=username,
         password=password,
         api_endpoint=api_endpoint,
         account_name=account_name,
-    )
-    with raises(ProgrammingError) as exc_info:
-        connection.cursor().execute("show tables")
+    ) as connection:
+        with raises(FireboltDatabaseError) as exc_info:
+            connection.cursor().execute("show tables")
 
-    assert (
-        str(exc_info.value) == f"Invalid database '{new_db_name}'"
-    ), "Invalid database name error message"
+        assert (
+            str(exc_info.value) == f"Database {new_db_name} does not exist"
+        ), "Invalid database name error message"
 
 
 def test_sql_error(connection: Connection) -> None:

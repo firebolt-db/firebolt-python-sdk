@@ -4,6 +4,7 @@ from functools import wraps
 from inspect import cleandoc
 from types import TracebackType
 from typing import Any
+from warnings import warn
 
 from readerwriterlock.rwlock import RWLockWrite
 
@@ -61,7 +62,7 @@ class Connection(AsyncBaseConnection):
     def close(self) -> None:
         """Close connection and all underlying cursors."""
         with self._closing_lock.gen_wlock():
-            return async_to_sync(super()._aclose)()
+            async_to_sync(self._aclose)()
 
     # Context manager support
     def __enter__(self) -> Connection:
@@ -75,7 +76,8 @@ class Connection(AsyncBaseConnection):
         self.close()
 
     def __del__(self) -> None:
-        self.close()
+        if not self.closed:
+            warn(f"Unclosed {self!r}", UserWarning)
 
 
 connect = async_to_sync(async_connect_factory(Connection))

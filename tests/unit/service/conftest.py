@@ -12,6 +12,7 @@ from firebolt.common.urls import (
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_DATABASE_URL,
     ACCOUNT_DATABASES_URL,
+    ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINES_URL,
     INSTANCE_TYPES_URL,
     PROVIDERS_URL,
@@ -157,6 +158,29 @@ def engine_url(settings: Settings, account_id) -> str:
 
 
 @pytest.fixture
+def account_engine_callback(engine_url: str, mock_engine) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == account_engine_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json={"engine": mock_engine.dict()},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
+    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
+        account_id=account_id,
+        engine_id=mock_engine.engine_id,
+    )
+
+
+@pytest.fixture
 def mock_database(db_name, region_1, account_id) -> Database:
     return Database(
         name=db_name,
@@ -295,6 +319,21 @@ def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
         return to_response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([binding]),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def no_bindings_callback(bindings_url: str) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == bindings_url
+        return to_response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response([]),
         )
 
     return do_mock
