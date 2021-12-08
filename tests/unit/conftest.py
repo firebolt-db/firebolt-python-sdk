@@ -6,6 +6,18 @@ from pydantic import SecretStr
 from pytest_httpx import to_response
 from pytest_httpx._httpx_internals import Response
 
+from firebolt.common.exception import (
+    DatabaseError,
+    DataError,
+    Error,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    NotSupportedError,
+    OperationalError,
+    ProgrammingError,
+    Warning,
+)
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
     ACCOUNT_ENGINE_URL,
@@ -202,3 +214,20 @@ def get_engines_url(settings: Settings) -> str:
 @pytest.fixture
 def get_databases_url(settings: Settings) -> str:
     return f"https://{settings.server}{DATABASES_URL}"
+
+
+@pytest.fixture
+def db_api_exceptions():
+    exceptions = {
+        "DatabaseError": DatabaseError,
+        "DataError": DataError,
+        "Error": Error,
+        "IntegrityError": IntegrityError,
+        "InterfaceError": InterfaceError,
+        "InternalError": InternalError,
+        "NotSupportedError": NotSupportedError,
+        "OperationalError": OperationalError,
+        "ProgrammingError": ProgrammingError,
+        "Warning": Warning,
+    }
+    return exceptions

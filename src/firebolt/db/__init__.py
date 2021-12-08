@@ -13,6 +13,18 @@ from firebolt.async_db._types import (
     Timestamp,
     TimestampFromTicks,
 )
+from firebolt.common.exception import (
+    DatabaseError,
+    DataError,
+    Error,
+    IntegrityError,
+    InterfaceError,
+    InternalError,
+    NotSupportedError,
+    OperationalError,
+    ProgrammingError,
+    Warning,
+)
 from firebolt.db.connection import Connection, connect
 from firebolt.db.cursor import Cursor
 
