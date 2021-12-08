@@ -45,7 +45,7 @@ def engine_name() -> str:
 
 @fixture(scope="session")
 def stopped_engine_name() -> str:
-    return must_env(STOPPED_ENGINE_URL_ENV)
+    return must_env(STOPPED_ENGINE_NAME_ENV)
 
 
 @fixture(scope="session")
