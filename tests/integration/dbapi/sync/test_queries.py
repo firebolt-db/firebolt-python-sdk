@@ -143,14 +143,8 @@ def test_insert(connection: Connection) -> None:
             "'2021-01-01 01:01:01', true, [1, 2, 3])",
         )
 
-        test_empty_query(
-            c,
-            "INSERT INTO test_tb VALUES (2, null, 2.2, '2022-02-02',"
-            "'2022-02-02 02:02:02', false, [1])",
-        )
-
         assert (
-            c.execute("SELECT * FROM test_tb ORDER BY test_tb.id") == 2
+            c.execute("SELECT * FROM test_tb ORDER BY test_tb.id") == 1
         ), "Invalid data length in table after insert"
 
         assert_deep_eq(
@@ -165,7 +159,6 @@ def test_insert(connection: Connection) -> None:
                     1,
                     [1, 2, 3],
                 ],
-                [2, None, 2.2, date(2022, 2, 2), datetime(2022, 2, 2, 2, 2, 2), 0, [1]],
             ],
             "Invalid data in table after insert",
         )
