@@ -10,7 +10,7 @@ def cached_property(func: Callable[..., T]) -> T:
 
 
 def prune_dict(d: dict) -> dict:
-    """Prune items from dictionaries where value is None"""
+    """Prune items from dictionaries where value is None."""
     return {k: v for k, v in d.items() if v is not None}
 
 
@@ -19,7 +19,7 @@ TMix = TypeVar("TMix")
 
 def mixin_for(baseclass: Type[TMix]) -> Type[TMix]:
     """
-    Useful function to make mixins with baseclass typehint
+    Useful function to make mixins with baseclass typehint.
     Should be used as a mixin base class to fix typehints.
 
     ```
