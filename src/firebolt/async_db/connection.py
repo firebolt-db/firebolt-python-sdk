@@ -191,6 +191,11 @@ class BaseConnection:
         except ValueError:
             pass
 
+    def commit(self):
+        """Does nothing since Firebolt doesn't have transactions"""
+        if self.closed:
+            raise ConnectionClosedError("Unable to commit: connection closed")
+
 
 class Connection(BaseConnection):
     cleandoc(
