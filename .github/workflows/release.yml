@@ -12,7 +12,7 @@ on:
 
 jobs:
   integration-tests:
-    uses: firebolt-db/firebolt-python-sdk/.github/workflows/integration-tests.yml@main
+    uses: firebolt-db/firebolt-python-sdk/.github/workflows/integration-tests.yml@ci_add_secrets
     secrets:
       FIREBOLT_USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
       FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
