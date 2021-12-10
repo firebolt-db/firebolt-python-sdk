@@ -168,3 +168,12 @@ def test_connection_unclosed_warnings():
     assert "Unclosed" in str(
         winfo.list[0].message
     ), "Invalid unclosed connection warning"
+
+
+def test_connection_commit(connection: Connection):
+    # nothing happens
+    connection.commit()
+
+    connection.close()
+    with raises(ConnectionClosedError):
+        connection.commit()

@@ -8,6 +8,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db.cursor import ColType, Column, CursorState
 from firebolt.common.exception import (
     CursorClosedError,
+    DataError,
     OperationalError,
     QueryNotRunError,
 )
@@ -160,7 +161,6 @@ def test_cursor_execute(
         assert query() == -1, "Invalid row count for insert query"
         assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
         assert cursor.description is None, "Invalid description for insert query"
-        assert cursor.fetchone() is None, "Non-empty fetchone for insert query"
 
 
 def test_cursor_execute_error(
@@ -215,6 +215,7 @@ def test_cursor_fetchone(
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
 ):
@@ -235,12 +236,18 @@ def test_cursor_fetchone(
         cursor.fetchone() is None
     ), "fetchone should return None when no rows left to fetch"
 
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    cursor.execute("sql")
+    with raises(DataError):
+        cursor.fetchone()
+
 
 def test_cursor_fetchmany(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
 ):
@@ -292,12 +299,18 @@ def test_cursor_fetchmany(
         len(cursor.fetchmany()) == 0
     ), "fetchmany should return empty result set when no rows left to fetch"
 
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    cursor.execute("sql")
+    with raises(DataError):
+        cursor.fetchmany()
+
 
 def test_cursor_fetchall(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
 ):
@@ -319,6 +332,11 @@ def test_cursor_fetchall(
     assert (
         len(cursor.fetchall()) == 0
     ), "fetchmany should return empty result set when no rows left to fetch"
+
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    cursor.execute("sql")
+    with raises(DataError):
+        cursor.fetchall()
 
 
 # This tests a temporary functionality, needs to be removed when the

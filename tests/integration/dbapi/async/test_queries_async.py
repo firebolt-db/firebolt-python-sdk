@@ -1,9 +1,9 @@
 from datetime import date, datetime
 from typing import Any, List
 
-from pytest import mark
+from pytest import mark, raises
 
-from firebolt.async_db import Connection, Cursor
+from firebolt.async_db import Connection, Cursor, DataError
 from firebolt.async_db._types import ColType, Column
 
 
@@ -137,7 +137,14 @@ async def test_insert(connection: Connection) -> None:
         assert await c.execute(query) == -1, "Invalid row count returned"
         assert c.rowcount == -1, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
-        assert await c.fetchone() is None, "Invalid data returned"
+        with raises(DataError):
+            await c.fetchone()
+
+        with raises(DataError):
+            await c.fetchmany()
+
+        with raises(DataError):
+            await c.fetchall()
 
     with connection.cursor() as c:
         await c.execute("DROP TABLE IF EXISTS test_tb")

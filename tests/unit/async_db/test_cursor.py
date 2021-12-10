@@ -10,6 +10,7 @@ from firebolt.async_db._types import Column
 from firebolt.async_db.cursor import ColType, CursorState
 from firebolt.common.exception import (
     CursorClosedError,
+    DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
     OperationalError,
@@ -175,7 +176,6 @@ async def test_cursor_execute(
         assert await query() == -1, "Invalid row count for insert query"
         assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
         assert cursor.description is None, "Invalid description for insert query"
-        assert await cursor.fetchone() is None, "Non-empty fetchone for insert query"
 
 
 @mark.asyncio
@@ -264,6 +264,7 @@ async def test_cursor_fetchone(
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
 ):
@@ -284,6 +285,11 @@ async def test_cursor_fetchone(
         await cursor.fetchone() is None
     ), "fetchone should return None when no rows left to fetch"
 
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    await cursor.execute("sql")
+    with raises(DataError):
+        await cursor.fetchone()
+
 
 @mark.asyncio
 async def test_cursor_fetchmany(
@@ -291,6 +297,7 @@ async def test_cursor_fetchmany(
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
 ):
@@ -342,6 +349,11 @@ async def test_cursor_fetchmany(
         len(await cursor.fetchmany()) == 0
     ), "fetchmany should return empty result set when no rows left to fetch"
 
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    await cursor.execute("sql")
+    with raises(DataError):
+        await cursor.fetchmany()
+
 
 @mark.asyncio
 async def test_cursor_fetchall(
@@ -349,6 +361,7 @@ async def test_cursor_fetchall(
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
 ):
@@ -370,6 +383,11 @@ async def test_cursor_fetchall(
     assert (
         len(await cursor.fetchall()) == 0
     ), "fetchmany should return empty result set when no rows left to fetch"
+
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    await cursor.execute("sql")
+    with raises(DataError):
+        await cursor.fetchall()
 
 
 # This tests a temporary functionality, needs to be removed when the
