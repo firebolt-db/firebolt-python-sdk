@@ -2,6 +2,11 @@ name: Run integration tests
 on:
   workflow_dispatch:
   workflow_call:
+    secrets:
+      FIREBOLT_USERNAME:
+        required: true
+      FIREBOLT_PASSWORD:
+        required: true
 jobs:
   tests:
     runs-on: ubuntu-latest
