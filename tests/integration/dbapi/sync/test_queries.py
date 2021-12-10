@@ -1,9 +1,11 @@
 from datetime import date, datetime
 from typing import Any, List
 
+from pytest import raises
+
 from firebolt.async_db._types import ColType
 from firebolt.async_db.cursor import Column
-from firebolt.db import Connection, Cursor
+from firebolt.db import Connection, Cursor, DataError
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -128,7 +130,14 @@ def test_insert(connection: Connection) -> None:
         assert c.execute(query) == -1, "Invalid row count returned"
         assert c.rowcount == -1, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
-        assert c.fetchone() is None, "Invalid data returned"
+        with raises(DataError):
+            c.fetchone()
+
+        with raises(DataError):
+            c.fetchmany()
+
+        with raises(DataError):
+            c.fetchall()
 
     with connection.cursor() as c:
         c.execute("DROP TABLE IF EXISTS test_tb")

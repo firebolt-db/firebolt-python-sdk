@@ -190,3 +190,13 @@ async def test_connect_engine_name(
         api_endpoint=settings.server,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
+
+
+@mark.asyncio
+async def test_connection_commit(connection: Connection):
+    # nothing happens
+    connection.commit()
+
+    await connection.aclose()
+    with raises(ConnectionClosedError):
+        connection.commit()

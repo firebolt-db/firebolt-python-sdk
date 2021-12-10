@@ -290,9 +290,11 @@ class BaseCursor:
             and update _idx to point to the end of this range
             """
         )
+
         if self._rows is None:
             # No elements to take
-            return (0, 0)
+            raise DataError("no rows to fetch")
+
         left = self._idx
         right = min(self._idx + size, len(self._rows))
         self._idx = right
@@ -328,8 +330,8 @@ class BaseCursor:
     @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result."""
+        left, right = self._get_next_range(self.rowcount)
         assert self._rows is not None
-        left, right = self._get_next_range(len(self._rows))
         rows = self._rows[left:right]
         return [self._parse_row(row) for row in rows]
 
