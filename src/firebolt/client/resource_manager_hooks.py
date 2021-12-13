@@ -1,3 +1,4 @@
+from json import JSONDecodeError
 from logging import getLogger
 
 from httpx import HTTPStatusError, Request, RequestError, Response
@@ -34,7 +35,10 @@ def raise_on_4xx_5xx(response: Response) -> None:
         raise exc
     except HTTPStatusError as exc:
         response.read()  # without this, you can get a ResponseNotRead error
-        parsed_response = exc.response.json()
+        try:
+            parsed_response = exc.response.json()
+        except JSONDecodeError:
+            parsed_response = {"_raw": exc.response.text}
         debug_message = (
             f"Error response {exc.response.status_code} "
             f"while requesting {exc.request.url!r}. "
