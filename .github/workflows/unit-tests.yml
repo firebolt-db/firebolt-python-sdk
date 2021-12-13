@@ -4,11 +4,12 @@
 name: Unit tests
 
 on:
+  workflow_call:
   push:
     branches: [ main ]
 
 jobs:
-  build:
+  unit-tests:
 
     runs-on: ubuntu-latest
 
