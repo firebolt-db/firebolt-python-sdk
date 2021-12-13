@@ -10,6 +10,6 @@ jobs:
     with:
       token: ${{ secrets.GITHUB_TOKEN }}
   code-checkers:
-    uses: ./.github/workflows/code-check.yml@main
+    uses: firebolt-db/firebolt-sdk/.github/workflows/code-check.yml@main
   unit-tests:
-    uses: ./.github/workflows/unit-tests.yml@main
+    uses: firebolt-db/firebolt-sdk/.github/workflows/unit-tests.yml@main
