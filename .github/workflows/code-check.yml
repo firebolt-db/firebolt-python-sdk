@@ -2,6 +2,8 @@ name: Python code checks
 
 on:
   workflow_call:
+  push:
+    branches: [ main ]
 
 jobs:
   check-code:
