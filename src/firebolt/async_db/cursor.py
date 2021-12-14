@@ -38,6 +38,7 @@ from firebolt.common.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
+    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -218,6 +219,9 @@ class BaseCursor:
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
     ) -> Response:
+        if parameters:
+            raise NotSupportedError("parametrized queries are not supported")
+
         resp = await self._client.request(
             url="/",
             method="POST",
