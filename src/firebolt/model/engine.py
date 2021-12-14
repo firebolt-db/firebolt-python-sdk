@@ -170,7 +170,7 @@ class Engine(FireboltBaseModel):
             database=self.database.name,  # type: ignore # already checked by decorator
             username=self._service.settings.user,
             password=self._service.settings.password.get_secret_value(),
-            account_name=self._account_name,
+            account_name=self._service.settings.account_name,
             api_endpoint=self._service.settings.server,
         )
 

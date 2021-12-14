@@ -61,7 +61,7 @@ class Client(FireboltClientMixin, HttpxClient):
 
     @cached_property
     def account_id(self) -> str:
-        logger.debug(f"synchronous account_id, account_name: {self.account_id}")
+        logger.debug(f"synchronous account_id, account_name: {self.account_name}")
         if self.account_name is not None:
             to_log = self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
@@ -90,18 +90,20 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
     @async_cached_property
     async def account_id(self) -> str:
-        logger.debug(f"asynchronous account_id, account_name: {self.account_id}")
+        # logger.debug(f"asynchronous account_id, account_name: {self.account_name}")
         if self.account_name is not None:
-            to_log = await self.get(
-                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
-            )
-            logger.debug("async account_name: {} {}".format(self.account_name, to_log))
+            # to_log = await self.get(
+            #     url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+            # ).json()
+            # logger.debug("async account_name: {} {}".format(self.account_name,
+            #                                                 to_log))
             return (
                 await self.get(
                     url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
                 )
             ).json()["account_id"]
         else:  # account_name isn't set; use the default account.
-            to_log = await self.get(self.get(url=ACCOUNT_URL))
-            logger.debug("async account_name: {} {}".format(self.account_name, to_log))
+            # to_log = await self.get(self.get(url=ACCOUNT_URL)).json()
+            # logger.debug("async account_name: {} {}".format(self.account_name,
+            #                                                 to_log))
             return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]

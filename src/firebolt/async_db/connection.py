@@ -163,10 +163,11 @@ class BaseConnection:
         self._client = AsyncClient(
             auth=(username, password),
             base_url=engine_url,
+            account_name=account_name,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         )
-        self.account_name = (account_name,)
+        self.account_name = account_name
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
         self.database = database
