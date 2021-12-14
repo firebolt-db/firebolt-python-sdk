@@ -14,15 +14,15 @@ import os
 import sys
 
 sys.path += [
-	os.path.abspath("../src"), 
-	os.path.abspath("../src/firebolt/"), 
-	os.path.abspath("../src/firebolt/async_db"), 
-	os.path.abspath("../src/firebolt/client"), 
-	os.path.abspath("../src/firebolt/common"),
-	os.path.abspath("../src/firebolt/db"),
-	os.path.abspath("../src/firebolt/model"), 
-	os.path.abspath("../src/firebolt/service")
-	]
+    os.path.abspath("../src"),
+    os.path.abspath("../src/firebolt/"),
+    os.path.abspath("../src/firebolt/async_db"),
+    os.path.abspath("../src/firebolt/client"),
+    os.path.abspath("../src/firebolt/common"),
+    os.path.abspath("../src/firebolt/db"),
+    os.path.abspath("../src/firebolt/model"),
+    os.path.abspath("../src/firebolt/service"),
+]
 print(sys.path)
 
 # -- Project information -----------------------------------------------------
