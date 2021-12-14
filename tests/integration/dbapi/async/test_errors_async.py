@@ -87,6 +87,7 @@ async def test_engine_stopped(
     database_name: str,
     username: str,
     password: str,
+    account_name: str,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
@@ -96,6 +97,7 @@ async def test_engine_stopped(
             database=database_name,
             username=username,
             password=password,
+            account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("show tables")

@@ -193,8 +193,8 @@ async def connection(settings: Settings, db_name: str) -> Connection:
             database=db_name,
             username="u",
             password="p",
-            api_endpoint=settings.server,
             account_name=settings.account_name,
+            api_endpoint=settings.server,
         )
     ) as connection:
         yield connection

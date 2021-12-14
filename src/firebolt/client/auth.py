@@ -22,6 +22,7 @@ class Auth(HttpxAuth):
     __slots__ = (
         "username",
         "password",
+        "account_name",
         "api_url",
         "_token",
         "_expires",
@@ -30,17 +31,24 @@ class Auth(HttpxAuth):
     requires_response_body = True
 
     def __init__(
-        self, username: str, password: str, api_endpoint: str = DEFAULT_API_URL
+        self,
+        username: str,
+        password: str,
+        account_name: str = None,
+        api_endpoint: str = DEFAULT_API_URL,
     ):
         self.username = username
         self.password = password
         # Add schema to url if it's missing
+        self._account_name = account_name
         self._api_endpoint = fix_url_schema(api_endpoint)
         self._token: Optional[str] = None
         self._expires: Optional[int] = None
 
     def copy(self) -> "Auth":
-        return Auth(self.username, self.password, self._api_endpoint)
+        return Auth(
+            self.username, self.password, self._account_name, self._api_endpoint
+        )
 
     @property
     def token(self) -> Optional[str]:

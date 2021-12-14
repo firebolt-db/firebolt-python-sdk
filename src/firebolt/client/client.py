@@ -1,3 +1,4 @@
+import logging
 from inspect import cleandoc
 from typing import Any, Optional
 
@@ -13,6 +14,8 @@ from firebolt.common.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
 from firebolt.common.util import cached_property, fix_url_schema, mixin_for
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
+
+logger = logging.getLogger(__name__)
 
 
 class FireboltClientMixin(FireboltClientMixinBase):
@@ -35,6 +38,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
             return Auth(
                 username=str(auth[0]),
                 password=str(auth[1]),
+                account_name=self.account_name,
                 api_endpoint=self._api_endpoint,
             )
         else:
@@ -57,22 +61,27 @@ class Client(FireboltClientMixin, HttpxClient):
 
     @cached_property
     def account_id(self) -> str:
+        logger.debug(f"synchronous account_id, account_name: {self.account_id}")
         if self.account_name is not None:
+            to_log = self.get(
+                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+            ).json()
+            logger.debug("account_id: {}".format(to_log))
             return self.get(
-                url=ACCOUNT_BY_NAME_URL, params=("account_name", self.account_name)
+                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
             ).json()["account_id"]
-        else:  # account_name isn't set, use the default id.
+        else:  # account_name isn't set, use the default account.
             return self.get(url=ACCOUNT_URL).json()["account"]["id"]
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     cleandoc(
         """
-        An http client, based on httpx.AsyncClient, that asyncronously handles
+        An http client, based on httpx.AsyncClient, that asynchronously handles
         authentication for Firebolt database.
 
         Authentication can be passed through auth keyword as a tuple or as a
-        FireboltAuth instance
+        FireboltAuth instance.
 
         httpx.AsyncClient:
         """
@@ -81,11 +90,18 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
     @async_cached_property
     async def account_id(self) -> str:
+        logger.debug(f"asynchronous account_id, account_name: {self.account_id}")
         if self.account_name is not None:
+            to_log = await self.get(
+                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+            )
+            logger.debug("async account_name: {} {}".format(self.account_name, to_log))
             return (
                 await self.get(
-                    url=ACCOUNT_BY_NAME_URL, params=("account_name", self.account_name)
+                    url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
                 )
             ).json()["account_id"]
-        else:  # account_name isn't set, use the default id.
+        else:  # account_name isn't set; use the default account.
+            to_log = await self.get(self.get(url=ACCOUNT_URL))
+            logger.debug("async account_name: {} {}".format(self.account_name, to_log))
             return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]

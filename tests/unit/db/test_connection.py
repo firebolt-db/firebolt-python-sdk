@@ -30,13 +30,13 @@ def test_cursors_closed_on_close(connection: Connection) -> None:
     c1, c2 = connection.cursor(), connection.cursor()
     assert (
         len(connection._cursors) == 2
-    ), "Invalid number of cursors stored in connection"
+    ), "Invalid number of cursors stored in connection."
 
     connection.close()
-    assert connection.closed, "Connection was not closed on close"
-    assert c1.closed, "Cursor was not closed on connection close"
-    assert c2.closed, "Cursor was not closed on connection close"
-    assert len(connection._cursors) == 0, "Cursors left in connection after close"
+    assert connection.closed, "Connection was not closed on close."
+    assert c1.closed, "Cursor was not closed on connection close."
+    assert c2.closed, "Cursor was not closed on connection close."
+    assert len(connection._cursors) == 0, "Cursors left in connection after close."
 
 
 def test_cursor_initialized(
@@ -49,7 +49,7 @@ def test_cursor_initialized(
     query_url: str,
     python_query_data: List[List[ColType]],
 ) -> None:
-    """Connection initialised it's cursors propperly"""
+    """Connection initialised its cursors properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -65,17 +65,17 @@ def test_cursor_initialized(
             cursor = connection.cursor()
             assert (
                 cursor.connection == connection
-            ), "Invalid cursor connection attribute"
+            ), "Invalid cursor connection attribute."
             assert (
                 cursor._client == connection._client
-            ), "Invalid cursor _client attribute"
+            ), "Invalid cursor _client attribute."
 
             assert cursor.execute("select*") == len(python_query_data)
 
             cursor.close()
             assert (
                 cursor not in connection._cursors
-            ), "Cursor wasn't removed from connection after close"
+            ), "Cursor wasn't removed from connection after close."
 
 
 def test_connect_empty_parameters():
@@ -110,7 +110,7 @@ def test_connect_engine_name(
     python_query_data: List[List[ColType]],
     account_id: str,
 ):
-    """connect properly handles engine_name"""
+    """Connect properly handles engine_name."""
 
     with raises(InterfaceError) as exc_info:
         connect(
@@ -121,7 +121,7 @@ def test_connect_engine_name(
             password="password",
         )
     assert str(exc_info.value).startswith(
-        "Both engine_name and engine_url are provided"
+        "Both engine_name and engine_url are provided."
     )
 
     with raises(InterfaceError) as exc_info:
@@ -131,7 +131,7 @@ def test_connect_engine_name(
             password="password",
         )
     assert str(exc_info.value).startswith(
-        "Neither engine_name nor engine_url are provided"
+        "Neither engine_name nor engine_url are provided."
     )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -155,8 +155,8 @@ def test_connect_engine_name(
         database=db_name,
         username="u",
         password="p",
-        api_endpoint=settings.server,
         account_name=settings.account_name,
+        api_endpoint=settings.server,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
 

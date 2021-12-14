@@ -171,8 +171,8 @@ async def test_connect_engine_name(
             username="username",
             password="password",
             engine_name=engine_name,
-            api_endpoint=settings.server,
             account_name=settings.account_name,
+            api_endpoint=settings.server,
         ):
             pass
 
@@ -190,7 +190,7 @@ async def test_connect_engine_name(
         database=db_name,
         username="u",
         password="p",
-        api_endpoint=settings.server,
         account_name=settings.account_name,
+        api_endpoint=settings.server,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
