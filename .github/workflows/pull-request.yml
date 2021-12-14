@@ -1,0 +1,18 @@
+name: Pull request
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check title name convention
+        uses: jef/conventional-commits-pr-action@v1.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+  code-checkers:
+    uses: firebolt-db/firebolt-python-sdk/.github/workflows/code-check.yml@main
+  unit-tests:
+    uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@main
