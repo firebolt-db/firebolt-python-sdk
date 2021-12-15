@@ -4,7 +4,6 @@ from httpx import Timeout
 
 from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
 from firebolt.common import Settings
-from firebolt.common.urls import ACCOUNT_BY_NAME_URL
 from firebolt.service.provider import get_provider_id
 
 DEFAULT_TIMEOUT_SECONDS: int = 60 * 2
@@ -32,6 +31,7 @@ class ResourceManager:
         self.client = Client(
             auth=(self.settings.user, self.settings.password.get_secret_value()),
             base_url=f"https://{ self.settings.server}",
+            account_name=self.settings.account_name,
             api_endpoint=self.settings.server,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
         )
@@ -40,7 +40,7 @@ class ResourceManager:
             "response": [raise_on_4xx_5xx, log_response],
         }
 
-        self.account_id = self._get_account_id(account_name=account_name)
+        self.account_id = self.client.account_id
         self._init_services()
 
     def _init_services(self) -> None:
@@ -64,15 +64,4 @@ class ResourceManager:
         self.bindings = BindingService(resource_manager=self)
 
     def _get_account_id(self, account_name: Optional[str]) -> str:
-        """
-        Given account_name, look up account_id. If account_name is None,
-        get the default account_id.
-
-        Args:
-            account_name: Name of the account.
-        """
-        if account_name is None:
-            return self.client.account_id
-        return self.client.get(
-            url=ACCOUNT_BY_NAME_URL, params={"account_name": account_name.lower()}
-        ).json()["account_id"]
+        return self.client.account_id

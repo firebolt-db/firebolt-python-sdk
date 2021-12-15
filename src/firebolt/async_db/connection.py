@@ -21,11 +21,16 @@ DEFAULT_TIMEOUT_SECONDS: int = 5
 
 
 async def _resolve_engine_url(
-    engine_name: str, username: str, password: str, api_endpoint: str
+    engine_name: str,
+    username: str,
+    password: str,
+    account_name: str,
+    api_endpoint: str,
 ) -> str:
     async with AsyncClient(
         auth=(username, password),
         base_url=api_endpoint,
+        account_name=account_name,
         api_endpoint=api_endpoint,
     ) as client:
         try:
@@ -130,6 +135,7 @@ class BaseConnection:
         "_cursors",
         "database",
         "engine_url",
+        "account_name",
         "api_endpoint",
         "_is_closed",
     )
@@ -140,11 +146,13 @@ class BaseConnection:
         database: str,  # TODO: Get by engine name
         username: str,
         password: str,
+        account_name: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
         self._client = AsyncClient(
             auth=(username, password),
             base_url=engine_url,
+            account_name=account_name,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         )

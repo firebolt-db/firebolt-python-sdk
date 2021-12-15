@@ -9,7 +9,7 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
 from firebolt.client.constants import DEFAULT_API_URL
-from firebolt.common.urls import ACCOUNT_URL
+from firebolt.common.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
 from firebolt.common.util import cached_property, fix_url_schema, mixin_for
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
@@ -19,10 +19,12 @@ class FireboltClientMixin(FireboltClientMixinBase):
     def __init__(
         self,
         *args: Any,
+        account_name: str = None,
         api_endpoint: str = DEFAULT_API_URL,
         auth: AuthTypes = None,
         **kwargs: Any,
     ):
+        self.account_name = account_name
         self._api_endpoint = fix_url_schema(api_endpoint)
         super().__init__(*args, auth=auth, **kwargs)
 
@@ -55,7 +57,12 @@ class Client(FireboltClientMixin, HttpxClient):
 
     @cached_property
     def account_id(self) -> str:
-        return self.get(url=ACCOUNT_URL).json()["account"]["id"]
+        if self.account_name is not None:
+            return self.get(
+                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+            ).json()["account_id"]
+        else:  # account_name isn't set, use the default account.
+            return self.get(url=ACCOUNT_URL).json()["account"]["id"]
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
@@ -74,4 +81,11 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
     @async_cached_property
     async def account_id(self) -> str:
-        return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
+        if self.account_name is not None:
+            return (
+                await self.get(
+                    url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+                )
+            ).json()["account_id"]
+        else:  # account_name isn't set; use the default account.
+            return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
