@@ -13,6 +13,7 @@ from firebolt.common.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
+    NotSupportedError,
     OperationalError,
     QueryNotRunError,
 )
@@ -406,3 +407,13 @@ async def test_set_parameters(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_with_params_callback, url=query_with_params_url)
     await cursor.execute("select 1", set_parameters=set_params)
+
+
+@mark.asyncio
+async def test_cursor_execute_parameters(cursor: Cursor):
+    """execute and executemany with parameters are not supported"""
+    with raises(NotSupportedError):
+        await cursor.execute("select ?", (1,))
+
+    with raises(NotSupportedError):
+        await cursor.executemany("select ?", [(1,), (2,)])

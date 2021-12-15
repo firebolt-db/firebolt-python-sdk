@@ -1,16 +1,15 @@
 # This workflow will install Python dependencies, run pre-commit checks, and run tests with a single version of Python
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
 
-name: Python application
+name: Unit tests
 
 on:
+  workflow_call:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
-  build:
+  unit-tests:
 
     runs-on: ubuntu-latest
 
@@ -28,21 +27,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install ".[dev]"
 
-    - name: Run pre-commit checks
-      uses: pre-commit/action@v2.0.3
-      with:
-        extra_args: --all-files
-
-    - name: Type check with mypy
-      run: |
-        mypy src
-
-    - name: Test with pytest
+    - name: Run unit tests
       run: |
         pytest tests/unit
-        
-    - name: Convetional Commits Pull Request Title
-      uses: jef/conventional-commits-pr-action@v1.0.0
-      if: github.event_name == 'pull_request'
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
