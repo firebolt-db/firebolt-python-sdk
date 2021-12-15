@@ -52,7 +52,7 @@ def main(changes: str, old_tag: str, prerelease_tag: str, major_release: bool):
             new_ver = ver.finalize_version()
         else:
             # Enhancements bump minor version while anything else is considered a patch
-            enhancements = [c for c in changes.split("\n") if c.startswith("enh:")]
+            enhancements = [c for c in changes.split("\n") if c.startswith("feat:")]
             new_ver = ver.bump_minor() if enhancements else ver.bump_patch()
     if prerelease_tag:
         new_ver = new_ver.bump_prerelease(prerelease_tag)
