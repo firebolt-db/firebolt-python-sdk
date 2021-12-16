@@ -95,7 +95,7 @@ class EngineStatus(Enum):
         "ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED"
     )
 
- """ Engine is initialized, replacement revision failed to provision or start."""
+    """ Engine is initialized, replacement revision failed to provision or start."""
 
 
     ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING = (

@@ -67,14 +67,15 @@ def async_connect_factory(connection_class: Type) -> Callable:
         """
         Connect to Firebolt database.
 
-        :param database: name of the database to connect
-        :param username: user name to use for authentication
-        :param password: password to use for authentication
-        :param engine_name: The name of the engine to connect to
-        :type engine_name: optional
-        :param engine_url: The engine endpoint to use
-        :type engine_url: optional
-        .. note:: either `engine_name` or `engine_url` should be provided, but not both
+        Args: 
+            database: name of the database to connect
+            username: user name to use for authentication
+            password: password to use for authentication
+            engine_name: Optional The name of the engine to connect to
+            engine_url: Optional. The engine endpoint to use
+        
+        Note: 
+            either `engine_name` or `engine_url` should be provided, but not both
 
         """
 
@@ -198,24 +199,19 @@ class BaseConnection:
 
 
 class Connection(BaseConnection):
-        """
+    """
         Firebolt asyncronous database connection class. Implements PEP-249.
 
-        Parameters:
-            engine_url - Firebolt database engine REST API url
-            database - Firebolt database name
-            username - Firebolt account username
-            password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+        Args:
+            engine_url: Firebolt database engine REST API url
+            database: Firebolt database name
+            username: Firebolt account username
+            password: Firebolt account password
+            api_endpoint: Optional. Firebolt API endpoint. Used for authentication
 
-        Methods:
-            cursor - create new Cursor object
-            close - close the Connection and all it's cursors
-
-        Firebolt currenly doesn't support transactions so commit and rollback methods
-        are not implemented.
-        """
-
+        Note: 
+            Firebolt currenly doesn't support transactions so commit and rollback methods are not implemented.
+    """
     cursor_class = Cursor
 
     aclose = BaseConnection._aclose

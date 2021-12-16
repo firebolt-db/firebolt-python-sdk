@@ -13,11 +13,10 @@ from firebolt.common.util import fix_url_schema
 
 class Auth(HttpxAuth):
 
-        """
+    """
         Authentication class for Firebolt database. Gets authentication token using
         provided credentials and updates it when it expires
-        """
-
+    """
     __slots__ = (
         "username",
         "password",

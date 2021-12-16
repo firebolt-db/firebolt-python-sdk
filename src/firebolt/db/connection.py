@@ -18,17 +18,21 @@ DEFAULT_TIMEOUT_SECONDS: int = 5
 
 
 class Connection(AsyncBaseConnection):
-        """
+    """
         Firebolt database connection class. Implements PEP-249.
-        :param engine_url: Firebolt database engine REST API url
-        :param database: Firebolt database name
-        :param username: Firebolt account username
-        :param password: Firebolt account password
-        :param api_endpoint: Firebolt API endpoint. Used for authentication
-        :type api_endpoint: Optional
-        .. note:: Firebolt currenly doesn't support transactions so commit and rollback methods
-        are not implemented.
-        """
+        
+        Args: 
+
+            engine_url: Firebolt database engine REST API url
+            database: Firebolt database name
+            username: Firebolt account username
+            password: Firebolt account password
+            api_endpoint: Optional. Firebolt API endpoint. Used for authentication
+            
+        Note: 
+            Firebolt currenly doesn't support transactions so commit and rollback methods
+            are not implemented.
+    """
 
     __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock",)
 

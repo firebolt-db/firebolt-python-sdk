@@ -18,15 +18,16 @@ from firebolt.common.util import async_to_sync
 
 
 class Cursor(AsyncBaseCursor):
-        """
+    """
         Class, responsible for executing queries to Firebolt Database.
         Should not be created directly, use ``connection.cursor()``
-        **Properties**
-        * ``description`` - information about a single result row
-        * ``rowcount`` - the number of rows produced by last query
-        * ``closed`` - True if connection is closed, False otherwise
-        * ``arraysize`` - Read/Write, specifies the number of rows to fetch at a time with ``.fetchmany`` method
-        """
+
+        Args:
+            description: Information about a single result row
+            rowcount: The number of rows produced by last query
+            closed: True if connection is closed, False otherwise
+            arraysize: Read/Write, specifies the number of rows to fetch at a time with ``.fetchmany`` method
+    """
 
     __slots__ = AsyncBaseCursor.__slots__ + ("_query_lock", "_idx_lock")
 

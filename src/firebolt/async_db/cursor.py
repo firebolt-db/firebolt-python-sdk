@@ -122,13 +122,13 @@ class BaseCursor:
         Provides information about a single result row of a query
         
         Attributes:
-        * ``name``
-        * ``type_code``
-        * ``display_size``
-        * ``internal_size``
-        * ``precision``
-        * ``scale``
-        * ``null_ok``
+            * ``name``
+            * ``type_code``
+            * ``display_size``
+            * ``internal_size``
+            * ``precision``
+            * ``scale``
+            * ``null_ok``
         """
         return self._descriptions
 
@@ -264,10 +264,10 @@ class BaseCursor:
     async def executemany(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
-            """
+        """
             Prepare and execute a database query against all parameter
             sequences provided. Return last query row count.
-            """
+        """
         self._reset()
         resp = None
         for parameters in parameters_seq:
@@ -315,10 +315,10 @@ class BaseCursor:
     @check_not_closed
     @check_query_executed
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-            """
+        """
             Fetch the next set of rows of a query result,
             cursor.arraysize is default size.
-            """
+        """
         size = size if size is not None else self.arraysize
         left, right = self._get_next_range(size)
         assert self._rows is not None
@@ -354,17 +354,16 @@ class BaseCursor:
 
 
 class Cursor(BaseCursor):
-        """
+    """
         Class, responsible for executing asyncio queries to Firebolt Database.
-        Should not be created directly, use connection.cursor()
+        Should not be created directly, use ``connection.cursor()``
 
-        **Properties:**
-
-            * ``description`` - information about a single result row
-            * ``rowcount`` - the number of rows produced by last query
-            * ``closed`` - True if connection is closed, False otherwise
-            * ``arraysize`` - Read/Write, specifies the number of rows to fetch at a time with ``.fetchmany`` method
-        """
+        Args:
+            description: information about a single result row
+            rowcount: the number of rows produced by last query
+            closed: True if connection is closed, False otherwise
+            arraysize: Read/Write, specifies the number of rows to fetch at a time with ``.fetchmany`` method
+    """
 
     __slots__ = BaseCursor.__slots__ + ("_async_query_lock",)
 
@@ -404,7 +403,7 @@ class Cursor(BaseCursor):
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
             return super().fetchmany(size)
-         """fetch the next set of rows of a query result,
+        """fetch the next set of rows of a query result,
           size is cursor.arraysize by default"""
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
