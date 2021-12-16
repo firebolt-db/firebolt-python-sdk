@@ -67,6 +67,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         password: str = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
+        account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
         cleandoc(
@@ -79,6 +80,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
             password - password to use for authentication
             engine_name - name of the engine to connect to
             engine_url - engine endpoint to use
+            account_name - for customers with multiple accounts; if blank uses default
             note: either engine_name or engine_url should be provided, but not both
             """
         )
@@ -116,6 +118,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
                 engine_name,
                 username,
                 password,
+                account_name,
                 api_endpoint,
             )
 
