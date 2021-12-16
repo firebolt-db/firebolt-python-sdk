@@ -66,14 +66,19 @@ def async_connect_factory(connection_class: Type) -> Callable:
     ) -> Connection:
         """
         Connect to Firebolt database.
-        :param database: name of the database to connect
-        :param username: user name to use for authentication
-        :param password: password to use for authentication
-        :param engine_name: The name of the engine to connect to
-        :type engine_name: optional
-        :param engine_url: The engine endpoint to use
-        :type engine_url: optional
-        .. note:: either `engine_name` or `engine_url` should be provided, but not both
+
+        Args: 
+
+            :param database: name of the database to connect
+            :param username: user name to use for authentication
+            :param password: password to use for authentication
+            :param engine_name: The name of the engine to connect to
+            :type engine_name: optional
+            :param engine_url: The engine endpoint to use
+            :type engine_url: optional
+        
+        Note: 
+            either `engine_name` or `engine_url` should be provided, but not both
         """
 
         if engine_name and engine_url:
