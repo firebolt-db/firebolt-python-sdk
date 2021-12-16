@@ -73,7 +73,8 @@ class Auth(HttpxAuth):
             raise AuthenticationError(repr(e), self._api_endpoint)
 
     def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
-        """Add authorization token to request headers. Overrides ``httpx.Auth.auth_flow``"""
+        """Add authorization token to request headers. 
+        Overrides ``httpx.Auth.auth_flow``"""
 
         if not self.token or self.expired:
             yield from self.get_new_token_generator()

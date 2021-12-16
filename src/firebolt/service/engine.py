@@ -122,7 +122,8 @@ class EngineService(BaseService):
                 scale: The number of compute instances on the engine.
                     The scale can be any int from 1 to 128.
                 spec: The AWS EC2 instance type.
-                auto_stop: The amount of time (in minutes) after which the engine automatically stops.
+                auto_stop: The amount of time (in minutes) 
+                after which the engine automatically stops.
                 warmup: The warmup method that should be used.
 
                     `MINIMAL` - On-demand loading (both indexes and tables' data).

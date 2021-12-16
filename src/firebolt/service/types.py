@@ -36,7 +36,8 @@ class EngineStatus(Enum):
     """
 
     ENGINE_STATUS_UNSPECIFIED = "ENGINE_STATUS_UNSPECIFIED"
-    """ Logical record is created, however underlying infrastructure is not initialized.
+    """ Logical record is created, however underlying infrastructure 
+    is not initialized.
     In other words this means that engine is stopped."""
 
     ENGINE_STATUS_CREATED = "ENGINE_STATUS_CREATED"
@@ -46,7 +47,8 @@ class EngineStatus(Enum):
     """ Engine initialization request was sent."""
 
     ENGINE_STATUS_PROVISIONING_STARTED = "ENGINE_STATUS_PROVISIONING_STARTED"
-    """ Engine initialization request was received and initialization process started."""
+    """ Engine initialization request was received 
+    and initialization process started."""
 
     ENGINE_STATUS_PROVISIONING_FINISHED = "ENGINE_STATUS_PROVISIONING_FINISHED"
     """ Engine initialization was finished successfully."""
@@ -55,15 +57,18 @@ class EngineStatus(Enum):
     """ Engine initialization failed due to error."""
 
     ENGINE_STATUS_RUNNING_IDLE = "ENGINE_STATUS_RUNNING_IDLE"
-    """ Engine is initialized, but there are no running or starting engine revisions."""
+    """ Engine is initialized, 
+    but there are no running or starting engine revisions."""
 
     ENGINE_STATUS_RUNNING_REVISION_STARTING = "ENGINE_STATUS_RUNNING_REVISION_STARTING"
-    """ Engine is initialized, there are no running engine revision but it's starting."""
+    """ Engine is initialized, 
+    there are no running engine revision but it's starting."""
 
     ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED = (
         "ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED"
     )
-    """ Engine is initialized, initial revision is failed to provision or start."""
+    """ Engine is initialized, 
+    initial revision is failed to provision or start."""
 
     ENGINE_STATUS_RUNNING_REVISION_SERVING = "ENGINE_STATUS_RUNNING_REVISION_SERVING"
     """ Engine is ready (serves an engine revision). """
@@ -81,18 +86,21 @@ class EngineStatus(Enum):
     ENGINE_STATUS_RUNNING_REVISION_RESTARTING = (
         "ENGINE_STATUS_RUNNING_REVISION_RESTARTING"
     )
-    """ Engine is initialized, replacement of the revision with a downtime is in progress."""
+    """ Engine is initialized, 
+    replacement of the revision with a downtime is in progress."""
 
     ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED = (
         "ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED"
     )
-    """ Engine is initialized, replacement revision failed to provision or start."""
+    """ Engine is initialized, 
+    replacement revision failed to provision or start."""
 
 
     ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING = (
         "ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING"
     )
-    """ Engine is initialized, all child revisions are being terminated."""
+    """ Engine is initialized, 
+    all child revisions are being terminated."""
 
 
     # Engine termination request was sent.

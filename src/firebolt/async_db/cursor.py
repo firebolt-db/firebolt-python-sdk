@@ -359,13 +359,16 @@ class BaseCursor:
 class Cursor(BaseCursor):
     """
         Class, responsible for executing asyncio queries to Firebolt Database.
-        Should not be created directly, use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
+        Should not be created directly, 
+        use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
         Args:
             description: information about a single result row
             rowcount: the number of rows produced by last query
             closed: True if connection is closed, False otherwise
-            arraysize: Read/Write, specifies the number of rows to fetch at a time with the :py:func:`fetchmany` method
+            arraysize: Read/Write, specifies the number of rows to fetch at a time 
+                with the :py:func:`fetchmany` method
+
     """
 
     __slots__ = BaseCursor.__slots__ + ("_async_query_lock",)

@@ -214,7 +214,8 @@ class Connection(BaseConnection):
             api_endpoint: Optional. Firebolt API endpoint. Used for authentication
 
         Note: 
-            Firebolt currenly doesn't support transactions so commit and rollback methods are not implemented.
+            Firebolt currenly doesn't support transactions 
+            so commit and rollback methods are not implemented.
 
         .. _PEP 249:
             https://www.python.org/dev/peps/pep-0249/
