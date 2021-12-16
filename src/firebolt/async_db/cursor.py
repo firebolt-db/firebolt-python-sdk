@@ -155,16 +155,19 @@ class BaseCursor:
     @property
     def closed(self) -> bool:
         """True if connection is closed, False otherwise."""
+
         return self._state == CursorState.CLOSED
 
     def close(self) -> None:
         """Terminate an ongoing query (if any) and mark connection as closed."""
+
         self._state = CursorState.CLOSED
         # remove typecheck skip  after connection is implemented
         self.connection._remove_cursor(self)  # type: ignore
 
     def _store_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response."""
+        
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
             return
@@ -356,7 +359,7 @@ class BaseCursor:
 class Cursor(BaseCursor):
     """
         Class, responsible for executing asyncio queries to Firebolt Database.
-        Should not be created directly, use ``connection.cursor()``
+        Should not be created directly, use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
         Args:
             description: information about a single result row

@@ -156,7 +156,10 @@ class BaseConnection:
         self._is_closed = False
 
     def cursor(self) -> BaseCursor:
-        """Create new cursor object."""
+        """
+            Create new cursor object.
+        """
+
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed")
 
@@ -194,13 +197,14 @@ class BaseConnection:
 
     def commit(self) -> None:
         """Does nothing since Firebolt doesn't have transactions"""
+
         if self.closed:
             raise ConnectionClosedError("Unable to commit: connection closed")
 
 
 class Connection(BaseConnection):
     """
-        Firebolt asyncronous database connection class. Implements PEP-249.
+        Firebolt asyncronous database connection class. Implements `PEP 249`_.
 
         Args:
             engine_url: Firebolt database engine REST API url
@@ -211,7 +215,12 @@ class Connection(BaseConnection):
 
         Note: 
             Firebolt currenly doesn't support transactions so commit and rollback methods are not implemented.
+
+        .. _PEP 249:
+            https://www.python.org/dev/peps/pep-0249/
+
     """
+
     cursor_class = Cursor
 
     aclose = BaseConnection._aclose

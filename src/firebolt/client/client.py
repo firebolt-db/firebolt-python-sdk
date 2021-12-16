@@ -70,6 +70,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
         + (HttpxAsyncClient.__doc__ or "")
     """
+    
     @async_cached_property
     async def account_id(self) -> str:
         return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]

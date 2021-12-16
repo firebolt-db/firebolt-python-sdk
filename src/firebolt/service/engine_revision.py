@@ -8,6 +8,7 @@ class EngineRevisionService(BaseService):
         """
             Get an EngineRevision from Firebolt by engine_id and engine_revision_id.
         """
+        
         return self.get_by_key(
             EngineRevisionKey(
                 account_id=self.account_id,
@@ -26,6 +27,7 @@ class EngineRevisionService(BaseService):
         Returns:
             The requested EngineRevision
         """
+
         response = self.client.get(
             url=ACCOUNT_ENGINE_REVISION_URL.format(
                 account_id=key.account_id,
