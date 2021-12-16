@@ -25,12 +25,12 @@ class RegionService(BaseService):
 
     @cached_property
     def regions_by_name(self) -> Dict[str, Region]:
-        """Dict of {RegionLookup: Region}"""
+        """Dict of {RegionLookup to Region}"""
         return {r.name: r for r in self.regions}
 
     @cached_property
     def regions_by_key(self) -> Dict[RegionKey, Region]:
-        """Dict of {RegionKey: Region}"""
+        """Dict of {RegionKey to Region}"""
         return {r.key: r for r in self.regions}
 
     @cached_property

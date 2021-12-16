@@ -64,19 +64,17 @@ def async_connect_factory(connection_class: Type) -> Callable:
         engine_url: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
-        cleandoc(
-            """
-            Connect to Firebolt database.
-
-            Connection parameters:
-            database - name of the database to connect
-            username - user name to use for authentication
-            password - password to use for authentication
-            engine_name - name of the engine to connect to
-            engine_url - engine endpoint to use
-            note: either engine_name or engine_url should be provided, but not both
-            """
-        )
+        """
+        Connect to Firebolt database.
+        :param database: name of the database to connect
+        :param username: user name to use for authentication
+        :param password: password to use for authentication
+        :param engine_name: The name of the engine to connect to
+        :type engine_name: optional
+        :param engine_url: The engine endpoint to use
+        :type engine_url: optional
+        .. note:: either `engine_name` or `engine_url` should be provided, but not both
+        """
 
         if engine_name and engine_url:
             raise InterfaceError(
@@ -198,7 +196,6 @@ class BaseConnection:
 
 
 class Connection(BaseConnection):
-    cleandoc(
         """
         Firebolt asyncronous database connection class. Implements PEP-249.
 
@@ -216,7 +213,6 @@ class Connection(BaseConnection):
         Firebolt currenly doesn't support transactions so commit and rollback methods
         are not implemented.
         """
-    )
 
     cursor_class = Cursor
 

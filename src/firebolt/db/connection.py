@@ -18,25 +18,17 @@ DEFAULT_TIMEOUT_SECONDS: int = 5
 
 
 class Connection(AsyncBaseConnection):
-    cleandoc(
         """
         Firebolt database connection class. Implements PEP-249.
-
-        Parameters:
-            engine_url - Firebolt database engine REST API url
-            database - Firebolt database name
-            username - Firebolt account username
-            password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
-
-        Methods:
-            cursor - create new Cursor object
-            close - close the Connection and all it's cursors
-
-        Firebolt currenly doesn't support transactions so commit and rollback methods
+        :param engine_url: Firebolt database engine REST API url
+        :param database: Firebolt database name
+        :param username: Firebolt account username
+        :param password: Firebolt account password
+        :param api_endpoint: Firebolt API endpoint. Used for authentication
+        :type api_endpoint: Optional
+        .. note:: Firebolt currenly doesn't support transactions so commit and rollback methods
         are not implemented.
         """
-    )
 
     __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock",)
 

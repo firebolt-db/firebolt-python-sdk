@@ -42,7 +42,7 @@ class EngineSettings(FireboltBaseModel):
     """
     Engine Settings.
 
-    See Also: engine_revision.Specification which also contains engine configuration.
+    See Also: ``engine_revision.Specification`` which also contains engine configuration.
     """
 
     preset: str

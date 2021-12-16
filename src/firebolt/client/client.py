@@ -40,7 +40,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
 
 
 class Client(FireboltClientMixin, HttpxClient):
-    cleandoc(
+
         """
         An http client, based on httpx.Client, that handles the authentication
         for Firebolt database.
@@ -49,9 +49,9 @@ class Client(FireboltClientMixin, HttpxClient):
         FireboltAuth instance
 
         httpx.Client:
-        """
+        
         + (HttpxClient.__doc__ or "")
-    )
+        """
 
     @cached_property
     def account_id(self) -> str:
@@ -59,7 +59,6 @@ class Client(FireboltClientMixin, HttpxClient):
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
-    cleandoc(
         """
         An http client, based on httpx.AsyncClient, that asyncronously handles
         authentication for Firebolt database.
@@ -68,10 +67,9 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
         FireboltAuth instance
 
         httpx.AsyncClient:
-        """
-        + (HttpxAsyncClient.__doc__ or "")
-    )
 
+        + (HttpxAsyncClient.__doc__ or "")
+        """
     @async_cached_property
     async def account_id(self) -> str:
         return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]

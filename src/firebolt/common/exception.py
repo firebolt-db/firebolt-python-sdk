@@ -92,24 +92,22 @@ class AuthenticationError(FireboltError):
 
 
 class Warning(Exception):
-    cleandoc(
         """
         Exception raised for important warnings
         like data truncations while inserting, etc.
         """
-    )
+
 
 
 Error = FireboltError
 
 
 class InterfaceError(Error):
-    cleandoc(
+
         """
         Exception raised for errors that are related to the database interface
         rather than the database itself.
         """
-    )
 
 
 class DatabaseError(Error):
@@ -117,56 +115,44 @@ class DatabaseError(Error):
 
 
 class DataError(DatabaseError):
-    cleandoc(
         """
         Exception raised for errors that are due to problems with the processed data
         like division by zero, numeric value out of range, etc.
         """
-    )
 
 
 class OperationalError(DatabaseError):
-    cleandoc(
         """
         Exception raised for errors that are related to the database's operation
         and not necessarily under the control of the programmer, e.g. an unexpected
         disconnect occurs, the data source name is not found, a transaction could not
         be processed, a memory allocation error occurred during processing, etc.
         """
-    )
 
 
 class IntegrityError(DatabaseError):
-    cleandoc(
         """
         Exception raised when the relational integrity of the database is affected,
         e.g. a foreign key check fails.
         """
-    )
 
 
 class InternalError(DatabaseError):
-    cleandoc(
         """
         Exception raised when the database encounters an internal error,
         e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
         """
-    )
 
 
 class ProgrammingError(DatabaseError):
-    cleandoc(
         """
         Exception raised when the database encounters an internal error,
         e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
         """
-    )
 
 
 class NotSupportedError(DatabaseError):
-    cleandoc(
         """
         Exception raised when the database encounters an internal error,
         e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
         """
-    )
