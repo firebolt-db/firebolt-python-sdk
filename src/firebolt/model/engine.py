@@ -42,7 +42,7 @@ class EngineSettings(FireboltBaseModel):
     """
     Engine Settings.
 
-    See Also: ``engine_revision.Specification`` which also contains engine configuration.
+    See Also: :py:class:`firebolt.model.engine_revision.EngineRevisionSpecification <EngineRevisionSpecification>` which also contains engine configuration.
     """
 
     preset: str
@@ -90,7 +90,7 @@ class Engine(FireboltBaseModel):
     """
     A Firebolt engine. Responsible for performing work (queries, data ingestion).
 
-    Engines are configured in Settings and in EngineRevisions.
+    Engines are configured in :py:class:`firebolt.model.engine.EngineSettings <Settings>` and in :py:class:`firebolt.model.engine_revision.EngineRevisionSpecification <EngineRevisionSpecification>`.
     """
 
     # internal

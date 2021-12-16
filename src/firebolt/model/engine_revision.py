@@ -21,7 +21,7 @@ class EngineRevisionSpecification(FireboltBaseModel):
 
     Notably, it determines which instance types and how many of them its Engine gets.
 
-    See Also: ``engine.Settings``, which also contains engine configuration.
+    See Also: :py:class:`firebolt.model.engine.EngineSettings`, which also contains engine configuration.
     """
 
     db_compute_instances_type_key: InstanceTypeKey = Field(
