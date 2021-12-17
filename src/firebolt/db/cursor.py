@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from functools import wraps
-from inspect import cleandoc
 from threading import Lock
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 
@@ -18,32 +17,19 @@ from firebolt.common.util import async_to_sync
 
 
 class Cursor(AsyncBaseCursor):
-    cleandoc(
-        """
-        Class, responsible for executing queries to Firebolt Database.
-        Should not be created directly, use connection.cursor()
+    """
+    Class, responsible for executing queries to Firebolt Database.
+    Should not be created directly,
+    use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
-        Properties:
-        - description - information about a single result row
-        - rowcount - the number of rows produced by last query
-        - closed - True if connection is closed, False otherwise
-        - arraysize - Read/Write, specifies the number of rows to fetch at a time
-        with .fetchmany method
-
-        Methods:
-        - close - terminate an ongoing query (if any) and mark connection as closed
-        - execute - prepare and execute a database query
-        - executemany - prepare and execute a database query against all parameter
-          sequences provided
-        - fetchone - fetch the next row of a query result set
-        - fetchmany - fetch the next set of rows of a query result,
-          size is cursor.arraysize by default
-        - fetchall - fetch all remaining rows of a query result
-        - setinputsizes - predefine memory areas for query parameters (does nothing)
-        - setoutputsize - set a column buffer size for fetches of large columns
-          (does nothing)
-        """
-    )
+    Args:
+        description: Information about a single result row
+        rowcount: The number of rows produced by last query
+        closed: True if connection is closed, False otherwise
+        arraysize: Read/Write,
+        specifies the number of rows to fetch at a time
+        with :py:func:`fetchmany` method
+    """
 
     __slots__ = AsyncBaseCursor.__slots__ + ("_query_lock", "_idx_lock")
 

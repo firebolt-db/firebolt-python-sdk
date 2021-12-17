@@ -5,7 +5,10 @@ from firebolt.service.base import BaseService
 
 class EngineRevisionService(BaseService):
     def get_by_id(self, engine_id: str, engine_revision_id: str) -> EngineRevision:
-        """Get an EngineRevision from Firebolt by engine_id and engine_revision_id."""
+        """
+        Get an EngineRevision from Firebolt by engine_id and engine_revision_id.
+        """
+
         return self.get_by_key(
             EngineRevisionKey(
                 account_id=self.account_id,
@@ -16,7 +19,7 @@ class EngineRevisionService(BaseService):
 
     def get_by_key(self, key: EngineRevisionKey) -> EngineRevision:
         """
-        Fetch an EngineRevision from Firebolt by it's key.
+        Fetch an EngineRevision from Firebolt by its key.
 
         Args:
             key: Key of the desired EngineRevision.
@@ -24,6 +27,7 @@ class EngineRevisionService(BaseService):
         Returns:
             The requested EngineRevision
         """
+
         response = self.client.get(
             url=ACCOUNT_ENGINE_REVISION_URL.format(
                 account_id=key.account_id,

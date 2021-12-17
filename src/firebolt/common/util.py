@@ -27,6 +27,7 @@ def mixin_for(baseclass: Type[TMix]) -> Type[TMix]:
         ...
     ```
     """
+
     if TYPE_CHECKING:
         return baseclass
     return object

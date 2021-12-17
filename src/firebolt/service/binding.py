@@ -52,6 +52,7 @@ class BindingService(BaseService):
         Returns:
             List of bindings matching the filter parameters.
         """
+
         response = self.client.get(
             url=ACCOUNT_BINDINGS_URL.format(account_id=self.account_id),
             params=prune_dict(
@@ -78,6 +79,7 @@ class BindingService(BaseService):
 
     def get_engines_bound_to_database(self, database: Database) -> List[Engine]:
         """Get a list of engines that are bound to a database."""
+
         bindings = self.get_many(database_id=database.database_id)
         return self.resource_manager.engines.get_by_ids(
             ids=[b.engine_id for b in bindings]
@@ -100,6 +102,7 @@ class BindingService(BaseService):
         Returns:
             New binding between the engine and database.
         """
+
         existing_database = self.get_database_bound_to_engine(engine=engine)
         if existing_database is not None:
             raise AlreadyBoundError(

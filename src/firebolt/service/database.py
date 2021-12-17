@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 class DatabaseService(BaseService):
     def get(self, id_: str) -> Database:
         """Get a Database from Firebolt by its id."""
+
         response = self.client.get(
             url=ACCOUNT_DATABASE_URL.format(account_id=self.account_id, database_id=id_)
         )
@@ -26,11 +27,13 @@ class DatabaseService(BaseService):
 
     def get_by_name(self, name: str) -> Database:
         """Get a Database from Firebolt by its name."""
+
         database_id = self.get_id_by_name(name=name)
         return self.get(id_=database_id)
 
     def get_id_by_name(self, name: str) -> str:
         """Get a Database id from Firebolt by its name."""
+
         response = self.client.get(
             url=ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=self.account_id),
             params={"database_name": name},
@@ -53,11 +56,13 @@ class DatabaseService(BaseService):
             attached_engine_name_eq: Filter for databases by an exact engine name.
             attached_engine_name_contains: Filter for databases by engines with a
                 name containing this substring.
-            order_by: Method by which to order the results. See [DatabaseOrder].
+            order_by: Method by which to order the results.
+            See :py:class:`firebolt.service.types.DatabaseOrder`.
 
         Returns:
             A list of databases matching the filters.
         """
+
         if isinstance(order_by, str):
             order_by = DatabaseOrder[order_by]
         response = self.client.get(
