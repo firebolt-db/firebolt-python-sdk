@@ -16,7 +16,7 @@ ENGINE_NAME_ENV = "ENGINE_NAME"
 STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
 STOPPED_ENGINE_NAME_ENV = "STOPPED_ENGINE_NAME"
 DATABASE_NAME_ENV = "DATABASE_NAME"
-USERNAME_ENV = "USERNAME"
+USER_NAME_ENV = "USER_NAME"
 PASSWORD_ENV = "PASSWORD"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 
@@ -54,7 +54,7 @@ def database_name() -> str:
 
 @fixture(scope="session")
 def username() -> str:
-    return must_env(USERNAME_ENV)
+    return must_env(USER_NAME_ENV)
 
 
 @fixture(scope="session")
