@@ -101,7 +101,7 @@ class Database(FireboltBaseModel):
 
         Raises an error if there are any attached engines.
         """
-        
+
         for engine in self.get_attached_engines():
             if engine.current_status_summary in {
                 EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING,

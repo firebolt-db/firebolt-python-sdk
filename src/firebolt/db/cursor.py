@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from functools import wraps
-from inspect import cleandoc
 from threading import Lock
 from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
 
@@ -19,17 +18,17 @@ from firebolt.common.util import async_to_sync
 
 class Cursor(AsyncBaseCursor):
     """
-        Class, responsible for executing queries to Firebolt Database.
-        Should not be created directly, 
-        use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
+    Class, responsible for executing queries to Firebolt Database.
+    Should not be created directly,
+    use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
-        Args:
-            description: Information about a single result row
-            rowcount: The number of rows produced by last query
-            closed: True if connection is closed, False otherwise
-            arraysize: Read/Write, 
-            specifies the number of rows to fetch at a time 
-            with :py:func:`fetchmany` method
+    Args:
+        description: Information about a single result row
+        rowcount: The number of rows produced by last query
+        closed: True if connection is closed, False otherwise
+        arraysize: Read/Write,
+        specifies the number of rows to fetch at a time
+        with :py:func:`fetchmany` method
     """
 
     __slots__ = AsyncBaseCursor.__slots__ + ("_query_lock", "_idx_lock")

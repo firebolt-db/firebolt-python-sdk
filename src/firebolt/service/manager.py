@@ -22,7 +22,7 @@ class ResourceManager:
     Also provides listings of:
 
     - regions (AWS regions in which engines can run)
-    
+
     - instance types (AWS instance types which engines can use)
     """
 

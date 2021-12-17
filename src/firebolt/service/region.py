@@ -59,7 +59,7 @@ class RegionService(BaseService):
 
     def get_by_id(self, id_: str) -> Region:
         """Get an AWS Region by region_id."""
-        
+
         return self.get_by_key(
             RegionKey(provider_id=self.resource_manager.provider_id, region_id=id_)
         )

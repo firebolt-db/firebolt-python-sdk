@@ -21,8 +21,8 @@ class EngineRevisionSpecification(FireboltBaseModel):
 
     Notably, it determines which instance types and how many of them its Engine gets.
 
-    See Also: :py:class:`Settings 
-    <firebolt.model.engine.EngineSettings>`, 
+    See Also: :py:class:`Settings
+    <firebolt.model.engine.EngineSettings>`,
     which also contains engine configuration.
     """
 
@@ -39,7 +39,7 @@ class EngineRevisionSpecification(FireboltBaseModel):
 
 class EngineRevision(FireboltBaseModel):
     """
-    A Firebolt Engine revision, 
+    A Firebolt Engine revision,
     which contains a Specification (instance types, counts).
 
     As engines are updated with new settings, revisions are created.

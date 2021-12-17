@@ -28,7 +28,7 @@ def raise_on_4xx_5xx(response: Response) -> None:
 
     If an error is message is found raise as an ApiError
     """
-    
+
     try:
         response.raise_for_status()
     except RequestError as exc:

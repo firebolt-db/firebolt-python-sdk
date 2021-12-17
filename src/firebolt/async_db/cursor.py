@@ -120,7 +120,7 @@ class BaseCursor:
     def description(self) -> Optional[List[Column]]:
         """
         Provides information about a single result row of a query
-        
+
         Attributes:
             * ``name``
             * ``type_code``
@@ -167,7 +167,7 @@ class BaseCursor:
 
     def _store_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response."""
-        
+
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
             return
@@ -268,8 +268,8 @@ class BaseCursor:
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
         """
-            Prepare and execute a database query against all parameter
-            sequences provided. Return last query row count.
+        Prepare and execute a database query against all parameter
+        sequences provided. Return last query row count.
         """
         self._reset()
         resp = None
@@ -319,8 +319,8 @@ class BaseCursor:
     @check_query_executed
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         """
-            Fetch the next set of rows of a query result,
-            cursor.arraysize is default size.
+        Fetch the next set of rows of a query result,
+        cursor.arraysize is default size.
         """
         size = size if size is not None else self.arraysize
         left, right = self._get_next_range(size)
@@ -358,16 +358,16 @@ class BaseCursor:
 
 class Cursor(BaseCursor):
     """
-        Class, responsible for executing asyncio queries to Firebolt Database.
-        Should not be created directly, 
-        use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
+    Class, responsible for executing asyncio queries to Firebolt Database.
+    Should not be created directly,
+    use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
-        Args:
-            description: information about a single result row
-            rowcount: the number of rows produced by last query
-            closed: True if connection is closed, False otherwise
-            arraysize: Read/Write, specifies the number of rows to fetch at a time 
-                with the :py:func:`fetchmany` method
+    Args:
+        description: information about a single result row
+        rowcount: the number of rows produced by last query
+        closed: True if connection is closed, False otherwise
+        arraysize: Read/Write, specifies the number of rows to fetch at a time
+            with the :py:func:`fetchmany` method
 
     """
 
@@ -411,6 +411,7 @@ class Cursor(BaseCursor):
             return super().fetchmany(size)
         """fetch the next set of rows of a query result,
           size is cursor.arraysize by default"""
+
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
         async with self._async_query_lock.reader:

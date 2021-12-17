@@ -102,7 +102,7 @@ class BindingService(BaseService):
         Returns:
             New binding between the engine and database.
         """
-        
+
         existing_database = self.get_database_bound_to_engine(engine=engine)
         if existing_database is not None:
             raise AlreadyBoundError(

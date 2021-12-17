@@ -1,6 +1,3 @@
-from inspect import cleandoc
-
-
 class FireboltError(Exception):
     pass
 
@@ -93,10 +90,9 @@ class AuthenticationError(FireboltError):
 
 class Warning(Exception):
     """
-        Exception raised for important warnings
-        like data truncations while inserting, etc.
+    Exception raised for important warnings
+    like data truncations while inserting, etc.
     """
-
 
 
 Error = FireboltError
@@ -105,8 +101,8 @@ Error = FireboltError
 class InterfaceError(Error):
 
     """
-        Exception raised for errors that are related to the database interface
-        rather than the database itself.
+    Exception raised for errors that are related to the database interface
+    rather than the database itself.
     """
 
 
@@ -116,43 +112,43 @@ class DatabaseError(Error):
 
 class DataError(DatabaseError):
     """
-        Exception raised for errors that are due to problems with the processed data
-        like division by zero, numeric value out of range, etc.
+    Exception raised for errors that are due to problems with the processed data
+    like division by zero, numeric value out of range, etc.
     """
 
 
 class OperationalError(DatabaseError):
     """
-        Exception raised for errors that are related to the database's operation
-        and not necessarily under the control of the programmer, e.g. an unexpected
-        disconnect occurs, the data source name is not found, a transaction could not
-        be processed, a memory allocation error occurred during processing, etc.
+    Exception raised for errors that are related to the database's operation
+    and not necessarily under the control of the programmer, e.g. an unexpected
+    disconnect occurs, the data source name is not found, a transaction could not
+    be processed, a memory allocation error occurred during processing, etc.
     """
 
 
 class IntegrityError(DatabaseError):
     """
-        Exception raised when the relational integrity of the database is affected,
-        e.g. a foreign key check fails.
+    Exception raised when the relational integrity of the database is affected,
+    e.g. a foreign key check fails.
     """
 
 
 class InternalError(DatabaseError):
     """
-        Exception raised when the database encounters an internal error,
-        e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
+    Exception raised when the database encounters an internal error,
+    e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
     """
 
 
 class ProgrammingError(DatabaseError):
     """
-        Exception raised when the database encounters an internal error,
-        e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
+    Exception raised when the database encounters an internal error,
+    e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
     """
 
 
 class NotSupportedError(DatabaseError):
     """
-        Exception raised when the database encounters an internal error,
-        e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
+    Exception raised when the database encounters an internal error,
+    e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
     """

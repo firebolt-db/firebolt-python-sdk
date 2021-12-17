@@ -1,4 +1,3 @@
-from inspect import cleandoc
 from time import time
 from typing import Generator, Optional
 
@@ -14,8 +13,8 @@ from firebolt.common.util import fix_url_schema
 class Auth(HttpxAuth):
 
     """
-        Authentication class for Firebolt database. Gets authentication token using
-        provided credentials and updates it when it expires
+    Authentication class for Firebolt database. Gets authentication token using
+    provided credentials and updates it when it expires
     """
 
     __slots__ = (
@@ -73,7 +72,7 @@ class Auth(HttpxAuth):
             raise AuthenticationError(repr(e), self._api_endpoint)
 
     def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
-        """Add authorization token to request headers. 
+        """Add authorization token to request headers.
         Overrides ``httpx.Auth.auth_flow``"""
 
         if not self.token or self.expired:

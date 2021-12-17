@@ -113,29 +113,29 @@ class EngineService(BaseService):
         description: str = "",
     ) -> Engine:
         """
-            Create a new Engine.
+        Create a new Engine.
 
-            Args:
-                name: An identifier that specifies the name of the engine.
-                region: The AWS region in which the engine runs.
-                engine_type: The engine type. GENERAL_PURPOSE or DATA_ANALYTICS
-                scale: The number of compute instances on the engine.
-                    The scale can be any int from 1 to 128.
-                spec: The AWS EC2 instance type.
-                auto_stop: The amount of time (in minutes) 
-                after which the engine automatically stops.
-                warmup: The warmup method that should be used.
+        Args:
+            name: An identifier that specifies the name of the engine.
+            region: The AWS region in which the engine runs.
+            engine_type: The engine type. GENERAL_PURPOSE or DATA_ANALYTICS
+            scale: The number of compute instances on the engine.
+                The scale can be any int from 1 to 128.
+            spec: The AWS EC2 instance type.
+            auto_stop: The amount of time (in minutes)
+            after which the engine automatically stops.
+            warmup: The warmup method that should be used.
 
-                    `MINIMAL` - On-demand loading (both indexes and tables' data).
+                `MINIMAL` - On-demand loading (both indexes and tables' data).
 
-                    `PRELOAD_INDEXES` - Load indexes only.
-                    
-                    `PRELOAD_ALL_DATA` - Full data auto-load
-                    (both indexes and table data - full warmup).
-                description: A short description of the engine's purpose.
+                `PRELOAD_INDEXES` - Load indexes only.
 
-            Returns:
-                Engine with the specified settings.
+                `PRELOAD_ALL_DATA` - Full data auto-load
+                (both indexes and table data - full warmup).
+            description: A short description of the engine's purpose.
+
+        Returns:
+            Engine with the specified settings.
         """
 
         logger.info(f"Creating Engine (name={name})")

@@ -17,7 +17,7 @@ class InstanceTypeService(BaseService):
     @cached_property
     def instance_types(self) -> List[InstanceType]:
         """List of instance types available on Firebolt."""
-        
+
         response = self.client.get(url=INSTANCE_TYPES_URL, params={"page.first": 5000})
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
 

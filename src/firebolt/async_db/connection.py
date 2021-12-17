@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from inspect import cleandoc
 from json import JSONDecodeError
 from types import TracebackType
 from typing import Callable, List, Optional, Type
@@ -67,14 +66,14 @@ def async_connect_factory(connection_class: Type) -> Callable:
         """
         Connect to Firebolt database.
 
-        Args: 
+        Args:
             database: name of the database to connect
             username: user name to use for authentication
             password: password to use for authentication
             engine_name: Optional The name of the engine to connect to
             engine_url: Optional. The engine endpoint to use
-        
-        Note: 
+
+        Note:
             either `engine_name` or `engine_url` should be provided, but not both
 
         """
@@ -157,7 +156,7 @@ class BaseConnection:
 
     def cursor(self) -> BaseCursor:
         """
-            Create new cursor object.
+        Create new cursor object.
         """
 
         if self.closed:
@@ -204,21 +203,21 @@ class BaseConnection:
 
 class Connection(BaseConnection):
     """
-        Firebolt asyncronous database connection class. Implements `PEP 249`_.
+    Firebolt asyncronous database connection class. Implements `PEP 249`_.
 
-        Args:
-            engine_url: Firebolt database engine REST API url
-            database: Firebolt database name
-            username: Firebolt account username
-            password: Firebolt account password
-            api_endpoint: Optional. Firebolt API endpoint. Used for authentication
+    Args:
+        engine_url: Firebolt database engine REST API url
+        database: Firebolt database name
+        username: Firebolt account username
+        password: Firebolt account password
+        api_endpoint: Optional. Firebolt API endpoint. Used for authentication
 
-        Note: 
-            Firebolt currenly doesn't support transactions 
-            so commit and rollback methods are not implemented.
+    Note:
+        Firebolt currenly doesn't support transactions
+        so commit and rollback methods are not implemented.
 
-        .. _PEP 249:
-            https://www.python.org/dev/peps/pep-0249/
+    .. _PEP 249:
+        https://www.python.org/dev/peps/pep-0249/
 
     """
 

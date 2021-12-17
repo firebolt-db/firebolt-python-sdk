@@ -1,4 +1,3 @@
-from inspect import cleandoc
 from typing import Any, Optional
 
 from async_property import async_cached_property  # type: ignore
@@ -42,15 +41,15 @@ class FireboltClientMixin(FireboltClientMixinBase):
 class Client(FireboltClientMixin, HttpxClient):
 
     """
-        An http client, based on httpx.Client, that handles the authentication
-        for Firebolt database.
+    An http client, based on httpx.Client, that handles the authentication
+    for Firebolt database.
 
-        Authentication can be passed through auth keyword as a tuple or as a
-        FireboltAuth instance
+    Authentication can be passed through auth keyword as a tuple or as a
+    FireboltAuth instance
 
-        httpx.Client:
-        
-        + (HttpxClient.__doc__ or "")
+    httpx.Client:
+
+    + (HttpxClient.__doc__ or "")
     """
 
     @cached_property
@@ -60,17 +59,17 @@ class Client(FireboltClientMixin, HttpxClient):
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     """
-        An http client, based on httpx.AsyncClient, that asyncronously handles
-        authentication for Firebolt database.
+    An http client, based on httpx.AsyncClient, that asyncronously handles
+    authentication for Firebolt database.
 
-        Authentication can be passed through auth keyword as a tuple or as a
-        FireboltAuth instance
+    Authentication can be passed through auth keyword as a tuple or as a
+    FireboltAuth instance
 
-        httpx.AsyncClient:
+    httpx.AsyncClient:
 
-        + (HttpxAsyncClient.__doc__ or "")
+    + (HttpxAsyncClient.__doc__ or "")
     """
-    
+
     @async_cached_property
     async def account_id(self) -> str:
         return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]

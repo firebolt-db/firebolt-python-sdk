@@ -56,13 +56,13 @@ class DatabaseService(BaseService):
             attached_engine_name_eq: Filter for databases by an exact engine name.
             attached_engine_name_contains: Filter for databases by engines with a
                 name containing this substring.
-            order_by: Method by which to order the results. 
+            order_by: Method by which to order the results.
             See :py:class:`firebolt.service.types.DatabaseOrder`.
 
         Returns:
             A list of databases matching the filters.
         """
-        
+
         if isinstance(order_by, str):
             order_by = DatabaseOrder[order_by]
         response = self.client.get(

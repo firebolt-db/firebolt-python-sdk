@@ -6,9 +6,9 @@ from firebolt.service.base import BaseService
 class EngineRevisionService(BaseService):
     def get_by_id(self, engine_id: str, engine_revision_id: str) -> EngineRevision:
         """
-            Get an EngineRevision from Firebolt by engine_id and engine_revision_id.
+        Get an EngineRevision from Firebolt by engine_id and engine_revision_id.
         """
-        
+
         return self.get_by_key(
             EngineRevisionKey(
                 account_id=self.account_id,

@@ -36,7 +36,7 @@ class EngineStatus(Enum):
     """
 
     ENGINE_STATUS_UNSPECIFIED = "ENGINE_STATUS_UNSPECIFIED"
-    """ Logical record is created, however underlying infrastructure 
+    """ Logical record is created, however underlying infrastructure
     is not initialized.
     In other words this means that engine is stopped."""
 
@@ -47,7 +47,7 @@ class EngineStatus(Enum):
     """ Engine initialization request was sent."""
 
     ENGINE_STATUS_PROVISIONING_STARTED = "ENGINE_STATUS_PROVISIONING_STARTED"
-    """ Engine initialization request was received 
+    """ Engine initialization request was received
     and initialization process started."""
 
     ENGINE_STATUS_PROVISIONING_FINISHED = "ENGINE_STATUS_PROVISIONING_FINISHED"
@@ -57,17 +57,17 @@ class EngineStatus(Enum):
     """ Engine initialization failed due to error."""
 
     ENGINE_STATUS_RUNNING_IDLE = "ENGINE_STATUS_RUNNING_IDLE"
-    """ Engine is initialized, 
+    """ Engine is initialized,
     but there are no running or starting engine revisions."""
 
     ENGINE_STATUS_RUNNING_REVISION_STARTING = "ENGINE_STATUS_RUNNING_REVISION_STARTING"
-    """ Engine is initialized, 
+    """ Engine is initialized,
     there are no running engine revision but it's starting."""
 
     ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED = (
         "ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED"
     )
-    """ Engine is initialized, 
+    """ Engine is initialized,
     initial revision is failed to provision or start."""
 
     ENGINE_STATUS_RUNNING_REVISION_SERVING = "ENGINE_STATUS_RUNNING_REVISION_SERVING"
@@ -86,22 +86,20 @@ class EngineStatus(Enum):
     ENGINE_STATUS_RUNNING_REVISION_RESTARTING = (
         "ENGINE_STATUS_RUNNING_REVISION_RESTARTING"
     )
-    """ Engine is initialized, 
+    """ Engine is initialized,
     replacement of the revision with a downtime is in progress."""
 
     ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED = (
         "ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED"
     )
-    """ Engine is initialized, 
+    """ Engine is initialized,
     replacement revision failed to provision or start."""
-
 
     ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING = (
         "ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING"
     )
-    """ Engine is initialized, 
+    """ Engine is initialized,
     all child revisions are being terminated."""
-
 
     # Engine termination request was sent.
     ENGINE_STATUS_TERMINATION_PENDING = "ENGINE_STATUS_TERMINATION_PENDING"
@@ -118,6 +116,7 @@ class EngineStatus(Enum):
 
     ENGINE_STATUS_DELETED = "ENGINE_STATUS_DELETED"
     """ Engine is soft-deleted."""
+
 
 class EngineStatusSummary(Enum):
     """
@@ -148,7 +147,7 @@ class EngineStatusSummary(Enum):
 
     ENGINE_STATUS_SUMMARY_UPGRADING = "ENGINE_STATUS_SUMMARY_UPGRADING"
     """ Version of the PackDB is changing.
-     This is zero downtime operation that does not affect engine work.s
+     This is zero downtime operation that does not affect engine work.
      This status is reserved for future use (not used fow now)."""
 
     ENGINE_STATUS_SUMMARY_RESTARTING = "ENGINE_STATUS_SUMMARY_RESTARTING"
@@ -183,7 +182,8 @@ class EngineStatusSummary(Enum):
      This status only indicates that there were issues during provisioning operations.
      If engine enters this status,
      all infrastructure should be stopped/terminated already."""
-     
+
+
 class EngineOrder(Enum):
     ENGINE_ORDER_UNSPECIFIED = "ENGINE_ORDER_UNSPECIFIED"
     ENGINE_ORDER_NAME_ASC = "ENGINE_ORDER_NAME_ASC"
