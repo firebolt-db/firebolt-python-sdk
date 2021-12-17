@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from functools import wraps
-from inspect import cleandoc
 from types import TracebackType
 from typing import Any
 from warnings import warn
@@ -18,25 +17,21 @@ DEFAULT_TIMEOUT_SECONDS: int = 5
 
 
 class Connection(AsyncBaseConnection):
-    cleandoc(
-        """
-        Firebolt database connection class. Implements PEP-249.
+    """
+    Firebolt database connection class. Implements PEP-249.
 
-        Parameters:
-            engine_url - Firebolt database engine REST API url
-            database - Firebolt database name
-            username - Firebolt account username
-            password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+    Args:
 
-        Methods:
-            cursor - create new Cursor object
-            close - close the Connection and all it's cursors
+        engine_url: Firebolt database engine REST API url
+        database: Firebolt database name
+        username: Firebolt account username
+        password: Firebolt account password
+        api_endpoint: Optional. Firebolt API endpoint. Used for authentication
 
+    Note:
         Firebolt currenly doesn't support transactions so commit and rollback methods
         are not implemented.
-        """
-    )
+    """
 
     __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock",)
 

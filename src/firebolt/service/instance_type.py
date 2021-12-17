@@ -17,17 +17,20 @@ class InstanceTypeService(BaseService):
     @cached_property
     def instance_types(self) -> List[InstanceType]:
         """List of instance types available on Firebolt."""
+
         response = self.client.get(url=INSTANCE_TYPES_URL, params={"page.first": 5000})
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     @cached_property
     def instance_types_by_key(self) -> Dict[InstanceTypeKey, InstanceType]:
-        """Dict of {InstanceTypeKey: InstanceType}"""
+        """Dict of {InstanceTypeKey to InstanceType}"""
+
         return {i.key: i for i in self.instance_types}
 
     @cached_property
     def instance_types_by_name(self) -> Dict[InstanceTypeLookup, InstanceType]:
-        """Dict of {InstanceTypeLookup: InstanceType}"""
+        """Dict of {InstanceTypeLookup to InstanceType}"""
+
         return {
             InstanceTypeLookup(
                 region_name=self.resource_manager.regions.get_by_id(
@@ -40,6 +43,7 @@ class InstanceTypeService(BaseService):
 
     def get_by_key(self, instance_type_key: InstanceTypeKey) -> InstanceType:
         """Get an instance type by key."""
+
         return self.instance_types_by_key[instance_type_key]
 
     def get_by_name(
@@ -59,6 +63,7 @@ class InstanceTypeService(BaseService):
         Returns:
             The requested instance type.
         """
+
         # Will raise an error if neither set
         region_name = region_name or self.resource_manager.regions.default_region.name
         return self.instance_types_by_name[
