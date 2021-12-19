@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from inspect import cleandoc
 from json import JSONDecodeError
 from types import TracebackType
 from typing import Callable, List, Optional, Type
@@ -70,21 +69,22 @@ def async_connect_factory(connection_class: Type) -> Callable:
         account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
-        cleandoc(
-            """
-            Connect to Firebolt database.
+        """
+        Connect to Firebolt database.
 
-            Connection parameters:
-            database - name of the database to connect
-            username - user name to use for authentication
-            password - password to use for authentication
-            engine_name - name of the engine to connect to
-            engine_url - engine endpoint to use
-            account_name - for customers with multiple accounts; if blank uses default
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication.
-            note: either engine_name or engine_url should be provided, but not both
-            """
-        )
+        Args:
+            database: name of the database to connect
+            username: user name to use for authentication
+            password: password to use for authentication
+            engine_name: Optional The name of the engine to connect to
+            engine_url: Optional. The engine endpoint to use
+            account_name: For customers with multiple accounts; if blank uses default.
+            api_endpoint(optional): Firebolt API endpoint. Used for authentication.
+
+        Note:
+            Either `engine_name` or `engine_url` should be provided, but not both.
+
+        """
 
         if engine_name and engine_url:
             raise InterfaceError(
@@ -167,7 +167,10 @@ class BaseConnection:
         self._is_closed = False
 
     def cursor(self) -> BaseCursor:
-        """Create new cursor object."""
+        """
+        Create new cursor object.
+        """
+
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed")
 
@@ -205,31 +208,31 @@ class BaseConnection:
 
     def commit(self) -> None:
         """Does nothing since Firebolt doesn't have transactions"""
+
         if self.closed:
             raise ConnectionClosedError("Unable to commit: connection closed")
 
 
 class Connection(BaseConnection):
-    cleandoc(
-        """
-        Firebolt asyncronous database connection class. Implements PEP-249.
+    """
+    Firebolt asyncronous database connection class. Implements `PEP 249`_.
 
-        Parameters:
-            engine_url - Firebolt database engine REST API url
-            database - Firebolt database name
-            username - Firebolt account username
-            password - Firebolt account password
-            account_name - for entities with more than one account
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+    Args:
+        engine_url: Firebolt database engine REST API url
+        database: Firebolt database name
+        username: Firebolt account username
+        password: Firebolt account password
+        account_name: for entities with more than one account
+        api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
 
-        Methods:
-            cursor - create new Cursor object
-            close - close the Connection and all it's cursors
+    Note:
+        Firebolt currenly doesn't support transactions
+        so commit and rollback methods are not implemented.
 
-        Firebolt currenly doesn't support transactions so commit and rollback methods
-        are not implemented.
-        """
-    )
+    .. _PEP 249:
+        https://www.python.org/dev/peps/pep-0249/
+
+    """
 
     cursor_class = Cursor
 

@@ -72,6 +72,7 @@ class Database(FireboltBaseModel):
 
     def get_attached_engines(self) -> List[Engine]:
         """Get a list of engines that are attached to this database."""
+
         return self._service.resource_manager.bindings.get_engines_bound_to_database(  # noqa: E501
             database=self
         )
@@ -89,6 +90,7 @@ class Database(FireboltBaseModel):
                 Only one engine can be set as default for a single database.
                 This will overwrite any existing default.
         """
+
         return self._service.resource_manager.bindings.create(
             engine=engine, database=self, is_default_engine=is_default_engine
         )
@@ -99,6 +101,7 @@ class Database(FireboltBaseModel):
 
         Raises an error if there are any attached engines.
         """
+
         for engine in self.get_attached_engines():
             if engine.current_status_summary in {
                 EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING,
