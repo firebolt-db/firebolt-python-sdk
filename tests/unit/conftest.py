@@ -20,6 +20,7 @@ from firebolt.common.exception import (
 )
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
+    ACCOUNT_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_URL,
     AUTH_URL,
@@ -125,7 +126,10 @@ def db_name() -> str:
 
 @pytest.fixture
 def account_id_url(settings: Settings) -> str:
-    return f"https://{settings.server}{ACCOUNT_URL}"
+    if settings.account_name is None:
+        return f"https://{settings.server}{ACCOUNT_URL}"
+    else:
+        return f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
 
 
 @pytest.fixture
@@ -135,9 +139,11 @@ def account_id_callback(account_id: str, account_id_url: str) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == account_id_url
-        return to_response(
-            status_code=httpx.codes.OK, json={"account": {"id": account_id}}
-        )
+        if account_id_url.endswith(ACCOUNT_URL):
+            return to_response(
+                status_code=httpx.codes.OK, json={"account": {"id": account_id}}
+            )
+        return to_response(status_code=httpx.codes.OK, json={"account_id": account_id})
 
     return do_mock
 

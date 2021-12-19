@@ -155,7 +155,7 @@ def test_connect_engine_name(
         database=db_name,
         username="u",
         password="p",
-        account_name="",
+        account_name=settings.account_name,
         api_endpoint=settings.server,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)

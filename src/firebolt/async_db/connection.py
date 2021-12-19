@@ -222,7 +222,7 @@ class Connection(BaseConnection):
         database: Firebolt database name
         username: Firebolt account username
         password: Firebolt account password
-        account_name: for entities with more than one account
+        account_name: Necessary for entities with more than one account.
         api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
 
     Note:

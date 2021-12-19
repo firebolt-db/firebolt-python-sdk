@@ -55,11 +55,14 @@ async def test_cursor_initialized(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
+    account_id_callback: Callable,
+    account_id_url: str,
     python_query_data: List[List[ColType]],
 ) -> None:
-    """Connection initialised it's cursors propperly"""
+    """Connection initialised its cursors properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     for url in (settings.server, f"https://{settings.server}"):
         async with (
@@ -170,6 +173,7 @@ async def test_connect_engine_name(
             username="username",
             password="password",
             engine_name=engine_name,
+            account_name=settings.account_name,
             api_endpoint=settings.server,
         ):
             pass
@@ -188,6 +192,7 @@ async def test_connect_engine_name(
         database=db_name,
         username="u",
         password="p",
+        account_name=settings.account_name,
         api_endpoint=settings.server,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
