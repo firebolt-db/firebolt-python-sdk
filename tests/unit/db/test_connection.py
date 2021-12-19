@@ -155,13 +155,14 @@ def test_connect_engine_name(
         database=db_name,
         username="u",
         password="p",
+        account_name="",
         api_endpoint=settings.server,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
 
 
 def test_connection_unclosed_warnings():
-    c = Connection("", "", "", "", "")
+    c = Connection("", "", "", "", "", "")
     with warns(UserWarning) as winfo:
         del c
 

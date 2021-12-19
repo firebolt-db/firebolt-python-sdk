@@ -27,11 +27,12 @@ class Connection(AsyncBaseConnection):
             database - Firebolt database name
             username - Firebolt account username
             password - Firebolt account password
-            api_endpoint(optional) - Firebolt API endpoint. Used for authentication
+            account_name - for customers with multiple accounts; if blank uses default
+            api_endpoint(optional) - Firebolt API endpoint. Used for authentication.
 
         Methods:
             cursor - create new Cursor object
-            close - close the Connection and all it's cursors
+            close - close the Connection and all its cursors
 
         Firebolt currenly doesn't support transactions so commit and rollback methods
         are not implemented.
