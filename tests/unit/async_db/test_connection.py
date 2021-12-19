@@ -68,6 +68,7 @@ async def test_cursor_initialized(
                 database=db_name,
                 username="u",
                 password="p",
+                account_name=settings.account_name,
                 api_endpoint=settings.server,
             )
         ) as connection:

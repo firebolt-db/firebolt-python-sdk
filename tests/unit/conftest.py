@@ -94,6 +94,7 @@ def settings(server, region_1) -> Settings:
         user="email@domain.com",
         password=SecretStr("*****"),
         default_region=region_1.name,
+        account_name="account",
     )
 
 
