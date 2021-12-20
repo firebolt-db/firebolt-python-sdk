@@ -61,8 +61,8 @@ class Client(FireboltClientMixin, HttpxClient):
             response = self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
             )
-            if response.status_code != "200":
-                raise AccountError(f"{self.account_name} does not exist.")
+            if response.status_code != 200:
+                raise AccountError(self.account_name)
             return response.json()["account_id"]
         else:  # account_name isn't set, use the default account.
             return self.get(url=ACCOUNT_URL).json()["account"]["id"]
@@ -87,8 +87,8 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
             response = await self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
             )
-            if response.status_code != "200":
-                raise AccountError(f"{self.account_name} does not exist.")
+            if response.status_code != 200:
+                raise AccountError(self.account_name)
             return response.json()["account_id"]
         else:  # account_name isn't set; use the default account.
             return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
