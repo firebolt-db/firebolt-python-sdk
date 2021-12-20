@@ -62,7 +62,7 @@ async def test_cursor_initialized(
     """Connection initialised its cursors properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    # httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     for url in (settings.server, f"https://{settings.server}"):
         async with (
@@ -71,7 +71,7 @@ async def test_cursor_initialized(
                 database=db_name,
                 username="u",
                 password="p",
-                account_name=settings.account_name,
+                account_name="a",
                 api_endpoint=settings.server,
             )
         ) as connection:

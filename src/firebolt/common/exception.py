@@ -29,6 +29,10 @@ class FireboltDatabaseError(FireboltError):
     pass
 
 
+class AccountError(FireboltError):
+    pass
+
+
 class AttachedEngineInUseError(FireboltDatabaseError):
     def __init__(self, method_name: str):
         self.method_name = method_name
@@ -99,7 +103,6 @@ Error = FireboltError
 
 
 class InterfaceError(Error):
-
     """
     Exception raised for errors that are related to the database interface
     rather than the database itself.

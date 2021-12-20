@@ -48,12 +48,12 @@ async def _resolve_engine_url(
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
         except HTTPStatusError as e:
-            # Engine error would be 404
+            # Engine error would be 404.
             if e.response.status_code != 404:
                 raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
             # Once this is point is reached we've already authenticated with
             # the backend so it's safe to assume the cause of the error is
-            # missing engine
+            # missing engine.
             raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist")
         except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
             raise InterfaceError(f"unable to retrieve engine endpoint: {e}")
@@ -98,9 +98,9 @@ def async_connect_factory(connection_class: Type) -> Callable:
             )
 
         api_endpoint = fix_url_schema(api_endpoint)
-        # This parameters are optional in function signature,
+        # These parameters are optional in function signature
         # but are required to connect.
-        # It's recommended to make them kwargs by PEP 249
+        # PEP 249 recommendeds making them kwargs.
         for param, name in (
             (database, "database"),
             (username, "username"),
