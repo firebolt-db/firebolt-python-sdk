@@ -129,17 +129,21 @@ def account_id_url(settings: Settings) -> str:
     if settings.account_name is None:
         return f"https://{settings.server}{ACCOUNT_URL}"
     else:
-        return f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
+        return (
+            f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
+            f"?account_name={settings.account_name}"
+        )
 
 
 @pytest.fixture
-def account_id_callback(account_id: str, account_id_url: str) -> Callable:
+def account_id_callback(account_id: str, settings: Settings) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == account_id_url
-        if account_id_url.endswith(ACCOUNT_URL):
+        this_url = account_id_url
+        assert request.url == this_url
+        if this_url.endswith(ACCOUNT_URL):
             return to_response(
                 status_code=httpx.codes.OK, json={"account": {"id": account_id}}
             )
