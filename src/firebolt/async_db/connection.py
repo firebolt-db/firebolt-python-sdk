@@ -126,7 +126,9 @@ def async_connect_factory(connection_class: Type) -> Callable:
         assert engine_url is not None
 
         engine_url = fix_url_schema(engine_url)
-        return connection_class(engine_url, database, username, password, api_endpoint)
+        return connection_class(
+            engine_url, database, username, password, account_name, api_endpoint
+        )
 
     return connect_inner
 

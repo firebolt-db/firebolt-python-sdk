@@ -136,17 +136,19 @@ def account_id_url(settings: Settings) -> str:
 
 
 @pytest.fixture
-def account_id_callback(account_id: str, settings: Settings) -> Callable:
+def account_id_callback(
+    account_id: str, account_id_url: str, settings: Settings
+) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        this_url = account_id_url
-        assert request.url == this_url
-        if this_url.endswith(ACCOUNT_URL):
+        assert request.url == account_id_url
+        if account_id_url.endswith(ACCOUNT_URL):  # account_name shouldn't be specified.
             return to_response(
                 status_code=httpx.codes.OK, json={"account": {"id": account_id}}
             )
+        # In this case, an account_name *should* be specified.
         return to_response(status_code=httpx.codes.OK, json={"account_id": account_id})
 
     return do_mock
