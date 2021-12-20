@@ -2,6 +2,7 @@ from httpx import ConnectError
 from pytest import raises
 
 from firebolt.common.exception import (
+    AccountError,
     AuthenticationError,
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -28,6 +29,31 @@ def test_invalid_credentials(
         assert str(exc_info.value).startswith(
             "Failed to authenticate"
         ), "Invalid authentication error message"
+
+
+def test_invalid_account(
+    database_name: str,
+    engine_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+) -> None:
+    """Connection properly reacts to invalid account error."""
+    account_name = "--"
+    with raises(AccountError) as exc_info:
+        with connect(
+            database=database_name,
+            engine_name=engine_name,  # Omit engine_url to force account_id lookup.
+            username=username,
+            password=password,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as connection:
+            connection.cursor().execute("show tables")
+
+        assert str(exc_info.value).startswith(
+            f'Account "{account_name}" does not exist'
+        ), "Invalid account error message."
 
 
 def test_engine_url_not_exists(
