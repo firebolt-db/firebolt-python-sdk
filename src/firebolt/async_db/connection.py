@@ -23,7 +23,7 @@ async def _resolve_engine_url(
     engine_name: str,
     username: str,
     password: str,
-    account_name: str,
+    account_name: Optional[str],
     api_endpoint: str,
 ) -> str:
     async with AsyncClient(
