@@ -69,7 +69,7 @@ async def test_select(
 async def test_drop_create(
     connection: Connection, create_drop_description: List[Column]
 ) -> None:
-    """Create and drop table/index queries are handled propperly"""
+    """Create and drop table/index queries are handled properly."""
 
     async def test_query(c: Cursor, query: str) -> None:
         assert await c.execute(query) == 1, "Invalid row count returned"

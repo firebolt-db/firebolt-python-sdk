@@ -13,7 +13,7 @@ from firebolt.common.exception import (
     FireboltEngineError,
     InterfaceError,
 )
-from firebolt.common.urls import ACCOUNT_ENGINE_URL, ENGINE_BY_NAME_URL
+from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL, ACCOUNT_ENGINE_URL
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
@@ -23,8 +23,8 @@ async def _resolve_engine_url(
     engine_name: str,
     username: str,
     password: str,
-    account_name: Optional[str],
     api_endpoint: str,
+    account_name: Optional[str] = None,
 ) -> str:
     async with AsyncClient(
         auth=(username, password),
@@ -35,7 +35,7 @@ async def _resolve_engine_url(
         try:
             account_id = await client.account_id
             response = await client.get(
-                url=ENGINE_BY_NAME_URL,
+                url=ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id),
                 params={"engine_name": engine_name},
             )
             response.raise_for_status()
@@ -116,11 +116,11 @@ def async_connect_factory(connection_class: Type) -> Callable:
 
         if engine_name:
             engine_url = await _resolve_engine_url(
-                engine_name,
-                username,
-                password,
-                account_name,
-                api_endpoint,
+                engine_name=engine_name,
+                username=username,
+                password=password,
+                account_name=account_name,
+                api_endpoint=api_endpoint,
             )
 
         assert engine_url is not None
