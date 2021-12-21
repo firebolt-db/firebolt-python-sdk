@@ -36,7 +36,7 @@ async def _resolve_engine_url(
             account_id = await client.account_id
             response = await client.get(
                 url=ENGINE_BY_NAME_URL,
-                params={"engine_name": engine_name, "account_id": account_id},
+                params={"engine_name": engine_name},
             )
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
@@ -66,7 +66,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         password: str = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
-        account_name: Optional[str] = None,
+        account_name: str = None,
         api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
         """
@@ -88,12 +88,12 @@ def async_connect_factory(connection_class: Type) -> Callable:
 
         if engine_name and engine_url:
             raise InterfaceError(
-                "Both engine_name and engine_url are provided."
+                "Both engine_name and engine_url are provided. "
                 "Provide only one to connect."
             )
         if not engine_name and not engine_url:
             raise InterfaceError(
-                "Neither engine_name nor engine_url are provided."
+                "Neither engine_name nor engine_url is provided. "
                 "Provide one to connect."
             )
 

@@ -135,6 +135,7 @@ async def test_connect_engine_name(
             database="db",
             username="username",
             password="password",
+            account_name="account_name",
         ):
             pass
     assert str(exc_info.value).startswith(
@@ -146,10 +147,11 @@ async def test_connect_engine_name(
             database="db",
             username="username",
             password="password",
+            account_name="account",
         ):
             pass
     assert str(exc_info.value).startswith(
-        "Neither engine_name nor engine_url are provided."
+        "Neither engine_name nor engine_url is provided."
     )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
