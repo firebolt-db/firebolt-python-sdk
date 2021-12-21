@@ -78,7 +78,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
             password: password to use for authentication
             engine_name: Optional The name of the engine to connect to
             engine_url: Optional. The engine endpoint to use
-            account_name: For customers with multiple accounts; if blank uses default.
+            account_name: For customers with multiple accounts; if None uses default.
             api_endpoint(optional): Firebolt API endpoint. Used for authentication.
 
         Note:
