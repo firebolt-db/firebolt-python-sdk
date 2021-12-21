@@ -19,7 +19,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
     def __init__(
         self,
         *args: Any,
-        account_name: str = None,
+        account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
         auth: AuthTypes = None,
         **kwargs: Any,

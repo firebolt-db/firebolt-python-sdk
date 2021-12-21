@@ -66,7 +66,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         password: str = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
-        account_name: str = None,
+        account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
         """
