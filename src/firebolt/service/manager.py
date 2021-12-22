@@ -64,6 +64,3 @@ class ResourceManager:
         self.engines = EngineService(resource_manager=self)
         self.engine_revisions = EngineRevisionService(resource_manager=self)
         self.bindings = BindingService(resource_manager=self)
-
-    def _get_account_id(self, account_name: Optional[str]) -> str:
-        return self.client.account_id
