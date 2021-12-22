@@ -121,7 +121,7 @@ def test_connect_engine_name(
             password="password",
         )
     assert str(exc_info.value).startswith(
-        "Both engine_name and engine_url are provided"
+        "Both engine_name and engine_url are provided."
     )
 
     with raises(InterfaceError) as exc_info:
@@ -131,7 +131,7 @@ def test_connect_engine_name(
             password="password",
         )
     assert str(exc_info.value).startswith(
-        "Neither engine_name nor engine_url are provided"
+        "Neither engine_name nor engine_url is provided."
     )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)

@@ -112,7 +112,7 @@ def test_engine_stopped(
 def test_database_not_exists(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
-    """Connection properly reacts to invalid database error"""
+    """Connection properly reacts to invalid database error."""
     new_db_name = database_name + "_"
     with connect(
         engine_url=engine_url,
@@ -130,7 +130,7 @@ def test_database_not_exists(
 
 
 def test_sql_error(connection: Connection) -> None:
-    """Connection properly reacts to sql execution error"""
+    """Connection properly reacts to sql execution error."""
     with connection.cursor() as c:
         with raises(OperationalError) as exc_info:
             c.execute("select ]")

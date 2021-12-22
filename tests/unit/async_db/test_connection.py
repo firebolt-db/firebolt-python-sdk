@@ -36,13 +36,13 @@ async def test_cursors_closed_on_close(connection: Connection) -> None:
     c1, c2 = connection.cursor(), connection.cursor()
     assert (
         len(connection._cursors) == 2
-    ), "Invalid number of cursors stored in connection"
+    ), "Invalid number of cursors stored in connection."
 
     await connection.aclose()
-    assert connection.closed, "Connection was not closed on close"
-    assert c1.closed, "Cursor was not closed on connection close"
-    assert c2.closed, "Cursor was not closed on connection close"
-    assert len(connection._cursors) == 0, "Cursors left in connection after close"
+    assert connection.closed, "Connection was not closed on close."
+    assert c1.closed, "Cursor was not closed on connection close."
+    assert c2.closed, "Cursor was not closed on connection close."
+    assert len(connection._cursors) == 0, "Cursors left in connection after close."
     await connection.aclose()
 
 
@@ -59,7 +59,7 @@ async def test_cursor_initialized(
     account_id_url: str,
     python_query_data: List[List[ColType]],
 ) -> None:
-    """Connection initialised it's cursors propperly"""
+    """Connection initialised its cursors properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     # httpx_mock.add_callback(account_id_callback, url=account_id_url)
@@ -78,7 +78,7 @@ async def test_cursor_initialized(
             cursor = connection.cursor()
             assert (
                 cursor.connection == connection
-            ), "Invalid cursor connection attribute"
+            ), "Invalid cursor connection attribute."
             assert (
                 cursor._client == connection._client
             ), "Invalid cursor _client attribute"
@@ -88,7 +88,7 @@ async def test_cursor_initialized(
             cursor.close()
             assert (
                 cursor not in connection._cursors
-            ), "Cursor wasn't removed from connection after close"
+            ), "Cursor wasn't removed from connection after close."
 
 
 @mark.asyncio
@@ -139,7 +139,7 @@ async def test_connect_engine_name(
         ):
             pass
     assert str(exc_info.value).startswith(
-        "Both engine_name and engine_url are provided"
+        "Both engine_name and engine_url are provided."
     )
 
     with raises(InterfaceError) as exc_info:
@@ -151,7 +151,7 @@ async def test_connect_engine_name(
         ):
             pass
     assert str(exc_info.value).startswith(
-        "Neither engine_name nor engine_url are provided"
+        "Neither engine_name nor engine_url is provided."
     )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
