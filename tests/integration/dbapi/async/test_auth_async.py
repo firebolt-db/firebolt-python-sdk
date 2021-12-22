@@ -23,10 +23,10 @@ async def test_refresh_token(connection: Connection) -> None:
         old = c._client.auth.token
         c._client.auth._expires = int(time()) - 1
 
-        # Still works fine.
+        # Still works fine
         await c.execute("show tables")
 
-        assert c._client.auth.token != old, "Auth didn't update token on expiration."
+        assert c._client.auth.token != old, "Auth didn't update token on expiration"
 
 
 @mark.asyncio

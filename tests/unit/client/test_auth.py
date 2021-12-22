@@ -52,7 +52,7 @@ def test_auth_refresh_on_expiration(
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
     assert auth.token == test_token, "invalid access token"
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
-    assert auth.token == test_token2, "Expired access token was not updated."
+    assert auth.token == test_token2, "expired access token was not updated"
 
 
 def test_auth_uses_same_token_if_valid(
@@ -88,7 +88,7 @@ def test_auth_uses_same_token_if_valid(
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
     assert auth.token == test_token, "invalid access token"
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
-    assert auth.token == test_token, "Shoud not update token until it expires."
+    assert auth.token == test_token, "shoud not update token until it expires"
     httpx_mock.reset(False)
 
 
@@ -129,7 +129,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
             execute_generator_requests(auth.get_new_token_generator())
 
         assert (
-            str(excinfo.value) == "Failed to authenticate at https://host: firebolt."
+            str(excinfo.value) == "Failed to authenticate at https://host: firebolt"
         ), "Invalid authentication error message"
         httpx_mock.reset(True)
 
