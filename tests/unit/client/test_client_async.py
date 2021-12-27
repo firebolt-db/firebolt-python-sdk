@@ -112,4 +112,4 @@ async def test_client_account_id(
         base_url=fix_url_schema(settings.server),
         api_endpoint=settings.server,
     ) as c:
-        assert await c.account_id == account_id, "Invalid account id returned"
+        assert await c.account_id() == account_id, "Invalid account id returned"
