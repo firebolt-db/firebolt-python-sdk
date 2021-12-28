@@ -1,7 +1,7 @@
-from asyncio import run
 from threading import Thread
 
 from pytest import raises
+from trio import run
 
 from firebolt.common.util import async_to_sync
 
@@ -44,7 +44,7 @@ def test_async_to_sync_after_run():
         raise JobMarker()
 
     with raises(JobMarker):
-        run(task())
+        run(task)
 
     # Here local event loop is closed by run
 
