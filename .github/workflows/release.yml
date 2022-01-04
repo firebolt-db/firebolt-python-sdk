@@ -19,6 +19,8 @@ jobs:
 
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     needs: integration-tests
     steps:    
     - name: Check out code
@@ -59,11 +61,18 @@ jobs:
         git commit -m "Automatic version bump to ${{ steps.tag_generation.outputs.new_tag }}"
         git push origin main
         
-    - name: Publish to github
+    - name: Publish tag on github
       run: |
         git tag ${{ steps.tag_generation.outputs.new_tag }}
         git push origin ${{ steps.tag_generation.outputs.new_tag }}
         
+    - name: Release on github
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.tag_generation.outputs.new_tag }}
+        generate_release_notes: true
+        prerelease: ${{ github.event.inputs.preReleaseTag != '' }}
+
     - name: Publish to pypi
       run: |
         python3 -m build
