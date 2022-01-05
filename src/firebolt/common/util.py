@@ -1,6 +1,7 @@
-from asyncio import get_event_loop, new_event_loop
-from functools import lru_cache, wraps
+from functools import lru_cache, partial, wraps
 from typing import TYPE_CHECKING, Any, Callable, Type, TypeVar
+
+from trio import run as sync_run
 
 T = TypeVar("T")
 
@@ -40,15 +41,6 @@ def fix_url_schema(url: str) -> str:
 def async_to_sync(f: Callable) -> Callable:
     @wraps(f)
     def sync(*args: Any, **kwargs: Any) -> Any:
-        close = False
-        try:
-            loop = get_event_loop()
-        except RuntimeError:
-            loop = new_event_loop()
-            close = True
-        res = loop.run_until_complete(f(*args, **kwargs))
-        if close:
-            loop.close()
-        return res
+        return sync_run(partial(f, *args, **kwargs))
 
     return sync
