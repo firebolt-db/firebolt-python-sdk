@@ -1,9 +1,9 @@
 from typing import Any, Optional
 
-from https import codes as HttpxCodes
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
 from httpx import _types
+from httpx import codes as HttpxCodes
 from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
