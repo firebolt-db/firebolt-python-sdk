@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+from https import codes as HttpxCodes
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
 from httpx import _types
@@ -7,7 +8,7 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
 from firebolt.client.constants import DEFAULT_API_URL
-from firebolt.common.exception import AccountError
+from firebolt.common.exception import AccountNotFoundError
 from firebolt.common.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
 from firebolt.common.util import cached_property, fix_url_schema, mixin_for
 
@@ -60,8 +61,10 @@ class Client(FireboltClientMixin, HttpxClient):
             response = self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
             )
-            if response.status_code != 200:
-                raise AccountError(self.account_name)
+            if response.status_code == HttpxCodes.NOT_FOUND:
+                raise AccountNotFoundError(self.account_name)
+            # process all other status codes
+            response.raise_for_status()
             return response.json()["account_id"]
         else:  # account_name isn't set, use the default account.
             return self.get(url=ACCOUNT_URL).json()["account"]["id"]
@@ -85,8 +88,10 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
             response = await self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
             )
-            if response.status_code != 200:
-                raise AccountError(self.account_name)
+            if response.status_code == HttpxCodes.NOT_FOUND:
+                raise AccountNotFoundError(self.account_name)
+            # process all other status codes
+            response.raise_for_status()
             return response.json()["account_id"]
         else:  # account_name isn't set; use the default account.
             return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]

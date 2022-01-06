@@ -3,7 +3,7 @@ from pytest import mark, raises
 
 from firebolt.async_db import Connection, connect
 from firebolt.common.exception import (
-    AccountError,
+    AccountNotFoundError,
     AuthenticationError,
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -42,7 +42,7 @@ async def test_invalid_account(
 ) -> None:
     """Connection properly reacts to invalid account error."""
     account_name = "--"
-    with raises(AccountError) as exc_info:
+    with raises(AccountNotFoundError) as exc_info:
         async with await connect(
             database=database_name,
             engine_name=engine_name,  # Omit engine_url to force account_id lookup.

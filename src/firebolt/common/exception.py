@@ -29,7 +29,7 @@ class FireboltDatabaseError(FireboltError):
     pass
 
 
-class AccountError(FireboltError):
+class AccountNotFoundError(FireboltError):
     def __init__(self, method_name: str):
         self.method_name = method_name
 
