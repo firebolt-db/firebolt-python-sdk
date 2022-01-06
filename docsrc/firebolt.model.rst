@@ -2,6 +2,7 @@
 firebolt.model package
 ======================
 
+The model package enables various tools for modifying Firebolt engines and databases.
 
 firebolt.model.database module
 ------------------------------

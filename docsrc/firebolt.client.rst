@@ -2,6 +2,7 @@
 firebolt.client package
 =======================
 
+The client package contains functionality for user authentication and logging requests. 
 
 firebolt.client.auth module
 ---------------------------

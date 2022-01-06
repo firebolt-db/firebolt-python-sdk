@@ -2,6 +2,7 @@
 firebolt.service package
 ========================
 
+The service packages enables launching and cataloging Firebolt engines and databases.
 
 .. automodule:: firebolt.service.base
    :members:

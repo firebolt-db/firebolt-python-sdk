@@ -2,6 +2,7 @@
 firebolt.common package
 =======================
 
+The common package contains a list of exceptions that are raised for errors when accessing Firebolt databases. 
 
 firebolt.common.exception module
 --------------------------------

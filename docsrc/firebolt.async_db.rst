@@ -2,7 +2,7 @@
 firebolt.async\_db package
 ==========================
 
-
+The async_db package enables connecting and making asynchronous queries to a Firebolt database. For demonstrations of using this package, please see our `examples <https://github.com/firebolt-db/firebolt-sdk/tree/main/examples/dbapi.ipynb>`_ page. 
 
 firebolt.async\_db.connection module
 ------------------------------------

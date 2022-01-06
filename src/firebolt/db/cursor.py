@@ -26,9 +26,8 @@ class Cursor(AsyncBaseCursor):
         description: Information about a single result row
         rowcount: The number of rows produced by last query
         closed: True if connection is closed, False otherwise
-        arraysize: Read/Write,
-        specifies the number of rows to fetch at a time
-        with :py:func:`fetchmany` method
+        arraysize: Read/Write, specifies the number of rows to fetch at a time
+            with the :py:func:`fetchmany` method
     """
 
     __slots__ = AsyncBaseCursor.__slots__ + ("_query_lock", "_idx_lock")
