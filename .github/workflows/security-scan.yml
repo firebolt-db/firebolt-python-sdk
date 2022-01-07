@@ -15,3 +15,7 @@ jobs:
 
       - name: "Security Scan"
         uses: firebolt-db/action-security-scan@main
+        with:
+          github-key: ${{ secrets.GITHUB_TOKEN }}
+          fossa-key: ${{ secrets.fossaApiKey }}
+          sonar-key: ${{ secrets.SONAR_TOKEN }}
