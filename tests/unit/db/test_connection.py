@@ -162,7 +162,7 @@ def test_connect_engine_name(
 
 
 def test_connection_unclosed_warnings():
-    c = Connection("", "", "", "", "", "")
+    c = Connection("", "", "", "", "")
     with warns(UserWarning) as winfo:
         del c
 

@@ -126,9 +126,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         assert engine_url is not None
 
         engine_url = fix_url_schema(engine_url)
-        return connection_class(
-            engine_url, database, username, password, account_name, api_endpoint
-        )
+        return connection_class(engine_url, database, username, password, api_endpoint)
 
     return connect_inner
 
@@ -141,7 +139,6 @@ class BaseConnection:
         "_cursors",
         "database",
         "engine_url",
-        "account_name",
         "api_endpoint",
         "_is_closed",
     )
@@ -152,13 +149,11 @@ class BaseConnection:
         database: str,  # TODO: Get by engine name
         username: str,
         password: str,
-        account_name: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
         self._client = AsyncClient(
             auth=(username, password),
             base_url=engine_url,
-            account_name=account_name,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         )
@@ -224,7 +219,6 @@ class Connection(BaseConnection):
         database: Firebolt database name
         username: Firebolt account username
         password: Firebolt account password
-        account_name: Necessary for entities with more than one account.
         api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
 
     Note:
