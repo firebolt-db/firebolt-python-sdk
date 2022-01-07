@@ -79,7 +79,7 @@ class DatabaseService(BaseService):
             for d in response.json()["databases"]
         ]
 
-    def create(self, name: str, region: Optional[str] = None) -> Database:
+    def create(self, name: str, region: Optional[str] = None, description: Optional[str] = None) -> Database:
         """
         Create a new Database on Firebolt.
 
@@ -101,7 +101,7 @@ class DatabaseService(BaseService):
             region_key = self.resource_manager.regions.default_region.key
         else:
             region_key = self.resource_manager.regions.get_by_name(name=region).key
-        database = Database(name=name, compute_region_key=region_key)
+        database = Database(name=name, compute_region_key=region_key, description=description)
 
         logger.info(f"Creating Database (name={name})")
         response = self.client.post(
