@@ -20,7 +20,7 @@ def test_database_create(
     databases_callback: Callable,
     databases_url: str,
     db_name: str,
-    db_description: str
+    db_description: str,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
