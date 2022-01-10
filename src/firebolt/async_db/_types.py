@@ -4,7 +4,7 @@ from collections import namedtuple
 from datetime import date, datetime, timezone
 from enum import Enum
 from re import Match, compile
-from typing import List, Sequence, Union
+from typing import Sequence, Union
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
@@ -226,14 +226,14 @@ def format_value(value: ParameterType) -> str:
 sql_param_re = compile(r"((?<!\\)\\\?)|\?")
 
 
-def format_sql(query: str, parameters: List[ParameterType]) -> str:
+def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
     """
     Substitute placeholders in queries with provided values.
     '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'
     """
     idx = 0
 
-    def replace_items(m: Match):
+    def replace_items(m: Match) -> str:
         nonlocal idx, parameters
 
         if m.group() == "?":
