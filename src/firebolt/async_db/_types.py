@@ -208,7 +208,8 @@ def format_value(value: ParameterType) -> str:
     elif isinstance(value, datetime):
         if value.tzinfo is not None:
             value = value.astimezone(timezone.utc)
-        return f"'{value.isoformat(sep=' ')}'"
+        return f"'{value.strftime('%Y-%m-%d %H:%M:%S.%f')}'"
+    #        return f"'{value.isoformat(sep=' ')}'"
     elif isinstance(value, date):
         return f"'{value.isoformat()}'"
     if value is None:
@@ -236,7 +237,7 @@ def format_sql(query: str, parameters: List[ParameterType]) -> str:
         if m.group() == "?":
             if idx >= len(parameters):
                 raise DataError(
-                    "not enought parameters provided for substitution: given "
+                    "not enough parameters provided for substitution: given "
                     f"{len(parameters)}, found one more at position {m.start()}"
                 )
             res = format_value(parameters[idx])
