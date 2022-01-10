@@ -33,7 +33,7 @@ async def _resolve_engine_url(
         api_endpoint=api_endpoint,
     ) as client:
         try:
-            account_id = await client.account_id()
+            account_id = await client.account_id
             response = await client.get(
                 url=ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id),
                 params={"engine_name": engine_name},
