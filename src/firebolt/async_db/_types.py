@@ -4,7 +4,7 @@ from collections import namedtuple
 from datetime import date, datetime, timezone
 from enum import Enum
 from re import Match, compile
-from typing import List, Union
+from typing import List, Sequence, Union
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
@@ -20,6 +20,7 @@ _col_types = (int, float, str, datetime, date, bool, list, _NoneType)
 # duplicating this since 3.7 can't unpack Union
 ColType = Union[int, float, str, datetime, date, bool, list, _NoneType]
 RawColType = Union[int, float, str, bool, list, _NoneType]
+ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
 # These definitions are required by PEP-249
 Date = date
@@ -198,7 +199,7 @@ escape_chars = {
 }
 
 
-def format_value(value: ColType) -> str:
+def format_value(value: ParameterType) -> str:
     """For python value to be used in a SQL query"""
     if isinstance(value, (int, float)):
         return str(value)
@@ -212,7 +213,7 @@ def format_value(value: ColType) -> str:
         return f"'{value.isoformat()}'"
     if value is None:
         return "NULL"
-    elif isinstance(value, list):
+    elif isinstance(value, Sequence):
         return f"[{', '.join(format_value(it) for it in value)}]"
 
     raise DataError(f"unsupported parameter type {type(value)}")
@@ -222,7 +223,7 @@ def format_value(value: ColType) -> str:
 sql_param_re = compile(r"((?<!\\)\\\?)|\?")
 
 
-def format_sql(query: str, parameters: List[ColType]) -> str:
+def format_sql(query: str, parameters: List[ParameterType]) -> str:
     """
     Substitute placeholders in queries with provided values.
     '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'

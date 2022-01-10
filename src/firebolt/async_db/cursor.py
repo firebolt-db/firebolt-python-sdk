@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import re
 import time
-from datetime import date, datetime
 from enum import Enum
 from functools import wraps
 from inspect import cleandoc
@@ -18,7 +17,6 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
-    Union,
 )
 
 from aiorwlock import RWLock
@@ -27,7 +25,9 @@ from httpx import Response, codes
 from firebolt.async_db._types import (
     ColType,
     Column,
+    ParameterType,
     RawColType,
+    format_sql,
     parse_type,
     parse_value,
 )
@@ -49,7 +49,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
 JSON_OUTPUT_FORMAT = "JSONCompact"
 
@@ -222,7 +221,7 @@ class BaseCursor:
         set_parameters: Optional[Dict] = None,
     ) -> Response:
         if parameters:
-            raise NotSupportedError("parametrized queries are not supported")
+            query = format_sql(query, parameters)
 
         resp = await self._client.request(
             url="/",
@@ -271,6 +270,10 @@ class BaseCursor:
         Prepare and execute a database query against all parameter
         sequences provided. Return last query row count.
         """
+
+        if len(parameters_seq) > 1:
+            raise NotSupportedError("multi-statement queries are not supported")
+
         self._reset()
         resp = None
         for parameters in parameters_seq:
