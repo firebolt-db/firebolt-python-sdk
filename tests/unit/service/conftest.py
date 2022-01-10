@@ -1,8 +1,8 @@
-from typing import Callable, List, Optional
+import json
+from typing import Callable, List
 
 import httpx
 import pytest
-import json
 from pytest_httpx import to_response
 from pytest_httpx._httpx_internals import Response
 
