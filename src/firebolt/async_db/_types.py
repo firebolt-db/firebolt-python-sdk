@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 from collections import namedtuple
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
-from typing import Union
+from re import Match, compile
+from typing import List, Union
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
@@ -190,6 +191,65 @@ def parse_value(
     raise DataError(f"Unsupported data type returned: {ctype.__name__}")
 
 
+escape_chars = {
+    "\0": "\\0",
+    "\\": "\\\\",
+    "'": "\\'",
+}
+
+
 def format_value(value: ColType) -> str:
-    # TODO: FIR-7793
-    pass
+    """For python value to be used in a SQL query"""
+    if isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, str):
+        return f"'{''.join(escape_chars.get(c, c) for c in value)}'"
+    elif isinstance(value, datetime):
+        if value.tzinfo is not None:
+            value = value.astimezone(timezone.utc)
+        return f"'{value.isoformat(sep=' ')}'"
+    elif isinstance(value, date):
+        return f"'{value.isoformat()}'"
+    if value is None:
+        return "NULL"
+    elif isinstance(value, list):
+        return f"[{', '.join(format_value(it) for it in value)}]"
+
+    raise DataError(f"unsupported parameter type {type(value)}")
+
+
+# Find an escaped(\?) or plain(?) question mark
+sql_param_re = compile(r"((?<!\\)\\\?)|\?")
+
+
+def format_sql(query: str, parameters: List[ColType]) -> str:
+    """
+    Substitute placeholders in queries with provided values.
+    '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'
+    """
+    idx = 0
+
+    def replace_items(m: Match):
+        nonlocal idx, parameters
+
+        if m.group() == "?":
+            if idx >= len(parameters):
+                raise DataError(
+                    "not enought parameters provided for substitution: given "
+                    f"{len(parameters)}, found one more at position {m.start()}"
+                )
+            res = format_value(parameters[idx])
+            idx += 1
+            return res
+
+        assert m.group() == "\\?"
+        return "?"
+
+    value = sql_param_re.sub(replace_items, query)
+
+    if idx < len(parameters):
+        raise DataError(
+            f"too many parameters provided for substitution: given {len(parameters)}, "
+            f"used only {idx}"
+        )
+    return value
