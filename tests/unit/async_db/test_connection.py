@@ -55,8 +55,8 @@ async def test_cursor_initialized(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
-    account_id_callback: Callable,
-    account_id_url: str,
+    # account_id_callback: Callable,
+    # account_id_url: str,
     python_query_data: List[List[ColType]],
 ) -> None:
     """Connection initialised it's cursors propperly"""
