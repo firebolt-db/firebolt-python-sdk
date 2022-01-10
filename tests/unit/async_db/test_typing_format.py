@@ -16,16 +16,20 @@ def test_format_value() -> None:
         # Numbers
         (1, "1"),
         (1.123, "1.123"),
+        (True, "1"),
+        (False, "0"),
         # Date, datetime
         (date(2022, 1, 10), "'2022-01-10'"),
-        (datetime(2022, 1, 10, 1, 1, 1, 1), "'2022-01-10 01:01:01.000001'"),
+        (datetime(2022, 1, 10, 1, 1, 1), "'2022-01-10 01:01:01'"),
         (
-            datetime(2022, 1, 10, 1, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))),
-            "'2022-01-10 00:01:01.000001'",
+            datetime(2022, 1, 10, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))),
+            "'2022-01-10 00:01:01'",
         ),
         # List, tuple
         ([1, 2, 3], "[1, 2, 3]"),
         (("a", "b", "c"), "['a', 'b', 'c']"),
+        # None
+        (None, "NULL"),
     )
 
     for value, result in test_cases:

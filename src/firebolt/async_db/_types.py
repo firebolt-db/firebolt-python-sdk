@@ -201,6 +201,8 @@ escape_chars = {
 
 def format_value(value: ParameterType) -> str:
     """For python value to be used in a SQL query"""
+    if isinstance(value, bool):
+        return str(int(value))
     if isinstance(value, (int, float)):
         return str(value)
     elif isinstance(value, str):
@@ -208,7 +210,7 @@ def format_value(value: ParameterType) -> str:
     elif isinstance(value, datetime):
         if value.tzinfo is not None:
             value = value.astimezone(timezone.utc)
-        return f"'{value.strftime('%Y-%m-%d %H:%M:%S.%f')}'"
+        return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'"
     #        return f"'{value.isoformat(sep=' ')}'"
     elif isinstance(value, date):
         return f"'{value.isoformat()}'"
