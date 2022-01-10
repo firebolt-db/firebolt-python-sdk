@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  fossa-scan:
+  security-scan:
     runs-on: ubuntu-latest
     steps:
       - name: "Checkout Code"
@@ -17,5 +17,5 @@ jobs:
         uses: firebolt-db/action-security-scan@main
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
-          fossa-key: ${{ secrets.fossaApiKey }}
+          fossa-key: ${{ secrets.FOSSA_API_KEY }}
           sonar-key: ${{ secrets.SONAR_TOKEN }}
