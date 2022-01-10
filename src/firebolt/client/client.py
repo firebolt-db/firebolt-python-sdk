@@ -1,5 +1,6 @@
 from typing import Any, Optional
 
+from async_property import async_cached_property  # type: ignore
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
 from httpx import _types
@@ -83,6 +84,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     + (HttpxAsyncClient.__doc__ or "")
     """
 
+    @async_cached_property
     async def account_id(self) -> str:
         if self.account_name is not None:
             response = await self.get(
