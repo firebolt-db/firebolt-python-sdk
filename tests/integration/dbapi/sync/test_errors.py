@@ -2,7 +2,7 @@ from httpx import ConnectError
 from pytest import raises
 
 from firebolt.common.exception import (
-    AccountError,
+    AccountNotFoundError,
     AuthenticationError,
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -40,7 +40,7 @@ def test_invalid_account(
 ) -> None:
     """Connection properly reacts to invalid account error."""
     account_name = "--"
-    with raises(AccountError) as exc_info:
+    with raises(AccountNotFoundError) as exc_info:
         with connect(
             database=database_name,
             engine_name=engine_name,  # Omit engine_url to force account_id lookup.
