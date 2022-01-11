@@ -272,7 +272,9 @@ class BaseCursor:
         """
 
         if len(parameters_seq) > 1:
-            raise NotSupportedError("multi-statement queries are not supported")
+            raise NotSupportedError(
+                "Parameterized multi-statement queries are not supported"
+            )
 
         self._reset()
         resp = None

@@ -211,7 +211,6 @@ def format_value(value: ParameterType) -> str:
         if value.tzinfo is not None:
             value = value.astimezone(timezone.utc)
         return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'"
-    #        return f"'{value.isoformat(sep=' ')}'"
     elif isinstance(value, date):
         return f"'{value.isoformat()}'"
     if value is None:
