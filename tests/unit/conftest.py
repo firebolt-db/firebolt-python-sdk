@@ -126,7 +126,7 @@ def db_name() -> str:
 
 @pytest.fixture
 def account_id_url(settings: Settings) -> str:
-    if settings.account_name is None:
+    if not settings.account_name:  # if None or ''
         return f"https://{settings.server}{ACCOUNT_URL}"
     else:
         return (

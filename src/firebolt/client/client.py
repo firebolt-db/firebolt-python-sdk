@@ -58,7 +58,7 @@ class Client(FireboltClientMixin, HttpxClient):
 
     @cached_property
     def account_id(self) -> str:
-        if self.account_name is not None:
+        if self.account_name:
             response = self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
             )
@@ -86,7 +86,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
     @async_cached_property
     async def account_id(self) -> str:
-        if self.account_name is not None:
+        if self.account_name:
             response = await self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
             )
