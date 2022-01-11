@@ -1,14 +1,14 @@
 from datetime import date, datetime, timedelta, timezone
 
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.async_db import DataError
 from firebolt.async_db._types import format_sql, format_value
 
 
-def test_format_value() -> None:
-    test_cases = (
-        # Strings
+@mark.parametrize(
+    "value,result",
+    [  # Strings
         ("abcd", "'abcd'"),
         ("test' OR '1' == '1", "'test\\' OR \\'1\\' == \\'1'"),
         ("test\\", "'test\\\\'"),
@@ -30,19 +30,22 @@ def test_format_value() -> None:
         (("a", "b", "c"), "['a', 'b', 'c']"),
         # None
         (None, "NULL"),
-    )
+    ],
+)
+def test_format_value(value: str, result: str) -> None:
+    assert format_value(value) == result, "Invalid format_value result"
 
-    for value, result in test_cases:
-        assert format_value(value) == result, "Invalid format_value result"
 
+def test_format_value_errors() -> None:
     with raises(DataError) as exc_info:
         format_value(Exception())
 
     assert str(exc_info.value) == "unsupported parameter type <class 'Exception'>"
 
 
-def test_format_sql() -> None:
-    test_cases = (
+@mark.parametrize(
+    "sql,params,result",
+    [
         ("text", (), "text"),
         ("?", (1,), "1"),
         ("?, \\?", (1,), "1, ?"),
@@ -50,11 +53,13 @@ def test_format_sql() -> None:
         ("\\??", (1,), "?1"),
         ("??", (1, 2), "12"),
         ("\\\\??", (1,), "\\?1"),
-    )
+    ],
+)
+def test_format_sql(sql: str, params: tuple, result: str) -> None:
+    assert format_sql(sql, params) == result, "Invalid format sql result"
 
-    for sql, params, result in test_cases:
-        assert format_sql(sql, params) == result, "Invalid format sql result"
 
+def test_format_sql_errors() -> None:
     with raises(DataError) as exc_info:
         format_sql("?", [])
     assert (
