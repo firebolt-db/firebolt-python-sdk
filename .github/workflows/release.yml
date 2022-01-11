@@ -55,9 +55,11 @@ jobs:
 
     - name: Version bump
       run: |
-        # Bump __version__ = "<number>" in __init__.py
-        sed -i "s/^__version__ = \".*\"/__version__ = \"${{ steps.tag_generation.outputs.new_tag }}\"/" src/firebolt/__init__.py
-        git add src/firebolt/__init__.py
+        # Bump version = <number> in setup.cfg
+        sed -i "s/^version = .*/version = ${{ steps.tag_generation.outputs.new_tag }}/" setup.cfg
+        # Verify the change
+        python3 -c "from configparser import ConfigParser; c = ConfigParser(); c.read('setup.cfg'); assert c['metadata']['version'] == '${{ steps.tag_generation.outputs.new_tag }}', 'Version was not updated correctly in setup.cfg'"
+        git add setup.cfg
         git commit -m "Automatic version bump to ${{ steps.tag_generation.outputs.new_tag }}"
         git push origin main
         
