@@ -43,11 +43,13 @@ def test_format_value() -> None:
 
 def test_format_sql() -> None:
     test_cases = (
+        ("text", (), "text"),
         ("?", (1,), "1"),
         ("?, \\?", (1,), "1, ?"),
-        ("\\\\?", (1,), "\\\\1"),
+        ("\\\\?", (), "\\?"),
         ("\\??", (1,), "?1"),
         ("??", (1, 2), "12"),
+        ("\\\\??", (1,), "\\?1"),
     )
 
     for sql, params, result in test_cases:

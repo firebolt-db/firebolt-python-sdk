@@ -223,7 +223,7 @@ def format_value(value: ParameterType) -> str:
 
 
 # Find an escaped(\?) or plain(?) question mark
-sql_param_re = compile(r"((?<!\\)\\\?)|\?")
+sql_param_re = compile(r"(\\\?)|\?")
 
 
 def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
