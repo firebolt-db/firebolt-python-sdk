@@ -17,5 +17,5 @@ jobs:
         uses: firebolt-db/action-security-scan@main
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
-          fossa-key: ${{ secrets.FOSSA_API_KEY }}
+          fossa-key: ${{ secrets.FOSSA_TOKEN }}
           sonar-key: ${{ secrets.SONAR_TOKEN }}
