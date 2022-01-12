@@ -26,7 +26,7 @@ class Connection(AsyncBaseConnection):
         database: Firebolt database name
         username: Firebolt account username
         password: Firebolt account password
-        api_endpoint: Optional. Firebolt API endpoint. Used for authentication
+        api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
 
     Note:
         Firebolt currenly doesn't support transactions so commit and rollback methods

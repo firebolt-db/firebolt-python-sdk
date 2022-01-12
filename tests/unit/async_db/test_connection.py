@@ -12,7 +12,7 @@ from firebolt.common.exception import (
     InterfaceError,
 )
 from firebolt.common.settings import Settings
-from firebolt.common.urls import ENGINE_BY_NAME_URL
+from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL
 
 
 @mark.asyncio
@@ -68,6 +68,7 @@ async def test_cursor_initialized(
                 database=db_name,
                 username="u",
                 password="p",
+                account_name="a",
                 api_endpoint=settings.server,
             )
         ) as connection:
@@ -131,6 +132,7 @@ async def test_connect_engine_name(
             database="db",
             username="username",
             password="password",
+            account_name="account_name",
         ):
             pass
     assert str(exc_info.value).startswith(
@@ -142,6 +144,7 @@ async def test_connect_engine_name(
             database="db",
             username="username",
             password="password",
+            account_name="account",
         ):
             pass
     assert str(exc_info.value).startswith(
@@ -158,7 +161,7 @@ async def test_connect_engine_name(
     # Mock engine id lookup error
     httpx_mock.add_response(
         url=f"https://{settings.server}"
-        + ENGINE_BY_NAME_URL
+        + ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id)
         + f"?engine_name={engine_name}",
         status_code=codes.NOT_FOUND,
     )
@@ -169,6 +172,7 @@ async def test_connect_engine_name(
             username="username",
             password="password",
             engine_name=engine_name,
+            account_name=settings.account_name,
             api_endpoint=settings.server,
         ):
             pass
@@ -176,7 +180,7 @@ async def test_connect_engine_name(
     # Mock engine id lookup by name
     httpx_mock.add_response(
         url=f"https://{settings.server}"
-        + ENGINE_BY_NAME_URL
+        + ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id)
         + f"?engine_name={engine_name}",
         status_code=codes.OK,
         json={"engine_id": {"engine_id": engine_id}},
@@ -187,6 +191,7 @@ async def test_connect_engine_name(
         database=db_name,
         username="u",
         password="p",
+        account_name=settings.account_name,
         api_endpoint=settings.server,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)

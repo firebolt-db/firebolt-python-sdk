@@ -2,7 +2,6 @@ AUTH_URL = "{api_endpoint}/auth/v1/login"
 
 DATABASES_URL = "/core/v1/account/databases"
 
-ENGINE_BY_NAME_URL = "/core/v1/account/engines:getIdByName"
 ENGINES_URL = "/core/v1/account/engines"
 ENGINES_BY_IDS_URL = "/core/v1/engines:getByIds"
 

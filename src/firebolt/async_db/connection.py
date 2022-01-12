@@ -13,28 +13,33 @@ from firebolt.common.exception import (
     FireboltEngineError,
     InterfaceError,
 )
-from firebolt.common.urls import ACCOUNT_ENGINE_URL, ENGINE_BY_NAME_URL
+from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL, ACCOUNT_ENGINE_URL
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 
 
 async def _resolve_engine_url(
-    engine_name: str, username: str, password: str, api_endpoint: str
+    engine_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+    account_name: Optional[str] = None,
 ) -> str:
     async with AsyncClient(
         auth=(username, password),
         base_url=api_endpoint,
+        account_name=account_name,
         api_endpoint=api_endpoint,
     ) as client:
         try:
+            account_id = await client.account_id
             response = await client.get(
-                url=ENGINE_BY_NAME_URL,
+                url=ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id),
                 params={"engine_name": engine_name},
             )
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
-            account_id = await client.account_id
             response = await client.get(
                 url=ACCOUNT_ENGINE_URL.format(
                     account_id=account_id, engine_id=engine_id
@@ -61,6 +66,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         password: str = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
+        account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
     ) -> Connection:
         """
@@ -72,6 +78,8 @@ def async_connect_factory(connection_class: Type) -> Callable:
             password: password to use for authentication
             engine_name: Optional The name of the engine to connect to
             engine_url: Optional. The engine endpoint to use
+            account_name: For customers with multiple accounts; if None uses default.
+            api_endpoint(optional): Firebolt API endpoint. Used for authentication.
 
         Note:
             either `engine_name` or `engine_url` should be provided, but not both
@@ -108,10 +116,11 @@ def async_connect_factory(connection_class: Type) -> Callable:
 
         if engine_name:
             engine_url = await _resolve_engine_url(
-                engine_name,
-                username,
-                password,
-                api_endpoint,
+                engine_name=engine_name,
+                username=username,
+                password=password,
+                account_name=account_name,
+                api_endpoint=api_endpoint,
             )
 
         assert engine_url is not None
@@ -210,7 +219,7 @@ class Connection(BaseConnection):
         database: Firebolt database name
         username: Firebolt account username
         password: Firebolt account password
-        api_endpoint: Optional. Firebolt API endpoint. Used for authentication
+        api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
 
     Note:
         Firebolt currenly doesn't support transactions
