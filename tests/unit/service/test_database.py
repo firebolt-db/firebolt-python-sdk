@@ -17,7 +17,7 @@ def test_database_create(
     settings: Settings,
     account_id_callback: Callable,
     account_id_url: str,
-    databases_callback: Callable,
+    create_databases_callback: Callable,
     databases_url: str,
     db_name: str,
     db_description: str,
@@ -27,7 +27,7 @@ def test_database_create(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
-    httpx_mock.add_callback(databases_callback, url=databases_url, method="POST")
+    httpx_mock.add_callback(create_databases_callback, url=databases_url, method="POST")
 
     manager = ResourceManager(settings=settings)
     database = manager.databases.create(name=db_name, description=db_description)

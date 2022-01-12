@@ -194,7 +194,7 @@ def mock_database(mock_db_name, region_1, account_id, mock_db_description) -> Da
 
 
 @pytest.fixture
-def databases_callback(databases_url: str, mock_database) -> Callable:
+def create_databases_callback(databases_url: str, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
