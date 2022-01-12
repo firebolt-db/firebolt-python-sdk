@@ -26,7 +26,7 @@ def test_closed_connection(connection: Connection) -> None:
 
 
 def test_cursors_closed_on_close(connection: Connection) -> None:
-    """Connection closes all it's cursors on close."""
+    """Connection closes all its cursors on close."""
     c1, c2 = connection.cursor(), connection.cursor()
     assert (
         len(connection._cursors) == 2
@@ -49,7 +49,7 @@ def test_cursor_initialized(
     query_url: str,
     python_query_data: List[List[ColType]],
 ) -> None:
-    """Connection initialised it's cursors propperly"""
+    """Connection initialised its cursors properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 

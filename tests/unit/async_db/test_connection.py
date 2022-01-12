@@ -32,7 +32,7 @@ async def test_closed_connection(connection: Connection) -> None:
 
 @mark.asyncio
 async def test_cursors_closed_on_close(connection: Connection) -> None:
-    """Connection closes all it's cursors on close."""
+    """Connection closes all its cursors on close."""
     c1, c2 = connection.cursor(), connection.cursor()
     assert (
         len(connection._cursors) == 2
