@@ -123,18 +123,8 @@ def db_name() -> str:
 
 
 @pytest.fixture
-def mock_db_name() -> str:
-    return "mock_database"
-
-
-@pytest.fixture
 def db_description() -> str:
     return "database description"
-
-
-@pytest.fixture
-def mock_db_description() -> str:
-    return "mock database description"
 
 
 @pytest.fixture

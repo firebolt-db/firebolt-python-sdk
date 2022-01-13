@@ -182,10 +182,10 @@ def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
 
 
 @pytest.fixture
-def mock_database(mock_db_name, region_1, account_id, mock_db_description) -> Database:
+def mock_database(region_1, account_id) -> Database:
     return Database(
-        name=mock_db_name,
-        description=mock_db_description,
+        name="mock_db_name",
+        description="mock_db_description",
         compute_region_key=region_1.key,
         database_key=DatabaseKey(
             account_id=account_id, database_id="mock_database_id_1"
