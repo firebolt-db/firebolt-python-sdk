@@ -5,13 +5,19 @@ from firebolt.async_db import Connection, connect
 
 @fixture
 async def connection(
-    engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
+    engine_url: str,
+    database_name: str,
+    username: str,
+    password: str,
+    account_name: str,
+    api_endpoint: str,
 ) -> Connection:
     async with await connect(
         engine_url=engine_url,
         database=database_name,
         username=username,
         password=password,
+        account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection
@@ -23,6 +29,7 @@ async def connection_engine_name(
     database_name: str,
     username: str,
     password: str,
+    account_name: str,
     api_endpoint: str,
 ) -> Connection:
 
@@ -31,6 +38,7 @@ async def connection_engine_name(
         database=database_name,
         username=username,
         password=password,
+        account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection

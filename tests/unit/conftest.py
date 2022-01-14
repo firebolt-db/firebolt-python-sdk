@@ -20,6 +20,7 @@ from firebolt.common.exception import (
 )
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
+    ACCOUNT_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_URL,
     AUTH_URL,
@@ -94,6 +95,7 @@ def settings(server, region_1) -> Settings:
         user="email@domain.com",
         password=SecretStr("*****"),
         default_region=region_1.name,
+        account_name=None,
     )
 
 
@@ -129,19 +131,30 @@ def db_description() -> str:
 
 @pytest.fixture
 def account_id_url(settings: Settings) -> str:
-    return f"https://{settings.server}{ACCOUNT_URL}"
+    if not settings.account_name:  # if None or ''
+        return f"https://{settings.server}{ACCOUNT_URL}"
+    else:
+        return (
+            f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
+            f"?account_name={settings.account_name}"
+        )
 
 
 @pytest.fixture
-def account_id_callback(account_id: str, account_id_url: str) -> Callable:
+def account_id_callback(
+    account_id: str, account_id_url: str, settings: Settings
+) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == account_id_url
-        return to_response(
-            status_code=httpx.codes.OK, json={"account": {"id": account_id}}
-        )
+        if account_id_url.endswith(ACCOUNT_URL):  # account_name shouldn't be specified.
+            return to_response(
+                status_code=httpx.codes.OK, json={"account": {"id": account_id}}
+            )
+        # In this case, an account_name *should* be specified.
+        return to_response(status_code=httpx.codes.OK, json={"account_id": account_id})
 
     return do_mock
 
