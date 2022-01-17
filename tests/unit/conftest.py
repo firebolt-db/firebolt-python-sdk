@@ -125,6 +125,11 @@ def db_name() -> str:
 
 
 @pytest.fixture
+def db_description() -> str:
+    return "database description"
+
+
+@pytest.fixture
 def account_id_url(settings: Settings) -> str:
     if not settings.account_name:  # if None or ''
         return f"https://{settings.server}{ACCOUNT_URL}"
