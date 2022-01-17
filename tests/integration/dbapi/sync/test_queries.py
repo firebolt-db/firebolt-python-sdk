@@ -200,7 +200,7 @@ def test_parameterized_query(connection: Connection) -> None:
         params = [
             1,
             1.123,
-            "text",
+            "text\0",
             None,
             date(2022, 1, 1),
             datetime(2022, 1, 1, 1, 1, 1),
@@ -213,6 +213,9 @@ def test_parameterized_query(connection: Connection) -> None:
             "INSERT INTO test_tb_parameterized VALUES (?, ?, ?, ?, ?, ?, ?, ?, '\\?')",
             params,
         )
+
+        # \0 is converted to 0
+        params[2] = "text0"
 
         # Bool is converted to int
         params[6] = 1
