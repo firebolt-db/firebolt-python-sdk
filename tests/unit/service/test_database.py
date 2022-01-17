@@ -3,6 +3,7 @@ from typing import Callable
 from pytest_httpx import HTTPXMock
 
 from firebolt.common import Settings
+from firebolt.model.database import Database
 from firebolt.service.manager import ResourceManager
 
 
@@ -17,20 +18,23 @@ def test_database_create(
     settings: Settings,
     account_id_callback: Callable,
     account_id_url: str,
-    databases_callback: Callable,
+    create_databases_callback: Callable,
     databases_url: str,
     db_name: str,
+    db_description: str,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
-    httpx_mock.add_callback(databases_callback, url=databases_url, method="POST")
+    httpx_mock.add_callback(create_databases_callback, url=databases_url, method="POST")
 
     manager = ResourceManager(settings=settings)
-    database = manager.databases.create(name=db_name)
+    database = manager.databases.create(name=db_name, description=db_description)
+
     assert database.name == db_name
+    assert database.description == db_description
 
 
 def test_database_get_by_name(
@@ -46,7 +50,7 @@ def test_database_get_by_name(
     database_get_by_name_url: str,
     database_get_callback: Callable,
     database_get_url: str,
-    db_name: str,
+    mock_database: Database,
 ):
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -57,5 +61,6 @@ def test_database_get_by_name(
     httpx_mock.add_callback(database_get_callback, url=database_get_url)
 
     manager = ResourceManager(settings=settings)
-    database = manager.databases.get_by_name(name=db_name)
-    assert database.name == db_name
+    database = manager.databases.get_by_name(name=mock_database.name)
+
+    assert database.name == mock_database.name
