@@ -3,8 +3,11 @@ from __future__ import annotations
 from collections import namedtuple
 from datetime import date, datetime, timezone
 from enum import Enum
-from re import Match, compile
 from typing import Sequence, Union
+
+from sqlparse import parse as parse_sql
+from sqlparse.sql import Token, TokenList
+from sqlparse.tokens import Token as TokenType
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
@@ -221,10 +224,6 @@ def format_value(value: ParameterType) -> str:
     raise DataError(f"unsupported parameter type {type(value)}")
 
 
-# Find an escaped(\?) or plain(?) question mark
-sql_param_re = compile(r"(\\\?)|\?")
-
-
 def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
     """
     Substitute placeholders in queries with provided values.
@@ -232,27 +231,33 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
     """
     idx = 0
 
-    def replace_items(m: Match) -> str:
-        nonlocal idx, parameters
-
-        if m.group() == "?":
+    def process_token(token: Token) -> Token:
+        nonlocal idx
+        if token.ttype == TokenType.Name.Placeholder:
+            # Replace placeholder with formatted parameter
             if idx >= len(parameters):
                 raise DataError(
                     "not enough parameters provided for substitution: given "
-                    f"{len(parameters)}, found one more at position {m.start()}"
+                    f"{len(parameters)}, found one more"
                 )
-            res = format_value(parameters[idx])
+            formatted = format_value(parameters[idx])
             idx += 1
-            return res
+            return Token(TokenType.Text, formatted)
+        if isinstance(token, TokenList):
+            # Process all children tokens
+            token.tokens = [process_token(t) for t in token.tokens]
+        return token
 
-        assert m.group() == "\\?"
-        return "?"
+    parsed = parse_sql(query)
+    if len(parsed) > 1:
+        raise NotSupportedError("Multi-statement queries are not supported")
 
-    value = sql_param_re.sub(replace_items, query)
+    formatted_sql = str(process_token(parsed[0]))
 
     if idx < len(parameters):
         raise DataError(
             f"too many parameters provided for substitution: given {len(parameters)}, "
             f"used only {idx}"
         )
-    return value
+
+    return formatted_sql
