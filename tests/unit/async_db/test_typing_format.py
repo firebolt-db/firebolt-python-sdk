@@ -46,13 +46,27 @@ def test_format_value_errors() -> None:
 @mark.parametrize(
     "sql,params,result",
     [
-        ("text", (), "text"),
-        ("?", (1,), "1"),
-        ("?, \\?", (1,), "1, ?"),
-        ("\\\\?", (), "\\?"),
-        ("\\??", (1,), "?1"),
-        ("??", (1, 2), "12"),
-        ("\\\\??", (1,), "\\?1"),
+        ("select * from table", (), "select * from table"),
+        (
+            "select * from table where id == ?",
+            (1,),
+            "select * from table where id == 1",
+        ),
+        (
+            "select * from table where id == '?'",
+            (),
+            "select * from table where id == '?'",
+        ),
+        (
+            "insert into table values (?, ?, '?')",
+            (1, "1"),
+            "insert into table values (1, '1', '?')",
+        ),
+        (
+            "select * from t where /*comment ?*/ id == ?",
+            ("*/ 1 == 1 or /*",),
+            "select * from t where /*comment ?*/ id == '*/ 1 == 1 or /*'",
+        ),
     ],
 )
 def test_format_sql(sql: str, params: tuple, result: str) -> None:
@@ -64,8 +78,7 @@ def test_format_sql_errors() -> None:
         format_sql("?", [])
     assert (
         str(exc_info.value)
-        == "not enough parameters provided for substitution: given 0, found one more at"
-        " position 0"
+        == "not enough parameters provided for substitution: given 0, found one more"
     ), "Invalid not enought parameters error"
 
     with raises(DataError) as exc_info:
