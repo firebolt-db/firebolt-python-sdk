@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 from collections import namedtuple
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from enum import Enum
-from typing import Union
+from typing import Sequence, Union
+
+from sqlparse import parse as parse_sql  # type: ignore
+from sqlparse.sql import Token, TokenList  # type: ignore
+from sqlparse.tokens import Token as TokenType  # type: ignore
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
@@ -19,6 +23,7 @@ _col_types = (int, float, str, datetime, date, bool, list, _NoneType)
 # duplicating this since 3.7 can't unpack Union
 ColType = Union[int, float, str, datetime, date, bool, list, _NoneType]
 RawColType = Union[int, float, str, bool, list, _NoneType]
+ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
 
 # These definitions are required by PEP-249
 Date = date
@@ -190,6 +195,71 @@ def parse_value(
     raise DataError(f"Unsupported data type returned: {ctype.__name__}")
 
 
-def format_value(value: ColType) -> str:
-    # TODO: FIR-7793
-    pass
+escape_chars = {
+    "\0": "\\0",
+    "\\": "\\\\",
+    "'": "\\'",
+}
+
+
+def format_value(value: ParameterType) -> str:
+    """For python value to be used in a SQL query"""
+    if isinstance(value, bool):
+        return str(int(value))
+    if isinstance(value, (int, float)):
+        return str(value)
+    elif isinstance(value, str):
+        return f"'{''.join(escape_chars.get(c, c) for c in value)}'"
+    elif isinstance(value, datetime):
+        if value.tzinfo is not None:
+            value = value.astimezone(timezone.utc)
+        return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'"
+    elif isinstance(value, date):
+        return f"'{value.isoformat()}'"
+    if value is None:
+        return "NULL"
+    elif isinstance(value, Sequence):
+        return f"[{', '.join(format_value(it) for it in value)}]"
+
+    raise DataError(f"unsupported parameter type {type(value)}")
+
+
+def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
+    """
+    Substitute placeholders in queries with provided values.
+    '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'
+    """
+    idx = 0
+
+    def process_token(token: Token) -> Token:
+        nonlocal idx
+        if token.ttype == TokenType.Name.Placeholder:
+            # Replace placeholder with formatted parameter
+            if idx >= len(parameters):
+                raise DataError(
+                    "not enough parameters provided for substitution: given "
+                    f"{len(parameters)}, found one more"
+                )
+            formatted = format_value(parameters[idx])
+            idx += 1
+            return Token(TokenType.Text, formatted)
+        if isinstance(token, TokenList):
+            # Process all children tokens
+            token.tokens = [process_token(t) for t in token.tokens]
+        return token
+
+    parsed = parse_sql(query)
+    if not parsed:
+        return query
+    if len(parsed) > 1:
+        raise NotSupportedError("Multi-statement queries are not supported")
+
+    formatted_sql = str(process_token(parsed[0]))
+
+    if idx < len(parameters):
+        raise DataError(
+            f"too many parameters provided for substitution: given {len(parameters)}, "
+            f"used only {idx}"
+        )
+
+    return formatted_sql

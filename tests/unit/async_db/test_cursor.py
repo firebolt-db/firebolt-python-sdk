@@ -148,7 +148,7 @@ async def test_cursor_execute(
 
     for query in (
         lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None, None]),
+        lambda: cursor.executemany("select *", [None]),
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -192,7 +192,7 @@ async def test_cursor_execute_error(
     """Cursor handles all types of errors properly."""
     for query in (
         lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None, None]),
+        lambda: cursor.executemany("select *", [None]),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
 
@@ -410,10 +410,7 @@ async def test_set_parameters(
 
 
 @mark.asyncio
-async def test_cursor_execute_parameters(cursor: Cursor):
-    """execute and executemany with parameters are not supported"""
-    with raises(NotSupportedError):
-        await cursor.execute("select ?", (1,))
-
+async def test_cursor_multi_statement(cursor: Cursor):
+    """executemany with multiple parameter sets is not supported"""
     with raises(NotSupportedError):
         await cursor.executemany("select ?", [(1,), (2,)])
