@@ -9,6 +9,7 @@ from firebolt.async_db._types import format_sql, format_value
 @mark.parametrize(
     "value,result",
     [  # Strings
+        ("", "''"),
         ("abcd", "'abcd'"),
         ("test' OR '1' == '1", "'test\\' OR \\'1\\' == \\'1'"),
         ("test\\", "'test\\\\'"),
@@ -26,6 +27,7 @@ from firebolt.async_db._types import format_sql, format_value
             "'2022-01-10 00:01:01'",
         ),
         # List, tuple
+        ([], "[]"),
         ([1, 2, 3], "[1, 2, 3]"),
         (("a", "b", "c"), "['a', 'b', 'c']"),
         # None
@@ -46,6 +48,7 @@ def test_format_value_errors() -> None:
 @mark.parametrize(
     "sql,params,result",
     [
+        ("", (), ""),
         ("select * from table", (), "select * from table"),
         (
             "select * from table where id == ?",

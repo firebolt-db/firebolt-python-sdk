@@ -249,6 +249,8 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
         return token
 
     parsed = parse_sql(query)
+    if not parsed:
+        return query
     if len(parsed) > 1:
         raise NotSupportedError("Multi-statement queries are not supported")
 
