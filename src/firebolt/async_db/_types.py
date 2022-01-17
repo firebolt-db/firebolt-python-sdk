@@ -5,9 +5,9 @@ from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Sequence, Union
 
-from sqlparse import parse as parse_sql
-from sqlparse.sql import Token, TokenList
-from sqlparse.tokens import Token as TokenType
+from sqlparse import parse as parse_sql  # type: ignore
+from sqlparse.sql import Token, TokenList  # type: ignore
+from sqlparse.tokens import Token as TokenType  # type: ignore
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
