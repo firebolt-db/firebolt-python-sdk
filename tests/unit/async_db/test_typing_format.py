@@ -67,6 +67,11 @@ def test_format_value_errors() -> None:
             ("*/ 1 == 1 or /*",),
             "select * from t where /*comment ?*/ id == '*/ 1 == 1 or /*'",
         ),
+        (
+            "select * from t where id == ?",
+            ("' or '' == '",),
+            r"select * from t where id == '\' or \'\' == \''",
+        ),
     ],
 )
 def test_format_sql(sql: str, params: tuple, result: str) -> None:
