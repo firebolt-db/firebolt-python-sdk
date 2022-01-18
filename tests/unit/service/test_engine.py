@@ -183,7 +183,7 @@ def test_attach_to_database(
     settings: Settings,
     account_id_callback: Callable,
     account_id_url: str,
-    databases_callback: Callable,
+    create_databases_callback: Callable,
     databases_url: str,
     database_get_callback: Callable,
     database_get_url: str,
@@ -204,7 +204,7 @@ def test_attach_to_database(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
-    httpx_mock.add_callback(databases_callback, url=databases_url, method="POST")
+    httpx_mock.add_callback(create_databases_callback, url=databases_url, method="POST")
     httpx_mock.add_callback(database_not_found_callback, url=database_url, method="GET")
 
     # create engine

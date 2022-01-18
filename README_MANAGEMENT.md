@@ -37,6 +37,7 @@ rm = ResourceManager(settings=Settings(
     server="api.app.firebolt.io",
     user="email@domain.com",
     password=SecretStr("*****"),
+    account_name="account", # Necessary if you have multiple accounts.
     default_region="us-east-1",
 ))
 print(rm.client.account_id) # see your account id

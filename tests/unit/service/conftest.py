@@ -1,3 +1,4 @@
+import json
 from typing import Callable, List
 
 import httpx
@@ -181,9 +182,10 @@ def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
 
 
 @pytest.fixture
-def mock_database(db_name, region_1, account_id) -> Database:
+def mock_database(region_1, account_id) -> Database:
     return Database(
-        name=db_name,
+        name="mock_db_name",
+        description="mock_db_description",
         compute_region_key=region_1.key,
         database_key=DatabaseKey(
             account_id=account_id, database_id="mock_database_id_1"
@@ -192,11 +194,16 @@ def mock_database(db_name, region_1, account_id) -> Database:
 
 
 @pytest.fixture
-def databases_callback(databases_url: str, mock_database) -> Callable:
+def create_databases_callback(databases_url: str, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
+        database_properties = json.loads(request.read().decode("utf-8"))["database"]
+
+        mock_database.name = database_properties["name"]
+        mock_database.description = database_properties["description"]
+
         assert request.url == databases_url
         return to_response(
             status_code=httpx.codes.OK,

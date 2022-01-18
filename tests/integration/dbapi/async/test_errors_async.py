@@ -3,6 +3,7 @@ from pytest import mark, raises
 
 from firebolt.async_db import Connection, connect
 from firebolt.common.exception import (
+    AccountNotFoundError,
     AuthenticationError,
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -28,12 +29,43 @@ async def test_invalid_credentials(
 
         assert str(exc_info.value).startswith(
             "Failed to authenticate"
-        ), "Invalid authentication error message"
+        ), "Invalid authentication error message."
+
+
+@mark.asyncio
+async def test_invalid_account(
+    database_name: str,
+    engine_name: str,
+    username: str,
+    password: str,
+    api_endpoint: str,
+) -> None:
+    """Connection properly reacts to invalid account error."""
+    account_name = "--"
+    with raises(AccountNotFoundError) as exc_info:
+        async with await connect(
+            database=database_name,
+            engine_name=engine_name,  # Omit engine_url to force account_id lookup.
+            username=username,
+            password=password,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as connection:
+            await connection.cursor().execute("show tables")
+
+        assert str(exc_info.value).startswith(
+            f'Account "{account_name}" does not exist'
+        ), "Invalid account error message."
 
 
 @mark.asyncio
 async def test_engine_url_not_exists(
-    engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
+    engine_url: str,
+    database_name: str,
+    username: str,
+    password: str,
+    account_name: str,
+    api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine url error"""
     async with await connect(
@@ -41,6 +73,7 @@ async def test_engine_url_not_exists(
         database=database_name,
         username=username,
         password=password,
+        account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
         with raises(ConnectError):
@@ -53,6 +86,7 @@ async def test_engine_name_not_exists(
     database_name: str,
     username: str,
     password: str,
+    account_name: str,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
@@ -62,6 +96,7 @@ async def test_engine_name_not_exists(
             database=database_name,
             username=username,
             password=password,
+            account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("show tables")
@@ -73,6 +108,7 @@ async def test_engine_stopped(
     database_name: str,
     username: str,
     password: str,
+    account_name: str,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error"""
@@ -82,6 +118,7 @@ async def test_engine_stopped(
             database=database_name,
             username=username,
             password=password,
+            account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("show tables")
