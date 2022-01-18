@@ -171,3 +171,61 @@ def test_insert(connection: Connection) -> None:
             ],
             "Invalid data in table after insert",
         )
+
+
+def test_parameterized_query(connection: Connection) -> None:
+    """Query parameters are handled properly"""
+
+    def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
+        assert c.execute(query, params) == -1, "Invalid row count returned"
+        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.description is None, "Invalid description"
+        with raises(DataError):
+            c.fetchone()
+
+        with raises(DataError):
+            c.fetchmany()
+
+        with raises(DataError):
+            c.fetchall()
+
+    with connection.cursor() as c:
+        c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
+        c.execute(
+            "CREATE FACT TABLE test_tb_parameterized(i int, f float, s string, sn"
+            " string null, d date, dt datetime, b bool, a array(int), ss string)"
+            " primary index i"
+        )
+
+        params = [
+            1,
+            1.123,
+            "text\0",
+            None,
+            date(2022, 1, 1),
+            datetime(2022, 1, 1, 1, 1, 1),
+            True,
+            [1, 2, 3],
+        ]
+
+        test_empty_query(
+            c,
+            "INSERT INTO test_tb_parameterized VALUES (?, ?, ?, ?, ?, ?, ?, ?, '\\?')",
+            params,
+        )
+
+        # \0 is converted to 0
+        params[2] = "text0"
+
+        # Bool is converted to int
+        params[6] = 1
+
+        assert (
+            c.execute("SELECT * FROM test_tb_parameterized") == 1
+        ), "Invalid data length in table after parameterized insert"
+
+        assert_deep_eq(
+            c.fetchall(),
+            [params + ["?"]],
+            "Invalid data in table after parameterized insert",
+        )
