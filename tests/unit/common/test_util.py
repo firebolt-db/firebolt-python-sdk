@@ -3,7 +3,11 @@ from threading import Thread
 
 from pytest import raises
 
-from firebolt.common.util import absolutely_useless_function, async_to_sync
+from firebolt.common.util import (
+    absolutely_useless_function,
+    absolutely_useless_function2,
+    async_to_sync,
+)
 
 
 def test_async_to_sync_happy_path():
@@ -54,3 +58,7 @@ def test_async_to_sync_after_run():
 
 def test_absolutely_useless_function():
     assert absolutely_useless_function(2, 3) == 5
+
+
+def test_absolutely_useless_function2():
+    assert absolutely_useless_function2(2, 3) == 5
