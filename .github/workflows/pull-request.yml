@@ -16,8 +16,5 @@ jobs:
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/code-check.yml@main
   unit-tests:
     steps:
-      - name: Unit tests
-        uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@coverage-report
-
-      - name: Security scan
-        uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@coverage-report
+      - uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@coverage-report
+      - uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@coverage-report
