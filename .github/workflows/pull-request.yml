@@ -15,6 +15,4 @@ jobs:
   code-checkers:
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/code-check.yml@main
   unit-tests:
-    steps:
-      - uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@coverage-report
-      - uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@coverage-report
+    uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@coverage-report
