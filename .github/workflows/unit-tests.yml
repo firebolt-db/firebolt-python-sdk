@@ -25,8 +25,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install ".[dev]"
+        pip install -e ".[dev]"
 
     - name: Run unit tests
       run: |
-        pytest --cov=src/ tests/unit --cov-report=xml
+        pytest --cov=src/ tests/unit --cov-report=xml --junit-xml xunit-reports/xunit-result.xml
