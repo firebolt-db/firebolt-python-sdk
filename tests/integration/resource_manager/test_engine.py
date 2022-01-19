@@ -2,7 +2,7 @@ import time
 
 import pytest
 
-from firebolt.service.manager import ResourceManager
+from firebolt.service.manager import ResourceManager, Settings
 from firebolt.service.types import EngineStatusSummary
 
 
@@ -47,3 +47,17 @@ def test_copy_engine():
         engine_revision=rm.engine_revisions.get_by_key(engine.latest_revision_key),
     )
     assert engine_copy
+
+
+def test_databases_get_many(rm_settings: Settings, database_name):
+    rm = ResourceManager(rm_settings)
+
+    # get all databases, at least one should be returned
+    databases = rm.databases.get_many()
+    assert len(databases) > 0
+    assert database_name in {db.name for db in databases}
+
+    # get all databases, with name_contains
+    databases = rm.databases.get_many(name_contains=database_name)
+    assert len(databases) > 0
+    assert database_name in {db.name for db in databases}
