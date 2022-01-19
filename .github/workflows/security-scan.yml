@@ -7,8 +7,6 @@ on:
         required: true
       SONARCLOUD_TOKEN:
         required: true
-      GITHUB_TOKEN:
-        required: true
 
   workflow_dispatch:
   push:
@@ -31,4 +29,3 @@ jobs:
         with:
           fossa-key: ${{ secrets.FOSSA_TOKEN }}
           sonar-key: ${{ secrets.SONARCLOUD_TOKEN }}
-          github-key: ${{ secrets.GITHUB_TOKEN }}
