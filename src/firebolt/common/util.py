@@ -51,11 +51,11 @@ def async_to_sync(f: Callable) -> Callable:
     return sync
 
 
-def absolutely_useless_function(a, b):
+def absolutely_useless_function(a: int, b: int) -> int:
     a = a + b
     return a
 
 
-def absolutely_useless_function2(a, b):
+def absolutely_useless_function2(a: int, b: int) -> int:
     a = a + b
     return a
