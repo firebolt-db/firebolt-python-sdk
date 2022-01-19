@@ -50,6 +50,7 @@ def async_to_sync(f: Callable) -> Callable:
 
     return sync
 
+
 def absolutely_useless_function(a, b):
     a = a + b
     return a
