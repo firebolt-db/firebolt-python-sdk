@@ -55,6 +55,7 @@ JSON_OUTPUT_FORMAT = "JSONCompact"
 
 class CursorState(Enum):
     NONE = 1
+    ERROR = 2
     DONE = 3
     CLOSED = 4
 
@@ -220,21 +221,26 @@ class BaseCursor:
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
     ) -> Response:
-        if parameters:
-            query = format_sql(query, parameters)
+        try:
+            if parameters:
+                query = format_sql(query, parameters)
 
-        resp = await self._client.request(
-            url="/",
-            method="POST",
-            params={
-                "database": self.connection.database,
-                "output_format": JSON_OUTPUT_FORMAT,
-                **(set_parameters or dict()),
-            },
-            content=query,
-        )
+            resp = await self._client.request(
+                url="/",
+                method="POST",
+                params={
+                    "database": self.connection.database,
+                    "output_format": JSON_OUTPUT_FORMAT,
+                    **(set_parameters or dict()),
+                },
+                content=query,
+            )
 
-        await self._raise_if_error(resp)
+            await self._raise_if_error(resp)
+        except Exception:
+            self._state = CursorState.ERROR
+            raise
+
         return resp
 
     @check_not_closed

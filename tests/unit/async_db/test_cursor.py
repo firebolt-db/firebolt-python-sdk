@@ -37,6 +37,16 @@ async def test_cursor_state(
     await cursor.execute("select")
     assert cursor._state == CursorState.DONE
 
+    def error_query_callback(*args, **kwargs):
+        raise Exception()
+
+    httpx_mock.add_callback(error_query_callback, url=query_url)
+
+    cursor._reset()
+    with raises(Exception):
+        await cursor.execute("select")
+    assert cursor._state == CursorState.ERROR
+
     cursor._reset()
     assert cursor._state == CursorState.NONE
 
@@ -204,6 +214,7 @@ async def test_cursor_execute_error(
         with raises(StreamError) as excinfo:
             await query()
 
+        assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == "httpx error", "Invalid query error message"
 
         # HTTP error
@@ -212,6 +223,7 @@ async def test_cursor_execute_error(
             await query()
 
         errmsg = str(excinfo.value)
+        assert cursor._state == CursorState.ERROR
         assert "Bad Request" in errmsg, "Invalid query error message"
 
         # Database query error
@@ -223,6 +235,7 @@ async def test_cursor_execute_error(
         with raises(OperationalError) as excinfo:
             await query()
 
+        assert cursor._state == CursorState.ERROR
         assert (
             str(excinfo.value) == "Error executing query:\nQuery error message"
         ), "Invalid authentication error message"
@@ -239,6 +252,7 @@ async def test_cursor_execute_error(
         )
         with raises(FireboltDatabaseError) as excinfo:
             await query()
+        assert cursor._state == CursorState.ERROR
 
         # Engine is not running error
         httpx_mock.add_response(
@@ -255,6 +269,7 @@ async def test_cursor_execute_error(
         )
         with raises(EngineNotRunningError) as excinfo:
             await query()
+        assert cursor._state == CursorState.ERROR
 
         httpx_mock.reset(True)
 
