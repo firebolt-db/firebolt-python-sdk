@@ -1,9 +1,11 @@
 from datetime import date, datetime, timedelta, timezone
 
 from pytest import mark, raises
+from sqlparse import parse
+from sqlparse.sql import Statement
 
 from firebolt.async_db import DataError
-from firebolt.async_db._types import format_sql, format_value
+from firebolt.async_db._types import format_statement, format_value
 
 
 @mark.parametrize(
@@ -45,52 +47,55 @@ def test_format_value_errors() -> None:
     assert str(exc_info.value) == "unsupported parameter type <class 'Exception'>"
 
 
+def to_statement(sql: str) -> Statement:
+    return parse(sql)[0]
+
+
 @mark.parametrize(
-    "sql,params,result",
+    "statement,params,result",
     [
-        ("", (), ""),
-        ("select * from table", (), "select * from table"),
+        (to_statement("select * from table"), (), "select * from table"),
         (
-            "select * from table where id == ?",
+            to_statement("select * from table where id == ?"),
             (1,),
             "select * from table where id == 1",
         ),
         (
-            "select * from table where id == '?'",
+            to_statement("select * from table where id == '?'"),
             (),
             "select * from table where id == '?'",
         ),
         (
-            "insert into table values (?, ?, '?')",
+            to_statement("insert into table values (?, ?, '?')"),
             (1, "1"),
             "insert into table values (1, '1', '?')",
         ),
         (
-            "select * from t where /*comment ?*/ id == ?",
+            to_statement("select * from t where /*comment ?*/ id == ?"),
             ("*/ 1 == 1 or /*",),
             "select * from t where /*comment ?*/ id == '*/ 1 == 1 or /*'",
         ),
         (
-            "select * from t where id == ?",
+            to_statement("select * from t where id == ?"),
             ("' or '' == '",),
             r"select * from t where id == '\' or \'\' == \''",
         ),
     ],
 )
-def test_format_sql(sql: str, params: tuple, result: str) -> None:
-    assert format_sql(sql, params) == result, "Invalid format sql result"
+def test_format_statement(statement: Statement, params: tuple, result: str) -> None:
+    assert format_statement(statement, params) == result, "Invalid format sql result"
 
 
-def test_format_sql_errors() -> None:
+def test_format_statement_errors() -> None:
     with raises(DataError) as exc_info:
-        format_sql("?", [])
+        format_statement(to_statement("?"), [])
     assert (
         str(exc_info.value)
         == "not enough parameters provided for substitution: given 0, found one more"
     ), "Invalid not enought parameters error"
 
     with raises(DataError) as exc_info:
-        format_sql("?", (1, 2))
+        format_statement(to_statement("?"), (1, 2))
     assert (
         str(exc_info.value)
         == "too many parameters provided for substitution: given 2, used only 1"

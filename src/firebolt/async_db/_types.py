@@ -3,10 +3,11 @@ from __future__ import annotations
 from collections import namedtuple
 from datetime import date, datetime, timezone
 from enum import Enum
-from typing import Sequence, Union
+from typing import List, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
-from sqlparse.sql import Token, TokenList  # type: ignore
+from sqlparse import split
+from sqlparse.sql import Statement, Token, TokenList  # type: ignore
 from sqlparse.tokens import Token as TokenType  # type: ignore
 
 try:
@@ -224,7 +225,7 @@ def format_value(value: ParameterType) -> str:
     raise DataError(f"unsupported parameter type {type(value)}")
 
 
-def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
+def format_statement(statement: Statement, parameters: Sequence[ParameterType]) -> str:
     """
     Substitute placeholders in queries with provided values.
     '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'
@@ -248,13 +249,7 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
             token.tokens = [process_token(t) for t in token.tokens]
         return token
 
-    parsed = parse_sql(query)
-    if not parsed:
-        return query
-    if len(parsed) > 1:
-        raise NotSupportedError("Multi-statement queries are not supported")
-
-    formatted_sql = str(process_token(parsed[0]))
+    formatted_sql = str(process_token(statement))
 
     if idx < len(parameters):
         raise DataError(
@@ -263,3 +258,21 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
         )
 
     return formatted_sql
+
+
+def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
+    return format_statement(parse_sql(query)[0], parameters)
+
+
+def split_format_sql(query: str, parameters: Sequence[ParameterType]) -> List[str]:
+    statements = split(query)
+    if not statements:
+        return query
+
+    if parameters:
+        if len(statements) > 1:
+            raise NotSupportedError(
+                "formatting multistatement queries is not supported"
+            )
+        return [format_statement(statements[0])]
+    return [str(st) for st in statements]
