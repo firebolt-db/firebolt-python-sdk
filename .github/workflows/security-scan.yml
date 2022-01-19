@@ -2,6 +2,13 @@ name: Firebolt Security Scan
 
 on:
   workflow_call:
+    secrets:
+      FOSSA_TOKEN:      
+        required: true
+      SONARCLOUD_TOKEN:
+        required: true
+      GITHUB_TOKEN:
+        required: true
   workflow_dispatch:
   push:
     branches: [ main ]
