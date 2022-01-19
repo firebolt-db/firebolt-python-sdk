@@ -6,7 +6,6 @@ from enum import Enum
 from typing import List, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
-from sqlparse import split
 from sqlparse.sql import Statement, Token, TokenList  # type: ignore
 from sqlparse.tokens import Token as TokenType  # type: ignore
 
@@ -249,7 +248,7 @@ def format_statement(statement: Statement, parameters: Sequence[ParameterType]) 
             token.tokens = [process_token(t) for t in token.tokens]
         return token
 
-    formatted_sql = str(process_token(statement))
+    formatted_sql = str(process_token(statement)).rstrip(";")
 
     if idx < len(parameters):
         raise DataError(
@@ -265,14 +264,14 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
 
 
 def split_format_sql(query: str, parameters: Sequence[ParameterType]) -> List[str]:
-    statements = split(query)
+    statements = parse_sql(query)
     if not statements:
-        return query
+        return [query]
 
     if parameters:
         if len(statements) > 1:
             raise NotSupportedError(
                 "formatting multistatement queries is not supported"
             )
-        return [format_statement(statements[0])]
-    return [str(st) for st in statements]
+        return [format_statement(statements[0], parameters)]
+    return [str(st).strip().rstrip(";") for st in statements]

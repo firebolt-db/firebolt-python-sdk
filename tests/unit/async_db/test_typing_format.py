@@ -1,11 +1,16 @@
 from datetime import date, datetime, timedelta, timezone
+from typing import List
 
 from pytest import mark, raises
 from sqlparse import parse
 from sqlparse.sql import Statement
 
-from firebolt.async_db import DataError
-from firebolt.async_db._types import format_statement, format_value
+from firebolt.async_db import DataError, NotSupportedError
+from firebolt.async_db._types import (
+    format_statement,
+    format_value,
+    split_format_sql,
+)
 
 
 @mark.parametrize(
@@ -100,3 +105,40 @@ def test_format_statement_errors() -> None:
         str(exc_info.value)
         == "too many parameters provided for substitution: given 2, used only 1"
     ), "Invalid not enought parameters error"
+
+
+@mark.parametrize(
+    "query,params,result",
+    [
+        ("", (), [""]),
+        ("select * from t", (), ["select * from t"]),
+        ("select * from t;", (), ["select * from t"]),
+        ("select * from t where id == ?", (1,), ["select * from t where id == 1"]),
+        ("select * from t where id == ?;", (1,), ["select * from t where id == 1"]),
+        (
+            "select * from t;insert into t values (1, 2)",
+            (),
+            ["select * from t", "insert into t values (1, 2)"],
+        ),
+        (
+            "insert into t values (1, 2);select * from t;",
+            (),
+            ["insert into t values (1, 2)", "select * from t"],
+        ),
+    ],
+)
+def test_split_format_sql(query: str, params: tuple, result: List[str]) -> None:
+    assert (
+        split_format_sql(query, params) == result
+    ), "Invalid split and format sql result"
+
+
+def test_split_format_error() -> None:
+    with raises(NotSupportedError) as exc_info:
+        split_format_sql(
+            "select * from t where id == ?; insert into t values (?, ?)", (1, 2, 3)
+        )
+
+    assert (
+        str(exc_info.value) == "formatting multistatement queries is not supported"
+    ), "Invalid not supported error message"
