@@ -1,10 +1,10 @@
 name: Firebolt Security Scan
 
 on:
-  workflow_dispatch:
-  pull_request:
-  push:
-    branches: [ main ]
+  workflow_run:
+    workflows: [Unit tests]
+    types:
+      - completed
 
 jobs:
   security-scan:
