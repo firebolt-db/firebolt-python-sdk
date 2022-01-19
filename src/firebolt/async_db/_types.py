@@ -245,7 +245,8 @@ def format_statement(statement: Statement, parameters: Sequence[ParameterType]) 
             return Token(TokenType.Text, formatted)
         if isinstance(token, TokenList):
             # Process all children tokens
-            token.tokens = [process_token(t) for t in token.tokens]
+
+            return TokenList([process_token(t) for t in token.tokens])
         return token
 
     formatted_sql = str(process_token(statement)).rstrip(";")
@@ -263,7 +264,9 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
     return format_statement(parse_sql(query)[0], parameters)
 
 
-def split_format_sql(query: str, parameters: Sequence[ParameterType]) -> List[str]:
+def split_format_sql(
+    query: str, parameters: Sequence(Sequence[ParameterType])
+) -> List[str]:
     statements = parse_sql(query)
     if not statements:
         return [query]
@@ -273,5 +276,5 @@ def split_format_sql(query: str, parameters: Sequence[ParameterType]) -> List[st
             raise NotSupportedError(
                 "formatting multistatement queries is not supported"
             )
-        return [format_statement(statements[0], parameters)]
+        return [format_statement(statements[0], paramset) for paramset in parameters]
     return [str(st).strip().rstrip(";") for st in statements]

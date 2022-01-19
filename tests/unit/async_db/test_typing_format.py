@@ -113,8 +113,8 @@ def test_format_statement_errors() -> None:
         ("", (), [""]),
         ("select * from t", (), ["select * from t"]),
         ("select * from t;", (), ["select * from t"]),
-        ("select * from t where id == ?", (1,), ["select * from t where id == 1"]),
-        ("select * from t where id == ?;", (1,), ["select * from t where id == 1"]),
+        ("select * from t where id == ?", ((1,),), ["select * from t where id == 1"]),
+        ("select * from t where id == ?;", ((1,),), ["select * from t where id == 1"]),
         (
             "select * from t;insert into t values (1, 2)",
             (),
@@ -124,6 +124,11 @@ def test_format_statement_errors() -> None:
             "insert into t values (1, 2);select * from t;",
             (),
             ["insert into t values (1, 2)", "select * from t"],
+        ),
+        (
+            "select * from t where id == ?",
+            ((1,), (2,)),
+            ["select * from t where id == 1", "select * from t where id == 2"],
         ),
     ],
 )
@@ -136,7 +141,7 @@ def test_split_format_sql(query: str, params: tuple, result: List[str]) -> None:
 def test_split_format_error() -> None:
     with raises(NotSupportedError) as exc_info:
         split_format_sql(
-            "select * from t where id == ?; insert into t values (?, ?)", (1, 2, 3)
+            "select * from t where id == ?; insert into t values (?, ?)", ((1, 2, 3),)
         )
 
     assert (
