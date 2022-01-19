@@ -17,6 +17,7 @@ jobs:
   unit-tests:
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@coverage-report
   security-scan:
+    needs: [unit-tests]
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@coverage-report
     secrets:
       FOSSA_TOKEN: ${{ secrets.FIREBOLT_USERNAME }}
