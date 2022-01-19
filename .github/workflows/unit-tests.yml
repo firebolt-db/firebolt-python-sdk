@@ -30,3 +30,9 @@ jobs:
     - name: Run unit tests
       run: |
         pytest --cov=src/ tests/unit --cov-report=xml --junit-xml xunit-reports/xunit-result.xml
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v2
+      with:
+        name: pytest-coverage-report
+        path: coverage.xml
