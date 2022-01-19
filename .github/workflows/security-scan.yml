@@ -1,5 +1,16 @@
 name: Firebolt Security Scan
 
+inputs:
+  github-key:
+    description: 'Github token'
+    required: true
+  fossa-key:
+    description: 'Fossa API key'
+    required: true
+  sonar-key:
+    description: 'Sonar Cloud API key'
+    required: true
+
 on:
   workflow_call:
   workflow_dispatch:

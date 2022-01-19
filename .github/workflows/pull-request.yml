@@ -18,8 +18,10 @@ jobs:
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@coverage-report
   security-scan:
     needs: [unit-tests]
-    uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@coverage-report
-    with:
-      github-key: ${{ secrets.GITHUB_TOKEN }}
-      fossa-key: ${{ secrets.FOSSA_TOKEN }}
-      sonar-key: ${{ secrets.SONARCLOUD_TOKEN }}
+    steps:
+      - name: Security scan
+        uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@coverage-report
+        with:
+          github-key: ${{ secrets.GITHUB_TOKEN }}
+          fossa-key: ${{ secrets.FOSSA_TOKEN }}
+          sonar-key: ${{ secrets.SONARCLOUD_TOKEN }}
