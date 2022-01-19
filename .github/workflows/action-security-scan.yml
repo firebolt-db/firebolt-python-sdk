@@ -1,0 +1,49 @@
+name: 'Firebolt security scan'
+description: 'Detect security issues and bad practices in repository'
+inputs:
+  github-key:
+    description: 'Github token'
+    required: true
+  fossa-key:
+    description: 'Fossa API key'
+    required: true
+  sonar-key:
+    description: 'Sonar Cloud API key'
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: "Checkout Code"
+      uses: actions/checkout@v2
+
+    - name: "Download coverage report"
+      uses: actions/download-artifact@v2
+      with:
+          name: pytest-coverage-report
+
+    - name: SonarCloud Scan
+      uses: SonarSource/sonarcloud-github-action@v1.6
+      env:
+        GITHUB_TOKEN: ${{ inputs.github-key }}  # Needed to get PR information, if any
+        SONAR_TOKEN: ${{ inputs.sonar-key }}
+    - name: "Fossa branch fix"
+      if: ${{ github.event_name == 'pull_request' }}
+      run: |
+        git fetch
+        git branch --track ${GITHUB_HEAD_REF##*/} origin/${GITHUB_HEAD_REF##*/}
+        git checkout ${GITHUB_HEAD_REF##*/}
+      shell: bash
+    - name: "Build"
+      run: |
+        python3 -m pip install pipenv
+        python3 -m pipenv install -e .
+      shell: bash
+    - name: "Run FOSSA Scan"
+      uses: fossas/fossa-action@v1
+      with:
+        api-key: ${{ inputs.fossa-key }}
+    - name: "Run FOSSA Test"
+      uses: fossas/fossa-action@v1
+      with:
+        api-key: ${{ inputs.fossa-key }}
+        run-tests: true
