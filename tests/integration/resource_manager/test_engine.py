@@ -49,7 +49,7 @@ def test_copy_engine():
     assert engine_copy
 
 
-def test_databases_get_many(rm_settings: Settings, database_name):
+def test_databases_get_many(rm_settings: Settings, database_name, engine_name):
     rm = ResourceManager(rm_settings)
 
     # get all databases, at least one should be returned
@@ -59,5 +59,15 @@ def test_databases_get_many(rm_settings: Settings, database_name):
 
     # get all databases, with name_contains
     databases = rm.databases.get_many(name_contains=database_name)
+    assert len(databases) > 0
+    assert database_name in {db.name for db in databases}
+
+    # get all databases, with name_contains
+    databases = rm.databases.get_many(attached_engine_name_eq=engine_name)
+    assert len(databases) > 0
+    assert database_name in {db.name for db in databases}
+
+    # get all databases, with name_contains
+    databases = rm.databases.get_many(attached_engine_name_contains=engine_name)
     assert len(databases) > 0
     assert database_name in {db.name for db in databases}
