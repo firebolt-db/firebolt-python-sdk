@@ -195,7 +195,7 @@ class BaseCursor:
                 # Parse data during fetch
                 rows = query_data["data"]
                 row_set = (rowcount, descriptions, rows)
-            except (KeyError, JSONDecodeError) as err:
+            except (KeyError, JSONDecodeError, ValueError) as err:
                 raise DataError(f"Invalid query data format: {str(err)}")
 
         self._row_sets.append(row_set)
@@ -220,10 +220,9 @@ class BaseCursor:
         """
         if self._next_set_idx >= len(self._row_sets):
             return None
-        cur_set = self._row_sets[self._next_set_idx]
-        self._rowcount = cur_set[0]
-        self._descriptions = cur_set[1]
-        self._rows = cur_set[2]
+        self._rowcount, self._descriptions, self._rows = self._row_sets[
+            self._next_set_idx
+        ]
         self._next_set_idx += 1
         return True
 
