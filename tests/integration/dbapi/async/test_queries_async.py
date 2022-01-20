@@ -237,3 +237,42 @@ async def test_parameterized_query(connection: Connection) -> None:
             [params + ["?"]],
             "Invalid data in table after parameterized insert",
         )
+
+
+@mark.asyncio
+async def test_multi_statement_query(connection: Connection) -> None:
+    """Query parameters are handled properly"""
+
+    with connection.cursor() as c:
+        await c.execute("DROP TABLE IF EXISTS test_tb_multi_statement")
+        await c.execute(
+            "CREATE FACT TABLE test_tb_multi_statement(i int, s string) primary index i"
+        )
+
+        assert (
+            await c.execute(
+                "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
+                "SELECT * FROM test_tb_multi_statement"
+            )
+            == -1
+        ), "Invalid row count returned for insert"
+        assert c.rowcount == -1, "Invalid row count"
+        assert c.description is None, "Invalid description"
+
+        c.nextset()
+
+        assert c.rowcount == 2, "Invalid select row count"
+        assert_deep_eq(
+            c.description,
+            [
+                Column("i", int, None, None, None, None, None),
+                Column("s", str, None, None, None, None, None),
+            ],
+            "Invalid select query description",
+        )
+
+        assert_deep_eq(
+            await c.fetchall(),
+            [[1, "a"], [2, "b"]],
+            "Invalid data in table after parameterized insert",
+        )
