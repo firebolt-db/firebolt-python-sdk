@@ -1,3 +1,4 @@
+import re
 from typing import Callable
 
 from pytest_httpx import HTTPXMock
@@ -64,3 +65,36 @@ def test_database_get_by_name(
     database = manager.databases.get_by_name(name=mock_database.name)
 
     assert database.name == mock_database.name
+
+
+def test_database_get_many(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
+    settings: Settings,
+    account_id_callback: Callable,
+    account_id_url: str,
+    database_get_by_name_callback: Callable,
+    database_get_by_name_url: str,
+    databases_get_callback: Callable,
+    databases_url: str,
+    mock_database: Database,
+):
+
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(
+        databases_get_callback,
+        url=re.compile(databases_url + "?[a-zA-Z0-9=&]*"),
+        method="GET",
+    )
+
+    manager = ResourceManager(settings=settings)
+    databases = manager.databases.get_many()
+
+    assert len(databases) == 1
+    assert databases[0].name == mock_database.name
