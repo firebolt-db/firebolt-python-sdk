@@ -226,8 +226,7 @@ def format_value(value: ParameterType) -> str:
 
 def format_statement(statement: Statement, parameters: Sequence[ParameterType]) -> str:
     """
-    Substitute placeholders in queries with provided values.
-    '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'
+    Substitute placeholders in a sqlparse statement with provided values.
     """
     idx = 0
 
@@ -260,13 +259,14 @@ def format_statement(statement: Statement, parameters: Sequence[ParameterType]) 
     return formatted_sql
 
 
-def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
-    return format_statement(parse_sql(query)[0], parameters)
-
-
 def split_format_sql(
     query: str, parameters: Sequence[Sequence[ParameterType]]
 ) -> List[str]:
+    """
+    Split a query into separate statement, and format it with parameters
+    if it's a single statement
+    Trying to format a multi-statement query would result in NotSupportedError
+    """
     statements = parse_sql(query)
     if not statements:
         return [query]
