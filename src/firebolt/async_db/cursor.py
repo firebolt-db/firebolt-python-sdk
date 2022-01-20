@@ -201,7 +201,7 @@ class BaseCursor:
         self._row_sets.append(row_set)
         if self._next_set_idx == 0:
             # Populate values for first set
-            self.nextset()
+            self._pop_next_set()
 
     @check_not_closed
     @check_query_executed
@@ -211,6 +211,12 @@ class BaseCursor:
         from the current set.
         Returns True if operation was successful,
         None if there are no more sets to retrive
+        """
+        return self._pop_next_set()
+
+    def _pop_next_set(self) -> Optional[bool]:
+        """
+        Same functionality as .nextset, but doesn't check that query has been executed.
         """
         if self._next_set_idx >= len(self._row_sets):
             return None

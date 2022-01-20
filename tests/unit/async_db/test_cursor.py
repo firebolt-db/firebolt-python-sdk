@@ -64,10 +64,7 @@ async def test_closed_cursor(cursor: Cursor):
         ("fetchmany", ()),
         ("fetchall", ()),
     )
-    methods = (
-        "setinputsizes",
-        "setoutputsize",
-    )
+    methods = ("setinputsizes", "setoutputsize", "nextset")
 
     cursor.close()
 
@@ -117,6 +114,9 @@ async def test_cursor_no_query(
     for amethod in async_methods:
         with raises(QueryNotRunError):
             await getattr(cursor, amethod)()
+
+    with raises(QueryNotRunError):
+        await cursor.nextset()
 
     with raises(QueryNotRunError):
         [r async for r in cursor]

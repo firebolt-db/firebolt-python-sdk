@@ -60,6 +60,7 @@ def test_closed_cursor(cursor: Cursor):
         ("fetchall", ()),
         ("setinputsizes", (cursor, [0])),
         ("setoutputsize", (cursor, 0)),
+        ("nextset", (cursor, [])),
     )
 
     cursor.close()
@@ -97,6 +98,7 @@ def test_cursor_no_query(
         "fetchone",
         "fetchmany",
         "fetchall",
+        "nextset",
     )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
