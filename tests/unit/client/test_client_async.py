@@ -59,11 +59,11 @@ async def test_client_different_auths(
     test_password: str,
 ):
     """
-    Client propperly handles such auth types:
+    Client properly handles such auth types:
     - tuple(username, password)
     - Auth
     - None
-    All other types should raise TypeError
+    All other types should raise TypeError.
     """
 
     httpx_mock.add_callback(

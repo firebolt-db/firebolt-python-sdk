@@ -65,7 +65,7 @@ def test_select(
 def test_drop_create(
     connection: Connection, create_drop_description: List[Column]
 ) -> None:
-    """Create and drop table/index queries are handled propperly"""
+    """Create and drop table/index queries are handled properly."""
 
     def test_query(c: Cursor, query: str) -> None:
         assert c.execute(query) == 1, "Invalid row count returned"
@@ -124,7 +124,7 @@ def test_drop_create(
 
 
 def test_insert(connection: Connection) -> None:
-    """Insert and delete queries are handled propperly"""
+    """Insert and delete queries are handled properly."""
 
     def test_empty_query(c: Cursor, query: str) -> None:
         assert c.execute(query) == -1, "Invalid row count returned"
