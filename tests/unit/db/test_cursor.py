@@ -369,5 +369,37 @@ def test_set_parameters(
     cursor.execute("select 1", set_parameters=set_params)
 
 
-def test_cursor_multi_statement(cursor: Cursor):
+def test_cursor_multi_statement(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    insert_query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
+):
     """executemany with multiple parameter sets is not supported"""
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+
+    rc = cursor.execute("select * from t; insert into t values (1, 2)")
+    assert rc == len(python_query_data), "Invalid row count returned"
+    assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
+    for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
+        assert desc == exp, f"Invalid column description at position {i}"
+
+    for i in range(cursor.rowcount):
+        assert (
+            cursor.fetchone() == python_query_data[i]
+        ), f"Invalid data row at position {i}"
+
+    cursor.nextset()
+    assert cursor.rowcount == -1, "Invalid cursor row count"
+    assert cursor.description is None, "Invalid cursor description"
+    with raises(DataError) as exc_info:
+        cursor.fetchall()
+
+    assert str(exc_info.value) == "no rows to fetch", "Invalid error message"
