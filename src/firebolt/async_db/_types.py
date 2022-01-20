@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import namedtuple
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from enum import Enum
 from typing import Sequence, Union
 
@@ -177,7 +178,7 @@ def parse_value(
     """Provided raw value and python type, parses first into python value."""
     if value is None:
         return None
-    if ctype in (int, str, float):
+    if ctype in (int, str, float, Decimal):
         assert isinstance(ctype, type)
         return ctype(value)
     if ctype is date:
@@ -206,7 +207,7 @@ def format_value(value: ParameterType) -> str:
     """For python value to be used in a SQL query"""
     if isinstance(value, bool):
         return str(int(value))
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float, Decimal)):
         return str(value)
     elif isinstance(value, str):
         return f"'{''.join(escape_chars.get(c, c) for c in value)}'"
