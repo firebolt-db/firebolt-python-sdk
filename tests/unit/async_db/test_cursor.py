@@ -13,7 +13,6 @@ from firebolt.common.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
-    NotSupportedError,
     OperationalError,
     QueryNotRunError,
 )
@@ -157,8 +156,8 @@ async def test_cursor_execute(
     """Cursor is able to execute query, all fields are populated properly."""
 
     for query in (
-        lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None]),
+        lambda: cursor.execute("select * from t"),
+        lambda: cursor.executemany("select * from t", []),
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -202,7 +201,7 @@ async def test_cursor_execute_error(
     """Cursor handles all types of errors properly."""
     for query in (
         lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None]),
+        lambda: cursor.executemany("select *", []),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
 
@@ -427,5 +426,3 @@ async def test_set_parameters(
 @mark.asyncio
 async def test_cursor_multi_statement(cursor: Cursor):
     """executemany with multiple parameter sets is not supported"""
-    with raises(NotSupportedError):
-        await cursor.executemany("select ?", [(1,), (2,)])

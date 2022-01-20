@@ -175,19 +175,22 @@ class BaseCursor:
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
             row_set = (-1, None, None)
-        try:
-            query_data = response.json()
-            rowcount = int(query_data["rows"])
-            descriptions = [
-                Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
-                for d in query_data["meta"]
-            ]
+        else:
+            try:
+                query_data = response.json()
+                rowcount = int(query_data["rows"])
+                descriptions = [
+                    Column(
+                        d["name"], parse_type(d["type"]), None, None, None, None, None
+                    )
+                    for d in query_data["meta"]
+                ]
 
-            # Parse data during fetch
-            rows = query_data["data"]
-            row_set = (rowcount, descriptions, rows)
-        except (KeyError, JSONDecodeError) as err:
-            raise DataError(f"Invalid query data format: {str(err)}")
+                # Parse data during fetch
+                rows = query_data["data"]
+                row_set = (rowcount, descriptions, rows)
+            except (KeyError, JSONDecodeError) as err:
+                raise DataError(f"Invalid query data format: {str(err)}")
 
         self._row_sets.append(row_set)
         if self._next_set_idx == 0:
