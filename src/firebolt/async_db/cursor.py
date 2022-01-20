@@ -109,11 +109,15 @@ class BaseCursor:
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize
+        # These fields initialized here for type annotations purpose
         self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
         self._row_sets: List[
             Tuple[int, Optional[List[Column]], Optional[List[List[RawColType]]]]
         ] = []
+        self._rowcount = -1
+        self._idx = 0
+        self._next_set_idx = 0
         self._reset()
 
     def __del__(self) -> None:
@@ -172,10 +176,12 @@ class BaseCursor:
     def _append_query_data(self, response: Response) -> None:
         """Store information about executed query from httpx response."""
 
+        row_set: Tuple[
+            int, Optional[List[Column]], Optional[List[List[RawColType]]]
+        ] = (-1, None, None)
+
         # Empty response is returned for insert query
-        if response.headers.get("content-length", "") == "0":
-            row_set = (-1, None, None)
-        else:
+        if response.headers.get("content-length", "") != "0":
             try:
                 query_data = response.json()
                 rowcount = int(query_data["rows"])
@@ -197,14 +203,23 @@ class BaseCursor:
             # Populate values for first set
             self.nextset()
 
-    def nextset(self) -> None:
+    @check_not_closed
+    @check_query_executed
+    def nextset(self) -> Optional[bool]:
+        """
+        Skip to the next available set, discarding any remaining rows
+        from the current set.
+        Returns True if operation was successful,
+        None if there are no more sets to retrive
+        """
         if self._next_set_idx >= len(self._row_sets):
-            raise ProgrammingError("no more sets in cursor")
+            return None
         cur_set = self._row_sets[self._next_set_idx]
         self._rowcount = cur_set[0]
         self._descriptions = cur_set[1]
         self._rows = cur_set[2]
         self._next_set_idx += 1
+        return True
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -242,9 +257,9 @@ class BaseCursor:
     async def _do_execute_request(
         self,
         query: str,
-        parameters: Sequence[Sequence[ParameterType]] = None,
+        parameters: Sequence[Sequence[ParameterType]],
         set_parameters: Optional[Dict] = None,
-    ) -> Response:
+    ) -> None:
         self._reset()
         try:
 

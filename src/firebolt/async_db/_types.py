@@ -265,7 +265,7 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
 
 
 def split_format_sql(
-    query: str, parameters: Sequence(Sequence[ParameterType])
+    query: str, parameters: Sequence[Sequence[ParameterType]]
 ) -> List[str]:
     statements = parse_sql(query)
     if not statements:

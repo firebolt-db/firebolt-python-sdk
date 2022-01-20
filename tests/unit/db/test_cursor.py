@@ -396,10 +396,12 @@ def test_cursor_multi_statement(
             cursor.fetchone() == python_query_data[i]
         ), f"Invalid data row at position {i}"
 
-    cursor.nextset()
+    assert cursor.nextset()
     assert cursor.rowcount == -1, "Invalid cursor row count"
     assert cursor.description is None, "Invalid cursor description"
     with raises(DataError) as exc_info:
         cursor.fetchall()
 
     assert str(exc_info.value) == "no rows to fetch", "Invalid error message"
+
+    assert cursor.nextset() is None

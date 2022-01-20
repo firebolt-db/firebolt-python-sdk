@@ -250,7 +250,7 @@ def test_multi_statement_query(connection: Connection) -> None:
         assert c.rowcount == -1, "Invalid row count"
         assert c.description is None, "Invalid description"
 
-        c.nextset()
+        assert c.nextset()
 
         assert c.rowcount == 2, "Invalid select row count"
         assert_deep_eq(
@@ -267,3 +267,5 @@ def test_multi_statement_query(connection: Connection) -> None:
             [[1, "a"], [2, "b"]],
             "Invalid data in table after parameterized insert",
         )
+
+        assert c.nextset() is None
