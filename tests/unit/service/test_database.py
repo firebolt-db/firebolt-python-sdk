@@ -94,7 +94,11 @@ def test_database_get_many(
     )
 
     manager = ResourceManager(settings=settings)
-    databases = manager.databases.get_many()
+    databases = manager.databases.get_many(
+        name_contains=mock_database.name,
+        attached_engine_name_eq="mockengine",
+        attached_engine_name_contains="mockengine",
+    )
 
     assert len(databases) == 1
     assert databases[0].name == mock_database.name
