@@ -6,7 +6,6 @@ import time
 from enum import Enum
 from functools import wraps
 from inspect import cleandoc
-from json import JSONDecodeError
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -195,7 +194,7 @@ class BaseCursor:
                 # Parse data during fetch
                 rows = query_data["data"]
                 row_set = (rowcount, descriptions, rows)
-            except (KeyError, JSONDecodeError, ValueError) as err:
+            except (KeyError, ValueError) as err:
                 raise DataError(f"Invalid query data format: {str(err)}")
 
         self._row_sets.append(row_set)
