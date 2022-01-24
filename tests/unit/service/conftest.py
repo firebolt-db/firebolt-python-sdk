@@ -214,6 +214,18 @@ def create_databases_callback(databases_url: str, mock_database) -> Callable:
 
 
 @pytest.fixture
+def databases_get_callback(databases_url: str, mock_database) -> Callable:
+    def get_databases_callback_inner(
+        request: httpx.Request = None, **kwargs
+    ) -> Response:
+        return to_response(
+            status_code=httpx.codes.OK, json={"edges": [{"node": mock_database.dict()}]}
+        )
+
+    return get_databases_callback_inner
+
+
+@pytest.fixture
 def databases_url(settings: Settings, account_id: str) -> str:
     return f"https://{settings.server}" + ACCOUNT_DATABASES_URL.format(
         account_id=account_id
