@@ -197,7 +197,7 @@ async def test_cursor_execute_error(
         httpx_mock.add_callback(auth_callback, url=auth_url)
 
         # Internal httpx error
-        def http_error(**kwargs):
+        def http_error(*args, **kwargs):
             raise StreamError("httpx error")
 
         httpx_mock.add_callback(http_error, url=query_url)
@@ -217,7 +217,7 @@ async def test_cursor_execute_error(
         # Database query error
         httpx_mock.add_response(
             status_code=codes.INTERNAL_SERVER_ERROR,
-            data="Query error message",
+            content="Query error message",
             url=query_url,
         )
         with raises(OperationalError) as excinfo:
@@ -230,7 +230,7 @@ async def test_cursor_execute_error(
         # Database does not exist error
         httpx_mock.add_response(
             status_code=codes.FORBIDDEN,
-            data="Query error message",
+            content="Query error message",
             url=query_url,
         )
         httpx_mock.add_response(
@@ -243,7 +243,7 @@ async def test_cursor_execute_error(
         # Engine is not running error
         httpx_mock.add_response(
             status_code=codes.SERVICE_UNAVAILABLE,
-            data="Query error message",
+            content="Query error message",
             url=query_url,
         )
         httpx_mock.add_response(

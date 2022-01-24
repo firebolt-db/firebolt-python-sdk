@@ -179,7 +179,7 @@ def test_cursor_execute_error(
         httpx_mock.add_callback(auth_callback, url=auth_url)
 
         # Internal httpx error
-        def http_error(**kwargs):
+        def http_error(*args, **kwargs):
             raise StreamError("httpx error")
 
         httpx_mock.add_callback(http_error, url=query_url)
@@ -199,7 +199,7 @@ def test_cursor_execute_error(
         # Database query error
         httpx_mock.add_response(
             status_code=codes.INTERNAL_SERVER_ERROR,
-            data="Query error message",
+            content="Query error message",
             url=query_url,
         )
         with raises(OperationalError) as excinfo:
