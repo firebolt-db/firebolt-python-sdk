@@ -58,7 +58,7 @@ class Connection(AsyncBaseConnection):
     # Context manager support
     def __enter__(self) -> Connection:
         if self.closed:
-            raise ConnectionClosedError("Connection is already closed")
+            raise ConnectionClosedError("Connection is already closed.")
         return self
 
     def __exit__(

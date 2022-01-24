@@ -69,17 +69,17 @@ async def test_select(
 async def test_drop_create(
     connection: Connection, create_drop_description: List[Column]
 ) -> None:
-    """Create and drop table/index queries are handled propperly"""
+    """Create and drop table/index queries are handled properly."""
 
     async def test_query(c: Cursor, query: str) -> None:
-        assert await c.execute(query) == 1, "Invalid row count returned"
-        assert c.rowcount == 1, "Invalid rowcount value"
+        assert await c.execute(query) == 1, "Invalid row count returned."
+        assert c.rowcount == 1, "Invalid rowcount value."
         assert_deep_eq(
             c.description,
             create_drop_description,
-            "Invalid create table query description",
+            "Invalid create table query description.",
         )
-        assert len(await c.fetchall()) == 1, "Invalid data returned"
+        assert len(await c.fetchall()) == 1, "Invalid data returned."
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
@@ -131,12 +131,12 @@ async def test_drop_create(
 
 @mark.asyncio
 async def test_insert(connection: Connection) -> None:
-    """Insert and delete queries are handled propperly"""
+    """Insert and delete queries are handled properly."""
 
     async def test_empty_query(c: Cursor, query: str) -> None:
-        assert await c.execute(query) == -1, "Invalid row count returned"
-        assert c.rowcount == -1, "Invalid rowcount value"
-        assert c.description is None, "Invalid description"
+        assert await c.execute(query) == -1, "Invalid row count returned."
+        assert c.rowcount == -1, "Invalid rowcount value."
+        assert c.description is None, "Invalid description."
         with raises(DataError):
             await c.fetchone()
 
@@ -161,7 +161,7 @@ async def test_insert(connection: Connection) -> None:
 
         assert (
             await c.execute("SELECT * FROM test_tb ORDER BY test_tb.id") == 1
-        ), "Invalid data length in table after insert"
+        ), "Invalid data length in table after insert."
 
         assert_deep_eq(
             await c.fetchall(),
@@ -176,7 +176,7 @@ async def test_insert(connection: Connection) -> None:
                     [1, 2, 3],
                 ],
             ],
-            "Invalid data in table after insert",
+            "Invalid data in table after insert.",
         )
 
 
