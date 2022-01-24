@@ -43,10 +43,10 @@ class DatabaseService(BaseService):
 
     def get_many(
         self,
-        name_contains: str,
-        attached_engine_name_eq: str,
-        attached_engine_name_contains: str,
-        order_by: Union[str, DatabaseOrder],
+        name_contains: Optional[str] = None,
+        attached_engine_name_eq: Optional[str] = None,
+        attached_engine_name_contains: Optional[str] = None,
+        order_by: Optional[Union[str, DatabaseOrder]] = None,
     ) -> List[Database]:
         """
         Get a list of databases on Firebolt.
@@ -63,20 +63,30 @@ class DatabaseService(BaseService):
             A list of databases matching the filters.
         """
 
-        if isinstance(order_by, str):
-            order_by = DatabaseOrder[order_by]
+        params = {"page.first": "1000"}
+        if order_by:
+            if isinstance(order_by, str):
+                order_by = DatabaseOrder[order_by]
+            params["order_by"] = order_by.name
+
+        if name_contains:
+            params["filter.name_contains"] = name_contains
+
+        if attached_engine_name_eq:
+            params["filter.attached_engine_name_eq"] = attached_engine_name_eq
+
+        if attached_engine_name_contains:
+            params[
+                "filter.attached_engine_name_contains"
+            ] = attached_engine_name_contains
+
         response = self.client.get(
-            url=ACCOUNT_DATABASES_URL.format(account_id=self.account_id),
-            params={
-                "filter.name_contains": name_contains,
-                "filter.attached_engine_name_eq": attached_engine_name_eq,
-                "filter.attached_engine_name_contains": attached_engine_name_contains,
-                "order_by": order_by.name,
-            },
+            url=ACCOUNT_DATABASES_URL.format(account_id=self.account_id), params=params
         )
+
         return [
-            Database.parse_obj_with_service(obj=d, database_service=self)
-            for d in response.json()["databases"]
+            Database.parse_obj_with_service(obj=d["node"], database_service=self)
+            for d in response.json()["edges"]
         ]
 
     def create(
