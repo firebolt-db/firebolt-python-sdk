@@ -257,11 +257,10 @@ class Engine(FireboltBaseModel):
         )
 
         # wait for engine to start
-        while (
-            wait_for_startup
-            and engine.current_status_summary
-            != EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
-        ):
+        while wait_for_startup and engine.current_status_summary not in {
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING,
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED,
+        }:
             wait(
                 seconds=5,
                 timeout_time=timeout_time,
