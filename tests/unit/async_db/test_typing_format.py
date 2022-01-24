@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta, timezone
+from decimal import Decimal
 
 from pytest import mark, raises
 
@@ -17,6 +18,8 @@ from firebolt.async_db._types import format_sql, format_value
         # Numbers
         (1, "1"),
         (1.123, "1.123"),
+        (Decimal("1.123"), "1.123"),
+        (Decimal(1.123), "1.1229999999999999982236431605997495353221893310546875"),
         (True, "1"),
         (False, "0"),
         # Date, datetime
