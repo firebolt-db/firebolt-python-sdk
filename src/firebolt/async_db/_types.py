@@ -178,7 +178,7 @@ def parse_value(
     """Provided raw value and python type, parses first into python value."""
     if value is None:
         return None
-    if ctype in (int, str, float, Decimal):
+    if ctype in (int, str, float):
         assert isinstance(ctype, type)
         return ctype(value)
     if ctype is date:
