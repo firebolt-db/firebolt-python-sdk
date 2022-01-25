@@ -64,7 +64,14 @@ async def test_select(
             data, all_types_query_response, "Invalid data returned by fetchmany"
         )
 
-        # AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly
+
+@mark.asyncio
+@mark.timeout(timeout=400, method="signal")
+async def test_long_query(
+    connection: Connection,
+) -> None:
+    """AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly"""
+    with connection.cursor() as c:
         await c.execute(
             "SELECT sleepEachRow(1) from numbers(360)",
             set_parameters={"advanced_mode": "1", "use_standard_sql": "0"},
