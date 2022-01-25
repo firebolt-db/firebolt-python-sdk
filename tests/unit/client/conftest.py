@@ -3,8 +3,7 @@ import typing
 
 import httpx
 import pytest
-from pytest_httpx import to_response
-from pytest_httpx._httpx_internals import Response
+from httpx import Response
 
 
 @pytest.fixture
@@ -42,7 +41,7 @@ def check_credentials_callback(
         assert "password" in body, "Missing password"
         assert body["password"] == test_password, "Invalid password"
 
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"expires_in": 2 ** 32, "access_token": test_token},
         )
@@ -61,6 +60,6 @@ def check_token_callback(test_token: str) -> typing.Callable:
         token = auth[len(prefix) :]
         assert token == test_token, "invalid authorization token"
 
-        return to_response(status_code=httpx.codes.OK)
+        return Response(status_code=httpx.codes.OK)
 
     return check_token

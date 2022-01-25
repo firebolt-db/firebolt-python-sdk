@@ -2,9 +2,8 @@ from typing import Callable, List
 
 import httpx
 import pytest
+from httpx import Response
 from pydantic import SecretStr
-from pytest_httpx import to_response
-from pytest_httpx._httpx_internals import Response
 
 from firebolt.common.exception import (
     DatabaseError,
@@ -106,7 +105,7 @@ def auth_callback(auth_url: str) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == auth_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"access_token": "", "expires_in": 2 ** 32},
         )
@@ -150,11 +149,11 @@ def account_id_callback(
     ) -> Response:
         assert request.url == account_id_url
         if account_id_url.endswith(ACCOUNT_URL):  # account_name shouldn't be specified.
-            return to_response(
+            return Response(
                 status_code=httpx.codes.OK, json={"account": {"id": account_id}}
             )
         # In this case, an account_name *should* be specified.
-        return to_response(status_code=httpx.codes.OK, json={"account_id": account_id})
+        return Response(status_code=httpx.codes.OK, json={"account_id": account_id})
 
     return do_mock
 
@@ -180,7 +179,7 @@ def get_engine_callback(
         **kwargs,
     ) -> Response:
         assert request.url == get_engine_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={
                 "engine": {
@@ -216,7 +215,7 @@ def get_providers_callback(get_providers_url: str, provider: Provider) -> Callab
         **kwargs,
     ) -> Response:
         assert request.url == get_providers_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([provider]),
         )
