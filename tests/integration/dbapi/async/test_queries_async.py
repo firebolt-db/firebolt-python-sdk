@@ -64,6 +64,14 @@ async def test_select(
             data, all_types_query_response, "Invalid data returned by fetchmany"
         )
 
+        # AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly
+        await c.execute(
+            "SELECT sleepEachRow(1) from numbers(360)",
+            set_parameters={"advanced_mode": "1", "use_standard_sql": "0"},
+        )
+        data = await c.fetchall()
+        assert len(data) == 360, "Invalid data size returned by fetchall"
+
 
 @mark.asyncio
 async def test_drop_create(
