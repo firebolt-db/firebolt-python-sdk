@@ -88,47 +88,51 @@ def test_drop_create(
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        c.execute("DROP JOIN INDEX IF EXISTS test_db_join_idx")
-        c.execute("DROP AGGREGATING INDEX IF EXISTS test_db_agg_idx")
-        c.execute("DROP TABLE IF EXISTS test_tb")
-        c.execute("DROP TABLE IF EXISTS test_tb_dim")
+        c.execute("DROP JOIN INDEX IF EXISTS test_drop_create_db_join_idx")
+        c.execute("DROP AGGREGATING INDEX IF EXISTS test_drop_create_db_agg_idx")
+        c.execute("DROP TABLE IF EXISTS test_drop_create_tb")
+        c.execute("DROP TABLE IF EXISTS test_drop_create_tb_dim")
 
         # Fact table
         test_query(
             c,
-            "CREATE FACT TABLE test_tb(id int, sn string null, f float,"
+            "CREATE FACT TABLE test_drop_create_tb(id int, sn string null, f float,"
             "d date, dt datetime, b bool, a array(int)) primary index id",
         )
 
         # Dimension table
         test_query(
             c,
-            "CREATE DIMENSION TABLE test_tb_dim(id int, sn string null, f float,"
-            "d date, dt datetime, b bool, a array(int))",
+            "CREATE DIMENSION TABLE test_drop_create_tb_dim(id int, sn string null"
+            ", f float, d date, dt datetime, b bool, a array(int))",
         )
 
         # Create join index
-        test_query(c, "CREATE JOIN INDEX test_db_join_idx ON test_tb_dim(id, sn, f)")
+        test_query(
+            c,
+            "CREATE JOIN INDEX test_drop_create_db_join_idx ON "
+            "test_drop_create_tb_dim(id, sn, f)",
+        )
 
         # Create aggregating index
         test_query(
             c,
-            "CREATE AGGREGATING INDEX test_db_agg_idx ON "
-            "test_tb(id, sum(f), count(dt))",
+            "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
+            "test_drop_create_tb(id, sum(f), count(dt))",
         )
 
         # Drop join index
-        test_query(c, "DROP JOIN INDEX test_db_join_idx")
+        test_query(c, "DROP JOIN INDEX test_drop_create_db_join_idx")
 
         # Drop aggregating index
-        test_query(c, "DROP AGGREGATING INDEX test_db_agg_idx")
+        test_query(c, "DROP AGGREGATING INDEX test_drop_create_db_agg_idx")
 
         # Test drop once again
-        test_query(c, "DROP TABLE test_tb")
-        test_query(c, "DROP TABLE IF EXISTS test_tb")
+        test_query(c, "DROP TABLE test_drop_create_tb")
+        test_query(c, "DROP TABLE IF EXISTS test_drop_create_tb")
 
-        test_query(c, "DROP TABLE test_tb_dim")
-        test_query(c, "DROP TABLE IF EXISTS test_tb_dim")
+        test_query(c, "DROP TABLE test_drop_create_tb_dim")
+        test_query(c, "DROP TABLE IF EXISTS test_drop_create_tb_dim")
 
 
 def test_insert(connection: Connection) -> None:
@@ -148,20 +152,20 @@ def test_insert(connection: Connection) -> None:
             c.fetchall()
 
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_tb")
+        c.execute("DROP TABLE IF EXISTS test_insert_tb")
         c.execute(
-            "CREATE FACT TABLE test_tb(id int, sn string null, f float,"
+            "CREATE FACT TABLE test_insert_tb(id int, sn string null, f float,"
             "d date, dt datetime, b bool, a array(int)) primary index id"
         )
 
         test_empty_query(
             c,
-            "INSERT INTO test_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
+            "INSERT INTO test_insert_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
             "'2021-01-01 01:01:01', true, [1, 2, 3])",
         )
 
         assert (
-            c.execute("SELECT * FROM test_tb ORDER BY test_tb.id") == 1
+            c.execute("SELECT * FROM test_insert_tb ORDER BY test_insert_tb.id") == 1
         ), "Invalid data length in table after insert"
 
         assert_deep_eq(
