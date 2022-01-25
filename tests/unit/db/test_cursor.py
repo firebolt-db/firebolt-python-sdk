@@ -9,7 +9,6 @@ from firebolt.async_db.cursor import ColType, Column, CursorState
 from firebolt.common.exception import (
     CursorClosedError,
     DataError,
-    NotSupportedError,
     OperationalError,
     QueryNotRunError,
 )
@@ -33,6 +32,16 @@ def test_cursor_state(
     cursor.execute("select")
     assert cursor._state == CursorState.DONE
 
+    def error_query_callback(*args, **kwargs):
+        raise Exception()
+
+    httpx_mock.add_callback(error_query_callback, url=query_url)
+
+    cursor._reset()
+    with raises(Exception):
+        cursor.execute("select")
+    assert cursor._state == CursorState.ERROR
+
     cursor._reset()
     assert cursor._state == CursorState.NONE
 
@@ -51,6 +60,7 @@ def test_closed_cursor(cursor: Cursor):
         ("fetchall", ()),
         ("setinputsizes", (cursor, [0])),
         ("setoutputsize", (cursor, 0)),
+        ("nextset", (cursor, [])),
     )
 
     cursor.close()
@@ -88,6 +98,7 @@ def test_cursor_no_query(
         "fetchone",
         "fetchmany",
         "fetchall",
+        "nextset",
     )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -135,7 +146,7 @@ def test_cursor_execute(
 
     for query in (
         lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None]),
+        lambda: cursor.executemany("select *", []),
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -174,7 +185,7 @@ def test_cursor_execute_error(
     """Cursor handles all types of errors properly."""
     for query in (
         lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None]),
+        lambda: cursor.executemany("select *", []),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
 
@@ -186,6 +197,7 @@ def test_cursor_execute_error(
         with raises(StreamError) as excinfo:
             query()
 
+        assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == "httpx error", "Invalid query error message"
 
         # HTTP error
@@ -194,6 +206,7 @@ def test_cursor_execute_error(
             query()
 
         errmsg = str(excinfo.value)
+        assert cursor._state == CursorState.ERROR
         assert "Bad Request" in errmsg, "Invalid query error message"
 
         # Database query error
@@ -205,6 +218,7 @@ def test_cursor_execute_error(
         with raises(OperationalError) as excinfo:
             query()
 
+        assert cursor._state == CursorState.ERROR
         assert (
             str(excinfo.value) == "Error executing query:\nQuery error message"
         ), "Invalid authentication error message"
@@ -357,7 +371,39 @@ def test_set_parameters(
     cursor.execute("select 1", set_parameters=set_params)
 
 
-def test_cursor_multi_statement(cursor: Cursor):
+def test_cursor_multi_statement(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    insert_query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
+):
     """executemany with multiple parameter sets is not supported"""
-    with raises(NotSupportedError):
-        cursor.executemany("select ?", [(1,), (2,)])
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+
+    rc = cursor.execute("select * from t; insert into t values (1, 2)")
+    assert rc == len(python_query_data), "Invalid row count returned"
+    assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
+    for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
+        assert desc == exp, f"Invalid column description at position {i}"
+
+    for i in range(cursor.rowcount):
+        assert (
+            cursor.fetchone() == python_query_data[i]
+        ), f"Invalid data row at position {i}"
+
+    assert cursor.nextset()
+    assert cursor.rowcount == -1, "Invalid cursor row count"
+    assert cursor.description is None, "Invalid cursor description"
+    with raises(DataError) as exc_info:
+        cursor.fetchall()
+
+    assert str(exc_info.value) == "no rows to fetch", "Invalid error message"
+
+    assert cursor.nextset() is None
