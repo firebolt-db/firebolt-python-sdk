@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from json import JSONDecodeError
+from socket import IPPROTO_TCP, SO_KEEPALIVE, SOL_SOCKET, TCP_KEEPIDLE
 from types import TracebackType
 from typing import Callable, List, Optional, Type
 
-from httpx import HTTPStatusError, RequestError, Timeout
+from httpcore.backends.auto import AutoBackend
+from httpcore.backends.base import AsyncNetworkStream
+from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
@@ -17,6 +20,8 @@ from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL, ACCOUNT_ENGINE_URL
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
+KEEPALIVE_FLAG: int = 1
+KEEPIDLE_RATE: int = 60  # seconds
 
 
 async def _resolve_engine_url(
@@ -131,6 +136,36 @@ def async_connect_factory(connection_class: Type) -> Callable:
     return connect_inner
 
 
+class OverriddenHttpBackend(AutoBackend):
+    """
+    This class is a short-term solution for TCP keep-alive issue:
+    https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#connection-idle-timeout
+    Since httpx creates a connection right before executing a request
+    backend has to be overridden in order to set the socket KEEPALIVE
+    and KEEPIDLE settings.
+    """
+
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        timeout: Optional[float] = None,
+        local_address: Optional[str] = None,
+    ) -> AsyncNetworkStream:
+        stream = await super().connect_tcp(
+            host, port, timeout=timeout, local_address=local_address
+        )
+        # Enable keepalive
+        stream.get_extra_info("socket").setsockopt(
+            SOL_SOCKET, SO_KEEPALIVE, KEEPALIVE_FLAG
+        )
+        # Set keepalive to 60 seconds
+        stream.get_extra_info("socket").setsockopt(
+            IPPROTO_TCP, TCP_KEEPIDLE, KEEPIDLE_RATE
+        )
+        return stream
+
+
 class BaseConnection:
     client_class: type
     cursor_class: type
@@ -151,11 +186,14 @@ class BaseConnection:
         password: str,
         api_endpoint: str = DEFAULT_API_URL,
     ):
+        transport = AsyncHTTPTransport()
+        transport._pool._network_backend = OverriddenHttpBackend()
         self._client = AsyncClient(
             auth=(username, password),
             base_url=engine_url,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+            transport=transport,
         )
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
