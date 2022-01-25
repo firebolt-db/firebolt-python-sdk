@@ -61,6 +61,14 @@ def test_select(
             data, all_types_query_response, "Invalid data returned by fetchmany"
         )
 
+        # AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly
+        c.execute(
+            "SELECT sleepEachRow(1) from numbers(360)",
+            set_parameters={"advanced_mode": "1", "use_standard_sql": "0"},
+        )
+        data = c.fetchall()
+        assert len(data) == 360, "Invalid data size returned by fetchall"
+
 
 def test_drop_create(
     connection: Connection, create_drop_description: List[Column]
@@ -269,3 +277,53 @@ def test_multi_statement_query(connection: Connection) -> None:
         )
 
         assert c.nextset() is None
+
+
+def test_aws_timeout_query(connection: Connection) -> None:
+    """Test that we don't timeout on queries over 350 seconds."""
+
+    def test_empty_query(c: Cursor, query: str) -> None:
+        assert c.execute(query) == -1, "Invalid row count returned"
+        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.description is None, "Invalid description"
+        with raises(DataError):
+            c.fetchone()
+
+        with raises(DataError):
+            c.fetchmany()
+
+        with raises(DataError):
+            c.fetchall()
+
+    with connection.cursor() as c:
+        c.execute("DROP TABLE IF EXISTS test_tb")
+        c.execute(
+            "CREATE FACT TABLE test_tb(id int, sn string null, f float,"
+            "d date, dt datetime, b bool, a array(int)) primary index id"
+        )
+
+        test_empty_query(
+            c,
+            "INSERT INTO test_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
+            "'2021-01-01 01:01:01', true, [1, 2, 3])",
+        )
+
+        assert (
+            c.execute("SELECT * FROM test_tb ORDER BY test_tb.id") == 1
+        ), "Invalid data length in table after insert"
+
+        assert_deep_eq(
+            c.fetchall(),
+            [
+                [
+                    1,
+                    "sn",
+                    1.1,
+                    date(2021, 1, 1),
+                    datetime(2021, 1, 1, 1, 1, 1),
+                    1,
+                    [1, 2, 3],
+                ],
+            ],
+            "Invalid data in table after insert",
+        )
