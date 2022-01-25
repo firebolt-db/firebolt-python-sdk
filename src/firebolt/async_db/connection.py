@@ -146,7 +146,11 @@ class OverriddenHttpBackend(AutoBackend):
     """
 
     async def connect_tcp(
-        self, host: str, port: int, timeout: float = None, local_address: str = None
+        self,
+        host: str,
+        port: int,
+        timeout: Optional[float] = None,
+        local_address: Optional[str] = None,
     ) -> AsyncNetworkStream:
         stream = await super().connect_tcp(
             host, port, timeout=timeout, local_address=local_address
