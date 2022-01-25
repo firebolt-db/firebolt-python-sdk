@@ -20,6 +20,8 @@ from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL, ACCOUNT_ENGINE_URL
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
+KEEPALIVE_FLAG: int = 1
+KEEPIDLE_RATE: int = 60  # seconds
 
 
 async def _resolve_engine_url(
@@ -150,9 +152,13 @@ class OverriddenHttpBackend(AutoBackend):
             host, port, timeout=timeout, local_address=local_address
         )
         # Enable keepalive
-        stream.get_extra_info("socket").setsockopt(SOL_SOCKET, SO_KEEPALIVE, 1)
+        stream.get_extra_info("socket").setsockopt(
+            SOL_SOCKET, SO_KEEPALIVE, KEEPALIVE_FLAG
+        )
         # Set keepalive to 60 seconds
-        stream.get_extra_info("socket").setsockopt(IPPROTO_TCP, TCP_KEEPIDLE, 60)
+        stream.get_extra_info("socket").setsockopt(
+            IPPROTO_TCP, TCP_KEEPIDLE, KEEPIDLE_RATE
+        )
         return stream
 
 
