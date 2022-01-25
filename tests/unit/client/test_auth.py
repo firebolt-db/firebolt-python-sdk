@@ -99,7 +99,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
         auth = Auth("user", "password", api_endpoint=api_endpoint)
 
         # Internal httpx error
-        def http_error(**kwargs):
+        def http_error(*args, **kwargs):
             raise StreamError("httpx")
 
         httpx_mock.add_callback(http_error)

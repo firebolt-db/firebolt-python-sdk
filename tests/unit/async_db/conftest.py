@@ -4,7 +4,6 @@ from typing import Any, Callable, Dict, List
 
 from httpx import URL, Request, Response, codes
 from pytest import fixture
-from pytest_httpx import to_response
 
 from firebolt.async_db import ARRAY, Connection, Cursor, connect
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
@@ -115,7 +114,7 @@ def query_callback(
                 "scanned_bytes_storage": 0,
             },
         }
-        return to_response(status_code=codes.OK, json=query_response)
+        return Response(status_code=codes.OK, json=query_response)
 
     return do_query
 
@@ -147,7 +146,7 @@ def query_with_params_callback(
                 "scanned_bytes_storage": 0,
             },
         }
-        return to_response(status_code=codes.OK, json=query_response)
+        return Response(status_code=codes.OK, json=query_response)
 
     return do_query
 
@@ -157,7 +156,7 @@ def insert_query_callback(
     query_description: List[Column], query_data: List[List[ColType]]
 ) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
-        return to_response(status_code=codes.OK, headers={"content-length": "0"})
+        return Response(status_code=codes.OK, headers={"content-length": "0"})
 
     return do_query
 
@@ -174,7 +173,7 @@ def set_params() -> Dict:
 @fixture
 def query_url(settings: Settings, db_name: str) -> str:
     return URL(
-        f"https://{settings.server}?database={db_name}"
+        f"https://{settings.server}/?database={db_name}"
         f"&output_format={JSON_OUTPUT_FORMAT}"
     )
 
