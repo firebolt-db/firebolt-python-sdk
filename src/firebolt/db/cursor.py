@@ -75,6 +75,11 @@ class Cursor(AsyncBaseCursor):
         with self._query_lock.gen_rlock():
             return super().fetchall()
 
+    @wraps(AsyncBaseCursor.nextset)
+    def nextset(self) -> None:
+        with self._query_lock.gen_rlock(), self._idx_lock:
+            return super().nextset()
+
     # Iteration support
     @check_not_closed
     @check_query_executed
