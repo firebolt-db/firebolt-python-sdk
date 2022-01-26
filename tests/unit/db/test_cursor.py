@@ -60,7 +60,7 @@ def test_closed_cursor(cursor: Cursor):
         ("fetchall", ()),
         ("setinputsizes", (cursor, [0])),
         ("setoutputsize", (cursor, 0)),
-        ("nextset", (cursor, [])),
+        ("nextset", ()),
     )
 
     cursor.close()
@@ -71,6 +71,7 @@ def test_closed_cursor(cursor: Cursor):
 
     for method, args in methods:
         with raises(CursorClosedError):
+            print(method, args)
             getattr(cursor, method)(*args)
 
     with raises(CursorClosedError):
@@ -386,8 +387,9 @@ def test_cursor_multi_statement(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(insert_query_callback, url=query_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
 
-    rc = cursor.execute("select * from t; insert into t values (1, 2)")
+    rc = cursor.execute("select * from t; insert into t values (1, 2); select * from t")
     assert rc == len(python_query_data), "Invalid row count returned"
     assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
     for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
@@ -405,5 +407,16 @@ def test_cursor_multi_statement(
         cursor.fetchall()
 
     assert str(exc_info.value) == "no rows to fetch", "Invalid error message"
+
+    assert cursor.nextset()
+
+    assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
+    for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
+        assert desc == exp, f"Invalid column description at position {i}"
+
+    for i in range(cursor.rowcount):
+        assert (
+            cursor.fetchone() == python_query_data[i]
+        ), f"Invalid data row at position {i}"
 
     assert cursor.nextset() is None
