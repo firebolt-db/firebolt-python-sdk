@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import socket
 from json import JSONDecodeError
-from socket import IPPROTO_TCP, SO_KEEPALIVE, SOL_SOCKET, TCP_KEEPIDLE
 from types import TracebackType
 from typing import Callable, List, Optional, Type
 
@@ -157,11 +157,17 @@ class OverriddenHttpBackend(AutoBackend):
         )
         # Enable keepalive
         stream.get_extra_info("socket").setsockopt(
-            SOL_SOCKET, SO_KEEPALIVE, KEEPALIVE_FLAG
+            socket.SOL_SOCKET, socket.SO_KEEPALIVE, KEEPALIVE_FLAG
         )
+        # MacOS does not have TCP_KEEPIDLE
+        if hasattr(socket, "TCP_KEEPIDLE"):
+            keepidle = socket.TCP_KEEPIDLE
+        else:
+            keepidle = 0x10  # TCP_KEEPALIVE on mac
+
         # Set keepalive to 60 seconds
         stream.get_extra_info("socket").setsockopt(
-            IPPROTO_TCP, TCP_KEEPIDLE, KEEPIDLE_RATE
+            socket.IPPROTO_TCP, keepidle, KEEPIDLE_RATE
         )
         return stream
 
