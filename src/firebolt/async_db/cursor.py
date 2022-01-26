@@ -466,7 +466,7 @@ class Cursor(BaseCursor):
         """Fetch all remaining rows of a query result"""
 
     @wraps(BaseCursor.nextset)
-    async def nextrow(self) -> None:
+    async def nextset(self) -> None:
         async with self._async_query_lock.reader:
             return super().nextset()
 
