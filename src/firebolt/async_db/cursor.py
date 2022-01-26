@@ -222,6 +222,7 @@ class BaseCursor:
         self._rowcount, self._descriptions, self._rows = self._row_sets[
             self._next_set_idx
         ]
+        self._idx = 0
         self._next_set_idx += 1
         return True
 
@@ -463,6 +464,11 @@ class Cursor(BaseCursor):
         async with self._async_query_lock.reader:
             return super().fetchall()
         """Fetch all remaining rows of a query result"""
+
+    @wraps(BaseCursor.nextset)
+    async def nextset(self) -> None:
+        async with self._async_query_lock.reader:
+            return super().nextset()
 
     # Iteration support
     @check_not_closed

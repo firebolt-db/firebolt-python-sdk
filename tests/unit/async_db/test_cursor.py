@@ -63,8 +63,9 @@ async def test_closed_cursor(cursor: Cursor):
         ("fetchone", ()),
         ("fetchmany", ()),
         ("fetchall", ()),
+        ("nextset", ()),
     )
-    methods = ("setinputsizes", "setoutputsize", "nextset")
+    methods = ("setinputsizes", "setoutputsize")
 
     cursor.close()
 
@@ -439,8 +440,11 @@ async def test_cursor_multi_statement(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(insert_query_callback, url=query_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
 
-    rc = await cursor.execute("select * from t; insert into t values (1, 2)")
+    rc = await cursor.execute(
+        "select * from t; insert into t values (1, 2); select * from t"
+    )
     assert rc == len(python_query_data), "Invalid row count returned"
     assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
     for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
@@ -451,7 +455,7 @@ async def test_cursor_multi_statement(
             await cursor.fetchone() == python_query_data[i]
         ), f"Invalid data row at position {i}"
 
-    assert cursor.nextset()
+    assert await cursor.nextset()
     assert cursor.rowcount == -1, "Invalid cursor row count"
     assert cursor.description is None, "Invalid cursor description"
     with raises(DataError) as exc_info:
@@ -459,4 +463,15 @@ async def test_cursor_multi_statement(
 
     assert str(exc_info.value) == "no rows to fetch", "Invalid error message"
 
-    assert cursor.nextset() is None
+    assert await cursor.nextset()
+
+    assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
+    for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
+        assert desc == exp, f"Invalid column description at position {i}"
+
+    for i in range(cursor.rowcount):
+        assert (
+            await cursor.fetchone() == python_query_data[i]
+        ), f"Invalid data row at position {i}"
+
+    assert await cursor.nextset() is None
