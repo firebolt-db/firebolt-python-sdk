@@ -277,13 +277,14 @@ async def test_multi_statement_query(connection: Connection) -> None:
             await c.execute(
                 "INSERT INTO test_tb_async_multi_statement values (1, 'a'), (2, 'b');"
                 "SELECT * FROM test_tb_async_multi_statement"
+                "SELECT * FROM test_tb_async_multi_statement WHERE i <= 1"
             )
             == -1
         ), "Invalid row count returned for insert"
         assert c.rowcount == -1, "Invalid row count"
         assert c.description is None, "Invalid description"
 
-        assert c.nextset()
+        assert await c.nextset()
 
         assert c.rowcount == 2, "Invalid select row count"
         assert_deep_eq(
@@ -301,4 +302,22 @@ async def test_multi_statement_query(connection: Connection) -> None:
             "Invalid data in table after parameterized insert",
         )
 
-        assert c.nextset() is None
+        assert await c.nextset()
+
+        assert c.rowcount == 1, "Invalid select row count"
+        assert_deep_eq(
+            c.description,
+            [
+                Column("i", int, None, None, None, None, None),
+                Column("s", str, None, None, None, None, None),
+            ],
+            "Invalid select query description",
+        )
+
+        assert_deep_eq(
+            await c.fetchall(),
+            [[1, "a"]],
+            "Invalid data in table after parameterized insert",
+        )
+
+        assert await c.nextset() is None

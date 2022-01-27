@@ -261,7 +261,8 @@ def test_multi_statement_query(connection: Connection) -> None:
         assert (
             c.execute(
                 "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
-                "SELECT * FROM test_tb_multi_statement"
+                "SELECT * FROM test_tb_multi_statement;"
+                "SELECT * FROM test_tb_multi_statement WHERE i <= 1"
             )
             == -1
         ), "Invalid row count returned for insert"
@@ -283,6 +284,24 @@ def test_multi_statement_query(connection: Connection) -> None:
         assert_deep_eq(
             c.fetchall(),
             [[1, "a"], [2, "b"]],
+            "Invalid data in table after parameterized insert",
+        )
+
+        assert c.nextset()
+
+        assert c.rowcount == 1, "Invalid select row count"
+        assert_deep_eq(
+            c.description,
+            [
+                Column("i", int, None, None, None, None, None),
+                Column("s", str, None, None, None, None, None),
+            ],
+            "Invalid select query description",
+        )
+
+        assert_deep_eq(
+            c.fetchall(),
+            [[1, "a"]],
             "Invalid data in table after parameterized insert",
         )
 
