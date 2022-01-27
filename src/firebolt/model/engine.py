@@ -38,6 +38,14 @@ class EngineKey(FireboltBaseModel):
     engine_id: str
 
 
+def wait(seconds: int, timeout_time: float, error_message: str, verbose: bool) -> None:
+    time.sleep(seconds)
+    if time.time() > timeout_time:
+        raise TimeoutError(error_message)
+    if verbose:
+        print(".", end="")
+
+
 class EngineSettings(FireboltBaseModel):
     """
     Engine Settings.
@@ -204,13 +212,6 @@ class Engine(FireboltBaseModel):
         """
         timeout_time = time.time() + wait_timeout_seconds
 
-        def wait(seconds: int, error_message: str) -> None:
-            time.sleep(seconds)
-            if time.time() > timeout_time:
-                raise TimeoutError(error_message)
-            if verbose:
-                print(".", end="")
-
         engine = self.get_latest()
         if (
             engine.current_status_summary
@@ -238,9 +239,11 @@ class Engine(FireboltBaseModel):
             ):
                 wait(
                     seconds=5,
+                    timeout_time=timeout_time,
                     error_message=f"Engine "
                     f"(engine_id={engine.engine_id}, name={engine.name}) "
                     f"did not stop within {wait_timeout_seconds} seconds.",
+                    verbose=True,
                 )
                 engine = engine.get_latest()
 
@@ -254,14 +257,15 @@ class Engine(FireboltBaseModel):
         )
 
         # wait for engine to start
-        while (
-            wait_for_startup
-            and engine.current_status_summary
-            != EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
-        ):
+        while wait_for_startup and engine.current_status_summary not in {
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING,
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED,
+        }:
             wait(
                 seconds=5,
+                timeout_time=timeout_time,
                 error_message=f"Could not start engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                verbose=verbose,
             )
             previous_status_summary = engine.current_status_summary
             engine = engine.get_latest()
@@ -284,17 +288,37 @@ class Engine(FireboltBaseModel):
         )
 
     @check_attached_to_database
-    def stop(self) -> Engine:
+    def stop(
+        self, wait_for_stop: bool = False, wait_timeout_seconds: int = 3600
+    ) -> Engine:
         """Stop an Engine running on Firebolt."""
+        timeout_time = time.time() + wait_timeout_seconds
+
         response = self._service.client.post(
             url=ACCOUNT_ENGINE_STOP_URL.format(
                 account_id=self._service.account_id, engine_id=self.engine_id
             )
         )
         logger.info(f"Stopping Engine (engine_id={self.engine_id}, name={self.name})")
-        return Engine.parse_obj_with_service(
+
+        engine = Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
+
+        while wait_for_stop and engine.current_status_summary not in {
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED,
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED,
+        }:
+            wait(
+                seconds=5,
+                timeout_time=timeout_time,
+                error_message=f"Could not stop engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                verbose=False,
+            )
+
+            engine = engine.get_latest()
+
+        return engine
 
     def delete(self) -> Engine:
         """Delete an Engine from Firebolt."""

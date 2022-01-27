@@ -3,8 +3,7 @@ from typing import Callable, List
 
 import httpx
 import pytest
-from pytest_httpx import to_response
-from pytest_httpx._httpx_internals import Response
+from httpx import Response
 
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
@@ -83,7 +82,7 @@ def provider_callback(provider_url: str, mock_providers) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == provider_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_providers),
         )
@@ -103,7 +102,7 @@ def region_callback(region_url: str, mock_regions) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == region_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_regions),
         )
@@ -123,7 +122,7 @@ def instance_type_callback(instance_type_url: str, mock_instance_types) -> Calla
         **kwargs,
     ) -> Response:
         assert request.url == instance_type_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_instance_types),
         )
@@ -143,7 +142,7 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == engine_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"engine": mock_engine.dict()},
         )
@@ -165,7 +164,7 @@ def account_engine_callback(engine_url: str, mock_engine) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == account_engine_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"engine": mock_engine.dict()},
         )
@@ -205,12 +204,24 @@ def create_databases_callback(databases_url: str, mock_database) -> Callable:
         mock_database.description = database_properties["description"]
 
         assert request.url == databases_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database": mock_database.dict()},
         )
 
     return do_mock
+
+
+@pytest.fixture
+def databases_get_callback(databases_url: str, mock_database) -> Callable:
+    def get_databases_callback_inner(
+        request: httpx.Request = None, **kwargs
+    ) -> Response:
+        return Response(
+            status_code=httpx.codes.OK, json={"edges": [{"node": mock_database.dict()}]}
+        )
+
+    return get_databases_callback_inner
 
 
 @pytest.fixture
@@ -227,7 +238,7 @@ def database_callback(database_url: str, mock_database) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == database_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database": mock_database.dict()},
         )
@@ -242,7 +253,7 @@ def database_not_found_callback(database_url: str) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == database_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={},
         )
@@ -264,7 +275,7 @@ def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Ca
         **kwargs,
     ) -> Response:
         assert request.url == database_get_by_name_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database_id": {"database_id": mock_database.database_id}},
         )
@@ -288,7 +299,7 @@ def database_get_callback(database_get_url, mock_database) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == database_get_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database": mock_database.dict()},
         )
@@ -323,7 +334,7 @@ def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == bindings_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([binding]),
         )
@@ -338,7 +349,7 @@ def no_bindings_callback(bindings_url: str) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == bindings_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([]),
         )
@@ -362,7 +373,7 @@ def create_binding_callback(create_binding_url: str, binding) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == create_binding_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"binding": binding.dict()},
         )
