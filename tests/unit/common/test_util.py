@@ -1,7 +1,7 @@
 from asyncio import run
 from threading import Thread
 
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.common.util import async_to_sync
 
@@ -47,6 +47,23 @@ def test_async_to_sync_after_run():
         run(task())
 
     # Here local event loop is closed by run
+
+    with raises(JobMarker):
+        async_to_sync(task)()
+
+
+@mark.asyncio
+async def test_nested_loops() -> None:
+    """async_to_sync properly works inside a running loop"""
+
+    class JobMarker(Exception):
+        pass
+
+    async def task():
+        raise JobMarker()
+
+    with raises(JobMarker):
+        await task()
 
     with raises(JobMarker):
         async_to_sync(task)()
