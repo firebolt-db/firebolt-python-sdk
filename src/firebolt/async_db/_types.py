@@ -4,10 +4,10 @@ from collections import namedtuple
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import Sequence, Union
+from typing import List, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
-from sqlparse.sql import Token, TokenList  # type: ignore
+from sqlparse.sql import Statement, Token, TokenList  # type: ignore
 from sqlparse.tokens import Token as TokenType  # type: ignore
 
 try:
@@ -225,10 +225,9 @@ def format_value(value: ParameterType) -> str:
     raise DataError(f"unsupported parameter type {type(value)}")
 
 
-def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
+def format_statement(statement: Statement, parameters: Sequence[ParameterType]) -> str:
     """
-    Substitute placeholders in queries with provided values.
-    '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'
+    Substitute placeholders in a sqlparse statement with provided values.
     """
     idx = 0
 
@@ -246,16 +245,11 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
             return Token(TokenType.Text, formatted)
         if isinstance(token, TokenList):
             # Process all children tokens
-            token.tokens = [process_token(t) for t in token.tokens]
+
+            return TokenList([process_token(t) for t in token.tokens])
         return token
 
-    parsed = parse_sql(query)
-    if not parsed:
-        return query
-    if len(parsed) > 1:
-        raise NotSupportedError("Multi-statement queries are not supported")
-
-    formatted_sql = str(process_token(parsed[0]))
+    formatted_sql = str(process_token(statement)).rstrip(";")
 
     if idx < len(parameters):
         raise DataError(
@@ -264,3 +258,24 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
         )
 
     return formatted_sql
+
+
+def split_format_sql(
+    query: str, parameters: Sequence[Sequence[ParameterType]]
+) -> List[str]:
+    """
+    Split a query into separate statement, and format it with parameters
+    if it's a single statement
+    Trying to format a multi-statement query would result in NotSupportedError
+    """
+    statements = parse_sql(query)
+    if not statements:
+        return [query]
+
+    if parameters:
+        if len(statements) > 1:
+            raise NotSupportedError(
+                "formatting multistatement queries is not supported"
+            )
+        return [format_statement(statements[0], paramset) for paramset in parameters]
+    return [str(st).strip().rstrip(";") for st in statements]
