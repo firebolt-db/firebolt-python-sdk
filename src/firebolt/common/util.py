@@ -52,11 +52,15 @@ def fix_url_schema(url: str) -> str:
 
 
 class AsyncJobThread:
+    """
+    Thread runner that allows running async tasks syncronously in a separate thread.
+    Caches loop to be reused in all threads
+    """
+
     def __init__(self) -> None:
         self.loop: Optional[AbstractEventLoop] = None
         self.result: Optional[Any] = None
         self.exception: Optional[BaseException] = None
-        super().__init__()
 
     def _initialize_loop(self) -> None:
         if not self.loop:
