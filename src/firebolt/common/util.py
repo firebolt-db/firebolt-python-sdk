@@ -55,6 +55,8 @@ class AsyncJobThread:
     """
     Thread runner that allows running async tasks syncronously in a separate thread.
     Caches loop to be reused in all threads
+    It allows running async functions syncronously inside a running event loop.
+    Since nesting loops is not allowed, we create a separate thread for a new event loop
     """
 
     def __init__(self) -> None:
