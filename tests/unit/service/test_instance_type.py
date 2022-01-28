@@ -19,6 +19,7 @@ def test_instance_type(
     account_id_url: str,
     settings: Settings,
     mock_instance_types: List[InstanceType],
+    cheapest_instance: InstanceType,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
@@ -28,3 +29,4 @@ def test_instance_type(
 
     manager = ResourceManager(settings=settings)
     assert manager.instance_types.instance_types == mock_instance_types
+    assert manager.instance_types.cheapest_instance() == cheapest_instance

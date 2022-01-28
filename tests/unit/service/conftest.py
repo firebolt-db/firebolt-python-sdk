@@ -55,6 +55,8 @@ def instance_type_1(provider, region_1) -> InstanceType:
             instance_type_id="instance_type_id_1",
         ),
         name="i3.4xlarge",
+        price_per_hour_cents=10,
+        storage_size_bytes=0,
     )
 
 
@@ -67,12 +69,35 @@ def instance_type_2(provider, region_2) -> InstanceType:
             instance_type_id="instance_type_id_2",
         ),
         name="i3.8xlarge",
+        price_per_hour_cents=20,
+        storage_size_bytes=500,
     )
 
 
 @pytest.fixture
-def mock_instance_types(instance_type_1, instance_type_2) -> List[InstanceType]:
-    return [instance_type_1, instance_type_2]
+def instance_type_3(provider, region_2) -> InstanceType:
+    return InstanceType(
+        key=InstanceTypeKey(
+            provider_id=provider.provider_id,
+            region_id=region_2.key.region_id,
+            instance_type_id="instance_type_id_2",
+        ),
+        name="i3.8xlarge",
+        price_per_hour_cents=30,
+        storage_size_bytes=500,
+    )
+
+
+@pytest.fixture
+def cheapest_instance(instance_type_2) -> InstanceType:
+    return instance_type_2
+
+
+@pytest.fixture
+def mock_instance_types(
+    instance_type_1, instance_type_2, instance_type_3
+) -> List[InstanceType]:
+    return [instance_type_1, instance_type_2, instance_type_3]
 
 
 @pytest.fixture

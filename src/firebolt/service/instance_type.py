@@ -1,3 +1,4 @@
+from sys import maxsize
 from typing import Dict, List, NamedTuple, Optional
 
 from firebolt.common.urls import INSTANCE_TYPES_URL
@@ -40,6 +41,19 @@ class InstanceTypeService(BaseService):
             ): i
             for i in self.instance_types
         }
+
+    def cheapest_instance(self) -> InstanceType:
+        # Filter out instances without storage
+        instance_list = [
+            i
+            for i in self.instance_types
+            if i.storage_size_bytes and i.storage_size_bytes != "0"
+        ]
+        cheapest = min(
+            instance_list,
+            key=lambda x: x.price_per_hour_cents if x.price_per_hour_cents else maxsize,
+        )
+        return cheapest
 
     def get_by_key(self, instance_type_key: InstanceTypeKey) -> InstanceType:
         """Get an instance type by key."""

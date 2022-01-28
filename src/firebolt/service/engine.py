@@ -107,7 +107,7 @@ class EngineService(BaseService):
         region: Union[str, Region, None] = None,
         engine_type: Union[str, EngineType] = EngineType.GENERAL_PURPOSE,
         scale: int = 2,
-        spec: str = "i3.4xlarge",
+        spec: Optional[str] = None,
         auto_stop: int = 20,
         warmup: Union[str, WarmupMethod] = WarmupMethod.PRELOAD_INDEXES,
         description: str = "",
@@ -121,7 +121,8 @@ class EngineService(BaseService):
             engine_type: The engine type. GENERAL_PURPOSE or DATA_ANALYTICS
             scale: The number of compute instances on the engine.
                 The scale can be any int from 1 to 128.
-            spec: The AWS EC2 instance type.
+            spec: Firebolt instance type. If not set will default to
+                the cheapest instance.
             auto_stop: The amount of time (in minutes)
             after which the engine automatically stops.
             warmup: The warmup method that should be used.
@@ -162,9 +163,14 @@ class EngineService(BaseService):
             ),
         )
 
-        instance_type_key = self.resource_manager.instance_types.get_by_name(
-            instance_type_name=spec
-        ).key
+        if spec:
+            instance_type_key = self.resource_manager.instance_types.get_by_name(
+                instance_type_name=spec
+            ).key
+        else:
+            instance_type_key = (
+                self.resource_manager.instance_types.cheapest_instance().key
+            )
 
         engine_revision = EngineRevision(
             specification=EngineRevisionSpecification(
