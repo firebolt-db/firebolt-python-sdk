@@ -3,7 +3,7 @@ from __future__ import annotations
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
@@ -207,7 +207,7 @@ class BaseConnection:
         self._cursors: List[BaseCursor] = []
         self._is_closed = False
 
-    def cursor(self) -> BaseCursor:
+    def _cursor(self, **kwargs: Any) -> BaseCursor:
         """
         Create new cursor object.
         """
@@ -215,7 +215,7 @@ class BaseConnection:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed")
 
-        c = self.cursor_class(self._client, self)
+        c = self.cursor_class(self._client, self, **kwargs)
         self._cursors.append(c)
         return c
 
@@ -279,7 +279,7 @@ class Connection(BaseConnection):
     aclose = BaseConnection._aclose
 
     def cursor(self) -> Cursor:
-        c = super().cursor()
+        c = super()._cursor()
         assert isinstance(c, Cursor)  # typecheck
         return c
 
