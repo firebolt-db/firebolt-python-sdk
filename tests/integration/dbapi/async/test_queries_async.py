@@ -66,7 +66,7 @@ async def test_select(
 
 
 @mark.asyncio
-@mark.timeout(timeout=400, method="signal")
+@mark.timeout(timeout=400)
 async def test_long_query(
     connection: Connection,
 ) -> None:
