@@ -67,6 +67,7 @@ class AsyncJobThread:
     def _initialize_loop(self) -> None:
         if not self.loop:
             try:
+                # despite the docs, this function fails if no loop is set
                 self.loop = get_event_loop()
             except RuntimeError:
                 self.loop = new_event_loop()
