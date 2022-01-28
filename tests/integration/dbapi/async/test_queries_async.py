@@ -276,7 +276,7 @@ async def test_multi_statement_query(connection: Connection) -> None:
         assert (
             await c.execute(
                 "INSERT INTO test_tb_async_multi_statement values (1, 'a'), (2, 'b');"
-                "SELECT * FROM test_tb_async_multi_statement"
+                "SELECT * FROM test_tb_async_multi_statement;"
                 "SELECT * FROM test_tb_async_multi_statement WHERE i <= 1"
             )
             == -1
