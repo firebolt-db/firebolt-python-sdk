@@ -169,7 +169,9 @@ class EngineService(BaseService):
             ).key
         else:
             instance_type_key = (
-                self.resource_manager.instance_types.cheapest_instance().key
+                self.resource_manager.instance_types.cheapest_instance_in_region(
+                    region
+                ).key
             )
 
         engine_revision = EngineRevision(

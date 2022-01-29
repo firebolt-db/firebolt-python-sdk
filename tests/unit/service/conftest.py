@@ -22,6 +22,7 @@ from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database, DatabaseKey
 from firebolt.model.engine import Engine, EngineKey, EngineSettings
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
+from firebolt.model.region import Region
 from tests.unit.util import list_to_paginated_response
 
 
@@ -156,8 +157,33 @@ def instance_type_callback(instance_type_url: str, mock_instance_types) -> Calla
 
 
 @pytest.fixture
+def instance_type_region_1_callback(
+    instance_type_region_1_url: str, mock_instance_types
+) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == instance_type_region_1_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response(mock_instance_types),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
 def instance_type_url(settings: Settings) -> str:
     return f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000"
+
+
+@pytest.fixture
+def instance_type_region_1_url(settings: Settings, region_1: Region) -> str:
+    return (
+        f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000&"
+        f"filter.id_region_id_eq={region_1.key.region_id}"
+    )
 
 
 @pytest.fixture

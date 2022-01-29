@@ -4,6 +4,7 @@ from typing import Dict, List, NamedTuple, Optional
 from firebolt.common.urls import INSTANCE_TYPES_URL
 from firebolt.common.util import cached_property
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
+from firebolt.model.region import Region
 from firebolt.service.base import BaseService
 
 
@@ -42,11 +43,19 @@ class InstanceTypeService(BaseService):
             for i in self.instance_types
         }
 
-    def cheapest_instance(self) -> InstanceType:
+    def cheapest_instance_in_region(self, region: Region) -> InstanceType:
+        # Get only awailable instances in region
+        response = self.client.get(
+            url=INSTANCE_TYPES_URL,
+            params={"page.first": 5000, "filter.id_region_id_eq": region.key.region_id},
+        )
+        instance_types = [
+            InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]
+        ]
         # Filter out instances without storage
         instance_list = [
             i
-            for i in self.instance_types
+            for i in instance_types
             if i.storage_size_bytes and i.storage_size_bytes != "0"
         ]
         cheapest = min(
