@@ -4,9 +4,10 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.common import Settings
-from firebolt.common.exception import NoAttachedDatabaseError
+from firebolt.common.exception import FireboltError, NoAttachedDatabaseError
 from firebolt.model.engine import Engine
 from firebolt.model.instance_type import InstanceType
+from firebolt.model.region import Region
 from firebolt.service.manager import ResourceManager
 
 
@@ -16,8 +17,8 @@ def test_engine_create(
     auth_url: str,
     provider_callback: Callable,
     provider_url: str,
-    instance_type_callback: Callable,
-    instance_type_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
     region_callback: Callable,
     region_url: str,
     settings: Settings,
@@ -32,7 +33,9 @@ def test_engine_create(
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(
+        instance_type_region_1_callback, url=instance_type_region_1_url
+    )
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
@@ -44,14 +47,44 @@ def test_engine_create(
     assert engine.name == engine_name
 
 
+def test_engine_create_no_available_types(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
+    instance_type_empty_callback: Callable,
+    instance_type_region_2_url: str,
+    settings: Settings,
+    mock_instance_types: List[InstanceType],
+    engine_name: str,
+    account_id_callback: Callable,
+    account_id_url: str,
+    engine_url: str,
+    region_2: Region,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
+    httpx_mock.add_callback(
+        instance_type_empty_callback, url=instance_type_region_2_url
+    )
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    manager = ResourceManager(settings=settings)
+
+    with raises(FireboltError):
+        manager.engines.create(name=engine_name, region=region_2)
+
+
 def test_engine_no_attached_database(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
     provider_callback: Callable,
     provider_url: str,
-    instance_type_callback: Callable,
-    instance_type_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
     region_callback: Callable,
     region_url: str,
     settings: Settings,
@@ -72,7 +105,9 @@ def test_engine_no_attached_database(
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(
+        instance_type_region_1_callback, url=instance_type_region_1_url
+    )
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
@@ -92,8 +127,8 @@ def test_engine_start_binding_to_missing_database(
     auth_url: str,
     provider_callback: Callable,
     provider_url: str,
-    instance_type_callback: Callable,
-    instance_type_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
     region_callback: Callable,
     region_url: str,
     settings: Settings,
@@ -112,7 +147,9 @@ def test_engine_start_binding_to_missing_database(
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(
+        instance_type_region_1_callback, url=instance_type_region_1_url
+    )
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
@@ -133,8 +170,8 @@ def test_get_connection(
     auth_url: str,
     provider_callback: Callable,
     provider_url: str,
-    instance_type_callback: Callable,
-    instance_type_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
     region_callback: Callable,
     region_url: str,
     settings: Settings,
@@ -154,7 +191,9 @@ def test_get_connection(
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(
+        instance_type_region_1_callback, url=instance_type_region_1_url
+    )
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
@@ -178,8 +217,8 @@ def test_attach_to_database(
     provider_url: str,
     region_callback: Callable,
     region_url: str,
-    instance_type_callback: Callable,
-    instance_type_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
     settings: Settings,
     account_id_callback: Callable,
     account_id_url: str,
@@ -200,7 +239,9 @@ def test_attach_to_database(
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(
+        instance_type_region_1_callback, url=instance_type_region_1_url
+    )
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
