@@ -54,5 +54,5 @@ jobs:
           ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.dev.firebolt.io"
         run: |
-          pytest -o log_cli=true -o log_cli_level=INFO tests/integration
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO tests/integration
         

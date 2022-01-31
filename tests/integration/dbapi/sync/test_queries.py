@@ -62,7 +62,7 @@ def test_select(
         )
 
 
-@mark.timeout(timeout=400, method="signal")
+@mark.timeout(timeout=400)
 def test_long_query(
     connection: Connection,
 ) -> None:
