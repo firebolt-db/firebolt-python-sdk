@@ -16,14 +16,17 @@ def test_instance_type(
     provider_url: str,
     instance_type_callback: Callable,
     instance_type_region_1_callback: Callable,
+    instance_type_empty_callback: Callable,
     instance_type_url: str,
     instance_type_region_1_url: str,
+    instance_type_region_2_url: str,
     account_id_callback: Callable,
     account_id_url: str,
     settings: Settings,
     mock_instance_types: List[InstanceType],
     cheapest_instance: InstanceType,
     region_1: Region,
+    region_2: Region,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
@@ -31,6 +34,9 @@ def test_instance_type(
     httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
+    )
+    httpx_mock.add_callback(
+        instance_type_empty_callback, url=instance_type_region_2_url
     )
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
@@ -40,3 +46,4 @@ def test_instance_type(
         manager.instance_types.cheapest_instance_in_region(region_1)
         == cheapest_instance
     )
+    assert not manager.instance_types.cheapest_instance_in_region(region_2)

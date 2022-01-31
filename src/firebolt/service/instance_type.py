@@ -1,4 +1,3 @@
-from sys import maxsize
 from typing import Dict, List, NamedTuple, Optional
 
 from firebolt.common.urls import INSTANCE_TYPES_URL
@@ -43,7 +42,7 @@ class InstanceTypeService(BaseService):
             for i in self.instance_types
         }
 
-    def cheapest_instance_in_region(self, region: Region) -> InstanceType:
+    def cheapest_instance_in_region(self, region: Region) -> Optional[InstanceType]:
         # Get only awailable instances in region
         response = self.client.get(
             url=INSTANCE_TYPES_URL,
@@ -58,9 +57,13 @@ class InstanceTypeService(BaseService):
             for i in instance_types
             if i.storage_size_bytes and i.storage_size_bytes != "0"
         ]
+        if not instance_list:
+            return None
         cheapest = min(
             instance_list,
-            key=lambda x: x.price_per_hour_cents if x.price_per_hour_cents else maxsize,
+            key=lambda x: x.price_per_hour_cents
+            if x.price_per_hour_cents
+            else float("Inf"),
         )
         return cheapest
 

@@ -1,6 +1,7 @@
 from logging import getLogger
 from typing import List, Optional, Union
 
+from firebolt.common.exception import FireboltError
 from firebolt.common.urls import (
     ACCOUNT_ENGINE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
@@ -168,11 +169,14 @@ class EngineService(BaseService):
                 instance_type_name=spec
             ).key
         else:
-            instance_type_key = (
-                self.resource_manager.instance_types.cheapest_instance_in_region(
-                    region
-                ).key
+            instance_type = (
+                self.resource_manager.instance_types.cheapest_instance_in_region(region)
             )
+            if not instance_type:
+                raise FireboltError(
+                    f"No suitable default instances found in region {region}"
+                )
+            instance_type_key = instance_type.key
 
         engine_revision = EngineRevision(
             specification=EngineRevisionSpecification(
