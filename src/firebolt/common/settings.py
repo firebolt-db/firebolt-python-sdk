@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     user: str = Field(None, env="FIREBOLT_USER")
     password: SecretStr = Field(None, env="FIREBOLT_PASSWORD")
     # Or
-    auth_token: str = Field(None, env="FIREBOLT_AUTH_TOKEN")
+    access_token: str = Field(None, env="FIREBOLT_AUTH_TOKEN")
 
     account_name: str = Field(None, env="FIREBOLT_ACCOUNT")
     server: str = Field(..., env="FIREBOLT_SERVER")
@@ -18,8 +18,8 @@ class Settings(BaseSettings):
     @root_validator
     def mutual_exclusive_with_creds(cls, values: dict) -> dict:
         if values["user"] or values["password"]:
-            if values["auth_token"]:
-                raise ValueError("Provide only one of user/password or auth_token")
-        elif not values["auth_token"]:
-            raise ValueError("Provide either user/password or auth_token")
+            if values["access_token"]:
+                raise ValueError("Provide only one of user/password or access_token")
+        elif not values["access_token"]:
+            raise ValueError("Provide either user/password or access_token")
         return values

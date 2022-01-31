@@ -1,3 +1,4 @@
+from json import loads
 from typing import Callable, List
 
 import httpx
@@ -248,3 +249,42 @@ def db_api_exceptions():
         "Warning": Warning,
     }
     return exceptions
+
+
+@pytest.fixture
+def check_token_callback(access_token: str) -> Callable:
+    def check_token(request: httpx.Request = None, **kwargs) -> Response:
+        prefix = "Bearer "
+        assert request, "empty request"
+        assert "authorization" in request.headers, "missing authorization header"
+        auth = request.headers["authorization"]
+        assert auth.startswith(prefix), "invalid authorization header format"
+        token = auth[len(prefix) :]
+        assert token == access_token, "invalid authorization token"
+
+        return Response(status_code=httpx.codes.OK)
+
+    return check_token
+
+
+@pytest.fixture
+def check_credentials_callback(settings: Settings, access_token: str) -> Callable:
+    def check_credentials(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        body = loads(request.read())
+        assert "username" in body, "Missing username"
+        assert body["username"] == settings.user, "Invalid username"
+        assert "password" in body, "Missing password"
+        assert (
+            body["password"] == settings.password.get_secret_value()
+        ), "Invalid password"
+
+        return Response(
+            status_code=httpx.codes.OK,
+            json={"expires_in": 2 ** 32, "access_token": access_token},
+        )
+
+    return check_credentials

@@ -10,7 +10,7 @@ from firebolt.common.settings import Settings
     "fields",
     (
         ("user", "password", "account_name", "server", "default_region"),
-        ("auth_token", "account_name", "server", "default_region"),
+        ("access_token", "account_name", "server", "default_region"),
     ),
 )
 def test_settings_happy_path(fields: Tuple[str]) -> None:
@@ -25,7 +25,7 @@ def test_settings_happy_path(fields: Tuple[str]) -> None:
 
 
 def test_settings_auth_credentials() -> None:
-    creds = ("auth_token", "user", "password")
+    creds = ("access_token", "user", "password")
     other = ("server", "default_region")
 
     kwargs = {f: f for f in other}
@@ -35,7 +35,7 @@ def test_settings_auth_credentials() -> None:
     err = exc_info.value
     assert (
         len(err.errors()) > 0
-        and err.errors()[0]["msg"] == "Provide either user/password or auth_token"
+        and err.errors()[0]["msg"] == "Provide either user/password or access_token"
     ), "Invalid error message"
 
     kwargs = {f: f for f in creds + other}
@@ -45,5 +45,6 @@ def test_settings_auth_credentials() -> None:
     err = exc_info.value
     assert (
         len(err.errors()) > 0
-        and err.errors()[0]["msg"] == "Provide only one of user/password or auth_token"
+        and err.errors()[0]["msg"]
+        == "Provide only one of user/password or access_token"
     ), "Invalid error message"
