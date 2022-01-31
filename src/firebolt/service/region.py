@@ -63,26 +63,3 @@ class RegionService(BaseService):
         return self.get_by_key(
             RegionKey(provider_id=self.resource_manager.provider_id, region_id=id_)
         )
-
-    def regions_for_account_id(self, account_id: str) -> List[Region]:
-        """List of available AWS Regions on Firebolt."""
-
-        response = self.client.get(
-            url=REGIONS_URL,
-            params={"page.first": 5000, "filter.enabled_for_account_id": account_id},
-        )
-        return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
-
-    def get_by_account_id_and_name(self, account_id: str, name: str) -> Region:
-        """Get an AWS region by its name (eg. us-east-1)."""
-        regions = {r.name: r for r in self.regions_for_account_id(account_id)}
-        return regions[name]
-
-    def default_region_for_account_id(self, account_id: str) -> Region:
-        if not self.settings.default_region:
-            raise ValueError(
-                "The environment variable FIREBOLT_DEFAULT_REGION must be set."
-            )
-        return self.get_by_account_id_and_name(
-            account_id=account_id, name=self.settings.default_region
-        )
