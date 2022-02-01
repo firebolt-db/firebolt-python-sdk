@@ -109,6 +109,30 @@ def test_connect_access_token(
         cursor = connection.cursor()
         assert cursor.execute("select*") == -1
 
+    with raises(InterfaceError) as exc_info:
+        with connect(engine_url="engine_url", database="database"):
+            pass
+    assert (
+        str(exc_info.value)
+        == "Neither username/password nor access_token are provided. Provide one to"
+        " authenticate"
+    )
+
+    with raises(InterfaceError) as exc_info:
+        with connect(
+            engine_url="engine_url",
+            database="database",
+            username="username",
+            password="password",
+            access_token="access_token",
+        ):
+            pass
+    assert (
+        str(exc_info.value)
+        == "Either username/password and access_token are provided. Provide only one to"
+        " authenticate"
+    )
+
 
 def test_connect_engine_name(
     settings: Settings,
