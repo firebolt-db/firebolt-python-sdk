@@ -57,6 +57,7 @@ async def test_client_different_auths(
     check_token_callback: Callable,
     test_username: str,
     test_password: str,
+    test_token: str,
 ):
     """
     Client properly handles such auth types:
@@ -76,6 +77,8 @@ async def test_client_different_auths(
     async with AsyncClient(auth=(test_username, test_password)) as client:
         await client.get("https://url")
     async with AsyncClient(auth=Auth(test_username, test_password)) as client:
+        await client.get("https://url")
+    async with AsyncClient(auth=Auth.from_token(test_token)) as client:
         await client.get("https://url")
 
     # client accepts None auth, but authorization fails
