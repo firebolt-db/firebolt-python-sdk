@@ -97,6 +97,32 @@ async def test_connect_empty_parameters():
 
 
 @mark.asyncio
+async def test_connect_access_token(
+    settings: Settings,
+    db_name: str,
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    check_token_callback: Callable,
+    query_url: str,
+    python_query_data: List[List[ColType]],
+    access_token: str,
+):
+    httpx_mock.add_callback(check_token_callback, url=query_url)
+    async with (
+        await connect(
+            engine_url=settings.server,
+            database=db_name,
+            access_token=access_token,
+            account_name="a",
+            api_endpoint=settings.server,
+        )
+    ) as connection:
+        cursor = connection.cursor()
+        assert await cursor.execute("select*") == -1
+
+
+@mark.asyncio
 async def test_connect_engine_name(
     settings: Settings,
     db_name: str,

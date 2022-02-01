@@ -262,7 +262,7 @@ def check_token_callback(access_token: str) -> Callable:
         token = auth[len(prefix) :]
         assert token == access_token, "invalid authorization token"
 
-        return Response(status_code=httpx.codes.OK)
+        return Response(status_code=httpx.codes.OK, headers={"content-length": "0"})
 
     return check_token
 
