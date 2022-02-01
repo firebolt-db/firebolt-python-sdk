@@ -79,17 +79,10 @@ def test_cursor_initialized(
 
 
 def test_connect_empty_parameters():
-    params = ("database", "username", "password")
-    kwargs = {"engine_url": "engine_url", **{p: p for p in params}}
-
-    for param in params:
-        with raises(InterfaceError) as exc_info:
-            kwargs = {
-                "engine_url": "engine_url",
-                **{p: p for p in params if p != param},
-            }
-            connect(**kwargs)
-        assert str(exc_info.value) == f"{param} is required to connect."
+    with raises(InterfaceError) as exc_info:
+        with connect(engine_url="engine_url"):
+            pass
+    assert str(exc_info.value) == "database name is required to connect."
 
 
 def test_connect_engine_name(
@@ -162,7 +155,7 @@ def test_connect_engine_name(
 
 
 def test_connection_unclosed_warnings():
-    c = Connection("", "", "", "", "")
+    c = Connection("", "", ("", ""), "")
     with warns(UserWarning) as winfo:
         del c
 
