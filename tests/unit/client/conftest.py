@@ -5,25 +5,27 @@ import httpx
 import pytest
 from httpx import Response
 
+from firebolt.common.settings import Settings
+
 
 @pytest.fixture
-def test_token() -> str:
-    yield "test_token"
+def test_token(access_token: str) -> str:
+    return access_token
 
 
 @pytest.fixture
 def test_token2() -> str:
-    yield "test_token2"
+    return "test_token2"
 
 
 @pytest.fixture
-def test_username() -> str:
-    yield "username"
+def test_username(settings: Settings) -> str:
+    return settings.user
 
 
 @pytest.fixture
-def test_password() -> str:
-    yield "password"
+def test_password(settings: Settings) -> str:
+    return settings.password.get_secret_value()
 
 
 @pytest.fixture
@@ -47,19 +49,3 @@ def check_credentials_callback(
         )
 
     return check_credentials
-
-
-@pytest.fixture
-def check_token_callback(test_token: str) -> typing.Callable:
-    def check_token(request: httpx.Request = None, **kwargs) -> Response:
-        prefix = "Bearer "
-        assert request, "empty request"
-        assert "authorization" in request.headers, "missing authorization header"
-        auth = request.headers["authorization"]
-        assert auth.startswith(prefix), "invalid authorization header format"
-        token = auth[len(prefix) :]
-        assert token == test_token, "invalid authorization token"
-
-        return Response(status_code=httpx.codes.OK)
-
-    return check_token

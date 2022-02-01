@@ -17,7 +17,7 @@ class NoAttachedDatabaseError(FireboltEngineError):
     def __str__(self) -> str:
         return (
             f"Unable to call {self.method_name}: "
-            f"Engine must to be attached to a database first."
+            "Engine must to be attached to a database first."
         )
 
 
@@ -44,7 +44,7 @@ class AttachedEngineInUseError(FireboltDatabaseError):
     def __str__(self) -> str:
         return (
             f"Unable to call {self.method_name}: "
-            f"Engine must not be in starting or stopping state."
+            "Engine must not be in starting or stopping state."
         )
 
 
@@ -158,4 +158,10 @@ class NotSupportedError(DatabaseError):
     """
     Exception raised when the database encounters an internal error,
     e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
+    """
+
+
+class ConfigurationError(InterfaceError):
+    """
+    Exception raised when provided configuration is not correct
     """

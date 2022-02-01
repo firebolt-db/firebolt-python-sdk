@@ -8,10 +8,12 @@ from typing import Any, Callable, List, Optional, Type
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
 from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
+from httpx._types import AuthTypes
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
-from firebolt.client import DEFAULT_API_URL, AsyncClient
+from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
 from firebolt.common.exception import (
+    ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
     InterfaceError,
@@ -26,13 +28,12 @@ KEEPIDLE_RATE: int = 60  # seconds
 
 async def _resolve_engine_url(
     engine_name: str,
-    username: str,
-    password: str,
+    auth: AuthTypes,
     api_endpoint: str,
     account_name: Optional[str] = None,
 ) -> str:
     async with AsyncClient(
-        auth=(username, password),
+        auth=auth,
         base_url=api_endpoint,
         account_name=account_name,
         api_endpoint=api_endpoint,
@@ -64,11 +65,43 @@ async def _resolve_engine_url(
             raise InterfaceError(f"Unable to retrieve engine endpoint: {e}.")
 
 
+def _validate_engine_name_and_url(
+    engine_name: Optional[str], engine_url: Optional[str]
+) -> None:
+    if engine_name and engine_url:
+        raise ConfigurationError(
+            "Both engine_name and engine_url are provided. Provide only one to connect."
+        )
+    if not engine_name and not engine_url:
+        raise ConfigurationError(
+            "Neither engine_name nor engine_url is provided. Provide one to connect."
+        )
+
+
+def _get_auth(
+    username: Optional[str], password: Optional[str], access_token: Optional[str]
+) -> AuthTypes:
+    if not access_token:
+        if not username or not password:
+            raise ConfigurationError(
+                "Neither username/password nor access_token are provided. Provide one"
+                " to authenticate"
+            )
+        return (username, password)
+    elif username or password:
+        raise ConfigurationError(
+            "Either username/password and access_token are provided. Provide only one"
+            " to authenticate"
+        )
+    return Auth.from_token(access_token)
+
+
 def async_connect_factory(connection_class: Type) -> Callable:
     async def connect_inner(
         database: str = None,
-        username: str = None,
-        password: str = None,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        access_token: Optional[str] = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
         account_name: Optional[str] = None,
@@ -90,40 +123,23 @@ def async_connect_factory(connection_class: Type) -> Callable:
             Either `engine_name` or `engine_url` should be provided, but not both.
 
         """
-
-        if engine_name and engine_url:
-            raise InterfaceError(
-                "Both engine_name and engine_url are provided. "
-                "Provide only one to connect."
-            )
-        if not engine_name and not engine_url:
-            raise InterfaceError(
-                "Neither engine_name nor engine_url is provided. "
-                "Provide one to connect."
-            )
-
-        api_endpoint = fix_url_schema(api_endpoint)
         # These parameters are optional in function signature
         # but are required to connect.
         # PEP 249 recommends making them kwargs.
-        for param, name in (
-            (database, "database"),
-            (username, "username"),
-            (password, "password"),
-        ):
-            if not param:
-                raise InterfaceError(f"{name} is required to connect.")
+        if not database:
+            raise ConfigurationError("database name is required to connect.")
+
+        _validate_engine_name_and_url(engine_name, engine_url)
+        auth = _get_auth(username, password, access_token)
+        api_endpoint = fix_url_schema(api_endpoint)
 
         # Mypy checks, this should never happen
         assert database is not None
-        assert username is not None
-        assert password is not None
 
         if engine_name:
             engine_url = await _resolve_engine_url(
                 engine_name=engine_name,
-                username=username,
-                password=password,
+                auth=auth,
                 account_name=account_name,
                 api_endpoint=api_endpoint,
             )
@@ -131,7 +147,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         assert engine_url is not None
 
         engine_url = fix_url_schema(engine_url)
-        return connection_class(engine_url, database, username, password, api_endpoint)
+        return connection_class(engine_url, database, auth, api_endpoint)
 
     return connect_inner
 
@@ -187,15 +203,16 @@ class BaseConnection:
     def __init__(
         self,
         engine_url: str,
-        database: str,  # TODO: Get by engine name
-        username: str,
-        password: str,
+        database: str,
+        auth: AuthTypes,
         api_endpoint: str = DEFAULT_API_URL,
     ):
+        # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
+
         self._client = AsyncClient(
-            auth=(username, password),
+            auth=auth,
             base_url=engine_url,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),

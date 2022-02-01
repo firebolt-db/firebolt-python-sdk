@@ -1,8 +1,15 @@
 from typing import Optional
 
 from httpx import Timeout
+from httpx._types import AuthTypes
 
-from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
+from firebolt.client import (
+    Auth,
+    Client,
+    log_request,
+    log_response,
+    raise_on_4xx_5xx,
+)
 from firebolt.common import Settings
 from firebolt.service.provider import get_provider_id
 
@@ -25,13 +32,17 @@ class ResourceManager:
     - instance types (AWS instance types which engines can use)
     """
 
-    def __init__(
-        self, settings: Optional[Settings] = None, account_name: Optional[str] = None
-    ):
+    def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or Settings()
 
+        auth: AuthTypes = None
+        if self.settings.access_token:
+            auth = Auth.from_token(self.settings.access_token)
+        else:
+            auth = (self.settings.user, self.settings.password.get_secret_value())
+
         self.client = Client(
-            auth=(self.settings.user, self.settings.password.get_secret_value()),
+            auth=auth,
             base_url=f"https://{ self.settings.server}",
             account_name=self.settings.account_name,
             api_endpoint=self.settings.server,

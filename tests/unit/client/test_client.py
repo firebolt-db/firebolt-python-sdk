@@ -55,6 +55,7 @@ def test_client_different_auths(
     check_token_callback: Callable,
     test_username: str,
     test_password: str,
+    test_token: str,
 ):
     """
     Client properly handles such auth types:
@@ -73,6 +74,7 @@ def test_client_different_auths(
 
     Client(auth=(test_username, test_password)).get("https://url")
     Client(auth=Auth(test_username, test_password)).get("https://url")
+    Client(auth=Auth.from_token(test_token)).get("https://url")
 
     # client accepts None auth, but authorization fails
     with raises(AssertionError) as excinfo:
