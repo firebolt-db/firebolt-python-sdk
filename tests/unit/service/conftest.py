@@ -366,6 +366,23 @@ def database_get_by_name_url(settings: Settings, account_id: str, mock_database)
 
 
 @pytest.fixture
+def database_update_callback(database_get_url, mock_database) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        database_properties = json.loads(request.read().decode("utf-8"))["database"]
+
+        assert request.url == database_get_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json={"database": database_properties},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
 def database_get_callback(database_get_url, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
