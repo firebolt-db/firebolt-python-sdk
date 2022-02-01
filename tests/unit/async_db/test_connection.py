@@ -7,9 +7,9 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db import Connection, connect
 from firebolt.async_db._types import ColType
 from firebolt.common.exception import (
+    ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
-    InterfaceError,
 )
 from firebolt.common.settings import Settings
 from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL
@@ -90,10 +90,9 @@ async def test_cursor_initialized(
 
 @mark.asyncio
 async def test_connect_empty_parameters():
-    with raises(InterfaceError) as exc_info:
+    with raises(ConfigurationError):
         async with await connect(engine_url="engine_url"):
             pass
-    assert str(exc_info.value) == "database name is required to connect."
 
 
 @mark.asyncio
@@ -121,16 +120,11 @@ async def test_connect_access_token(
         cursor = connection.cursor()
         assert await cursor.execute("select*") == -1
 
-    with raises(InterfaceError) as exc_info:
+    with raises(ConfigurationError):
         async with await connect(engine_url="engine_url", database="database"):
             pass
-    assert (
-        str(exc_info.value)
-        == "Neither username/password nor access_token are provided. Provide one to"
-        " authenticate"
-    )
 
-    with raises(InterfaceError) as exc_info:
+    with raises(ConfigurationError):
         async with await connect(
             engine_url="engine_url",
             database="database",
@@ -139,11 +133,6 @@ async def test_connect_access_token(
             access_token="access_token",
         ):
             pass
-    assert (
-        str(exc_info.value)
-        == "Either username/password and access_token are provided. Provide only one to"
-        " authenticate"
-    )
 
 
 @mark.asyncio
@@ -167,7 +156,7 @@ async def test_connect_engine_name(
 ):
     """connect properly handles engine_name"""
 
-    with raises(InterfaceError) as exc_info:
+    with raises(ConfigurationError):
         async with await connect(
             engine_url="engine_url",
             engine_name="engine_name",
@@ -177,11 +166,8 @@ async def test_connect_engine_name(
             account_name="account_name",
         ):
             pass
-    assert str(exc_info.value).startswith(
-        "Both engine_name and engine_url are provided."
-    )
 
-    with raises(InterfaceError) as exc_info:
+    with raises(ConfigurationError):
         async with await connect(
             database="db",
             username="username",
@@ -189,9 +175,6 @@ async def test_connect_engine_name(
             account_name="account",
         ):
             pass
-    assert str(exc_info.value).startswith(
-        "Neither engine_name nor engine_url is provided."
-    )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
@@ -208,7 +191,7 @@ async def test_connect_engine_name(
         status_code=codes.NOT_FOUND,
     )
 
-    with raises(FireboltEngineError) as exc_info:
+    with raises(FireboltEngineError):
         async with await connect(
             database="db",
             username="username",

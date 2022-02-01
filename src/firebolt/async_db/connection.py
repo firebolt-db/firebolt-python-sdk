@@ -13,6 +13,7 @@ from httpx._types import AuthTypes
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
 from firebolt.common.exception import (
+    ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
     InterfaceError,
@@ -68,11 +69,11 @@ def _validate_engine_name_and_url(
     engine_name: Optional[str], engine_url: Optional[str]
 ) -> None:
     if engine_name and engine_url:
-        raise InterfaceError(
+        raise ConfigurationError(
             "Both engine_name and engine_url are provided. Provide only one to connect."
         )
     if not engine_name and not engine_url:
-        raise InterfaceError(
+        raise ConfigurationError(
             "Neither engine_name nor engine_url is provided. Provide one to connect."
         )
 
@@ -82,13 +83,13 @@ def _get_auth(
 ) -> AuthTypes:
     if not access_token:
         if not username or not password:
-            raise InterfaceError(
+            raise ConfigurationError(
                 "Neither username/password nor access_token are provided. Provide one"
                 " to authenticate"
             )
         return (username, password)
     elif username or password:
-        raise InterfaceError(
+        raise ConfigurationError(
             "Either username/password and access_token are provided. Provide only one"
             " to authenticate"
         )
@@ -126,7 +127,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         # but are required to connect.
         # PEP 249 recommends making them kwargs.
         if not database:
-            raise InterfaceError("database name is required to connect.")
+            raise ConfigurationError("database name is required to connect.")
 
         _validate_engine_name_and_url(engine_name, engine_url)
         auth = _get_auth(username, password, access_token)
