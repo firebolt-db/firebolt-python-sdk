@@ -1,4 +1,5 @@
 from typing import Optional
+from warnings import warn
 
 from httpx import Timeout
 from httpx._types import AuthTypes
@@ -32,8 +33,17 @@ class ResourceManager:
     - instance types (AWS instance types which engines can use)
     """
 
-    def __init__(self, settings: Optional[Settings] = None):
+    def __init__(
+        self, settings: Optional[Settings] = None, account_name: Optional[str] = None
+    ):
         self.settings = settings or Settings()
+
+        if account_name:
+            warn(
+                "account_name should not be passed directly to a ResourceManager "
+                "constructor. Please provide it via the Settings or environment "
+                "variables."
+            )
 
         auth: AuthTypes = None
         if self.settings.access_token:
