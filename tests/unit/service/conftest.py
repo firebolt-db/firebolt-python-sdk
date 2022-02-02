@@ -214,7 +214,7 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == engine_url
+        # assert request.url == engine_url
         return Response(
             status_code=httpx.codes.OK,
             json={"engine": mock_engine.dict()},

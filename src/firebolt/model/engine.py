@@ -10,6 +10,7 @@ from pydantic import Field, PrivateAttr
 
 from firebolt.common.exception import NoAttachedDatabaseError
 from firebolt.common.urls import (
+    ACCOUNT_ENGINE_RESTART_URL,
     ACCOUNT_ENGINE_START_URL,
     ACCOUNT_ENGINE_STOP_URL,
     ACCOUNT_ENGINE_URL,
@@ -251,7 +252,7 @@ class Engine(FireboltBaseModel):
                 f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
             )
 
-        engine = self._send_start()
+        engine = self._send_engine_request(ACCOUNT_ENGINE_START_URL)
         logger.info(
             f"Starting Engine (engine_id={engine.engine_id}, name={engine.name})"
         )
@@ -277,16 +278,6 @@ class Engine(FireboltBaseModel):
 
         return engine
 
-    def _send_start(self) -> Engine:
-        response = self._service.client.post(
-            url=ACCOUNT_ENGINE_START_URL.format(
-                account_id=self._service.account_id, engine_id=self.engine_id
-            )
-        )
-        return Engine.parse_obj_with_service(
-            obj=response.json()["engine"], engine_service=self._service
-        )
-
     @check_attached_to_database
     def stop(
         self, wait_for_stop: bool = False, wait_timeout_seconds: int = 3600
@@ -294,16 +285,8 @@ class Engine(FireboltBaseModel):
         """Stop an Engine running on Firebolt."""
         timeout_time = time.time() + wait_timeout_seconds
 
-        response = self._service.client.post(
-            url=ACCOUNT_ENGINE_STOP_URL.format(
-                account_id=self._service.account_id, engine_id=self.engine_id
-            )
-        )
+        engine = self._send_engine_request(ACCOUNT_ENGINE_STOP_URL)
         logger.info(f"Stopping Engine (engine_id={self.engine_id}, name={self.name})")
-
-        engine = Engine.parse_obj_with_service(
-            obj=response.json()["engine"], engine_service=self._service
-        )
 
         while wait_for_stop and engine.current_status_summary not in {
             EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED,
@@ -320,6 +303,46 @@ class Engine(FireboltBaseModel):
 
         return engine
 
+    @check_attached_to_database
+    def restart(
+        self,
+        wait_for_startup: bool = True,
+        wait_timeout_seconds: int = 3600,
+    ) -> Engine:
+        """
+        Restart an engine.
+
+        Args:
+            wait_for_startup:
+                If True, wait for startup to complete.
+                If false, return immediately after requesting startup.
+            wait_timeout_seconds:
+                Number of seconds to wait for startup to complete
+                before raising a TimeoutError.
+
+        Returns:
+            The updated Engine from Firebolt.
+        """
+        timeout_time = time.time() + wait_timeout_seconds
+
+        engine = self._send_engine_request(ACCOUNT_ENGINE_RESTART_URL)
+        logger.info(f"Stopping Engine (engine_id={self.engine_id}, name={self.name})")
+
+        while wait_for_startup and engine.current_status_summary not in {
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING,
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED,
+        }:
+            wait(
+                seconds=5,
+                timeout_time=timeout_time,
+                error_message=f"Could not restart engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                verbose=False,
+            )
+
+            engine = engine.get_latest()
+
+        return engine
+
     def delete(self) -> Engine:
         """Delete an Engine from Firebolt."""
         response = self._service.client.delete(
@@ -328,6 +351,16 @@ class Engine(FireboltBaseModel):
             ),
         )
         logger.info(f"Deleting Engine (engine_id={self.engine_id}, name={self.name})")
+        return Engine.parse_obj_with_service(
+            obj=response.json()["engine"], engine_service=self._service
+        )
+
+    def _send_engine_request(self, url: str) -> Engine:
+        response = self._service.client.post(
+            url=url.format(
+                account_id=self._service.account_id, engine_id=self.engine_id
+            )
+        )
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
