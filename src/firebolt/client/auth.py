@@ -27,6 +27,12 @@ class Auth(HttpxAuth):
 
     requires_response_body = True
 
+    @staticmethod
+    def from_token(token: str) -> "Auth":
+        a = Auth("", "")
+        a._token = token
+        return a
+
     def __init__(
         self, username: str, password: str, api_endpoint: str = DEFAULT_API_URL
     ):
