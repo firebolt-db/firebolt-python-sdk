@@ -83,7 +83,7 @@ class EngineService(BaseService):
         if isinstance(order_by, str):
             order_by = EngineOrder[order_by].name
 
-        if isinstance(region_eq, str):
+        if region_eq is not None:
             region_eq = self.resource_manager.regions.get_by_name(
                 name=region_eq
             ).key.region_id
