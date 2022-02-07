@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 
 from pydantic import Field, PrivateAttr
 
@@ -23,6 +23,10 @@ logger = logging.getLogger(__name__)
 class DatabaseKey(FireboltBaseModel):
     account_id: str
     database_id: str
+
+
+class FieldMask(FireboltBaseModel):
+    paths: Sequence[str] = Field(alias="paths")
 
 
 class Database(FireboltBaseModel):
@@ -118,6 +122,45 @@ class Database(FireboltBaseModel):
             ),
             headers={"Content-type": "application/json"},
         )
+        return Database.parse_obj_with_service(
+            response.json()["database"], self._service
+        )
+
+    def update(self, description: str) -> Database:
+        """
+        Updates a database description.
+        """
+
+        class _DatabaseUpdateRequest(FireboltBaseModel):
+            """Helper model for sending Database creation requests."""
+
+            account_id: str
+            database: Database
+            database_id: str
+            update_mask: FieldMask
+
+        self.description = description
+
+        logger.info(
+            f"Updating Database (database_id={self.database_id}, "
+            f"name={self.name}, description={self.description})"
+        )
+
+        payload = _DatabaseUpdateRequest(
+            account_id=self._service.account_id,
+            database=self,
+            database_id=self.database_id,
+            update_mask=FieldMask(paths=["description"]),
+        ).jsonable_dict(by_alias=True)
+
+        response = self._service.client.patch(
+            url=ACCOUNT_DATABASE_URL.format(
+                account_id=self._service.account_id, database_id=self.database_id
+            ),
+            headers={"Content-type": "application/json"},
+            json=payload,
+        )
+
         return Database.parse_obj_with_service(
             response.json()["database"], self._service
         )
