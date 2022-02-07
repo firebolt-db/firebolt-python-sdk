@@ -60,11 +60,11 @@ class EngineService(BaseService):
 
     def get_many(
         self,
-        name_contains: str,
-        current_status_eq: str,
-        current_status_not_eq: str,
-        region_eq: str,
-        order_by: Union[str, EngineOrder],
+        name_contains: Optional[str] = None,
+        current_status_eq: Optional[str] = None,
+        current_status_not_eq: Optional[str] = None,
+        region_eq: Optional[str] = None,
+        order_by: Optional[Union[str, EngineOrder]] = None,
     ) -> List[Engine]:
         """
         Get a list of engines on Firebolt.
@@ -81,7 +81,13 @@ class EngineService(BaseService):
         """
 
         if isinstance(order_by, str):
-            order_by = EngineOrder[order_by]
+            order_by = EngineOrder[order_by].name
+
+        if region_eq is not None:
+            region_eq = self.resource_manager.regions.get_by_name(
+                name=region_eq
+            ).key.region_id
+
         response = self.client.get(
             url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),
             params=prune_dict(
@@ -90,16 +96,14 @@ class EngineService(BaseService):
                     "filter.name_contains": name_contains,
                     "filter.current_status_eq": current_status_eq,
                     "filter.current_status_not_eq": current_status_not_eq,
-                    "filter.compute_region_id_region_id_eq": self.resource_manager.regions.get_by_name(  # noqa: E501
-                        name=region_eq
-                    ),
-                    "order_by": order_by.name,
+                    "filter.compute_region_id_region_id_eq": region_eq,
+                    "order_by": order_by,
                 }
             ),
         )
         return [
-            Engine.parse_obj_with_service(obj=e, engine_service=self)
-            for e in response.json()["engines"]
+            Engine.parse_obj_with_service(obj=e["node"], engine_service=self)
+            for e in response.json()["edges"]
         ]
 
     def create(

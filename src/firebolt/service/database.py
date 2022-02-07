@@ -6,6 +6,7 @@ from firebolt.common.urls import (
     ACCOUNT_DATABASE_URL,
     ACCOUNT_DATABASES_URL,
 )
+from firebolt.common.util import prune_dict
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
 from firebolt.service.base import BaseService
@@ -63,25 +64,20 @@ class DatabaseService(BaseService):
             A list of databases matching the filters.
         """
 
-        params = {"page.first": "1000"}
-        if order_by:
-            if isinstance(order_by, str):
-                order_by = DatabaseOrder[order_by]
-            params["order_by"] = order_by.name
+        if isinstance(order_by, str):
+            order_by = DatabaseOrder[order_by].name
 
-        if name_contains:
-            params["filter.name_contains"] = name_contains
-
-        if attached_engine_name_eq:
-            params["filter.attached_engine_name_eq"] = attached_engine_name_eq
-
-        if attached_engine_name_contains:
-            params[
-                "filter.attached_engine_name_contains"
-            ] = attached_engine_name_contains
+        params = {
+            "page.first": "1000",
+            "order_by": order_by,
+            "filter.name_contains": name_contains,
+            "filter.attached_engine_name_eq": attached_engine_name_eq,
+            "filter.attached_engine_name_contains": attached_engine_name_contains,
+        }
 
         response = self.client.get(
-            url=ACCOUNT_DATABASES_URL.format(account_id=self.account_id), params=params
+            url=ACCOUNT_DATABASES_URL.format(account_id=self.account_id),
+            params=prune_dict(params),
         )
 
         return [
