@@ -126,9 +126,9 @@ class Database(FireboltBaseModel):
             response.json()["database"], self._service
         )
 
-    def update(self) -> Database:
+    def update(self, description: str) -> Database:
         """
-        Updates a database from Firebolt. Parameters, that will be updated: description
+        Updates a database description.
         """
 
         class _DatabaseUpdateRequest(FireboltBaseModel):
@@ -138,6 +138,8 @@ class Database(FireboltBaseModel):
             database: Database
             database_id: str
             update_mask: FieldMask
+
+        self.description = description
 
         logger.info(
             f"Updating Database (database_id={self.database_id}, "

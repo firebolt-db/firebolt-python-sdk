@@ -125,8 +125,7 @@ def test_database_update(
 
     manager = ResourceManager(settings=settings)
 
-    mock_database.description = "new description"
     mock_database._service = manager
-    database = mock_database.update()
+    database = mock_database.update(description="new description")
 
     assert database.description == "new description"
