@@ -232,7 +232,7 @@ def engine_url(settings: Settings, account_id) -> str:
 
 
 @pytest.fixture
-def account_engine_callback(engine_url: str, mock_engine) -> Callable:
+def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,

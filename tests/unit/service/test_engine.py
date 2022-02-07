@@ -267,6 +267,49 @@ def test_attach_to_database(
     assert engine.database == database
 
 
+def test_engine_update(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
+    region_callback: Callable,
+    region_url: str,
+    settings: Settings,
+    mock_instance_types: List[InstanceType],
+    mock_regions,
+    mock_engine: Engine,
+    engine_name: str,
+    account_id_callback: Callable,
+    account_id_url: str,
+    engine_callback: Callable,
+    engine_url: str,
+    account_engine_url: str,
+    account_engine_callback: Callable,
+):
+
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
+
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    #
+    httpx_mock.add_callback(
+        account_engine_callback, url=account_engine_url, method="PATCH"
+    )
+    manager = ResourceManager(settings=settings)
+
+    mock_engine._service = manager.engines
+    engine = mock_engine.update(
+        name="new_engine_name", description="new engine description"
+    )
+
+    assert engine.name == "new_engine_name"
+    assert engine.description == "new engine description"
+
+
 def test_engine_restart(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
