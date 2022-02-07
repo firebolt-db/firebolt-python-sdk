@@ -383,6 +383,19 @@ class Engine(FireboltBaseModel):
             if scale:
                 desired_revision.specification.db_compute_instances_count = scale
 
+        update_mask_paths = list(
+            prune_dict(
+                {
+                    "name": name,
+                    "description": description,
+                    "settings.auto_stop_delay_duration": auto_stop,
+                    "settings.warm_up": warmup,
+                    "settings.is_read_only": engine_type,
+                    "settings.preset": engine_type,
+                }
+            ).keys()
+        )
+
         # Send the update request
         response = self._service.client.patch(
             url=ACCOUNT_ENGINE_URL.format(
@@ -394,22 +407,10 @@ class Engine(FireboltBaseModel):
                 engine=self,
                 desired_revision=desired_revision,
                 engine_id=self.engine_id,
-                update_mask=FieldMask(
-                    paths=list(
-                        prune_dict(
-                            {
-                                "name": name,
-                                "description": description,
-                                "settings.auto_stop_delay_duration": auto_stop,
-                                "settings.warm_up": warmup,
-                                "settings.is_read_only": engine_type,
-                                "settings.preset": engine_type,
-                            }
-                        ).keys()
-                    )
-                ),
+                update_mask=FieldMask(paths=update_mask_paths),
             ).jsonable_dict(by_alias=True),
         )
+
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
