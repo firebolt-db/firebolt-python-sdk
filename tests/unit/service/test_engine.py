@@ -265,3 +265,40 @@ def test_attach_to_database(
     engine.attach_to_database(database=database)
 
     assert engine.database == database
+
+
+def test_engine_restart(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
+    settings: Settings,
+    mock_engine: Engine,
+    account_id_callback: Callable,
+    account_id_url: str,
+    engine_callback: Callable,
+    account_engine_url: str,
+    bindings_callback: Callable,
+    bindings_url: str,
+    database_callback: Callable,
+    database_url: str,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
+
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    httpx_mock.add_callback(
+        engine_callback, url=f"{account_engine_url}:restart", method="POST"
+    )
+    httpx_mock.add_callback(bindings_callback, url=bindings_url)
+    httpx_mock.add_callback(database_callback, url=database_url)
+
+    manager = ResourceManager(settings=settings)
+
+    mock_engine._service = manager.engines
+    engine = mock_engine.restart(wait_for_startup=False)
+
+    assert engine.name == mock_engine.name
