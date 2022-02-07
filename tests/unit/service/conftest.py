@@ -1,5 +1,6 @@
 import json
 from typing import Callable, List
+from urllib.parse import urlparse
 
 import httpx
 import pytest
@@ -214,7 +215,7 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        # assert request.url == engine_url
+        assert urlparse(engine_url).path in request.url.path
         return Response(
             status_code=httpx.codes.OK,
             json={"engine": mock_engine.dict()},
