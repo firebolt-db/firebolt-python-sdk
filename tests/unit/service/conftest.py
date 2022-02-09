@@ -22,6 +22,10 @@ from firebolt.common.urls import (
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database, DatabaseKey
 from firebolt.model.engine import Engine, EngineKey, EngineSettings
+from firebolt.model.engine_revision import (
+    EngineRevision,
+    EngineRevisionSpecification,
+)
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.model.region import Region
 from tests.unit.util import list_to_paginated_response
@@ -30,6 +34,11 @@ from tests.unit.util import list_to_paginated_response
 @pytest.fixture
 def engine_name() -> str:
     return "my_engine"
+
+
+@pytest.fixture
+def engine_scale() -> int:
+    return 2
 
 
 @pytest.fixture
@@ -46,6 +55,22 @@ def mock_engine(engine_name, region_1, engine_settings, account_id, settings) ->
         key=EngineKey(account_id=account_id, engine_id="mock_engine_id_1"),
         endpoint=f"https://{settings.server}",
     )
+
+
+@pytest.fixture
+def mock_engine_revision_spec(
+    instance_type_2, engine_scale
+) -> EngineRevisionSpecification:
+    return EngineRevisionSpecification(
+        db_compute_instances_type_key=instance_type_2.key,
+        db_compute_instances_count=engine_scale,
+        proxy_instances_type_key=instance_type_2.key,
+    )
+
+
+@pytest.fixture
+def mock_engine_revision(mock_engine_revision_spec) -> EngineRevision:
+    return EngineRevision(specification=mock_engine_revision_spec)
 
 
 @pytest.fixture
