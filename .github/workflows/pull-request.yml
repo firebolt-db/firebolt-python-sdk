@@ -16,8 +16,10 @@ jobs:
         if: failure()
         uses: rtCamp/action-slack-notify@v2.2.0
         env:
+          SLACK_USERNAME: CI bot
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: bad
+          SLACK_COLOR: red
+          SLACK_ICON: https://github.com/firebolt-db/.github/blob/main/workflow-templates/favicon.svg
           SLACK_TITLE: Nightly tests failed
           SLACK_MESSAGE: Please investigate
   code-checkers:
