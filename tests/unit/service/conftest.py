@@ -56,7 +56,7 @@ def instance_type_1(provider, region_1) -> InstanceType:
             region_id=region_1.key.region_id,
             instance_type_id="instance_type_id_1",
         ),
-        name="i3.4xlarge",
+        name="B1",
         price_per_hour_cents=10,
         storage_size_bytes=0,
     )
@@ -70,7 +70,7 @@ def instance_type_2(provider, region_2) -> InstanceType:
             region_id=region_2.key.region_id,
             instance_type_id="instance_type_id_2",
         ),
-        name="i3.8xlarge",
+        name="B2",
         price_per_hour_cents=20,
         storage_size_bytes=500,
     )
@@ -84,7 +84,7 @@ def instance_type_3(provider, region_2) -> InstanceType:
             region_id=region_2.key.region_id,
             instance_type_id="instance_type_id_2",
         ),
-        name="i3.8xlarge",
+        name="B2",
         price_per_hour_cents=30,
         storage_size_bytes=500,
     )
