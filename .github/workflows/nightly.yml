@@ -56,3 +56,13 @@ jobs:
         run: |
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO tests/integration
         
+      - name: Slack Notify of failure
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2.2.0
+        env:
+          SLACK_USERNAME: CI bot
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: "#FF0000"
+          SLACK_ICON: None
+          SLACK_TITLE: Nightly tests failed
+          SLACK_MESSAGE: Please investigate
