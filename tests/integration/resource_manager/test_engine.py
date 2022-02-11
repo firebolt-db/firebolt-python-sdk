@@ -101,7 +101,7 @@ ENGINE_UPDATE_PARAMS = {
         EngineType.DATA_ANALYTICS, "ENGINE_SETTINGS_PRESET_DATA_ANALYTICS"
     ),
     "scale": ParamValue(23, 23),
-    "spec": ParamValue("i3.xlarge", "i3.xlarge"),
+    "spec": ParamValue("B1", "B1"),
     "auto_stop": ParamValue(123, "7380s"),
     "warmup": ParamValue(WarmupMethod.PRELOAD_ALL_DATA, "ENGINE_SETTINGS_WARM_UP_ALL"),
     "description": ParamValue("new db description", "new db description"),
