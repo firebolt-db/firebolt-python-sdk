@@ -1,5 +1,5 @@
 from logging import getLogger
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 from firebolt.common.exception import FireboltError
 from firebolt.common.urls import (
@@ -9,8 +9,7 @@ from firebolt.common.urls import (
     ENGINES_BY_IDS_URL,
 )
 from firebolt.common.util import prune_dict
-from firebolt.model import FireboltBaseModel
-from firebolt.model.engine import Engine, EngineSettings
+from firebolt.model.engine import Engine, EngineSettings, _EngineCreateRequest
 from firebolt.model.engine_revision import (
     EngineRevision,
     EngineRevisionSpecification,
@@ -116,6 +115,8 @@ class EngineService(BaseService):
         auto_stop: int = 20,
         warmup: Union[str, WarmupMethod] = WarmupMethod.PRELOAD_INDEXES,
         description: str = "",
+        engine_settings_kwargs: Dict[str, Any] = {},
+        revision_spec_kwargs: Dict[str, Any] = {},
     ) -> Engine:
         """
         Create a new Engine.
@@ -165,6 +166,7 @@ class EngineService(BaseService):
                 engine_type=engine_type,
                 auto_stop_delay_duration=f"{auto_stop * 60}s",
                 warm_up=warmup,
+                **engine_settings_kwargs,
             ),
         )
 
@@ -186,11 +188,8 @@ class EngineService(BaseService):
             specification=EngineRevisionSpecification(
                 db_compute_instances_type_key=instance_type_key,
                 db_compute_instances_count=scale,
-                db_compute_instances_use_spot=False,
-                db_version="",
                 proxy_instances_type_key=instance_type_key,
-                proxy_instances_count=1,
-                proxy_version="",
+                **revision_spec_kwargs,
             )
         )
 
@@ -209,13 +208,6 @@ class EngineService(BaseService):
         Returns:
             The newly created engine.
         """
-
-        class _EngineCreateRequest(FireboltBaseModel):
-            """Helper model for sending Engine create requests."""
-
-            account_id: str
-            engine: Engine
-            engine_revision: Optional[EngineRevision]
 
         response = self.client.post(
             url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),

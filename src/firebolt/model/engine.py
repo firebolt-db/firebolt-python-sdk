@@ -4,7 +4,7 @@ import functools
 import logging
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
 from pydantic import Field, PrivateAttr
 
@@ -15,11 +15,12 @@ from firebolt.common.urls import (
     ACCOUNT_ENGINE_STOP_URL,
     ACCOUNT_ENGINE_URL,
 )
+from firebolt.common.util import prune_dict
 from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
-from firebolt.model.engine_revision import EngineRevisionKey
+from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 from firebolt.model.region import RegionKey
 from firebolt.service.types import (
     EngineStatus,
@@ -68,6 +69,7 @@ class EngineSettings(FireboltBaseModel):
         engine_type: EngineType = EngineType.GENERAL_PURPOSE,
         auto_stop_delay_duration: str = "1200s",
         warm_up: WarmupMethod = WarmupMethod.PRELOAD_INDEXES,
+        minimum_logging_level: str = "ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
     ) -> EngineSettings:
         if engine_type == EngineType.GENERAL_PURPOSE:
             preset = engine_type.GENERAL_PURPOSE.api_settings_preset_name  # type: ignore # noqa: E501
@@ -79,7 +81,7 @@ class EngineSettings(FireboltBaseModel):
         return cls(
             preset=preset,
             auto_stop_delay_duration=auto_stop_delay_duration,
-            minimum_logging_level="ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
+            minimum_logging_level=minimum_logging_level,
             is_read_only=is_read_only,
             warm_up=warm_up.api_name,
         )
@@ -95,6 +97,10 @@ def check_attached_to_database(func: Callable) -> Callable:
         return func(self, *args, **kwargs)
 
     return inner
+
+
+class FieldMask(FireboltBaseModel):
+    paths: Sequence[str] = Field(alias="paths")
 
 
 class Engine(FireboltBaseModel):
@@ -303,6 +309,96 @@ class Engine(FireboltBaseModel):
 
         return engine
 
+    def update(
+        self,
+        name: Optional[str] = None,
+        engine_type: Optional[EngineType] = None,
+        scale: Optional[int] = None,
+        spec: Optional[str] = None,
+        auto_stop: Optional[int] = None,
+        warmup: Optional[WarmupMethod] = None,
+        description: Optional[str] = None,
+    ) -> Engine:
+        """
+        update the engine, and returns an updated version of the engine, all parameters
+        could be set to None, this would keep the old engine parameter value
+        """
+
+        class _EngineUpdateRequest(FireboltBaseModel):
+            """Helper model for sending Engine update requests."""
+
+            account_id: str
+            desired_revision: Optional[EngineRevision]
+            engine: Engine
+            engine_id: str
+            update_mask: FieldMask
+
+        # Update the engine parameters
+        self.name = name if name else self.name
+        self.description = description
+
+        # Update engine settings
+        engine_settings_params = {
+            "engine_type": engine_type,
+            "auto_stop_delay_duration": f"{auto_stop * 60}s" if auto_stop else None,
+            "warm_up": warmup,
+        }
+        self.settings = EngineSettings.default(**prune_dict(engine_settings_params))
+
+        # Update the engine desired_revision if needed
+        desired_revision = None
+        if (scale or spec) and self.latest_revision_key:
+            rm = self._service.resource_manager
+            desired_revision = rm.engine_revisions.get_by_key(self.latest_revision_key)
+
+            if spec:
+                instance_type_key = rm.instance_types.get_by_name(
+                    instance_type_name=spec,
+                    region_name=rm.regions.regions_by_key[self.compute_region_key].name,
+                ).key
+
+                desired_revision.specification.db_compute_instances_type_key = (
+                    instance_type_key
+                )
+                desired_revision.specification.proxy_instances_type_key = (
+                    instance_type_key
+                )
+
+            if scale:
+                desired_revision.specification.db_compute_instances_count = scale
+
+        update_mask_paths = list(
+            prune_dict(
+                {
+                    "name": name,
+                    "description": description,
+                    "settings.auto_stop_delay_duration": auto_stop,
+                    "settings.warm_up": warmup,
+                    "settings.is_read_only": engine_type,
+                    "settings.preset": engine_type,
+                }
+            ).keys()
+        )
+
+        # Send the update request
+        response = self._service.client.patch(
+            url=ACCOUNT_ENGINE_URL.format(
+                engine_id=self.engine_id, account_id=self._service.account_id
+            ),
+            headers={"Content-type": "application/json"},
+            json=_EngineUpdateRequest(
+                account_id=self._service.account_id,
+                engine=self,
+                desired_revision=desired_revision,
+                engine_id=self.engine_id,
+                update_mask=FieldMask(paths=update_mask_paths),
+            ).jsonable_dict(by_alias=True),
+        )
+
+        return Engine.parse_obj_with_service(
+            obj=response.json()["engine"], engine_service=self._service
+        )
+
     @check_attached_to_database
     def restart(
         self,
@@ -364,3 +460,11 @@ class Engine(FireboltBaseModel):
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
+
+
+class _EngineCreateRequest(FireboltBaseModel):
+    """Helper model for sending Engine create requests."""
+
+    account_id: str
+    engine: Engine
+    engine_revision: Optional[EngineRevision]

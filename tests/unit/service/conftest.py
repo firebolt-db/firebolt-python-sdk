@@ -22,6 +22,10 @@ from firebolt.common.urls import (
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database, DatabaseKey
 from firebolt.model.engine import Engine, EngineKey, EngineSettings
+from firebolt.model.engine_revision import (
+    EngineRevision,
+    EngineRevisionSpecification,
+)
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.model.region import Region
 from tests.unit.util import list_to_paginated_response
@@ -30,6 +34,11 @@ from tests.unit.util import list_to_paginated_response
 @pytest.fixture
 def engine_name() -> str:
     return "my_engine"
+
+
+@pytest.fixture
+def engine_scale() -> int:
+    return 2
 
 
 @pytest.fixture
@@ -49,6 +58,22 @@ def mock_engine(engine_name, region_1, engine_settings, account_id, settings) ->
 
 
 @pytest.fixture
+def mock_engine_revision_spec(
+    instance_type_2, engine_scale
+) -> EngineRevisionSpecification:
+    return EngineRevisionSpecification(
+        db_compute_instances_type_key=instance_type_2.key,
+        db_compute_instances_count=engine_scale,
+        proxy_instances_type_key=instance_type_2.key,
+    )
+
+
+@pytest.fixture
+def mock_engine_revision(mock_engine_revision_spec) -> EngineRevision:
+    return EngineRevision(specification=mock_engine_revision_spec)
+
+
+@pytest.fixture
 def instance_type_1(provider, region_1) -> InstanceType:
     return InstanceType(
         key=InstanceTypeKey(
@@ -56,7 +81,7 @@ def instance_type_1(provider, region_1) -> InstanceType:
             region_id=region_1.key.region_id,
             instance_type_id="instance_type_id_1",
         ),
-        name="i3.4xlarge",
+        name="B1",
         price_per_hour_cents=10,
         storage_size_bytes=0,
     )
@@ -70,7 +95,7 @@ def instance_type_2(provider, region_2) -> InstanceType:
             region_id=region_2.key.region_id,
             instance_type_id="instance_type_id_2",
         ),
-        name="i3.8xlarge",
+        name="B2",
         price_per_hour_cents=20,
         storage_size_bytes=500,
     )
@@ -84,7 +109,7 @@ def instance_type_3(provider, region_2) -> InstanceType:
             region_id=region_2.key.region_id,
             instance_type_id="instance_type_id_2",
         ),
-        name="i3.8xlarge",
+        name="B2",
         price_per_hour_cents=30,
         storage_size_bytes=500,
     )
@@ -232,7 +257,7 @@ def engine_url(settings: Settings, account_id) -> str:
 
 
 @pytest.fixture
-def account_engine_callback(engine_url: str, mock_engine) -> Callable:
+def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
