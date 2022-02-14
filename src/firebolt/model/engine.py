@@ -69,6 +69,7 @@ class EngineSettings(FireboltBaseModel):
         engine_type: EngineType = EngineType.GENERAL_PURPOSE,
         auto_stop_delay_duration: str = "1200s",
         warm_up: WarmupMethod = WarmupMethod.PRELOAD_INDEXES,
+        minimum_logging_level: str = "ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
     ) -> EngineSettings:
         if engine_type == EngineType.GENERAL_PURPOSE:
             preset = engine_type.GENERAL_PURPOSE.api_settings_preset_name  # type: ignore # noqa: E501
@@ -80,7 +81,7 @@ class EngineSettings(FireboltBaseModel):
         return cls(
             preset=preset,
             auto_stop_delay_duration=auto_stop_delay_duration,
-            minimum_logging_level="ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
+            minimum_logging_level=minimum_logging_level,
             is_read_only=is_read_only,
             warm_up=warm_up.api_name,
         )
@@ -459,3 +460,11 @@ class Engine(FireboltBaseModel):
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
+
+
+class _EngineCreateRequest(FireboltBaseModel):
+    """Helper model for sending Engine create requests."""
+
+    account_id: str
+    engine: Engine
+    engine_revision: Optional[EngineRevision]

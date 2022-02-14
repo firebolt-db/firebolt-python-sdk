@@ -1,11 +1,13 @@
 from typing import Callable, List
 
+from pydantic import ValidationError
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.common import Settings
 from firebolt.common.exception import FireboltError, NoAttachedDatabaseError
-from firebolt.model.engine import Engine
+from firebolt.model.engine import Engine, _EngineCreateRequest
+from firebolt.model.engine_revision import EngineRevision
 from firebolt.model.instance_type import InstanceType
 from firebolt.model.region import Region
 from firebolt.service.manager import ResourceManager
@@ -45,6 +47,103 @@ def test_engine_create(
     engine = manager.engines.create(name=engine_name)
 
     assert engine.name == engine_name
+
+
+def test_engine_create_with_kwargs(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
+    region_callback: Callable,
+    region_url: str,
+    settings: Settings,
+    mock_engine: Engine,
+    engine_name: str,
+    account_id_callback: Callable,
+    account_id_url: str,
+    engine_callback: Callable,
+    engine_url: str,
+    account_id: str,
+    mock_engine_revision: EngineRevision,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
+    httpx_mock.add_callback(
+        instance_type_region_1_callback, url=instance_type_region_1_url
+    )
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(region_callback, url=region_url)
+    # Setting to manager.engines.create defaults
+    mock_engine.key = None
+    mock_engine.description = ""
+    mock_engine.endpoint = None
+    # Testing kwargs
+    mock_engine.settings.minimum_logging_level = "ENGINE_SETTINGS_LOGGING_LEVEL_DEBUG"
+    mock_engine_revision.specification.proxy_version = "0.2.3"
+    engine_content = _EngineCreateRequest(
+        account_id=account_id, engine=mock_engine, engine_revision=mock_engine_revision
+    )
+    httpx_mock.add_callback(
+        engine_callback,
+        url=engine_url,
+        method="POST",
+        match_content=engine_content.json(by_alias=True).encode("ascii"),
+    )
+
+    manager = ResourceManager(settings=settings)
+    engine_settings_kwargs = {
+        "minimum_logging_level": "ENGINE_SETTINGS_LOGGING_LEVEL_DEBUG"
+    }
+    revision_spec_kwargs = {"proxy_version": "0.2.3"}
+    engine = manager.engines.create(
+        name=engine_name,
+        engine_settings_kwargs=engine_settings_kwargs,
+        revision_spec_kwargs=revision_spec_kwargs,
+    )
+
+    assert engine.name == engine_name
+
+
+def test_engine_create_with_kwargs_fail(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
+    instance_type_region_1_callback: Callable,
+    instance_type_region_1_url: str,
+    region_callback: Callable,
+    region_url: str,
+    settings: Settings,
+    engine_name: str,
+    account_id_callback: Callable,
+    account_id_url: str,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
+    httpx_mock.add_callback(
+        instance_type_region_1_callback, url=instance_type_region_1_url
+    )
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(region_callback, url=region_url)
+
+    manager = ResourceManager(settings=settings)
+    revision_spec_kwargs = {"incorrect_kwarg": "val"}
+    with raises(ValidationError):
+        manager.engines.create(
+            name=engine_name, revision_spec_kwargs=revision_spec_kwargs
+        )
+
+    engine_settings_kwargs = {"incorrect_kwarg": "val"}
+    with raises(TypeError):
+        manager.engines.create(
+            name=engine_name, engine_settings_kwargs=engine_settings_kwargs
+        )
 
 
 def test_engine_create_no_available_types(
