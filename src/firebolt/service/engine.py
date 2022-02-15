@@ -172,7 +172,7 @@ class EngineService(BaseService):
 
         if spec:
             instance_type_key = self.resource_manager.instance_types.get_by_name(
-                instance_type_name=spec
+                instance_type_name=spec, region_name=region.name
             ).key
         else:
             instance_type = (
