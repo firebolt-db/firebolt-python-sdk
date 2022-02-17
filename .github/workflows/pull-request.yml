@@ -18,7 +18,7 @@ jobs:
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@main
   security-scan:
     needs: [unit-tests]
-    uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@main
+    uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@fossa-fix-2
     secrets:
       FOSSA_TOKEN: ${{ secrets.FOSSA_TOKEN }}
       SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
