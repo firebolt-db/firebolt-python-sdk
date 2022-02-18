@@ -18,6 +18,7 @@ jobs:
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/unit-tests.yml@main
   security-scan:
     needs: [unit-tests]
+    if: github.event.pull_request.head.repo.full_name == github.repository
     uses: firebolt-db/firebolt-python-sdk/.github/workflows/security-scan.yml@main
     secrets:
       FOSSA_TOKEN: ${{ secrets.FOSSA_TOKEN }}
