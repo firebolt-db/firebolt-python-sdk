@@ -1,13 +1,6 @@
 name: Firebolt Security Scan
 
-on:
-  workflow_dispatch:
-  workflow_call:
-    secrets:
-      FOSSA_TOKEN:
-        required: true
-      SONARCLOUD_TOKEN:
-        required: true
+on: push
 
 jobs:
   security-scan:
@@ -16,14 +9,15 @@ jobs:
       - name: "Checkout Code"
         uses: actions/checkout@v2
 
-      - name: "Download coverage report"
-        uses: actions/download-artifact@v2
-        with:
-          name: pytest-coverage-report
+      # - name: "Download coverage report"
+      #   uses: actions/download-artifact@v2
+      #   with:
+      #     name: pytest-coverage-report
 
       - name: "Security Scan"
-        uses: firebolt-db/action-security-scan@main
+        uses: firebolt-db/action-security-scan@fossa-fix-2
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
           fossa-key: ${{ secrets.FOSSA_TOKEN }}
           sonar-key: ${{ secrets.SONARCLOUD_TOKEN }}
+          
