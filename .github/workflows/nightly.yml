@@ -5,7 +5,7 @@ on:
     - cron: '0 3 * * *' # 3 am UTC every day
 jobs:
   code-check:
-    uses: firebolt-db/firebolt-python-sdk/.github/workflows/code-check.yml@main
+    uses: ./.github/workflows/code-check.yml
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
