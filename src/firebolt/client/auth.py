@@ -6,6 +6,7 @@ from httpx import Request, Response, codes
 
 from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
 from firebolt.common.exception import AuthenticationError
+from firebolt.common.token_storage import TokenSecureStorage
 from firebolt.common.urls import AUTH_URL
 from firebolt.common.util import fix_url_schema
 
@@ -34,13 +35,18 @@ class Auth(HttpxAuth):
         return a
 
     def __init__(
-        self, username: str, password: str, api_endpoint: str = DEFAULT_API_URL
+        self,
+        username: str,
+        password: str,
+        api_endpoint: str = DEFAULT_API_URL,
     ):
         self.username = username
         self.password = password
+        self._token_storage = TokenSecureStorage(username=username, password=password)
+
         # Add schema to url if it's missing
         self._api_endpoint = fix_url_schema(api_endpoint)
-        self._token: Optional[str] = None
+        self._token: Optional[str] = self._token_storage.get_cached_token()
         self._expires: Optional[int] = None
 
     def copy(self) -> "Auth":
@@ -56,7 +62,6 @@ class Auth(HttpxAuth):
 
     def get_new_token_generator(self) -> Generator[Request, Response, None]:
         """Get new token using username and password"""
-
         try:
             response = yield Request(
                 "POST",
@@ -74,6 +79,9 @@ class Auth(HttpxAuth):
 
             self._token = parsed["access_token"]
             self._expires = int(time()) + int(parsed["expires_in"])
+
+            self._token_storage.cache_token(parsed["access_token"])
+
         except _REQUEST_ERRORS as e:
             raise AuthenticationError(repr(e), self._api_endpoint)
 
@@ -83,8 +91,11 @@ class Auth(HttpxAuth):
 
         if not self.token or self.expired:
             yield from self.get_new_token_generator()
+
         request.headers["Authorization"] = f"Bearer {self.token}"
+
         response = yield request
+
         if response.status_code == codes.UNAUTHORIZED:
             yield from self.get_new_token_generator()
             request.headers["Authorization"] = f"Bearer {self.token}"

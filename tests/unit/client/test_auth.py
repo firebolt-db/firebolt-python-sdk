@@ -2,6 +2,7 @@ import typing
 
 import pytest
 from httpx import Client, Request, StreamError, codes
+from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
@@ -30,9 +31,7 @@ def test_auth_basic(
 
 
 def test_auth_refresh_on_expiration(
-    httpx_mock: HTTPXMock,
-    test_token: str,
-    test_token2: str,
+    httpx_mock: HTTPXMock, test_token: str, test_token2: str, fs: FakeFilesystem
 ):
     """Auth refreshes the token on expiration."""
 
@@ -56,9 +55,7 @@ def test_auth_refresh_on_expiration(
 
 
 def test_auth_uses_same_token_if_valid(
-    httpx_mock: HTTPXMock,
-    test_token: str,
-    test_token2: str,
+    httpx_mock: HTTPXMock, test_token: str, test_token2: str, fs: FakeFilesystem
 ):
     """Auth refreshes the token on expiration"""
 
@@ -92,7 +89,7 @@ def test_auth_uses_same_token_if_valid(
     httpx_mock.reset(False)
 
 
-def test_auth_error_handling(httpx_mock: HTTPXMock):
+def test_auth_error_handling(httpx_mock: HTTPXMock, fs: FakeFilesystem):
     """Auth handles various errors properly."""
 
     for api_endpoint in ("https://host", "host"):

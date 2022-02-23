@@ -26,3 +26,7 @@ jobs:
       uses: pre-commit/action@v2.0.3
       with:
         extra_args: --all-files
+
+    - name: Type check with mypy
+      run: |
+        mypy src

@@ -1,7 +1,7 @@
 from json import JSONDecodeError
 from logging import getLogger
 
-from httpx import HTTPStatusError, Request, RequestError, Response
+from httpx import HTTPStatusError, Request, RequestError, Response, codes
 
 logger = getLogger(__name__)
 
@@ -40,14 +40,24 @@ def raise_on_4xx_5xx(response: Response) -> None:
             parsed_response = exc.response.json()
         except JSONDecodeError:
             parsed_response = {"_raw": exc.response.text}
+
+        if exc.response.status_code == codes.UNAUTHORIZED:
+            # Do not raise an exception on UNAUTHORIZED
+            # It should be responsibility of authentication mechanism
+            return
+
         debug_message = (
             f"Error response {exc.response.status_code} "
             f"while requesting {exc.request.url!r}. "
             f"Response: {parsed_response}. "
         )
+
         if "message" in parsed_response:
+
             error_message = parsed_response["message"]
             logger.debug(f"{debug_message} Message: {error_message}")
+
             raise RuntimeError(error_message) from exc
+
         logger.debug(debug_message)
         raise exc
