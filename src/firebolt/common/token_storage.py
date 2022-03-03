@@ -1,6 +1,6 @@
-import base64
-import json
-import os
+from json import load as json_load, dump as json_dump
+from base64 import urlsafe_b64encode, b64decode, b64encode
+from os import urandom, makedirs, path
 from json import JSONDecodeError
 from typing import Optional
 
@@ -19,9 +19,9 @@ class TokenSecureStorage:
         :param password: password used for toke encryption
         """
         self._data_dir = user_data_dir(appname="firebolt")
-        os.makedirs(self._data_dir, exist_ok=True)
+        makedirs(self._data_dir, exist_ok=True)
 
-        self._token_file = os.path.join(self._data_dir, "token.json")
+        self._token_file = path.join(self._data_dir, "token.json")
 
         self.salt = self._get_salt()
         self.encrypter = FernetEncrypter(self.salt, username, password)
@@ -44,12 +44,12 @@ class TokenSecureStorage:
 
         :return: json object as dict
         """
-        if not os.path.exists(self._token_file):
+        if not path.exists(self._token_file):
             return {}
 
         with open(self._token_file) as f:
             try:
-                return json.load(f)
+                return json_load(f)
             except JSONDecodeError:
                 return {}
 
@@ -76,7 +76,7 @@ class TokenSecureStorage:
         token = self.encrypter.encrypt(token)
 
         with open(self._token_file, "w") as f:
-            json.dump({"token": token, "salt": self.salt}, f)
+            json_dump({"token": token, "salt": self.salt}, f)
 
 
 class FernetEncrypter:
@@ -90,19 +90,19 @@ class FernetEncrypter:
 
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
-            salt=base64.b64decode(salt),
+            salt=b64decode(salt),
             length=32,
             iterations=39000,
         )
         self.fernet = Fernet(
-            base64.urlsafe_b64encode(
+            urlsafe_b64encode(
                 kdf.derive(bytes(f"{username}{password}", encoding="utf-8"))
             )
         )
 
     @staticmethod
     def generate_salt() -> str:
-        return base64.b64encode(os.urandom(16)).decode("ascii")
+        return b64encode(urandom(16)).decode("ascii")
 
     def encrypt(self, data: str) -> str:
         return self.fernet.encrypt(bytes(data, encoding="utf-8")).decode("utf-8")
