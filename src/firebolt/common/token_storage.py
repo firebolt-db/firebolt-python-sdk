@@ -1,15 +1,16 @@
-from json import load as json_load, dump as json_dump, JSONDecodeError
-from base64 import urlsafe_b64encode, b64decode, b64encode
+from base64 import b64decode, b64encode, urlsafe_b64encode
 from hashlib import sha256
-from os import urandom, makedirs, path
-from typing import Optional
+from json import JSONDecodeError
+from json import dump as json_dump
+from json import load as json_load
+from os import makedirs, path, urandom
 from time import time
+from typing import Optional
 
 from appdirs import user_data_dir
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-
 
 APPNAME = "firebolt"
 

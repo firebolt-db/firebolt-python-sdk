@@ -1,8 +1,8 @@
 import os
+from unittest.mock import patch
 
 from appdirs import user_config_dir
 from pyfakefs.fake_filesystem import FakeFilesystem
-from unittest.mock import patch
 
 from firebolt.common.token_storage import (
     FernetEncrypter,
