@@ -41,7 +41,7 @@ def all_types_query_description() -> List[Column]:
         Column("datetime", datetime, None, None, None, None, None),
         Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
-        Column("nullable", str, None, None, None, None, None),
+        Column("nullable", int, None, None, None, None, None),
     ]
 
 
