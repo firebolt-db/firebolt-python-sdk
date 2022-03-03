@@ -1,5 +1,6 @@
 from json import load as json_load, dump as json_dump, JSONDecodeError
 from base64 import urlsafe_b64encode, b64decode, b64encode
+from hashlib import sha256
 from os import urandom, makedirs, path
 from typing import Optional
 
@@ -9,11 +10,18 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
+APPNAME = "firebolt"
+
+
 def generate_salt() -> str:
     return b64encode(urandom(16)).decode("ascii")
 
 
-APPNAME = "firebolt"
+def generate_file_name(username: str, password: str) -> str:
+    username_hash = sha256(username.encode("utf-8")).hexdigest()[:32]
+    password_hash = sha256(password.encode("utf-8")).hexdigest()[:32]
+
+    return f"{username_hash}{password_hash}.json"
 
 
 class TokenSecureStorage:
@@ -27,7 +35,9 @@ class TokenSecureStorage:
         self._data_dir = user_data_dir(appname=APPNAME)
         makedirs(self._data_dir, exist_ok=True)
 
-        self._token_file = path.join(self._data_dir, "token.json")
+        self._token_file = path.join(
+            self._data_dir, generate_file_name(username, password)
+        )
 
         self.salt = self._get_salt()
         self.encrypter = FernetEncrypter(self.salt, username, password)
@@ -43,7 +53,7 @@ class TokenSecureStorage:
 
     def _read_data_json(self) -> dict:
         """
-        Read json file token.json
+        Read json token file
 
         :return: json object as dict
         """

@@ -3,14 +3,18 @@ import os
 from appdirs import user_config_dir
 from pyfakefs.fake_filesystem import FakeFilesystem
 
-from firebolt.common.token_storage import FernetEncrypter, TokenSecureStorage
+from firebolt.common.token_storage import (
+    FernetEncrypter,
+    TokenSecureStorage,
+    generate_salt,
+)
 
 
 def test_encrypter_happy_path():
     """
     Simple encrypt/decrypt using FernetEncrypter
     """
-    salt = FernetEncrypter.generate_salt()
+    salt = generate_salt()
     encrypter1 = FernetEncrypter(salt, username="username", password="password")
     encrypter2 = FernetEncrypter(salt, username="username", password="password")
 
@@ -25,8 +29,8 @@ def test_encrypter_wrong_parameter():
     Test that decryption only works, if the correct salt,
     username and password is provided, otherwise None is returned
     """
-    salt1 = FernetEncrypter.generate_salt()
-    salt2 = FernetEncrypter.generate_salt()
+    salt1 = generate_salt()
+    salt2 = generate_salt()
 
     encrypter1 = FernetEncrypter(salt1, username="username", password="password")
 
@@ -60,12 +64,7 @@ def test_token_storage_happy_path(fs: FakeFilesystem):
     token = "some new string to encrypt"
 
     TokenSecureStorage(**settings).cache_token(token)
-    assert (
-        token
-        == TokenSecureStorage(
-            username="username", password="password"
-        ).get_cached_token()
-    )
+    assert token == TokenSecureStorage(**settings).get_cached_token()
 
 
 def test_token_storage_wrong_parameter(fs: FakeFilesystem):
@@ -102,3 +101,31 @@ def test_token_storage_json_broken(fs: FakeFilesystem):
     fs.create_file(os.path.join(data_dir, "token.json"), contents="{Not a valid json")
 
     assert TokenSecureStorage(**settings).get_cached_token() is None
+
+
+def test_multiple_tokens(fs: FakeFilesystem) -> None:
+    """
+    Check that the TokenSecureStorage properly handles multiple tokens hashed
+    """
+    settings1 = {"username": "username1", "password": "password1"}
+    settings2 = {"username": "username2", "password": "password2"}
+    token1 = "token1"
+    token2 = "token2"
+    token3 = "token3"
+
+    st1 = TokenSecureStorage(**settings1)
+    st2 = TokenSecureStorage(**settings2)
+
+    st1.cache_token(token1)
+
+    assert st1.get_cached_token() == token1
+    assert st2.get_cached_token() is None
+
+    st2.cache_token(token2)
+
+    assert st1.get_cached_token() == token1
+    assert st2.get_cached_token() == token2
+
+    st1.cache_token(token3)
+    assert st1.get_cached_token() == token3
+    assert st2.get_cached_token() == token2
