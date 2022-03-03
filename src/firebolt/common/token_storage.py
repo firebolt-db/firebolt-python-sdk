@@ -1,13 +1,19 @@
-from json import load as json_load, dump as json_dump
+from json import load as json_load, dump as json_dump, JSONDecodeError
 from base64 import urlsafe_b64encode, b64decode, b64encode
 from os import urandom, makedirs, path
-from json import JSONDecodeError
 from typing import Optional
 
 from appdirs import user_data_dir
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
+
+def generate_salt() -> str:
+    return b64encode(urandom(16)).decode("ascii")
+
+
+APPNAME = "firebolt"
 
 
 class TokenSecureStorage:
@@ -18,7 +24,7 @@ class TokenSecureStorage:
         :param username: username used for toke encryption
         :param password: password used for toke encryption
         """
-        self._data_dir = user_data_dir(appname="firebolt")
+        self._data_dir = user_data_dir(appname=APPNAME)
         makedirs(self._data_dir, exist_ok=True)
 
         self._token_file = path.join(self._data_dir, "token.json")
@@ -33,10 +39,7 @@ class TokenSecureStorage:
         :return: salt
         """
         res = self._read_data_json()
-        if "salt" not in res:
-            return FernetEncrypter.generate_salt()
-        else:
-            return res["salt"]
+        return res.get("salt", generate_salt())
 
     def _read_data_json(self) -> dict:
         """
@@ -99,10 +102,6 @@ class FernetEncrypter:
                 kdf.derive(bytes(f"{username}{password}", encoding="utf-8"))
             )
         )
-
-    @staticmethod
-    def generate_salt() -> str:
-        return b64encode(urandom(16)).decode("ascii")
 
     def encrypt(self, data: str) -> str:
         return self.fernet.encrypt(bytes(data, encoding="utf-8")).decode("utf-8")
