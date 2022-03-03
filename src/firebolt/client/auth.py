@@ -80,7 +80,7 @@ class Auth(HttpxAuth):
             self._token = parsed["access_token"]
             self._expires = int(time()) + int(parsed["expires_in"])
 
-            self._token_storage.cache_token(parsed["access_token"])
+            self._token_storage.cache_token(parsed["access_token"], self._expires)
 
         except _REQUEST_ERRORS as e:
             raise AuthenticationError(repr(e), self._api_endpoint)

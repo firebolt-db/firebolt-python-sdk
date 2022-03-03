@@ -3,6 +3,7 @@ from base64 import urlsafe_b64encode, b64decode, b64encode
 from hashlib import sha256
 from os import urandom, makedirs, path
 from typing import Optional
+from time import time
 
 from appdirs import user_data_dir
 from cryptography.fernet import Fernet, InvalidToken
@@ -78,9 +79,13 @@ class TokenSecureStorage:
         if "token" not in res:
             return None
 
+        # Ignore expired tokens
+        if "expiration" in res and res["expiration"] <= int(time()):
+            return None
+
         return self.encrypter.decrypt(res["token"])
 
-    def cache_token(self, token: str) -> None:
+    def cache_token(self, token: str, expiration_ts: int) -> None:
         """
 
         :param token:
@@ -89,7 +94,9 @@ class TokenSecureStorage:
         token = self.encrypter.encrypt(token)
 
         with open(self._token_file, "w") as f:
-            json_dump({"token": token, "salt": self.salt}, f)
+            json_dump(
+                {"token": token, "salt": self.salt, "expiration": expiration_ts}, f
+            )
 
 
 class FernetEncrypter:
