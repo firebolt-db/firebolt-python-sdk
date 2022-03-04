@@ -1,4 +1,5 @@
 from httpx import AsyncClient, Request, codes
+from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import mark
 from pytest_httpx import HTTPXMock
 
@@ -8,9 +9,7 @@ from tests.unit.util import async_execute_generator_requests
 
 @mark.asyncio
 async def test_auth_refresh_on_expiration(
-    httpx_mock: HTTPXMock,
-    test_token: str,
-    test_token2: str,
+    httpx_mock: HTTPXMock, test_token: str, test_token2: str, fs: FakeFilesystem
 ):
     """Auth refreshes the token on expiration."""
 
@@ -39,9 +38,7 @@ async def test_auth_refresh_on_expiration(
 
 @mark.asyncio
 async def test_auth_uses_same_token_if_valid(
-    httpx_mock: HTTPXMock,
-    test_token: str,
-    test_token2: str,
+    httpx_mock: HTTPXMock, test_token: str, test_token2: str, fs: FakeFilesystem
 ):
     """Auth refreshes the token on expiration"""
 
@@ -81,8 +78,7 @@ async def test_auth_uses_same_token_if_valid(
 
 @mark.asyncio
 async def test_auth_adds_header(
-    httpx_mock: HTTPXMock,
-    test_token: str,
+    httpx_mock: HTTPXMock, test_token: str, fs: FakeFilesystem
 ):
     """Auth adds required authentication headers to httpx.Request."""
     httpx_mock.add_response(

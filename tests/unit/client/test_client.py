@@ -1,6 +1,7 @@
 from typing import Callable
 
 from httpx import codes
+from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
@@ -15,6 +16,7 @@ def test_client_retry(
     test_username: str,
     test_password: str,
     test_token: str,
+    fs: FakeFilesystem,
 ):
     """
     Client retries with new auth token
@@ -56,6 +58,7 @@ def test_client_different_auths(
     test_username: str,
     test_password: str,
     test_token: str,
+    fs: FakeFilesystem,
 ):
     """
     Client properly handles such auth types:
