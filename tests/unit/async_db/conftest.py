@@ -131,7 +131,7 @@ def query_callback(
                 "rows_read": 1,
                 "bytes_read": 1,
                 "scanned_bytes_cache": 0,
-                "scannned_bytes_storage": 0,
+                "scanned_bytes_storage": 0,
             },
         }
         return Response(status_code=codes.OK, json=query_response)
