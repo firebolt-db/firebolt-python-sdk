@@ -117,6 +117,9 @@ def test_parse_decimal() -> None:
     assert parse_value("123.456", DECIMAL(38, 3)) == Decimal(
         "123.456"
     ), "Error parsing decimal(38, 3): str provided"
+    assert parse_value(123, DECIMAL(38, 3)) == Decimal(
+        "123"
+    ), "Error parsing decimal(38, 3): int provided"
     assert (
         parse_value(None, DECIMAL(38, 3)) is None
     ), "Error parsing decimal(38, 3): None provided"

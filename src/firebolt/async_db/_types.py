@@ -218,7 +218,7 @@ def parse_value(
             raise DataError(f"Invalid datetime value {value}: str expected")
         return parse_datetime(value)
     if isinstance(ctype, DECIMAL):
-        assert isinstance(value, str)
+        assert isinstance(value, (str, int))
         return Decimal(value)
     if isinstance(ctype, ARRAY):
         assert isinstance(value, list)

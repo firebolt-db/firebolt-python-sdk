@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 from logging import getLogger
 from typing import List
 
@@ -6,7 +7,7 @@ from pytest import fixture
 
 from firebolt.async_db._types import ColType
 from firebolt.async_db.cursor import Column
-from firebolt.db import ARRAY
+from firebolt.db import ARRAY, DECIMAL
 
 LOGGER = getLogger(__name__)
 
@@ -14,12 +15,12 @@ LOGGER = getLogger(__name__)
 @fixture
 def all_types_query() -> str:
     return (
-        "select 1 as uint8, -1 as int8, 257 as uint16, -257 as int16, 80000 as uint32,"
-        " -80000 as int32, 30000000000 as uint64, -30000000000 as int64, cast(1.23 AS"
-        " FLOAT) as float32, 1.2345678901234 as float64, 'text' as \"string\","
-        " CAST('2021-03-28' AS DATE) as \"date\", CAST('2019-07-31 01:01:01' AS"
-        ' DATETIME) as "datetime", true as "bool",[1,2,3,4] as "array", cast(null as'
-        " int) as nullable"
+        "select 1 as uint8, -1 as int8, 257 as uint16, -257 as int16, 80000 as uint32, "
+        "-80000 as int32, 30000000000 as uint64, -30000000000 as int64, cast(1.23 AS "
+        "FLOAT) as float32, 1.2345678901234 as float64, 'text' as \"string\", "
+        "CAST('2021-03-28' AS DATE) as \"date\", CAST('2019-07-31 01:01:01' AS "
+        'DATETIME) as "datetime", true as "bool",[1,2,3,4] as "array", '
+        'cast(1231232.12 as decimal(38,2)) as "decimal", cast(null as  int) as nullable'
     )
 
 
@@ -41,6 +42,7 @@ def all_types_query_description() -> List[Column]:
         Column("datetime", datetime, None, None, None, None, None),
         Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
+        Column("decimal", DECIMAL(38, 2), None, None, None, None, None),
         Column("nullable", int, None, None, None, None, None),
     ]
 
@@ -64,6 +66,7 @@ def all_types_query_response() -> List[ColType]:
             datetime(2019, 7, 31, 1, 1, 1),
             1,
             [1, 2, 3, 4],
+            Decimal("1231232.12"),
             None,
         ]
     ]
