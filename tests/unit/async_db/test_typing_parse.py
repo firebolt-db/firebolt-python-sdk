@@ -78,6 +78,10 @@ def test_parse_value_datetime() -> None:
     assert parse_value("2021-12-31", date) == date(
         2021, 12, 31
     ), "Error parsing date: str provided"
+    assert parse_value("1860-12-31", date) == date(
+        1860, 12, 31
+    ), "Error parsing extended date: str provided"
+
     assert parse_value(None, date) is None, "Error parsing date: None provided"
 
     assert parse_value("2021-12-31 23:59:59", date) == date(
