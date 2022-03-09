@@ -20,11 +20,11 @@ from firebolt.common.exception import DataError, NotSupportedError
 from firebolt.common.util import cached_property
 
 _NoneType = type(None)
-_col_types = (int, float, str, datetime, date, bool, list, _NoneType)
+_col_types = (int, float, str, datetime, date, bool, list, Decimal, _NoneType)
 # duplicating this since 3.7 can't unpack Union
-ColType = Union[int, float, str, datetime, date, bool, list, _NoneType]
+ColType = Union[int, float, str, datetime, date, bool, list, Decimal, _NoneType]
 RawColType = Union[int, float, str, bool, list, _NoneType]
-ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
+ParameterType = Union[int, float, str, datetime, date, bool, Decimal, Sequence]
 
 # These definitions are required by PEP-249
 Date = date
@@ -78,9 +78,9 @@ class ARRAY:
 
     _prefix = "Array("
 
-    def __init__(self, subtype: Union[type, ARRAY]):
+    def __init__(self, subtype: Union[type, ARRAY, DECIMAL]):
         assert (subtype in _col_types and subtype is not list) or isinstance(
-            subtype, ARRAY
+            subtype, (ARRAY, DECIMAL)
         ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
 
@@ -91,6 +91,24 @@ class ARRAY:
         if not isinstance(other, ARRAY):
             return NotImplemented
         return other.subtype == self.subtype
+
+
+class DECIMAL:
+    """Class for holding imformation aboua decimal value in firebolt db."""
+
+    _prefix = "Decimal("
+
+    def __init__(self, precision: int, scale: int):
+        self.precision = precision
+        self.scale = scale
+
+    def __str__(self) -> str:
+        return f"Decimal({self.precision}, {self.scale})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DECIMAL):
+            return NotImplemented
+        return other.precision == self.precision and other.scale == self.scale
 
 
 NULLABLE_PREFIX = "Nullable("
@@ -152,13 +170,22 @@ class _InternalType(Enum):
         return types[self]
 
 
-def parse_type(raw_type: str) -> Union[type, ARRAY]:
+def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:
     """Parse typename, provided by query metadata into python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
     # Handle arrays
     if raw_type.startswith(ARRAY._prefix) and raw_type.endswith(")"):
         return ARRAY(parse_type(raw_type[len(ARRAY._prefix) : -1]))
+    # Handle decimal
+    if raw_type.startswith(DECIMAL._prefix) and raw_type.endswith(")"):
+        try:
+            prec_scale = raw_type[len(DECIMAL._prefix) : -1].split(",")
+            precision, scale = int(prec_scale[0]), int(prec_scale[1])
+        except (ValueError, IndexError):
+            pass
+        else:
+            return DECIMAL(precision, scale)
     # Handle nullable
     if raw_type.startswith(NULLABLE_PREFIX) and raw_type.endswith(")"):
         return parse_type(raw_type[len(NULLABLE_PREFIX) : -1])
@@ -173,7 +200,7 @@ def parse_type(raw_type: str) -> Union[type, ARRAY]:
 
 def parse_value(
     value: RawColType,
-    ctype: Union[type, ARRAY],
+    ctype: Union[type, ARRAY, DECIMAL],
 ) -> ColType:
     """Provided raw value and python type, parses first into python value."""
     if value is None:
@@ -190,6 +217,9 @@ def parse_value(
         if not isinstance(value, str):
             raise DataError(f"Invalid datetime value {value}: str expected")
         return parse_datetime(value)
+    if isinstance(ctype, DECIMAL):
+        assert isinstance(value, str)
+        return Decimal(value)
     if isinstance(ctype, ARRAY):
         assert isinstance(value, list)
         return [parse_value(it, ctype.subtype) for it in value]

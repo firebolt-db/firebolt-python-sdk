@@ -2,6 +2,7 @@ from firebolt.async_db._types import (
     ARRAY,
     BINARY,
     DATETIME,
+    DECIMAL,
     NUMBER,
     ROWID,
     STRING,
