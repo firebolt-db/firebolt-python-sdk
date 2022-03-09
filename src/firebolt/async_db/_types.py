@@ -140,6 +140,7 @@ class _InternalType(Enum):
 
     # DATE
     Date = "Date"
+    Date32 = "Date32"
 
     # DATETIME, TIMESTAMP
     DateTime = "DateTime"
@@ -163,6 +164,7 @@ class _InternalType(Enum):
             _InternalType.Float64: float,
             _InternalType.String: str,
             _InternalType.Date: date,
+            _InternalType.Date32: date,
             _InternalType.DateTime: datetime,
             # For simplicity, this could happen only during 'select null' query
             _InternalType.Nothing: str,
