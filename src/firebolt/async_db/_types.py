@@ -78,9 +78,9 @@ class ARRAY:
 
     _prefix = "Array("
 
-    def __init__(self, subtype: Union[type, ARRAY, DECIMAL]):
+    def __init__(self, subtype: Union[type, ARRAY, DECIMAL, DATETIME64]):
         assert (subtype in _col_types and subtype is not list) or isinstance(
-            subtype, (ARRAY, DECIMAL)
+            subtype, (ARRAY, DECIMAL, DATETIME64)
         ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
 
@@ -94,7 +94,7 @@ class ARRAY:
 
 
 class DECIMAL:
-    """Class for holding imformation aboua decimal value in firebolt db."""
+    """Class for holding imformation about decimal value in firebolt db."""
 
     _prefix = "Decimal("
 
@@ -109,6 +109,23 @@ class DECIMAL:
         if not isinstance(other, DECIMAL):
             return NotImplemented
         return other.precision == self.precision and other.scale == self.scale
+
+
+class DATETIME64:
+    """Class for holding imformation about datetime64 value in firebolt db."""
+
+    _prefix = "DateTime64("
+
+    def __init__(self, precision: int):
+        self.precision = precision
+
+    def __str__(self) -> str:
+        return f"DateTime64({self.precision})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DATETIME64):
+            return NotImplemented
+        return other.precision == self.precision
 
 
 NULLABLE_PREFIX = "Nullable("
@@ -172,7 +189,7 @@ class _InternalType(Enum):
         return types[self]
 
 
-def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:
+def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:
     """Parse typename, provided by query metadata into python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
@@ -188,6 +205,14 @@ def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:
             pass
         else:
             return DECIMAL(precision, scale)
+    # Handle detetime64
+    if raw_type.startswith(DATETIME64._prefix) and raw_type.endswith(")"):
+        try:
+            precision = int(raw_type[len(DATETIME64._prefix) : -1])
+        except (ValueError, IndexError):
+            pass
+        else:
+            return DATETIME64(precision)
     # Handle nullable
     if raw_type.startswith(NULLABLE_PREFIX) and raw_type.endswith(")"):
         return parse_type(raw_type[len(NULLABLE_PREFIX) : -1])
@@ -202,7 +227,7 @@ def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:
 
 def parse_value(
     value: RawColType,
-    ctype: Union[type, ARRAY, DECIMAL],
+    ctype: Union[type, ARRAY, DECIMAL, DATETIME64],
 ) -> ColType:
     """Provided raw value and python type, parses first into python value."""
     if value is None:
@@ -215,7 +240,7 @@ def parse_value(
             raise DataError(f"Invalid date value {value}: str expected")
         assert isinstance(value, str)
         return parse_datetime(value).date()
-    if ctype is datetime:
+    if ctype is datetime or isinstance(ctype, DATETIME64):
         if not isinstance(value, str):
             raise DataError(f"Invalid datetime value {value}: str expected")
         return parse_datetime(value)

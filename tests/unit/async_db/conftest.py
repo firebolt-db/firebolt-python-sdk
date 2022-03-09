@@ -6,7 +6,14 @@ from typing import Any, Callable, Dict, List
 from httpx import URL, Request, Response, codes
 from pytest import fixture
 
-from firebolt.async_db import ARRAY, DECIMAL, Connection, Cursor, connect
+from firebolt.async_db import (
+    ARRAY,
+    DATETIME64,
+    DECIMAL,
+    Connection,
+    Cursor,
+    connect,
+)
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.common.settings import Settings
 
@@ -28,6 +35,7 @@ def query_description() -> List[Column]:
         Column("date", "Date", None, None, None, None, None),
         Column("date32", "Date32", None, None, None, None, None),
         Column("datetime", "DateTime", None, None, None, None, None),
+        Column("datetime64", "DateTime64(4)", None, None, None, None, None),
         Column("bool", "UInt8", None, None, None, None, None),
         Column("array", "Array(UInt8)", None, None, None, None, None),
         Column("decimal", "Decimal(12, 34)", None, None, None, None, None),
@@ -49,6 +57,7 @@ def python_query_description() -> List[Column]:
         Column("date", date, None, None, None, None, None),
         Column("date32", date, None, None, None, None, None),
         Column("datetime", datetime, None, None, None, None, None),
+        Column("datetime64", DATETIME64(4), None, None, None, None, None),
         Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(12, 34), None, None, None, None, None),
@@ -71,6 +80,7 @@ def query_data() -> List[List[ColType]]:
             "2019-07-31",
             "2020-07-31",
             "2019-07-31 01:01:01",
+            "2020-07-31 01:01:01.1234",
             1,
             [1, 2, 3, 4],
             "123456789.123456789123456789123456789",
@@ -95,6 +105,7 @@ def python_query_data() -> List[List[ColType]]:
             date(2019, 7, 31),
             date(2020, 7, 31),
             datetime(2019, 7, 31, 1, 1, 1),
+            datetime(2020, 7, 31, 1, 1, 1, 1234),
             1,
             [1, 2, 3, 4],
             Decimal("123456789.123456789123456789123456789"),
@@ -228,6 +239,7 @@ def types_map() -> Dict[str, type]:
         "Date": date,
         "Date32": date,
         "DateTime": datetime,
+        "DateTime64(7)": DATETIME64(7),
         "Nullable(Nothing)": str,
         "Decimal(123, 4)": DECIMAL(123, 4),
         "Decimal(38,0)": DECIMAL(38, 0),

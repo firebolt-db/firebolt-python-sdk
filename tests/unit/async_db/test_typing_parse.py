@@ -94,8 +94,8 @@ def test_parse_value_datetime() -> None:
         assert str(exc_info.value) == f"Invalid date value {value}: str expected"
 
     # Datetime
-    assert parse_value("2021-12-31 23:59:59", datetime) == datetime(
-        2021, 12, 31, 23, 59, 59
+    assert parse_value("2021-12-31 23:59:59.1234", datetime) == datetime(
+        2021, 12, 31, 23, 59, 59, 123400
     ), "Error parsing datetime: str provided"
     assert parse_value(None, datetime) is None, "Error parsing datetime: None provided"
 
