@@ -1,11 +1,19 @@
 from datetime import date, datetime
+from decimal import Decimal
 from json import dumps as jdumps
 from typing import Any, Callable, Dict, List
 
 from httpx import URL, Request, Response, codes
 from pytest import fixture
 
-from firebolt.async_db import ARRAY, Connection, Cursor, connect
+from firebolt.async_db import (
+    ARRAY,
+    DATETIME64,
+    DECIMAL,
+    Connection,
+    Cursor,
+    connect,
+)
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.common.settings import Settings
 
@@ -25,9 +33,12 @@ def query_description() -> List[Column]:
         Column("float64", "Float64", None, None, None, None, None),
         Column("string", "String", None, None, None, None, None),
         Column("date", "Date", None, None, None, None, None),
+        Column("date32", "Date32", None, None, None, None, None),
         Column("datetime", "DateTime", None, None, None, None, None),
+        Column("datetime64", "DateTime64(4)", None, None, None, None, None),
         Column("bool", "UInt8", None, None, None, None, None),
         Column("array", "Array(UInt8)", None, None, None, None, None),
+        Column("decimal", "Decimal(12, 34)", None, None, None, None, None),
     ]
 
 
@@ -44,9 +55,12 @@ def python_query_description() -> List[Column]:
         Column("float64", float, None, None, None, None, None),
         Column("string", str, None, None, None, None, None),
         Column("date", date, None, None, None, None, None),
+        Column("date32", date, None, None, None, None, None),
         Column("datetime", datetime, None, None, None, None, None),
+        Column("datetime64", DATETIME64(4), None, None, None, None, None),
         Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
+        Column("decimal", DECIMAL(12, 34), None, None, None, None, None),
     ]
 
 
@@ -61,12 +75,15 @@ def query_data() -> List[List[ColType]]:
             922337203685477580,
             -922337203685477580,
             1,
-            1.0387398573,
+            "1.0387398573",
             "some text",
             "2019-07-31",
+            "1860-01-31",
             "2019-07-31 01:01:01",
+            "2020-07-31 01:01:01.1234",
             1,
             [1, 2, 3, 4],
+            "123456789.123456789123456789123456789",
         ]
         for i in range(QUERY_ROW_COUNT)
     ]
@@ -86,9 +103,12 @@ def python_query_data() -> List[List[ColType]]:
             1.0387398573,
             "some text",
             date(2019, 7, 31),
+            date(1860, 1, 31),
             datetime(2019, 7, 31, 1, 1, 1),
+            datetime(2020, 7, 31, 1, 1, 1, 123400),
             1,
             [1, 2, 3, 4],
+            Decimal("123456789.123456789123456789123456789"),
         ]
         for i in range(QUERY_ROW_COUNT)
     ]
@@ -217,8 +237,14 @@ def types_map() -> Dict[str, type]:
         "Float64": float,
         "String": str,
         "Date": date,
+        "Date32": date,
         "DateTime": datetime,
+        "DateTime64(7)": DATETIME64(7),
         "Nullable(Nothing)": str,
+        "Decimal(123, 4)": DECIMAL(123, 4),
+        "Decimal(38,0)": DECIMAL(38, 0),
+        # Invalid decimal format
+        "Decimal(38)": str,
         "SomeRandomNotExistingType": str,
     }
     array_types = {f"Array({k})": ARRAY(v) for k, v in base_types.items()}

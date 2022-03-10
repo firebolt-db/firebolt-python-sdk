@@ -182,7 +182,8 @@ class BaseCursor:
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") != "0":
             try:
-                query_data = response.json()
+                # Skip parsing floats to properly parse them later
+                query_data = response.json(parse_float=str)
                 rowcount = int(query_data["rows"])
                 descriptions = [
                     Column(

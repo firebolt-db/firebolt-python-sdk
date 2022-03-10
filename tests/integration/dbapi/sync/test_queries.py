@@ -1,4 +1,5 @@
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, List
 
 from pytest import mark, raises
@@ -38,8 +39,11 @@ def test_select(
     all_types_query_response: List[ColType],
 ) -> None:
     """Select handles all data types properly"""
+    set_params = {"firebolt_use_decimal": 1}
     with connection.cursor() as c:
-        assert c.execute(all_types_query) == 1, "Invalid row count returned"
+        assert (
+            c.execute(all_types_query, set_parameters=set_params) == 1
+        ), "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = c.fetchall()
         assert len(data) == c.rowcount, "Invalid data length"
@@ -49,11 +53,11 @@ def test_select(
         assert len(c.fetchall()) == 0, "Redundant data returned by fetchall"
 
         # Different fetch types
-        c.execute(all_types_query)
+        c.execute(all_types_query, set_parameters=set_params)
         assert c.fetchone() == all_types_query_response[0], "Invalid fetchone data"
         assert c.fetchone() is None, "Redundant data returned by fetchone"
 
-        c.execute(all_types_query)
+        c.execute(all_types_query, set_parameters=set_params)
         assert len(c.fetchmany(0)) == 0, "Invalid data size returned by fetchmany"
         data = c.fetchmany()
         assert len(data) == 1, "Invalid data size returned by fetchmany"
@@ -194,8 +198,10 @@ def test_insert(connection: Connection) -> None:
 def test_parameterized_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
+    set_params = {"firebolt_use_decimal": 1}
+
     def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
-        assert c.execute(query, params) == -1, "Invalid row count returned"
+        assert c.execute(query, params, set_params) == -1, "Invalid row count returned"
         assert c.rowcount == -1, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
         with raises(DataError):
@@ -211,8 +217,9 @@ def test_parameterized_query(connection: Connection) -> None:
         c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
         c.execute(
             "CREATE FACT TABLE test_tb_parameterized(i int, f float, s string, sn"
-            " string null, d date, dt datetime, b bool, a array(int), ss string)"
-            " primary index i"
+            " string null, d date, dt datetime, b bool, a array(int), "
+            "dec decimal(38, 3), ss string) primary index i",
+            set_parameters=set_params,
         )
 
         params = [
@@ -224,11 +231,13 @@ def test_parameterized_query(connection: Connection) -> None:
             datetime(2022, 1, 1, 1, 1, 1),
             True,
             [1, 2, 3],
+            Decimal("123.456"),
         ]
 
         test_empty_query(
             c,
-            "INSERT INTO test_tb_parameterized VALUES (?, ?, ?, ?, ?, ?, ?, ?, '\\?')",
+            "INSERT INTO test_tb_parameterized VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,"
+            " '\\?')",
             params,
         )
 
@@ -239,7 +248,8 @@ def test_parameterized_query(connection: Connection) -> None:
         params[6] = 1
 
         assert (
-            c.execute("SELECT * FROM test_tb_parameterized") == 1
+            c.execute("SELECT * FROM test_tb_parameterized", set_parameters=set_params)
+            == 1
         ), "Invalid data length in table after parameterized insert"
 
         assert_deep_eq(
