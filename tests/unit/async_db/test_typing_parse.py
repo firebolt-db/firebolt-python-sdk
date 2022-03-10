@@ -1,10 +1,12 @@
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Dict
 
 from pytest import raises
 
 from firebolt.async_db import (
     ARRAY,
+    DECIMAL,
     DateFromTicks,
     TimeFromTicks,
     TimestampFromTicks,
@@ -76,6 +78,10 @@ def test_parse_value_datetime() -> None:
     assert parse_value("2021-12-31", date) == date(
         2021, 12, 31
     ), "Error parsing date: str provided"
+    assert parse_value("1860-12-31", date) == date(
+        1860, 12, 31
+    ), "Error parsing extended date: str provided"
+
     assert parse_value(None, date) is None, "Error parsing date: None provided"
 
     assert parse_value("2021-12-31 23:59:59", date) == date(
@@ -92,8 +98,8 @@ def test_parse_value_datetime() -> None:
         assert str(exc_info.value) == f"Invalid date value {value}: str expected"
 
     # Datetime
-    assert parse_value("2021-12-31 23:59:59", datetime) == datetime(
-        2021, 12, 31, 23, 59, 59
+    assert parse_value("2021-12-31 23:59:59.1234", datetime) == datetime(
+        2021, 12, 31, 23, 59, 59, 123400
     ), "Error parsing datetime: str provided"
     assert parse_value(None, datetime) is None, "Error parsing datetime: None provided"
 
@@ -109,6 +115,18 @@ def test_parse_value_datetime() -> None:
             parse_value(value, datetime)
 
         assert str(exc_info.value) == f"Invalid datetime value {value}: str expected"
+
+
+def test_parse_decimal() -> None:
+    assert parse_value("123.456", DECIMAL(38, 3)) == Decimal(
+        "123.456"
+    ), "Error parsing decimal(38, 3): str provided"
+    assert parse_value(123, DECIMAL(38, 3)) == Decimal(
+        "123"
+    ), "Error parsing decimal(38, 3): int provided"
+    assert (
+        parse_value(None, DECIMAL(38, 3)) is None
+    ), "Error parsing decimal(38, 3): None provided"
 
 
 def test_parse_arrays() -> None:
