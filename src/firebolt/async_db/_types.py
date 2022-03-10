@@ -13,7 +13,13 @@ from sqlparse.tokens import Token as TokenType  # type: ignore
 try:
     from ciso8601 import parse_datetime  # type: ignore
 except ImportError:
-    parse_datetime = datetime.fromisoformat  # type: ignore
+    # Unfortunately, there seems to be no support for optional bits in strptime
+    def parse_datetime(date_string: str) -> datetime:
+        format = "%Y-%m-%d %H:%M:%S.%f"
+        # fromisoformat doesn't support milliseconds
+        if "." in date_string:
+            return datetime.strptime(date_string, format)
+        return datetime.fromisoformat(date_string)
 
 
 from firebolt.common.exception import DataError, NotSupportedError
