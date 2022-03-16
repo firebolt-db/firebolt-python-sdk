@@ -30,6 +30,7 @@ from firebolt.common.urls import (
 )
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
+from tests.unit.db_conftest import *  # noqa
 from tests.unit.util import list_to_paginated_response
 
 

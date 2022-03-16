@@ -16,6 +16,7 @@ from firebolt.common.exception import (
     OperationalError,
     QueryNotRunError,
 )
+from tests.unit.db_conftest import encode_param
 
 
 @mark.asyncio
@@ -475,3 +476,82 @@ async def test_cursor_multi_statement(
         ), f"Invalid data row at position {i}"
 
     assert await cursor.nextset() is None
+
+
+@mark.asyncio
+async def test_cursor_set_statements(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    select_one_query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
+):
+    """cursor correctly parses and processes set statements"""
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&a=b")
+
+    assert len(cursor._set_parameters) == 0
+
+    rc = await cursor.execute("set a = b")
+    assert rc == -1, "Invalid row count returned"
+    assert cursor.description is None, "Non-empty description for set"
+    with raises(DataError):
+        await cursor.fetchall()
+
+    assert (
+        len(cursor._set_parameters) == 1
+        and "a" in cursor._set_parameters
+        and cursor._set_parameters["a"] == "b"
+    )
+
+    cursor.flush_parameters()
+
+    assert len(cursor._set_parameters) == 0
+
+    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&param=1")
+
+    rc = await cursor.execute("set param=1")
+    assert rc == -1, "Invalid row count returned"
+    assert cursor.description is None, "Non-empty description for set"
+    with raises(DataError):
+        await cursor.fetchall()
+
+    assert (
+        len(cursor._set_parameters) == 1
+        and "param" in cursor._set_parameters
+        and cursor._set_parameters["param"] == "1"
+    )
+
+    cursor.flush_parameters()
+
+    assert len(cursor._set_parameters) == 0
+
+
+@mark.asyncio
+async def test_cursor_set_parameters_sent(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_url: str,
+    query_with_params_callback: Callable,
+    select_one_query_callback: Callable,
+    cursor: Cursor,
+    set_params: Dict,
+):
+    """Cursor passes provided set parameters to engine"""
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    params = ""
+
+    for p, v in set_params.items():
+        v = encode_param(v)
+        params += f"&{p}={v}"
+        httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}{params}")
+        await cursor.execute(f"set {p} = {v}")
+
+    httpx_mock.add_callback(query_with_params_callback, url=f"{query_url}{params}")
+    await cursor.execute("select 1")
