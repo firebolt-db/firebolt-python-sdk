@@ -300,7 +300,7 @@ class BaseCursor:
 
             queries = split_format_sql(raw_query, parameters)
 
-            for query in queries:  # type: ignore
+            for query in queries:
 
                 start_time = time.time()
                 # our CREATE EXTERNAL TABLE queries currently require credentials,
