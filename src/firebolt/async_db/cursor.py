@@ -291,6 +291,11 @@ class BaseCursor:
         set_parameters: Optional[Dict] = None,
     ) -> None:
         self._reset()
+        if set_parameters is not None:
+            logger.warning(
+                "Passing set parameters as an argument is deprecated. Please run "
+                "a query 'SET <param> = <value>'"
+            )
         try:
 
             queries = split_format_sql(raw_query, parameters)
