@@ -320,6 +320,9 @@ class BaseCursor:
                     resp = await self._api_request(
                         "select 1", {query.name: query.value}
                     )
+                    # Handle invalid set parameter
+                    if resp.status_code == codes.BAD_REQUEST:
+                        raise OperationalError(resp.text)
                     await self._raise_if_error(resp)
 
                     # set parameter passed validation
