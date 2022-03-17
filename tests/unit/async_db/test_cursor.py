@@ -512,9 +512,9 @@ async def test_cursor_set_statements(
 
     assert len(cursor._set_parameters) == 0
 
-    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&param=1")
+    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&param1=1")
 
-    rc = await cursor.execute("set param=1")
+    rc = await cursor.execute("set param1=1")
     assert rc == -1, "Invalid row count returned"
     assert cursor.description is None, "Non-empty description for set"
     with raises(DataError):
@@ -522,8 +522,28 @@ async def test_cursor_set_statements(
 
     assert (
         len(cursor._set_parameters) == 1
-        and "param" in cursor._set_parameters
-        and cursor._set_parameters["param"] == "1"
+        and "param1" in cursor._set_parameters
+        and cursor._set_parameters["param1"] == "1"
+    )
+
+    httpx_mock.add_callback(
+        select_one_query_callback, url=f"{query_url}&param1=1&param2=0"
+    )
+
+    rc = await cursor.execute("set param2=0")
+    assert rc == -1, "Invalid row count returned"
+    assert cursor.description is None, "Non-empty description for set"
+    with raises(DataError):
+        await cursor.fetchall()
+
+    assert len(cursor._set_parameters) == 2
+
+    assert (
+        "param1" in cursor._set_parameters and cursor._set_parameters["param1"] == "1"
+    )
+
+    assert (
+        "param2" in cursor._set_parameters and cursor._set_parameters["param2"] == "0"
     )
 
     cursor.flush_parameters()
