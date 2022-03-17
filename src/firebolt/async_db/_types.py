@@ -332,10 +332,10 @@ def format_statement(statement: Statement, parameters: Sequence[ParameterType]) 
     return formatted_sql
 
 
-Set = namedtuple("Set", ["name", "value"])
+SetParameter = namedtuple("SetParameter", ["name", "value"])
 
 
-def statement_to_set(statement: Statement) -> Optional[Set]:
+def statement_to_set(statement: Statement) -> Optional[SetParameter]:
     """Try to parse statement as a SET command. Return None if it's not a SET command"""
     # Filter out meaningless tokens like Punctuation and Whitespaces
     tokens = [
@@ -356,7 +356,9 @@ def statement_to_set(statement: Statement) -> Optional[Set]:
                 f"Invalid set statement format: {statement_to_sql(statement)},"
                 " expected SET <param> = <value>"
             )
-        return Set(statement_to_sql(tokens[1].left), statement_to_sql(tokens[1].right))
+        return SetParameter(
+            statement_to_sql(tokens[1].left), statement_to_sql(tokens[1].right)
+        )
     return None
 
 
@@ -366,7 +368,7 @@ def statement_to_sql(statement: Statement) -> str:
 
 def split_format_sql(
     query: str, parameters: Sequence[Sequence[ParameterType]]
-) -> List[Union[str, Set]]:
+) -> List[Union[str, SetParameter]]:
     """
     Split a query into separate statement, and format it with parameters
     if it's a single statement

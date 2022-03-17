@@ -26,7 +26,7 @@ from firebolt.async_db._types import (
     Column,
     ParameterType,
     RawColType,
-    Set,
+    SetParameter,
     parse_type,
     parse_value,
     split_format_sql,
@@ -306,7 +306,7 @@ class BaseCursor:
                 # our CREATE EXTERNAL TABLE queries currently require credentials,
                 # so we will skip logging those queries.
                 # https://docs.firebolt.io/sql-reference/commands/ddl-commands#create-external-table
-                if isinstance(query, Set) or not re.search(
+                if isinstance(query, SetParameter) or not re.search(
                     "aws_key_id|credentials", query, flags=re.IGNORECASE
                 ):
                     logger.debug(f"Running query: {query}")
@@ -315,7 +315,7 @@ class BaseCursor:
                 row_set: Tuple[
                     int, Optional[List[Column]], Optional[List[List[RawColType]]]
                 ] = (-1, None, None)
-                if isinstance(query, Set):
+                if isinstance(query, SetParameter):
                     # Validate parameter by executing simple query with it
                     resp = await self._api_request(
                         "select 1", {query.name: query.value}

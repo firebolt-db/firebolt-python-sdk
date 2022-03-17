@@ -8,7 +8,7 @@ from sqlparse.sql import Statement
 
 from firebolt.async_db import DataError, InterfaceError, NotSupportedError
 from firebolt.async_db._types import (
-    Set,
+    SetParameter,
     format_statement,
     format_value,
     split_format_sql,
@@ -135,8 +135,16 @@ def test_format_statement_errors() -> None:
             ((1,), (2,)),
             ["select * from t where id == 1", "select * from t where id == 2"],
         ),
-        ("select * from t; set a = b;", (), ["select * from t", Set("a", "b")]),
-        ("set \t\na     =   \t\n b   ; set c=d;", (), [Set("a", "b"), Set("c", "d")]),
+        (
+            "select * from t; set a = b;",
+            (),
+            ["select * from t", SetParameter("a", "b")],
+        ),
+        (
+            "set \t\na     =   \t\n b   ; set c=d;",
+            (),
+            [SetParameter("a", "b"), SetParameter("c", "d")],
+        ),
     ],
 )
 def test_split_format_sql(query: str, params: tuple, result: List[str]) -> None:
@@ -159,12 +167,12 @@ def test_split_format_error() -> None:
     "statement,result",
     [
         (to_statement("select 1"), None),
-        (to_statement("set a = b"), Set("a", "b")),
-        (to_statement("set a=b"), Set("a", "b")),
-        (to_statement("set \t\na     =   \t\n b   ;"), Set("a", "b")),
+        (to_statement("set a = b"), SetParameter("a", "b")),
+        (to_statement("set a=b"), SetParameter("a", "b")),
+        (to_statement("set \t\na     =   \t\n b   ;"), SetParameter("a", "b")),
     ],
 )
-def test_statement_to_set(statement: Statement, result: Optional[Set]) -> None:
+def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) -> None:
     assert statement_to_set(statement) == result, "Invalid statement_to_set output"
 
 
