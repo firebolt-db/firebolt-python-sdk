@@ -78,8 +78,8 @@ async def test_long_query(
             "SET advanced_mode = 1; SET use_standard_sql = 0;"
             "SELECT sleepEachRow(1) from numbers(360)",
         )
-        c.nextset()
-        c.nextset()
+        await c.nextset()
+        await c.nextset()
         data = await c.fetchall()
         assert len(data) == 360, "Invalid data size returned by fetchall"
 
