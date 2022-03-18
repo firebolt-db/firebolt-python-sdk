@@ -4,9 +4,8 @@ from typing import Any, List
 
 from pytest import mark, raises
 
-from firebolt.async_db._types import ColType
-from firebolt.async_db.cursor import Column
-from firebolt.db import Connection, Cursor, DataError
+from firebolt.async_db._types import ColType, Column
+from firebolt.db import Connection, Cursor, DataError, OperationalError
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -39,11 +38,9 @@ def test_select(
     all_types_query_response: List[ColType],
 ) -> None:
     """Select handles all data types properly"""
-    set_params = {"firebolt_use_decimal": 1}
     with connection.cursor() as c:
-        assert (
-            c.execute(all_types_query, set_parameters=set_params) == 1
-        ), "Invalid row count returned"
+        assert c.execute("set firebolt_use_decimal = 1") == -1
+        assert c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = c.fetchall()
         assert len(data) == c.rowcount, "Invalid data length"
@@ -53,11 +50,11 @@ def test_select(
         assert len(c.fetchall()) == 0, "Redundant data returned by fetchall"
 
         # Different fetch types
-        c.execute(all_types_query, set_parameters=set_params)
+        c.execute(all_types_query)
         assert c.fetchone() == all_types_query_response[0], "Invalid fetchone data"
         assert c.fetchone() is None, "Redundant data returned by fetchone"
 
-        c.execute(all_types_query, set_parameters=set_params)
+        c.execute(all_types_query)
         assert len(c.fetchmany(0)) == 0, "Invalid data size returned by fetchmany"
         data = c.fetchmany()
         assert len(data) == 1, "Invalid data size returned by fetchmany"
@@ -73,9 +70,11 @@ def test_long_query(
     """AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly"""
     with connection.cursor() as c:
         c.execute(
+            "SET advanced_mode = 1; SET use_standard_sql = 0;"
             "SELECT sleepEachRow(1) from numbers(360)",
-            set_parameters={"advanced_mode": "1", "use_standard_sql": "0"},
         )
+        c.nextset()
+        c.nextset()
         data = c.fetchall()
         assert len(data) == 360, "Invalid data size returned by fetchall"
 
@@ -198,10 +197,8 @@ def test_insert(connection: Connection) -> None:
 def test_parameterized_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
-    set_params = {"firebolt_use_decimal": 1}
-
     def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
-        assert c.execute(query, params, set_params) == -1, "Invalid row count returned"
+        assert c.execute(query, params) == -1, "Invalid row count returned"
         assert c.rowcount == -1, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
         with raises(DataError):
@@ -214,12 +211,12 @@ def test_parameterized_query(connection: Connection) -> None:
             c.fetchall()
 
     with connection.cursor() as c:
+        c.execute("set firebolt_use_decimal = 1")
         c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
         c.execute(
             "CREATE FACT TABLE test_tb_parameterized(i int, f float, s string, sn"
             " string null, d date, dt datetime, b bool, a array(int), "
             "dec decimal(38, 3), ss string) primary index i",
-            set_parameters=set_params,
         )
 
         params = [
@@ -248,8 +245,7 @@ def test_parameterized_query(connection: Connection) -> None:
         params[6] = 1
 
         assert (
-            c.execute("SELECT * FROM test_tb_parameterized", set_parameters=set_params)
-            == 1
+            c.execute("SELECT * FROM test_tb_parameterized") == 1
         ), "Invalid data length in table after parameterized insert"
 
         assert_deep_eq(
@@ -316,3 +312,12 @@ def test_multi_statement_query(connection: Connection) -> None:
         )
 
         assert c.nextset() is None
+
+
+def test_set_invalid_parameter(connection: Connection):
+    with connection.cursor() as c:
+        assert len(c._set_parameters) == 0
+        with raises(OperationalError):
+            c.execute("set some_invalid_parameter = 1")
+
+        assert len(c._set_parameters) == 0

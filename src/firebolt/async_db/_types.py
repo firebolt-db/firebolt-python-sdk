@@ -4,10 +4,15 @@ from collections import namedtuple
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import List, Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
-from sqlparse.sql import Statement, Token, TokenList  # type: ignore
+from sqlparse.sql import (  # type: ignore
+    Comparison,
+    Statement,
+    Token,
+    TokenList,
+)
 from sqlparse.tokens import Token as TokenType  # type: ignore
 
 try:
@@ -22,7 +27,11 @@ except ImportError:
         return datetime.fromisoformat(date_string)
 
 
-from firebolt.common.exception import DataError, NotSupportedError
+from firebolt.common.exception import (
+    DataError,
+    InterfaceError,
+    NotSupportedError,
+)
 from firebolt.common.util import cached_property
 
 _NoneType = type(None)
@@ -312,7 +321,7 @@ def format_statement(statement: Statement, parameters: Sequence[ParameterType]) 
             return TokenList([process_token(t) for t in token.tokens])
         return token
 
-    formatted_sql = str(process_token(statement)).rstrip(";")
+    formatted_sql = statement_to_sql(process_token(statement))
 
     if idx < len(parameters):
         raise DataError(
@@ -323,9 +332,43 @@ def format_statement(statement: Statement, parameters: Sequence[ParameterType]) 
     return formatted_sql
 
 
+SetParameter = namedtuple("SetParameter", ["name", "value"])
+
+
+def statement_to_set(statement: Statement) -> Optional[SetParameter]:
+    """Try to parse statement as a SET command. Return None if it's not a SET command"""
+    # Filter out meaningless tokens like Punctuation and Whitespaces
+    tokens = [
+        token
+        for token in statement.tokens
+        if token.ttype == TokenType.Keyword or isinstance(token, Comparison)
+    ]
+
+    # Check if it's a SET statement by checking if it starts with set
+    if (
+        len(tokens) > 0
+        and tokens[0].ttype == TokenType.Keyword
+        and tokens[0].value.lower() == "set"
+    ):
+        # Check if set statement has a valid format
+        if len(tokens) != 2 or not isinstance(tokens[1], Comparison):
+            raise InterfaceError(
+                f"Invalid set statement format: {statement_to_sql(statement)},"
+                " expected SET <param> = <value>"
+            )
+        return SetParameter(
+            statement_to_sql(tokens[1].left), statement_to_sql(tokens[1].right)
+        )
+    return None
+
+
+def statement_to_sql(statement: Statement) -> str:
+    return str(statement).strip().rstrip(";")
+
+
 def split_format_sql(
     query: str, parameters: Sequence[Sequence[ParameterType]]
-) -> List[str]:
+) -> List[Union[str, SetParameter]]:
     """
     Split a query into separate statement, and format it with parameters
     if it's a single statement
@@ -340,5 +383,9 @@ def split_format_sql(
             raise NotSupportedError(
                 "formatting multistatement queries is not supported"
             )
+        if statement_to_set(statements[0]):
+            raise NotSupportedError("formatting set statements is not supported")
         return [format_statement(statements[0], paramset) for paramset in parameters]
-    return [str(st).strip().rstrip(";") for st in statements]
+
+    # Try parsing each statement as a SET, otherwise return as a plain sql string
+    return [statement_to_set(st) or statement_to_sql(st) for st in statements]
