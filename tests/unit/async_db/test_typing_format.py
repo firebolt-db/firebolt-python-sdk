@@ -1,16 +1,18 @@
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 
 from pytest import mark, raises
 from sqlparse import parse
 from sqlparse.sql import Statement
 
-from firebolt.async_db import DataError, NotSupportedError
+from firebolt.async_db import DataError, InterfaceError, NotSupportedError
 from firebolt.async_db._types import (
+    SetParameter,
     format_statement,
     format_value,
     split_format_sql,
+    statement_to_set,
 )
 
 
@@ -133,6 +135,16 @@ def test_format_statement_errors() -> None:
             ((1,), (2,)),
             ["select * from t where id == 1", "select * from t where id == 2"],
         ),
+        (
+            "select * from t; set a = b;",
+            (),
+            ["select * from t", SetParameter("a", "b")],
+        ),
+        (
+            "set \t\na     =   \t\n b   ; set c=d;",
+            (),
+            [SetParameter("a", "b"), SetParameter("c", "d")],
+        ),
     ],
 )
 def test_split_format_sql(query: str, params: tuple, result: List[str]) -> None:
@@ -142,11 +154,37 @@ def test_split_format_sql(query: str, params: tuple, result: List[str]) -> None:
 
 
 def test_split_format_error() -> None:
-    with raises(NotSupportedError) as exc_info:
+    with raises(NotSupportedError):
         split_format_sql(
             "select * from t where id == ?; insert into t values (?, ?)", ((1, 2, 3),)
         )
 
-    assert (
-        str(exc_info.value) == "formatting multistatement queries is not supported"
-    ), "Invalid not supported error message"
+    with raises(NotSupportedError):
+        split_format_sql("set a = ?", ((1,),))
+
+
+@mark.parametrize(
+    "statement,result",
+    [
+        (to_statement("select 1"), None),
+        (to_statement("set a = b"), SetParameter("a", "b")),
+        (to_statement("set a=b"), SetParameter("a", "b")),
+        (to_statement("set \t\na     =   \t\n b   ;"), SetParameter("a", "b")),
+    ],
+)
+def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) -> None:
+    assert statement_to_set(statement) == result, "Invalid statement_to_set output"
+
+
+@mark.parametrize(
+    "statement,error",
+    [
+        (to_statement("set"), InterfaceError),
+        (to_statement("set a"), InterfaceError),
+        (to_statement("set a ="), InterfaceError),
+        (to_statement("set a = '"), InterfaceError),
+    ],
+)
+def test_statement_to_set_errors(statement: Statement, error: Exception) -> None:
+    with raises(error):
+        statement_to_set(statement)

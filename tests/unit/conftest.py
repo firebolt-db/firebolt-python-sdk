@@ -2,9 +2,10 @@ from json import loads
 from typing import Callable, List
 
 import httpx
-import pytest
 from httpx import Response
 from pydantic import SecretStr
+from pyfakefs.fake_filesystem_unittest import Patcher
+from pytest import fixture
 
 from firebolt.common.exception import (
     DatabaseError,
@@ -30,25 +31,32 @@ from firebolt.common.urls import (
 )
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
+from tests.unit.db_conftest import *  # noqa
 from tests.unit.util import list_to_paginated_response
 
 
-@pytest.fixture
+@fixture(autouse=True)
+def global_fake_fs() -> None:
+    with Patcher():
+        yield
+
+
+@fixture
 def server() -> str:
     return "api.mock.firebolt.io"
 
 
-@pytest.fixture
+@fixture
 def account_id() -> str:
     return "mock_account_id"
 
 
-@pytest.fixture
+@fixture
 def access_token() -> str:
     return "mock_access_token"
 
 
-@pytest.fixture
+@fixture
 def provider() -> Provider:
     return Provider(
         provider_id="mock_provider_id",
@@ -56,12 +64,12 @@ def provider() -> Provider:
     )
 
 
-@pytest.fixture
+@fixture
 def mock_providers(provider) -> List[Provider]:
     return [provider]
 
 
-@pytest.fixture
+@fixture
 def region_1(provider) -> Region:
     return Region(
         key=RegionKey(
@@ -72,7 +80,7 @@ def region_1(provider) -> Region:
     )
 
 
-@pytest.fixture
+@fixture
 def region_2(provider) -> Region:
     return Region(
         key=RegionKey(
@@ -83,12 +91,12 @@ def region_2(provider) -> Region:
     )
 
 
-@pytest.fixture
+@fixture
 def mock_regions(region_1, region_2) -> List[Region]:
     return [region_1, region_2]
 
 
-@pytest.fixture
+@fixture
 def settings(server, region_1) -> Settings:
     return Settings(
         server=server,
@@ -99,7 +107,7 @@ def settings(server, region_1) -> Settings:
     )
 
 
-@pytest.fixture
+@fixture
 def auth_callback(auth_url: str) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -114,22 +122,22 @@ def auth_callback(auth_url: str) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def auth_url(settings: Settings) -> str:
     return AUTH_URL.format(api_endpoint=f"https://{settings.server}")
 
 
-@pytest.fixture
+@fixture
 def db_name() -> str:
     return "database"
 
 
-@pytest.fixture
+@fixture
 def db_description() -> str:
     return "database description"
 
 
-@pytest.fixture
+@fixture
 def account_id_url(settings: Settings) -> str:
     if not settings.account_name:  # if None or ''
         return f"https://{settings.server}{ACCOUNT_URL}"
@@ -140,7 +148,7 @@ def account_id_url(settings: Settings) -> str:
         )
 
 
-@pytest.fixture
+@fixture
 def account_id_callback(
     account_id: str, account_id_url: str, settings: Settings
 ) -> Callable:
@@ -159,19 +167,19 @@ def account_id_callback(
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def engine_id() -> str:
     return "engine_id"
 
 
-@pytest.fixture
+@fixture
 def get_engine_url(settings: Settings, account_id: str, engine_id: str) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
-@pytest.fixture
+@fixture
 def get_engine_callback(
     get_engine_url: str, engine_id: str, settings: Settings
 ) -> Callable:
@@ -204,12 +212,12 @@ def get_engine_callback(
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def get_providers_url(settings: Settings, account_id: str, engine_id: str) -> str:
     return f"https://{settings.server}{PROVIDERS_URL}"
 
 
-@pytest.fixture
+@fixture
 def get_providers_callback(get_providers_url: str, provider: Provider) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -224,17 +232,17 @@ def get_providers_callback(get_providers_url: str, provider: Provider) -> Callab
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def get_engines_url(settings: Settings) -> str:
     return f"https://{settings.server}{ENGINES_URL}"
 
 
-@pytest.fixture
+@fixture
 def get_databases_url(settings: Settings) -> str:
     return f"https://{settings.server}{DATABASES_URL}"
 
 
-@pytest.fixture
+@fixture
 def db_api_exceptions():
     exceptions = {
         "DatabaseError": DatabaseError,
@@ -251,7 +259,7 @@ def db_api_exceptions():
     return exceptions
 
 
-@pytest.fixture
+@fixture
 def check_token_callback(access_token: str) -> Callable:
     def check_token(request: httpx.Request = None, **kwargs) -> Response:
         prefix = "Bearer "
@@ -267,7 +275,7 @@ def check_token_callback(access_token: str) -> Callable:
     return check_token
 
 
-@pytest.fixture
+@fixture
 def check_credentials_callback(settings: Settings, access_token: str) -> Callable:
     def check_credentials(
         request: httpx.Request = None,
