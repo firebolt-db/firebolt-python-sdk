@@ -9,8 +9,11 @@ from typing import Optional
 
 from appdirs import user_data_dir
 from cryptography.fernet import Fernet, InvalidToken
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.backends import default_backend  # type: ignore
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives.kdf.pbkdf2 import (
+    PBKDF2HMAC,  # type: ignore
+)
 
 APPNAME = "firebolt"
 
@@ -114,6 +117,7 @@ class FernetEncrypter:
             salt=b64decode(salt),
             length=32,
             iterations=39000,
+            backend=default_backend(),
         )
         self.fernet = Fernet(
             urlsafe_b64encode(
