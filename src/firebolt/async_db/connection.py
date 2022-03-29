@@ -113,7 +113,7 @@ async def _get_database_default_engine_url(
                 raise FireboltDatabaseError(
                     f"Database {database} has no default engines"
                 )
-            engine_id = default_engines_bindings[0].binding_key.engine_id
+            engine_id = default_engines_bindings[0]["id"]["engine_id"]
 
             return await _get_engine_endpoint(client, engine_id)
         except (

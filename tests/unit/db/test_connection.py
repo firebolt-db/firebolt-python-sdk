@@ -5,7 +5,11 @@ from pytest import raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db._types import ColType
-from firebolt.common.exception import ConfigurationError, ConnectionClosedError
+from firebolt.common.exception import (
+    ConfigurationError,
+    ConnectionClosedError,
+    FireboltDatabaseError,
+)
 from firebolt.common.settings import Settings
 from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL
 from firebolt.db import Connection, connect
@@ -170,6 +174,99 @@ def test_connect_engine_name(
 
     with connect(
         engine_name=engine_name,
+        database=db_name,
+        username="u",
+        password="p",
+        account_name=settings.account_name,
+        api_endpoint=settings.server,
+    ) as connection:
+        assert connection.cursor().execute("select*") == len(python_query_data)
+
+
+def test_connect_default_engine(
+    settings: Settings,
+    db_name: str,
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    account_id_url: str,
+    account_id_callback: Callable,
+    engine_id: str,
+    get_engine_url: str,
+    get_engine_callback: Callable,
+    database_by_name_url: str,
+    database_by_name_callback: Callable,
+    database_id: str,
+    bindings_url: str,
+    python_query_data: List[List[ColType]],
+    account_id: str,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(database_by_name_callback, url=database_by_name_url)
+    bindings_url = f"{bindings_url}?filter.id_database_id_eq={database_id}"
+    httpx_mock.add_response(
+        url=bindings_url,
+        status_code=codes.OK,
+        json={"edges": []},
+    )
+
+    with raises(FireboltDatabaseError):
+        with connect(
+            database=db_name,
+            username="u",
+            password="p",
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+        ):
+            pass
+
+    httpx_mock.add_response(
+        url=bindings_url,
+        status_code=codes.OK,
+        json={
+            "edges": [
+                {
+                    "engine_is_default": False,
+                    "id": {"engine_id": engine_id},
+                }
+            ]
+        },
+    )
+
+    with raises(FireboltDatabaseError):
+        with connect(
+            database=db_name,
+            username="u",
+            password="p",
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+        ):
+            pass
+
+    non_default_engine_id = "non_default_engine_id"
+
+    httpx_mock.add_response(
+        url=bindings_url,
+        status_code=codes.OK,
+        json={
+            "edges": [
+                {
+                    "engine_is_default": False,
+                    "id": {"engine_id": non_default_engine_id},
+                },
+                {
+                    "engine_is_default": True,
+                    "id": {"engine_id": engine_id},
+                },
+            ]
+        },
+    )
+    httpx_mock.add_callback(get_engine_callback, url=get_engine_url)
+    with connect(
         database=db_name,
         username="u",
         password="p",

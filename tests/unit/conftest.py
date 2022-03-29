@@ -21,7 +21,9 @@ from firebolt.common.exception import (
 )
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
+    ACCOUNT_BINDINGS_URL,
     ACCOUNT_BY_NAME_URL,
+    ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_URL,
     AUTH_URL,
@@ -240,6 +242,66 @@ def get_engines_url(settings: Settings) -> str:
 @fixture
 def get_databases_url(settings: Settings) -> str:
     return f"https://{settings.server}{DATABASES_URL}"
+
+
+@fixture
+def database_id() -> str:
+    return "database_id"
+
+
+@fixture
+def database_by_name_url(settings: Settings, account_id: str, db_name: str) -> str:
+    return (
+        f"https://{settings.server}"
+        f"{ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)}"
+        f"?database_name={db_name}"
+    )
+
+
+@fixture
+def database_by_name_callback(account_id: str, database_id: str) -> str:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        return Response(
+            status_code=httpx.codes.OK,
+            json={
+                "database_id": {
+                    "database_id": database_id,
+                    "account_id": account_id,
+                }
+            },
+        )
+
+    return do_mock
+
+
+@fixture
+def bindings_url(settings: Settings, account_id: str) -> str:
+    return (
+        f"https://{settings.server}{ACCOUNT_BINDINGS_URL.format(account_id=account_id)}"
+    )
+
+
+@fixture
+def bindings_callback(account_id: str, database_id: str) -> str:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == get_providers_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json={
+                "database_id": {
+                    "database_id": database_id,
+                    "account_id": account_id,
+                }
+            },
+        )
+
+    return do_mock
 
 
 @fixture
