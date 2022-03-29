@@ -15,15 +15,31 @@ from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
 from firebolt.common.exception import (
     ConfigurationError,
     ConnectionClosedError,
+    FireboltDatabaseError,
     FireboltEngineError,
     InterfaceError,
 )
-from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL, ACCOUNT_ENGINE_URL
+from firebolt.common.urls import (
+    ACCOUNT_BINDINGS_URL,
+    ACCOUNT_DATABASE_BY_NAME_URL,
+    ACCOUNT_ENGINE_BY_NAME_URL,
+    ACCOUNT_ENGINE_URL,
+)
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
+
+
+async def _get_engine_endpoint(client: AsyncClient, engine_id: int) -> str:
+    response = await client.get(
+        url=ACCOUNT_ENGINE_URL.format(
+            account_id=(await client.account_id), engine_id=engine_id
+        ),
+    )
+    response.raise_for_status()
+    return response.json()["engine"]["endpoint"]
 
 
 async def _resolve_engine_url(
@@ -46,13 +62,7 @@ async def _resolve_engine_url(
             )
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
-            response = await client.get(
-                url=ACCOUNT_ENGINE_URL.format(
-                    account_id=account_id, engine_id=engine_id
-                ),
-            )
-            response.raise_for_status()
-            return response.json()["engine"]["endpoint"]
+            return await _get_engine_endpoint(client, engine_id)
         except HTTPStatusError as e:
             # Engine error would be 404.
             if e.response.status_code != 404:
@@ -65,16 +75,63 @@ async def _resolve_engine_url(
             raise InterfaceError(f"Unable to retrieve engine endpoint: {e}.")
 
 
+async def _get_database_default_engine_url(
+    database: str,
+    auth: AuthTypes,
+    api_endpoint: str,
+    account_name: Optional[str] = None,
+) -> str:
+    async with AsyncClient(
+        auth=auth,
+        base_url=api_endpoint,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as client:
+        try:
+            account_id = await client.account_id
+            # Get database id by name
+            response = await client.get(
+                url=ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id),
+                params={"database_name": database},
+            )
+            response.raise_for_status()
+            database_id = response.json()["database_id"]["database_id"]
+
+            # Get attachend engines to a database
+            response = await client.get(
+                url=ACCOUNT_BINDINGS_URL.format(account_id=account_id),
+                params={
+                    "filter.id_database_id_eq": database_id,
+                },
+            )
+            response.raise_for_status()
+            default_engines_bindings = [
+                b for b in response.json()["edges"] if b["engine_is_default"]
+            ]
+
+            if len(default_engines_bindings) == 0:
+                raise FireboltDatabaseError(
+                    f"Database {database} has no default engines"
+                )
+            engine_id = default_engines_bindings[0].binding_key.engine_id
+
+            return await _get_engine_endpoint(client, engine_id)
+        except (
+            JSONDecodeError,
+            RequestError,
+            RuntimeError,
+            HTTPStatusError,
+            KeyError,
+        ) as e:
+            raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
+
+
 def _validate_engine_name_and_url(
     engine_name: Optional[str], engine_url: Optional[str]
 ) -> None:
     if engine_name and engine_url:
         raise ConfigurationError(
             "Both engine_name and engine_url are provided. Provide only one to connect."
-        )
-    if not engine_name and not engine_url:
-        raise ConfigurationError(
-            "Neither engine_name nor engine_url is provided. Provide one to connect."
         )
 
 
@@ -136,7 +193,15 @@ def async_connect_factory(connection_class: Type) -> Callable:
         # Mypy checks, this should never happen
         assert database is not None
 
-        if engine_name:
+        if not engine_name and not engine_url:
+            engine_url = await _get_database_default_engine_url(
+                database=database,
+                auth=auth,
+                account_name=account_name,
+                api_endpoint=api_endpoint,
+            )
+
+        elif engine_name:
             engine_url = await _resolve_engine_url(
                 engine_name=engine_name,
                 auth=auth,

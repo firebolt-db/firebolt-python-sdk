@@ -167,15 +167,6 @@ async def test_connect_engine_name(
         ):
             pass
 
-    with raises(ConfigurationError):
-        async with await connect(
-            database="db",
-            username="username",
-            password="password",
-            account_name="account",
-        ):
-            pass
-
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)

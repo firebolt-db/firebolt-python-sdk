@@ -152,13 +152,6 @@ def test_connect_engine_name(
             password="password",
         )
 
-    with raises(ConfigurationError):
-        connect(
-            database="db",
-            username="username",
-            password="password",
-        )
-
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
