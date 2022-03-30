@@ -150,7 +150,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
             api_endpoint(optional): Firebolt API endpoint. Used for authentication.
 
         Note:
-            Either `engine_name` or `engine_url` should be provided, but not both.
+            Providing both `engine_name` and `engine_url` would result in an error.
 
         """
         # These parameters are optional in function signature
