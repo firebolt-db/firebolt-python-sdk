@@ -105,7 +105,6 @@ async def _get_database_default_engine_url(
                 },
             )
             response.raise_for_status()
-            print(response.json()["edges"])
             default_engines_bindings = [
                 b["node"]
                 for b in response.json()["edges"]
