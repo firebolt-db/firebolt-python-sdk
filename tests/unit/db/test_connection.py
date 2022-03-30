@@ -230,8 +230,10 @@ def test_connect_default_engine(
         json={
             "edges": [
                 {
-                    "engine_is_default": False,
-                    "id": {"engine_id": engine_id},
+                    "node": {
+                        "engine_is_default": False,
+                        "id": {"engine_id": engine_id},
+                    }
                 }
             ]
         },
@@ -255,12 +257,16 @@ def test_connect_default_engine(
         json={
             "edges": [
                 {
-                    "engine_is_default": False,
-                    "id": {"engine_id": non_default_engine_id},
+                    "node": {
+                        "engine_is_default": False,
+                        "id": {"engine_id": non_default_engine_id},
+                    }
                 },
                 {
-                    "engine_is_default": True,
-                    "id": {"engine_id": engine_id},
+                    "node": {
+                        "engine_is_default": True,
+                        "id": {"engine_id": engine_id},
+                    }
                 },
             ]
         },
