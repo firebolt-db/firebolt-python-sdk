@@ -50,10 +50,9 @@ async def _resolve_engine_url(
             )
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
-
             response = await client.get(
                 url=ACCOUNT_ENGINE_URL.format(
-                    account_id=(await client.account_id), engine_id=engine_id
+                    account_id=account_id, engine_id=engine_id
                 ),
             )
             response.raise_for_status()
