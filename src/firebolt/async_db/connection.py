@@ -15,31 +15,19 @@ from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
 from firebolt.common.exception import (
     ConfigurationError,
     ConnectionClosedError,
-    FireboltDatabaseError,
     FireboltEngineError,
     InterfaceError,
 )
 from firebolt.common.urls import (
-    ACCOUNT_BINDINGS_URL,
-    ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
+    ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
 from firebolt.common.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
-
-
-async def _get_engine_endpoint(client: AsyncClient, engine_id: int) -> str:
-    response = await client.get(
-        url=ACCOUNT_ENGINE_URL.format(
-            account_id=(await client.account_id), engine_id=engine_id
-        ),
-    )
-    response.raise_for_status()
-    return response.json()["engine"]["endpoint"]
 
 
 async def _resolve_engine_url(
@@ -62,7 +50,14 @@ async def _resolve_engine_url(
             )
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
-            return await _get_engine_endpoint(client, engine_id)
+
+            response = await client.get(
+                url=ACCOUNT_ENGINE_URL.format(
+                    account_id=(await client.account_id), engine_id=engine_id
+                ),
+            )
+            response.raise_for_status()
+            return response.json()["engine"]["endpoint"]
         except HTTPStatusError as e:
             # Engine error would be 404.
             if e.response.status_code != 404:
@@ -91,33 +86,11 @@ async def _get_database_default_engine_url(
             account_id = await client.account_id
             # Get database id by name
             response = await client.get(
-                url=ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id),
+                url=ACCOUNT_ENGINE_URL_BY_DATABASE_NAME.format(account_id=account_id),
                 params={"database_name": database},
             )
             response.raise_for_status()
-            database_id = response.json()["database_id"]["database_id"]
-
-            # Get attachend engines to a database
-            response = await client.get(
-                url=ACCOUNT_BINDINGS_URL.format(account_id=account_id),
-                params={
-                    "filter.id_database_id_eq": database_id,
-                },
-            )
-            response.raise_for_status()
-            default_engines_bindings = [
-                b["node"]
-                for b in response.json()["edges"]
-                if b["node"]["engine_is_default"]
-            ]
-
-            if len(default_engines_bindings) == 0:
-                raise FireboltDatabaseError(
-                    f"Database {database} has no default engines"
-                )
-            engine_id = default_engines_bindings[0]["id"]["engine_id"]
-
-            return await _get_engine_endpoint(client, engine_id)
+            return response.json()["engine_url"]
         except (
             JSONDecodeError,
             RequestError,

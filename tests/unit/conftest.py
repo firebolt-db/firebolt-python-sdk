@@ -21,10 +21,10 @@ from firebolt.common.exception import (
 )
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
-    ACCOUNT_BINDINGS_URL,
     ACCOUNT_BY_NAME_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
+    ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
     ACCOUNT_URL,
     AUTH_URL,
     DATABASES_URL,
@@ -278,30 +278,11 @@ def database_by_name_callback(account_id: str, database_id: str) -> str:
 
 
 @fixture
-def bindings_url(settings: Settings, account_id: str) -> str:
+def engine_by_db_url(settings: Settings, account_id: str) -> str:
     return (
-        f"https://{settings.server}{ACCOUNT_BINDINGS_URL.format(account_id=account_id)}"
+        f"https://{settings.server}"
+        f"{ACCOUNT_ENGINE_URL_BY_DATABASE_NAME.format(account_id=account_id)}"
     )
-
-
-@fixture
-def bindings_callback(account_id: str, database_id: str) -> str:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == get_providers_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json={
-                "database_id": {
-                    "database_id": database_id,
-                    "account_id": account_id,
-                }
-            },
-        )
-
-    return do_mock
 
 
 @fixture

@@ -9,7 +9,6 @@ from firebolt.async_db._types import ColType
 from firebolt.common.exception import (
     ConfigurationError,
     ConnectionClosedError,
-    FireboltDatabaseError,
     FireboltEngineError,
 )
 from firebolt.common.settings import Settings
@@ -229,79 +228,22 @@ async def test_connect_default_engine(
     database_by_name_url: str,
     database_by_name_callback: Callable,
     database_id: str,
-    bindings_url: str,
+    engine_by_db_url: str,
     python_query_data: List[List[ColType]],
     account_id: str,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(database_by_name_callback, url=database_by_name_url)
-    bindings_url = f"{bindings_url}?filter.id_database_id_eq={database_id}"
-    httpx_mock.add_response(
-        url=bindings_url,
-        status_code=codes.OK,
-        json={"edges": []},
-    )
-
-    with raises(FireboltDatabaseError):
-        async with await connect(
-            database=db_name,
-            username="u",
-            password="p",
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
-        ):
-            pass
+    engine_by_db_url = f"{engine_by_db_url}?database_name={db_name}"
 
     httpx_mock.add_response(
-        url=bindings_url,
+        url=engine_by_db_url,
         status_code=codes.OK,
         json={
-            "edges": [
-                {
-                    "node": {
-                        "engine_is_default": False,
-                        "id": {"engine_id": engine_id},
-                    }
-                }
-            ]
+            "engine_url": settings.server,
         },
     )
-
-    with raises(FireboltDatabaseError):
-        async with await connect(
-            database=db_name,
-            username="u",
-            password="p",
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
-        ):
-            pass
-
-    non_default_engine_id = "non_default_engine_id"
-
-    httpx_mock.add_response(
-        url=bindings_url,
-        status_code=codes.OK,
-        json={
-            "edges": [
-                {
-                    "node": {
-                        "engine_is_default": False,
-                        "id": {"engine_id": non_default_engine_id},
-                    }
-                },
-                {
-                    "node": {
-                        "engine_is_default": True,
-                        "id": {"engine_id": engine_id},
-                    }
-                },
-            ]
-        },
-    )
-    httpx_mock.add_callback(get_engine_callback, url=get_engine_url)
     async with await connect(
         database=db_name,
         username="u",
