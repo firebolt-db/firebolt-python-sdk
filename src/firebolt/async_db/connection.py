@@ -83,7 +83,6 @@ async def _get_database_default_engine_url(
     ) as client:
         try:
             account_id = await client.account_id
-            # Get database id by name
             response = await client.get(
                 url=ACCOUNT_ENGINE_URL_BY_DATABASE_NAME.format(account_id=account_id),
                 params={"database_name": database},
