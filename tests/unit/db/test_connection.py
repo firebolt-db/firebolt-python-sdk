@@ -152,13 +152,6 @@ def test_connect_engine_name(
             password="password",
         )
 
-    with raises(ConfigurationError):
-        connect(
-            database="db",
-            username="username",
-            password="password",
-        )
-
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
@@ -177,6 +170,48 @@ def test_connect_engine_name(
 
     with connect(
         engine_name=engine_name,
+        database=db_name,
+        username="u",
+        password="p",
+        account_name=settings.account_name,
+        api_endpoint=settings.server,
+    ) as connection:
+        assert connection.cursor().execute("select*") == len(python_query_data)
+
+
+def test_connect_default_engine(
+    settings: Settings,
+    db_name: str,
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    account_id_url: str,
+    account_id_callback: Callable,
+    engine_id: str,
+    get_engine_url: str,
+    get_engine_callback: Callable,
+    database_by_name_url: str,
+    database_by_name_callback: Callable,
+    database_id: str,
+    engine_by_db_url: str,
+    python_query_data: List[List[ColType]],
+    account_id: str,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    engine_by_db_url = f"{engine_by_db_url}?database_name={db_name}"
+
+    httpx_mock.add_response(
+        url=engine_by_db_url,
+        status_code=codes.OK,
+        json={
+            "engine_url": settings.server,
+        },
+    )
+    with connect(
         database=db_name,
         username="u",
         password="p",
