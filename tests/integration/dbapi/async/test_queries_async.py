@@ -33,6 +33,22 @@ async def test_connect_engine_name(
 
 
 @mark.asyncio
+async def test_connect_no_engine(
+    connection_no_engine: Connection,
+    all_types_query: str,
+    all_types_query_description: List[Column],
+    all_types_query_response: List[ColType],
+) -> None:
+    """Connecting with engine name is handled properly."""
+    await test_select(
+        connection_no_engine,
+        all_types_query,
+        all_types_query_description,
+        all_types_query_response,
+    )
+
+
+@mark.asyncio
 async def test_select(
     connection: Connection,
     all_types_query: str,

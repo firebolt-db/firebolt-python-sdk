@@ -43,3 +43,22 @@ def connection_engine_name(
     )
     yield connection
     connection.close()
+
+
+@fixture
+def connection_no_engine(
+    database_name: str,
+    username: str,
+    password: str,
+    account_name: str,
+    api_endpoint: str,
+) -> Connection:
+    connection = connect(
+        database=database_name,
+        username=username,
+        password=password,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    )
+    yield connection
+    connection.close()
