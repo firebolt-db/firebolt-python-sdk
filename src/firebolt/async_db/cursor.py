@@ -6,7 +6,6 @@ import time
 from enum import Enum
 from functools import wraps
 from inspect import cleandoc
-from json import JSONDecodeError
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -27,9 +26,10 @@ from firebolt.async_db._types import (
     Column,
     ParameterType,
     RawColType,
-    format_sql,
+    SetParameter,
     parse_type,
     parse_value,
+    split_format_sql,
 )
 from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.client import AsyncClient
@@ -38,7 +38,6 @@ from firebolt.common.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
-    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -55,6 +54,7 @@ JSON_OUTPUT_FORMAT = "JSONCompact"
 
 class CursorState(Enum):
     NONE = 1
+    ERROR = 2
     DONE = 3
     CLOSED = 4
 
@@ -99,6 +99,9 @@ class BaseCursor:
         "_rows",
         "_idx",
         "_idx_lock",
+        "_row_sets",
+        "_next_set_idx",
+        "_set_parameters",
     )
 
     default_arraysize = 1
@@ -107,8 +110,16 @@ class BaseCursor:
         self.connection = connection
         self._client = client
         self._arraysize = self.default_arraysize
+        # These fields initialized here for type annotations purpose
         self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
+        self._row_sets: List[
+            Tuple[int, Optional[List[Column]], Optional[List[List[RawColType]]]]
+        ] = []
+        self._set_parameters: Dict[str, Any] = dict()
+        self._rowcount = -1
+        self._idx = 0
+        self._next_set_idx = 0
         self._reset()
 
     def __del__(self) -> None:
@@ -164,24 +175,32 @@ class BaseCursor:
         # remove typecheck skip  after connection is implemented
         self.connection._remove_cursor(self)  # type: ignore
 
-    def _store_query_data(self, response: Response) -> None:
-        """Store information about executed query from httpx response."""
+    @check_not_closed
+    @check_query_executed
+    def nextset(self) -> Optional[bool]:
+        """
+        Skip to the next available set, discarding any remaining rows
+        from the current set.
+        Returns True if operation was successful,
+        None if there are no more sets to retrive
+        """
+        return self._pop_next_set()
 
-        # Empty response is returned for insert query
-        if response.headers.get("content-length", "") == "0":
-            return
-        try:
-            query_data = response.json()
-            self._rowcount = int(query_data["rows"])
-            self._descriptions = [
-                Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
-                for d in query_data["meta"]
-            ]
+    def _pop_next_set(self) -> Optional[bool]:
+        """
+        Same functionality as .nextset, but doesn't check that query has been executed.
+        """
+        if self._next_set_idx >= len(self._row_sets):
+            return None
+        self._rowcount, self._descriptions, self._rows = self._row_sets[
+            self._next_set_idx
+        ]
+        self._idx = 0
+        self._next_set_idx += 1
+        return True
 
-            # Parse data during fetch
-            self._rows = query_data["data"]
-        except (KeyError, JSONDecodeError) as err:
-            raise DataError(f"Invalid query data format: {str(err)}")
+    def flush_parameters(self) -> None:
+        self._set_parameters = dict()
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -202,7 +221,7 @@ class BaseCursor:
             if not await is_engine_running(self.connection, self.connection.engine_url):
                 raise EngineNotRunningError(
                     f"Firebolt engine {self.connection.engine_url} "
-                    "needs to be running to run queries against it"
+                    "needs to be running to run queries against it."
                 )
         resp.raise_for_status()
 
@@ -213,29 +232,118 @@ class BaseCursor:
         self._descriptions = None
         self._rowcount = -1
         self._idx = 0
+        self._row_sets = []
+        self._next_set_idx = 0
 
-    async def _do_execute_request(
+    def _row_set_from_response(
+        self, response: Response
+    ) -> Tuple[int, Optional[List[Column]], Optional[List[List[RawColType]]]]:
+        """Fetch information about executed query from http response"""
+
+        # Empty response is returned for insert query
+        if response.headers.get("content-length", "") == "0":
+            return (-1, None, None)
+
+        try:
+            # Skip parsing floats to properly parse them later
+            query_data = response.json(parse_float=str)
+            rowcount = int(query_data["rows"])
+            descriptions = [
+                Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
+                for d in query_data["meta"]
+            ]
+
+            # Parse data during fetch
+            rows = query_data["data"]
+            return (rowcount, descriptions, rows)
+        except (KeyError, ValueError) as err:
+            raise DataError(f"Invalid query data format: {str(err)}")
+
+    def _append_row_set(
         self,
-        query: str,
-        parameters: Optional[Sequence[ParameterType]] = None,
-        set_parameters: Optional[Dict] = None,
-    ) -> Response:
-        if parameters:
-            query = format_sql(query, parameters)
+        row_set: Tuple[int, Optional[List[Column]], Optional[List[List[RawColType]]]],
+    ) -> None:
+        """Store information about executed query."""
+        self._row_sets.append(row_set)
+        if self._next_set_idx == 0:
+            # Populate values for first set
+            self._pop_next_set()
 
-        resp = await self._client.request(
+    async def _api_request(
+        self, query: str, set_parameters: Optional[dict]
+    ) -> Response:
+        return await self._client.request(
             url="/",
             method="POST",
             params={
                 "database": self.connection.database,
                 "output_format": JSON_OUTPUT_FORMAT,
+                **self._set_parameters,
                 **(set_parameters or dict()),
             },
             content=query,
         )
 
-        await self._raise_if_error(resp)
-        return resp
+    async def _do_execute(
+        self,
+        raw_query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        set_parameters: Optional[Dict] = None,
+    ) -> None:
+        self._reset()
+        if set_parameters is not None:
+            logger.warning(
+                "Passing set parameters as an argument is deprecated. Please run "
+                "a query 'SET <param> = <value>'"
+            )
+        try:
+
+            queries = split_format_sql(raw_query, parameters)
+
+            for query in queries:
+
+                start_time = time.time()
+                # our CREATE EXTERNAL TABLE queries currently require credentials,
+                # so we will skip logging those queries.
+                # https://docs.firebolt.io/sql-reference/commands/ddl-commands#create-external-table
+                if isinstance(query, SetParameter) or not re.search(
+                    "aws_key_id|credentials", query, flags=re.IGNORECASE
+                ):
+                    logger.debug(f"Running query: {query}")
+
+                # Define type for mypy
+                row_set: Tuple[
+                    int, Optional[List[Column]], Optional[List[List[RawColType]]]
+                ] = (-1, None, None)
+                if isinstance(query, SetParameter):
+                    # Validate parameter by executing simple query with it
+                    resp = await self._api_request(
+                        "select 1", {query.name: query.value}
+                    )
+                    # Handle invalid set parameter
+                    if resp.status_code == codes.BAD_REQUEST:
+                        raise OperationalError(resp.text)
+                    await self._raise_if_error(resp)
+
+                    # set parameter passed validation
+                    self._set_parameters[query.name] = query.value
+                else:
+                    resp = await self._api_request(query, set_parameters)
+                    await self._raise_if_error(resp)
+                    row_set = self._row_set_from_response(resp)
+
+                self._append_row_set(row_set)
+
+                logger.info(
+                    f"Query fetched {self.rowcount} rows in"
+                    f" {time.time() - start_time} seconds"
+                )
+
+            self._state = CursorState.DONE
+
+        except Exception:
+            self._state = CursorState.ERROR
+            raise
 
     @check_not_closed
     async def execute(
@@ -245,21 +353,9 @@ class BaseCursor:
         set_parameters: Optional[Dict] = None,
     ) -> int:
         """Prepare and execute a database query. Return row count."""
-        start_time = time.time()
 
-        # our CREATE EXTERNAL TABLE queries currently require credentials,
-        # so we will skip logging those queries.
-        # https://docs.firebolt.io/sql-reference/commands/ddl-commands#create-external-table
-        if not re.search("aws_key_id|credentials", query, flags=re.IGNORECASE):
-            logger.debug(f"Running query: {query}")
-
-        self._reset()
-        resp = await self._do_execute_request(query, parameters, set_parameters)
-        self._store_query_data(resp)
-        self._state = CursorState.DONE
-        logger.info(
-            f"Query fetched {self.rowcount} rows in {time.time() - start_time} seconds"
-        )
+        params_list = [parameters] if parameters else []
+        await self._do_execute(query, params_list, set_parameters)
         return self.rowcount
 
     @check_not_closed
@@ -270,19 +366,7 @@ class BaseCursor:
         Prepare and execute a database query against all parameter
         sequences provided. Return last query row count.
         """
-
-        if len(parameters_seq) > 1:
-            raise NotSupportedError(
-                "Parameterized multi-statement queries are not supported"
-            )
-
-        self._reset()
-        resp = None
-        for parameters in parameters_seq:
-            resp = await self._do_execute_request(query, parameters)
-            if resp is not None:
-                self._store_query_data(resp)
-                self._state = CursorState.DONE
+        await self._do_execute(query, parameters_seq)
         return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
@@ -422,6 +506,11 @@ class Cursor(BaseCursor):
         async with self._async_query_lock.reader:
             return super().fetchall()
         """Fetch all remaining rows of a query result"""
+
+    @wraps(BaseCursor.nextset)
+    async def nextset(self) -> None:
+        async with self._async_query_lock.reader:
+            return super().nextset()
 
     # Iteration support
     @check_not_closed

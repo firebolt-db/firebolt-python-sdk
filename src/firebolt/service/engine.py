@@ -1,6 +1,7 @@
 from logging import getLogger
-from typing import List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
+from firebolt.common.exception import FireboltError
 from firebolt.common.urls import (
     ACCOUNT_ENGINE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
@@ -8,8 +9,7 @@ from firebolt.common.urls import (
     ENGINES_BY_IDS_URL,
 )
 from firebolt.common.util import prune_dict
-from firebolt.model import FireboltBaseModel
-from firebolt.model.engine import Engine, EngineSettings
+from firebolt.model.engine import Engine, EngineSettings, _EngineCreateRequest
 from firebolt.model.engine_revision import (
     EngineRevision,
     EngineRevisionSpecification,
@@ -59,11 +59,11 @@ class EngineService(BaseService):
 
     def get_many(
         self,
-        name_contains: str,
-        current_status_eq: str,
-        current_status_not_eq: str,
-        region_eq: str,
-        order_by: Union[str, EngineOrder],
+        name_contains: Optional[str] = None,
+        current_status_eq: Optional[str] = None,
+        current_status_not_eq: Optional[str] = None,
+        region_eq: Optional[str] = None,
+        order_by: Optional[Union[str, EngineOrder]] = None,
     ) -> List[Engine]:
         """
         Get a list of engines on Firebolt.
@@ -80,7 +80,13 @@ class EngineService(BaseService):
         """
 
         if isinstance(order_by, str):
-            order_by = EngineOrder[order_by]
+            order_by = EngineOrder[order_by].name
+
+        if region_eq is not None:
+            region_eq = self.resource_manager.regions.get_by_name(
+                name=region_eq
+            ).key.region_id
+
         response = self.client.get(
             url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),
             params=prune_dict(
@@ -89,16 +95,14 @@ class EngineService(BaseService):
                     "filter.name_contains": name_contains,
                     "filter.current_status_eq": current_status_eq,
                     "filter.current_status_not_eq": current_status_not_eq,
-                    "filter.compute_region_id_region_id_eq": self.resource_manager.regions.get_by_name(  # noqa: E501
-                        name=region_eq
-                    ),
-                    "order_by": order_by.name,
+                    "filter.compute_region_id_region_id_eq": region_eq,
+                    "order_by": order_by,
                 }
             ),
         )
         return [
-            Engine.parse_obj_with_service(obj=e, engine_service=self)
-            for e in response.json()["engines"]
+            Engine.parse_obj_with_service(obj=e["node"], engine_service=self)
+            for e in response.json()["edges"]
         ]
 
     def create(
@@ -107,10 +111,12 @@ class EngineService(BaseService):
         region: Union[str, Region, None] = None,
         engine_type: Union[str, EngineType] = EngineType.GENERAL_PURPOSE,
         scale: int = 2,
-        spec: str = "i3.4xlarge",
+        spec: Optional[str] = None,
         auto_stop: int = 20,
         warmup: Union[str, WarmupMethod] = WarmupMethod.PRELOAD_INDEXES,
         description: str = "",
+        engine_settings_kwargs: Dict[str, Any] = {},
+        revision_spec_kwargs: Dict[str, Any] = {},
     ) -> Engine:
         """
         Create a new Engine.
@@ -121,7 +127,8 @@ class EngineService(BaseService):
             engine_type: The engine type. GENERAL_PURPOSE or DATA_ANALYTICS
             scale: The number of compute instances on the engine.
                 The scale can be any int from 1 to 128.
-            spec: The AWS EC2 instance type.
+            spec: Firebolt instance type. If not set will default to
+                the cheapest instance.
             auto_stop: The amount of time (in minutes)
             after which the engine automatically stops.
             warmup: The warmup method that should be used.
@@ -159,22 +166,30 @@ class EngineService(BaseService):
                 engine_type=engine_type,
                 auto_stop_delay_duration=f"{auto_stop * 60}s",
                 warm_up=warmup,
+                **engine_settings_kwargs,
             ),
         )
 
-        instance_type_key = self.resource_manager.instance_types.get_by_name(
-            instance_type_name=spec
-        ).key
+        if spec:
+            instance_type_key = self.resource_manager.instance_types.get_by_name(
+                instance_type_name=spec, region_name=region.name
+            ).key
+        else:
+            instance_type = (
+                self.resource_manager.instance_types.cheapest_instance_in_region(region)
+            )
+            if not instance_type:
+                raise FireboltError(
+                    f"No suitable default instances found in region {region}"
+                )
+            instance_type_key = instance_type.key
 
         engine_revision = EngineRevision(
             specification=EngineRevisionSpecification(
                 db_compute_instances_type_key=instance_type_key,
                 db_compute_instances_count=scale,
-                db_compute_instances_use_spot=False,
-                db_version="",
                 proxy_instances_type_key=instance_type_key,
-                proxy_instances_count=1,
-                proxy_version="",
+                **revision_spec_kwargs,
             )
         )
 
@@ -193,13 +208,6 @@ class EngineService(BaseService):
         Returns:
             The newly created engine.
         """
-
-        class _EngineCreateRequest(FireboltBaseModel):
-            """Helper model for sending Engine create requests."""
-
-            account_id: str
-            engine: Engine
-            engine_revision: Optional[EngineRevision]
 
         response = self.client.post(
             url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),

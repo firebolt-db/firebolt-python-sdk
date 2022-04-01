@@ -2,6 +2,7 @@ import typing
 
 import pytest
 from httpx import Client, Request, StreamError, codes
+from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
@@ -30,9 +31,7 @@ def test_auth_basic(
 
 
 def test_auth_refresh_on_expiration(
-    httpx_mock: HTTPXMock,
-    test_token: str,
-    test_token2: str,
+    httpx_mock: HTTPXMock, test_token: str, test_token2: str, fs: FakeFilesystem
 ):
     """Auth refreshes the token on expiration."""
 
@@ -52,13 +51,11 @@ def test_auth_refresh_on_expiration(
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
     assert auth.token == test_token, "invalid access token"
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
-    assert auth.token == test_token2, "expired access token was not updated"
+    assert auth.token == test_token2, "Expired access token was not updated."
 
 
 def test_auth_uses_same_token_if_valid(
-    httpx_mock: HTTPXMock,
-    test_token: str,
-    test_token2: str,
+    httpx_mock: HTTPXMock, test_token: str, test_token2: str, fs: FakeFilesystem
 ):
     """Auth refreshes the token on expiration"""
 
@@ -88,18 +85,18 @@ def test_auth_uses_same_token_if_valid(
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
     assert auth.token == test_token, "invalid access token"
     execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
-    assert auth.token == test_token, "shoud not update token until it expires"
+    assert auth.token == test_token, "Should not update token until it expires."
     httpx_mock.reset(False)
 
 
-def test_auth_error_handling(httpx_mock: HTTPXMock):
+def test_auth_error_handling(httpx_mock: HTTPXMock, fs: FakeFilesystem):
     """Auth handles various errors properly."""
 
     for api_endpoint in ("https://host", "host"):
         auth = Auth("user", "password", api_endpoint=api_endpoint)
 
         # Internal httpx error
-        def http_error(**kwargs):
+        def http_error(*args, **kwargs):
             raise StreamError("httpx")
 
         httpx_mock.add_callback(http_error)
@@ -129,7 +126,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
             execute_generator_requests(auth.get_new_token_generator())
 
         assert (
-            str(excinfo.value) == "Failed to authenticate at https://host: firebolt"
+            str(excinfo.value) == "Failed to authenticate at https://host: firebolt."
         ), "Invalid authentication error message"
         httpx_mock.reset(True)
 

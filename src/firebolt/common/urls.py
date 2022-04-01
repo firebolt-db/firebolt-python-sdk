@@ -10,10 +10,12 @@ ACCOUNT_BY_NAME_URL = "/iam/v2/accounts:getIdByName"
 
 ACCOUNT_ENGINE_URL = "/core/v1/accounts/{account_id}/engines/{engine_id}"
 ACCOUNT_ENGINE_START_URL = ACCOUNT_ENGINE_URL + ":start"
+ACCOUNT_ENGINE_RESTART_URL = ACCOUNT_ENGINE_URL + ":restart"
 ACCOUNT_ENGINE_STOP_URL = ACCOUNT_ENGINE_URL + ":stop"
 ACCOUNT_ENGINES_URL = "/core/v1/accounts/{account_id}/engines"
 ACCOUNT_ENGINE_BY_NAME_URL = ACCOUNT_ENGINES_URL + ":getIdByName"
 ACCOUNT_ENGINE_REVISION_URL = ACCOUNT_ENGINE_URL + "/engineRevisions/{revision_id}"
+ACCOUNT_ENGINE_URL_BY_DATABASE_NAME = ACCOUNT_ENGINES_URL + ":getURLByDatabaseName"
 
 ACCOUNT_DATABASES_URL = "/core/v1/accounts/{account_id}/databases"
 ACCOUNT_DATABASE_URL = "/core/v1/accounts/{account_id}/databases/{database_id}"

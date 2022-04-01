@@ -13,7 +13,7 @@ from firebolt.async_db.cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.common.util import async_to_sync
+from firebolt.common.util import AsyncJobThread, async_to_sync
 
 
 class Cursor(AsyncBaseCursor):
@@ -30,11 +30,16 @@ class Cursor(AsyncBaseCursor):
             with the :py:func:`fetchmany` method
     """
 
-    __slots__ = AsyncBaseCursor.__slots__ + ("_query_lock", "_idx_lock")
+    __slots__ = AsyncBaseCursor.__slots__ + (
+        "_query_lock",
+        "_idx_lock",
+        "_async_job_thread",
+    )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._query_lock = RWLockWrite()
         self._idx_lock = Lock()
+        self._async_job_thread: AsyncJobThread = kwargs.pop("async_job_thread")
         super().__init__(*args, **kwargs)
 
     @wraps(AsyncBaseCursor.execute)
@@ -45,14 +50,18 @@ class Cursor(AsyncBaseCursor):
         set_parameters: Optional[Dict] = None,
     ) -> int:
         with self._query_lock.gen_wlock():
-            return async_to_sync(super().execute)(query, parameters, set_parameters)
+            return async_to_sync(super().execute, self._async_job_thread)(
+                query, parameters, set_parameters
+            )
 
     @wraps(AsyncBaseCursor.executemany)
     def executemany(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
         with self._query_lock.gen_wlock():
-            return async_to_sync(super().executemany)(query, parameters_seq)
+            return async_to_sync(super().executemany, self._async_job_thread)(
+                query, parameters_seq
+            )
 
     @wraps(AsyncBaseCursor._get_next_range)
     def _get_next_range(self, size: int) -> Tuple[int, int]:
@@ -73,6 +82,11 @@ class Cursor(AsyncBaseCursor):
     def fetchall(self) -> List[List[ColType]]:
         with self._query_lock.gen_rlock():
             return super().fetchall()
+
+    @wraps(AsyncBaseCursor.nextset)
+    def nextset(self) -> None:
+        with self._query_lock.gen_rlock(), self._idx_lock:
+            return super().nextset()
 
     # Iteration support
     @check_not_closed

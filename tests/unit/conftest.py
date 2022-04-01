@@ -1,10 +1,11 @@
+from json import loads
 from typing import Callable, List
 
 import httpx
-import pytest
+from httpx import Response
 from pydantic import SecretStr
-from pytest_httpx import to_response
-from pytest_httpx._httpx_internals import Response
+from pyfakefs.fake_filesystem_unittest import Patcher
+from pytest import fixture
 
 from firebolt.common.exception import (
     DatabaseError,
@@ -21,7 +22,9 @@ from firebolt.common.exception import (
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
     ACCOUNT_BY_NAME_URL,
+    ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
+    ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
     ACCOUNT_URL,
     AUTH_URL,
     DATABASES_URL,
@@ -30,25 +33,32 @@ from firebolt.common.urls import (
 )
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
+from tests.unit.db_conftest import *  # noqa
 from tests.unit.util import list_to_paginated_response
 
 
-@pytest.fixture
+@fixture(autouse=True)
+def global_fake_fs() -> None:
+    with Patcher():
+        yield
+
+
+@fixture
 def server() -> str:
     return "api.mock.firebolt.io"
 
 
-@pytest.fixture
+@fixture
 def account_id() -> str:
     return "mock_account_id"
 
 
-@pytest.fixture
+@fixture
 def access_token() -> str:
     return "mock_access_token"
 
 
-@pytest.fixture
+@fixture
 def provider() -> Provider:
     return Provider(
         provider_id="mock_provider_id",
@@ -56,12 +66,12 @@ def provider() -> Provider:
     )
 
 
-@pytest.fixture
+@fixture
 def mock_providers(provider) -> List[Provider]:
     return [provider]
 
 
-@pytest.fixture
+@fixture
 def region_1(provider) -> Region:
     return Region(
         key=RegionKey(
@@ -72,7 +82,7 @@ def region_1(provider) -> Region:
     )
 
 
-@pytest.fixture
+@fixture
 def region_2(provider) -> Region:
     return Region(
         key=RegionKey(
@@ -83,12 +93,12 @@ def region_2(provider) -> Region:
     )
 
 
-@pytest.fixture
+@fixture
 def mock_regions(region_1, region_2) -> List[Region]:
     return [region_1, region_2]
 
 
-@pytest.fixture
+@fixture
 def settings(server, region_1) -> Settings:
     return Settings(
         server=server,
@@ -99,14 +109,14 @@ def settings(server, region_1) -> Settings:
     )
 
 
-@pytest.fixture
+@fixture
 def auth_callback(auth_url: str) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == auth_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"access_token": "", "expires_in": 2 ** 32},
         )
@@ -114,22 +124,22 @@ def auth_callback(auth_url: str) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def auth_url(settings: Settings) -> str:
     return AUTH_URL.format(api_endpoint=f"https://{settings.server}")
 
 
-@pytest.fixture
+@fixture
 def db_name() -> str:
     return "database"
 
 
-@pytest.fixture
+@fixture
 def db_description() -> str:
     return "database description"
 
 
-@pytest.fixture
+@fixture
 def account_id_url(settings: Settings) -> str:
     if not settings.account_name:  # if None or ''
         return f"https://{settings.server}{ACCOUNT_URL}"
@@ -140,7 +150,7 @@ def account_id_url(settings: Settings) -> str:
         )
 
 
-@pytest.fixture
+@fixture
 def account_id_callback(
     account_id: str, account_id_url: str, settings: Settings
 ) -> Callable:
@@ -150,28 +160,28 @@ def account_id_callback(
     ) -> Response:
         assert request.url == account_id_url
         if account_id_url.endswith(ACCOUNT_URL):  # account_name shouldn't be specified.
-            return to_response(
+            return Response(
                 status_code=httpx.codes.OK, json={"account": {"id": account_id}}
             )
         # In this case, an account_name *should* be specified.
-        return to_response(status_code=httpx.codes.OK, json={"account_id": account_id})
+        return Response(status_code=httpx.codes.OK, json={"account_id": account_id})
 
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def engine_id() -> str:
     return "engine_id"
 
 
-@pytest.fixture
+@fixture
 def get_engine_url(settings: Settings, account_id: str, engine_id: str) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
-@pytest.fixture
+@fixture
 def get_engine_callback(
     get_engine_url: str, engine_id: str, settings: Settings
 ) -> Callable:
@@ -180,7 +190,7 @@ def get_engine_callback(
         **kwargs,
     ) -> Response:
         assert request.url == get_engine_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={
                 "engine": {
@@ -204,19 +214,19 @@ def get_engine_callback(
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def get_providers_url(settings: Settings, account_id: str, engine_id: str) -> str:
     return f"https://{settings.server}{PROVIDERS_URL}"
 
 
-@pytest.fixture
+@fixture
 def get_providers_callback(get_providers_url: str, provider: Provider) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == get_providers_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([provider]),
         )
@@ -224,17 +234,58 @@ def get_providers_callback(get_providers_url: str, provider: Provider) -> Callab
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def get_engines_url(settings: Settings) -> str:
     return f"https://{settings.server}{ENGINES_URL}"
 
 
-@pytest.fixture
+@fixture
 def get_databases_url(settings: Settings) -> str:
     return f"https://{settings.server}{DATABASES_URL}"
 
 
-@pytest.fixture
+@fixture
+def database_id() -> str:
+    return "database_id"
+
+
+@fixture
+def database_by_name_url(settings: Settings, account_id: str, db_name: str) -> str:
+    return (
+        f"https://{settings.server}"
+        f"{ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)}"
+        f"?database_name={db_name}"
+    )
+
+
+@fixture
+def database_by_name_callback(account_id: str, database_id: str) -> str:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        return Response(
+            status_code=httpx.codes.OK,
+            json={
+                "database_id": {
+                    "database_id": database_id,
+                    "account_id": account_id,
+                }
+            },
+        )
+
+    return do_mock
+
+
+@fixture
+def engine_by_db_url(settings: Settings, account_id: str) -> str:
+    return (
+        f"https://{settings.server}"
+        f"{ACCOUNT_ENGINE_URL_BY_DATABASE_NAME.format(account_id=account_id)}"
+    )
+
+
+@fixture
 def db_api_exceptions():
     exceptions = {
         "DatabaseError": DatabaseError,
@@ -249,3 +300,42 @@ def db_api_exceptions():
         "Warning": Warning,
     }
     return exceptions
+
+
+@fixture
+def check_token_callback(access_token: str) -> Callable:
+    def check_token(request: httpx.Request = None, **kwargs) -> Response:
+        prefix = "Bearer "
+        assert request, "empty request"
+        assert "authorization" in request.headers, "missing authorization header"
+        auth = request.headers["authorization"]
+        assert auth.startswith(prefix), "invalid authorization header format"
+        token = auth[len(prefix) :]
+        assert token == access_token, "invalid authorization token"
+
+        return Response(status_code=httpx.codes.OK, headers={"content-length": "0"})
+
+    return check_token
+
+
+@fixture
+def check_credentials_callback(settings: Settings, access_token: str) -> Callable:
+    def check_credentials(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        body = loads(request.read())
+        assert "username" in body, "Missing username"
+        assert body["username"] == settings.user, "Invalid username"
+        assert "password" in body, "Missing password"
+        assert (
+            body["password"] == settings.password.get_secret_value()
+        ), "Invalid password"
+
+        return Response(
+            status_code=httpx.codes.OK,
+            json={"expires_in": 2 ** 32, "access_token": access_token},
+        )
+
+    return check_credentials

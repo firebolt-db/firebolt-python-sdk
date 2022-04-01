@@ -12,7 +12,7 @@ on:
 
 jobs:
   integration-tests:
-    uses: firebolt-db/firebolt-python-sdk/.github/workflows/integration-tests.yml@main
+    uses: ./.github/workflows/integration-tests.yml
     secrets:
       FIREBOLT_USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
       FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
@@ -36,3 +36,4 @@ jobs:
         major-release: ${{ inputs.major-release }}
         pypi-username: ${{ secrets.PYPI_USERNAME }}
         pypi-password: ${{ secrets.PYPI_PASSWORD }}
+        version-file-path: "src/firebolt/__init__.py"

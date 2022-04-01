@@ -16,8 +16,8 @@ class NoAttachedDatabaseError(FireboltEngineError):
 
     def __str__(self) -> str:
         return (
-            f"unable to call {self.method_name}: "
-            f"engine must to be attached to a database first."
+            f"Unable to call {self.method_name}: "
+            "Engine must to be attached to a database first."
         )
 
 
@@ -43,8 +43,8 @@ class AttachedEngineInUseError(FireboltDatabaseError):
 
     def __str__(self) -> str:
         return (
-            f"unable to call {self.method_name}: "
-            f"engine must not be in starting or stopping state."
+            f"Unable to call {self.method_name}: "
+            "Engine must not be in starting or stopping state."
         )
 
 
@@ -65,7 +65,7 @@ class CursorClosedError(CursorError):
         self.method_name = method_name
 
     def __str__(self) -> str:
-        return f"unable to call {self.method_name}: cursor closed"
+        return f"Unable to call {self.method_name}: cursor closed."
 
 
 class QueryNotRunError(CursorError):
@@ -73,7 +73,7 @@ class QueryNotRunError(CursorError):
         self.method_name = method_name
 
     def __str__(self) -> str:
-        return f"unable to call {self.method_name}: need to run a query first"
+        return f"Unable to call {self.method_name}: need to run a query first."
 
 
 class QueryError(CursorError):
@@ -90,7 +90,7 @@ class AuthenticationError(FireboltError):
         self.api_endpoint = api_endpoint
 
     def __str__(self) -> str:
-        return f"Failed to authenticate at {self.api_endpoint}: {self.cause}"
+        return f"Failed to authenticate at {self.api_endpoint}: {self.cause}."
 
 
 # PEP-249
@@ -158,4 +158,10 @@ class NotSupportedError(DatabaseError):
     """
     Exception raised when the database encounters an internal error,
     e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
+    """
+
+
+class ConfigurationError(InterfaceError):
+    """
+    Exception raised when provided configuration is not correct
     """

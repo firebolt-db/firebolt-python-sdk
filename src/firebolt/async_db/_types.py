@@ -2,28 +2,44 @@ from __future__ import annotations
 
 from collections import namedtuple
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from enum import Enum
-from typing import Sequence, Union
+from typing import List, Optional, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
-from sqlparse.sql import Token, TokenList  # type: ignore
+from sqlparse.sql import (  # type: ignore
+    Comparison,
+    Statement,
+    Token,
+    TokenList,
+)
 from sqlparse.tokens import Token as TokenType  # type: ignore
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
 except ImportError:
-    parse_datetime = datetime.fromisoformat  # type: ignore
+    # Unfortunately, there seems to be no support for optional bits in strptime
+    def parse_datetime(date_string: str) -> datetime:  # type: ignore
+        format = "%Y-%m-%d %H:%M:%S.%f"
+        # fromisoformat doesn't support milliseconds
+        if "." in date_string:
+            return datetime.strptime(date_string, format)
+        return datetime.fromisoformat(date_string)
 
 
-from firebolt.common.exception import DataError, NotSupportedError
+from firebolt.common.exception import (
+    DataError,
+    InterfaceError,
+    NotSupportedError,
+)
 from firebolt.common.util import cached_property
 
 _NoneType = type(None)
-_col_types = (int, float, str, datetime, date, bool, list, _NoneType)
+_col_types = (int, float, str, datetime, date, bool, list, Decimal, _NoneType)
 # duplicating this since 3.7 can't unpack Union
-ColType = Union[int, float, str, datetime, date, bool, list, _NoneType]
+ColType = Union[int, float, str, datetime, date, bool, list, Decimal, _NoneType]
 RawColType = Union[int, float, str, bool, list, _NoneType]
-ParameterType = Union[int, float, str, datetime, date, bool, Sequence]
+ParameterType = Union[int, float, str, datetime, date, bool, Decimal, Sequence]
 
 # These definitions are required by PEP-249
 Date = date
@@ -77,9 +93,9 @@ class ARRAY:
 
     _prefix = "Array("
 
-    def __init__(self, subtype: Union[type, ARRAY]):
+    def __init__(self, subtype: Union[type, ARRAY, DECIMAL, DATETIME64]):
         assert (subtype in _col_types and subtype is not list) or isinstance(
-            subtype, ARRAY
+            subtype, (ARRAY, DECIMAL, DATETIME64)
         ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
 
@@ -90,6 +106,41 @@ class ARRAY:
         if not isinstance(other, ARRAY):
             return NotImplemented
         return other.subtype == self.subtype
+
+
+class DECIMAL:
+    """Class for holding imformation about decimal value in firebolt db."""
+
+    _prefix = "Decimal("
+
+    def __init__(self, precision: int, scale: int):
+        self.precision = precision
+        self.scale = scale
+
+    def __str__(self) -> str:
+        return f"Decimal({self.precision}, {self.scale})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DECIMAL):
+            return NotImplemented
+        return other.precision == self.precision and other.scale == self.scale
+
+
+class DATETIME64:
+    """Class for holding imformation about datetime64 value in firebolt db."""
+
+    _prefix = "DateTime64("
+
+    def __init__(self, precision: int):
+        self.precision = precision
+
+    def __str__(self) -> str:
+        return f"DateTime64({self.precision})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, DATETIME64):
+            return NotImplemented
+        return other.precision == self.precision
 
 
 NULLABLE_PREFIX = "Nullable("
@@ -121,6 +172,7 @@ class _InternalType(Enum):
 
     # DATE
     Date = "Date"
+    Date32 = "Date32"
 
     # DATETIME, TIMESTAMP
     DateTime = "DateTime"
@@ -144,6 +196,7 @@ class _InternalType(Enum):
             _InternalType.Float64: float,
             _InternalType.String: str,
             _InternalType.Date: date,
+            _InternalType.Date32: date,
             _InternalType.DateTime: datetime,
             # For simplicity, this could happen only during 'select null' query
             _InternalType.Nothing: str,
@@ -151,13 +204,30 @@ class _InternalType(Enum):
         return types[self]
 
 
-def parse_type(raw_type: str) -> Union[type, ARRAY]:
+def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:
     """Parse typename, provided by query metadata into python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
     # Handle arrays
     if raw_type.startswith(ARRAY._prefix) and raw_type.endswith(")"):
         return ARRAY(parse_type(raw_type[len(ARRAY._prefix) : -1]))
+    # Handle decimal
+    if raw_type.startswith(DECIMAL._prefix) and raw_type.endswith(")"):
+        try:
+            prec_scale = raw_type[len(DECIMAL._prefix) : -1].split(",")
+            precision, scale = int(prec_scale[0]), int(prec_scale[1])
+        except (ValueError, IndexError):
+            pass
+        else:
+            return DECIMAL(precision, scale)
+    # Handle detetime64
+    if raw_type.startswith(DATETIME64._prefix) and raw_type.endswith(")"):
+        try:
+            precision = int(raw_type[len(DATETIME64._prefix) : -1])
+        except (ValueError, IndexError):
+            pass
+        else:
+            return DATETIME64(precision)
     # Handle nullable
     if raw_type.startswith(NULLABLE_PREFIX) and raw_type.endswith(")"):
         return parse_type(raw_type[len(NULLABLE_PREFIX) : -1])
@@ -172,7 +242,7 @@ def parse_type(raw_type: str) -> Union[type, ARRAY]:
 
 def parse_value(
     value: RawColType,
-    ctype: Union[type, ARRAY],
+    ctype: Union[type, ARRAY, DECIMAL, DATETIME64],
 ) -> ColType:
     """Provided raw value and python type, parses first into python value."""
     if value is None:
@@ -185,10 +255,13 @@ def parse_value(
             raise DataError(f"Invalid date value {value}: str expected")
         assert isinstance(value, str)
         return parse_datetime(value).date()
-    if ctype is datetime:
+    if ctype is datetime or isinstance(ctype, DATETIME64):
         if not isinstance(value, str):
             raise DataError(f"Invalid datetime value {value}: str expected")
         return parse_datetime(value)
+    if isinstance(ctype, DECIMAL):
+        assert isinstance(value, (str, int))
+        return Decimal(value)
     if isinstance(ctype, ARRAY):
         assert isinstance(value, list)
         return [parse_value(it, ctype.subtype) for it in value]
@@ -206,7 +279,7 @@ def format_value(value: ParameterType) -> str:
     """For python value to be used in a SQL query"""
     if isinstance(value, bool):
         return str(int(value))
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float, Decimal)):
         return str(value)
     elif isinstance(value, str):
         return f"'{''.join(escape_chars.get(c, c) for c in value)}'"
@@ -224,10 +297,9 @@ def format_value(value: ParameterType) -> str:
     raise DataError(f"unsupported parameter type {type(value)}")
 
 
-def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
+def format_statement(statement: Statement, parameters: Sequence[ParameterType]) -> str:
     """
-    Substitute placeholders in queries with provided values.
-    '?' symbol is used as a placeholder. Using '\\?' would result in a plain '?'
+    Substitute placeholders in a sqlparse statement with provided values.
     """
     idx = 0
 
@@ -245,16 +317,11 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
             return Token(TokenType.Text, formatted)
         if isinstance(token, TokenList):
             # Process all children tokens
-            token.tokens = [process_token(t) for t in token.tokens]
+
+            return TokenList([process_token(t) for t in token.tokens])
         return token
 
-    parsed = parse_sql(query)
-    if not parsed:
-        return query
-    if len(parsed) > 1:
-        raise NotSupportedError("Multi-statement queries are not supported")
-
-    formatted_sql = str(process_token(parsed[0]))
+    formatted_sql = statement_to_sql(process_token(statement))
 
     if idx < len(parameters):
         raise DataError(
@@ -263,3 +330,62 @@ def format_sql(query: str, parameters: Sequence[ParameterType]) -> str:
         )
 
     return formatted_sql
+
+
+SetParameter = namedtuple("SetParameter", ["name", "value"])
+
+
+def statement_to_set(statement: Statement) -> Optional[SetParameter]:
+    """Try to parse statement as a SET command. Return None if it's not a SET command"""
+    # Filter out meaningless tokens like Punctuation and Whitespaces
+    tokens = [
+        token
+        for token in statement.tokens
+        if token.ttype == TokenType.Keyword or isinstance(token, Comparison)
+    ]
+
+    # Check if it's a SET statement by checking if it starts with set
+    if (
+        len(tokens) > 0
+        and tokens[0].ttype == TokenType.Keyword
+        and tokens[0].value.lower() == "set"
+    ):
+        # Check if set statement has a valid format
+        if len(tokens) != 2 or not isinstance(tokens[1], Comparison):
+            raise InterfaceError(
+                f"Invalid set statement format: {statement_to_sql(statement)},"
+                " expected SET <param> = <value>"
+            )
+        return SetParameter(
+            statement_to_sql(tokens[1].left), statement_to_sql(tokens[1].right)
+        )
+    return None
+
+
+def statement_to_sql(statement: Statement) -> str:
+    return str(statement).strip().rstrip(";")
+
+
+def split_format_sql(
+    query: str, parameters: Sequence[Sequence[ParameterType]]
+) -> List[Union[str, SetParameter]]:
+    """
+    Split a query into separate statement, and format it with parameters
+    if it's a single statement
+    Trying to format a multi-statement query would result in NotSupportedError
+    """
+    statements = parse_sql(query)
+    if not statements:
+        return [query]
+
+    if parameters:
+        if len(statements) > 1:
+            raise NotSupportedError(
+                "formatting multistatement queries is not supported"
+            )
+        if statement_to_set(statements[0]):
+            raise NotSupportedError("formatting set statements is not supported")
+        return [format_statement(statements[0], paramset) for paramset in parameters]
+
+    # Try parsing each statement as a SET, otherwise return as a plain sql string
+    return [statement_to_set(st) or statement_to_sql(st) for st in statements]

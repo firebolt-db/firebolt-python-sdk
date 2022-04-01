@@ -5,7 +5,7 @@ on:
     - cron: '0 3 * * *' # 3 am UTC every day
 jobs:
   code-check:
-    uses: firebolt-db/firebolt-python-sdk/.github/workflows/code-check.yml@main
+    uses: ./.github/workflows/code-check.yml
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -54,5 +54,15 @@ jobs:
           ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.dev.firebolt.io"
         run: |
-          pytest -o log_cli=true -o log_cli_level=INFO tests/integration
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO tests/integration
         
+      - name: Slack Notify of failure
+        if: failure()
+        uses: rtCamp/action-slack-notify@v2.2.0
+        env:
+          SLACK_USERNAME: CI bot
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          SLACK_COLOR: "#FF0000"
+          SLACK_ICON: None
+          SLACK_TITLE: Nightly tests failed
+          SLACK_MESSAGE: Please investigate

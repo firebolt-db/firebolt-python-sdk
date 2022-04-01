@@ -1,10 +1,10 @@
 import json
 from typing import Callable, List
+from urllib.parse import urlparse
 
 import httpx
 import pytest
-from pytest_httpx import to_response
-from pytest_httpx._httpx_internals import Response
+from httpx import Response
 
 from firebolt.common.settings import Settings
 from firebolt.common.urls import (
@@ -22,13 +22,23 @@ from firebolt.common.urls import (
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database, DatabaseKey
 from firebolt.model.engine import Engine, EngineKey, EngineSettings
+from firebolt.model.engine_revision import (
+    EngineRevision,
+    EngineRevisionSpecification,
+)
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
+from firebolt.model.region import Region
 from tests.unit.util import list_to_paginated_response
 
 
 @pytest.fixture
 def engine_name() -> str:
     return "my_engine"
+
+
+@pytest.fixture
+def engine_scale() -> int:
+    return 2
 
 
 @pytest.fixture
@@ -48,6 +58,22 @@ def mock_engine(engine_name, region_1, engine_settings, account_id, settings) ->
 
 
 @pytest.fixture
+def mock_engine_revision_spec(
+    instance_type_2, engine_scale
+) -> EngineRevisionSpecification:
+    return EngineRevisionSpecification(
+        db_compute_instances_type_key=instance_type_2.key,
+        db_compute_instances_count=engine_scale,
+        proxy_instances_type_key=instance_type_2.key,
+    )
+
+
+@pytest.fixture
+def mock_engine_revision(mock_engine_revision_spec) -> EngineRevision:
+    return EngineRevision(specification=mock_engine_revision_spec)
+
+
+@pytest.fixture
 def instance_type_1(provider, region_1) -> InstanceType:
     return InstanceType(
         key=InstanceTypeKey(
@@ -55,7 +81,9 @@ def instance_type_1(provider, region_1) -> InstanceType:
             region_id=region_1.key.region_id,
             instance_type_id="instance_type_id_1",
         ),
-        name="i3.4xlarge",
+        name="B1",
+        price_per_hour_cents=10,
+        storage_size_bytes=0,
     )
 
 
@@ -67,13 +95,36 @@ def instance_type_2(provider, region_2) -> InstanceType:
             region_id=region_2.key.region_id,
             instance_type_id="instance_type_id_2",
         ),
-        name="i3.8xlarge",
+        name="B2",
+        price_per_hour_cents=20,
+        storage_size_bytes=500,
     )
 
 
 @pytest.fixture
-def mock_instance_types(instance_type_1, instance_type_2) -> List[InstanceType]:
-    return [instance_type_1, instance_type_2]
+def instance_type_3(provider, region_2) -> InstanceType:
+    return InstanceType(
+        key=InstanceTypeKey(
+            provider_id=provider.provider_id,
+            region_id=region_2.key.region_id,
+            instance_type_id="instance_type_id_2",
+        ),
+        name="B2",
+        price_per_hour_cents=30,
+        storage_size_bytes=500,
+    )
+
+
+@pytest.fixture
+def cheapest_instance(instance_type_2) -> InstanceType:
+    return instance_type_2
+
+
+@pytest.fixture
+def mock_instance_types(
+    instance_type_1, instance_type_2, instance_type_3
+) -> List[InstanceType]:
+    return [instance_type_1, instance_type_2, instance_type_3]
 
 
 @pytest.fixture
@@ -83,7 +134,7 @@ def provider_callback(provider_url: str, mock_providers) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == provider_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_providers),
         )
@@ -103,7 +154,7 @@ def region_callback(region_url: str, mock_regions) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == region_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_regions),
         )
@@ -123,9 +174,40 @@ def instance_type_callback(instance_type_url: str, mock_instance_types) -> Calla
         **kwargs,
     ) -> Response:
         assert request.url == instance_type_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_instance_types),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def instance_type_region_1_callback(
+    instance_type_region_1_url: str, mock_instance_types
+) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == instance_type_region_1_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response(mock_instance_types),
+        )
+
+    return do_mock
+
+
+@pytest.fixture
+def instance_type_empty_callback() -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        return Response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response([]),
         )
 
     return do_mock
@@ -137,13 +219,29 @@ def instance_type_url(settings: Settings) -> str:
 
 
 @pytest.fixture
+def instance_type_region_1_url(settings: Settings, region_1: Region) -> str:
+    return (
+        f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000&"
+        f"filter.id_region_id_eq={region_1.key.region_id}"
+    )
+
+
+@pytest.fixture
+def instance_type_region_2_url(settings: Settings, region_2: Region) -> str:
+    return (
+        f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000&"
+        f"filter.id_region_id_eq={region_2.key.region_id}"
+    )
+
+
+@pytest.fixture
 def engine_callback(engine_url: str, mock_engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == engine_url
-        return to_response(
+        assert urlparse(engine_url).path in request.url.path
+        return Response(
             status_code=httpx.codes.OK,
             json={"engine": mock_engine.dict()},
         )
@@ -159,13 +257,13 @@ def engine_url(settings: Settings, account_id) -> str:
 
 
 @pytest.fixture
-def account_engine_callback(engine_url: str, mock_engine) -> Callable:
+def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == account_engine_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"engine": mock_engine.dict()},
         )
@@ -205,12 +303,24 @@ def create_databases_callback(databases_url: str, mock_database) -> Callable:
         mock_database.description = database_properties["description"]
 
         assert request.url == databases_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database": mock_database.dict()},
         )
 
     return do_mock
+
+
+@pytest.fixture
+def databases_get_callback(databases_url: str, mock_database) -> Callable:
+    def get_databases_callback_inner(
+        request: httpx.Request = None, **kwargs
+    ) -> Response:
+        return Response(
+            status_code=httpx.codes.OK, json={"edges": [{"node": mock_database.dict()}]}
+        )
+
+    return get_databases_callback_inner
 
 
 @pytest.fixture
@@ -227,7 +337,7 @@ def database_callback(database_url: str, mock_database) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == database_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database": mock_database.dict()},
         )
@@ -242,7 +352,7 @@ def database_not_found_callback(database_url: str) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == database_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={},
         )
@@ -264,7 +374,7 @@ def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Ca
         **kwargs,
     ) -> Response:
         assert request.url == database_get_by_name_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database_id": {"database_id": mock_database.database_id}},
         )
@@ -282,13 +392,30 @@ def database_get_by_name_url(settings: Settings, account_id: str, mock_database)
 
 
 @pytest.fixture
+def database_update_callback(database_get_url, mock_database) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        database_properties = json.loads(request.read().decode("utf-8"))["database"]
+
+        assert request.url == database_get_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json={"database": database_properties},
+        )
+
+    return do_mock
+
+
+@pytest.fixture
 def database_get_callback(database_get_url, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == database_get_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"database": mock_database.dict()},
         )
@@ -323,7 +450,7 @@ def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == bindings_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([binding]),
         )
@@ -338,7 +465,7 @@ def no_bindings_callback(bindings_url: str) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == bindings_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([]),
         )
@@ -362,7 +489,7 @@ def create_binding_callback(create_binding_url: str, binding) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == create_binding_url
-        return to_response(
+        return Response(
             status_code=httpx.codes.OK,
             json={"binding": binding.dict()},
         )

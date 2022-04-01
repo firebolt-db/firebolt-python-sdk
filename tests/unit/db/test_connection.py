@@ -5,7 +5,7 @@ from pytest import raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db._types import ColType
-from firebolt.common.exception import ConnectionClosedError, InterfaceError
+from firebolt.common.exception import ConfigurationError, ConnectionClosedError
 from firebolt.common.settings import Settings
 from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL
 from firebolt.db import Connection, connect
@@ -26,7 +26,7 @@ def test_closed_connection(connection: Connection) -> None:
 
 
 def test_cursors_closed_on_close(connection: Connection) -> None:
-    """Connection closes all it's cursors on close."""
+    """Connection closes all its cursors on close."""
     c1, c2 = connection.cursor(), connection.cursor()
     assert (
         len(connection._cursors) == 2
@@ -49,7 +49,7 @@ def test_cursor_initialized(
     query_url: str,
     python_query_data: List[List[ColType]],
 ) -> None:
-    """Connection initialised it's cursors propperly"""
+    """Connection initialised its cursors properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -79,17 +79,48 @@ def test_cursor_initialized(
 
 
 def test_connect_empty_parameters():
-    params = ("database", "username", "password")
-    kwargs = {"engine_url": "engine_url", **{p: p for p in params}}
+    with raises(ConfigurationError):
+        with connect(engine_url="engine_url"):
+            pass
 
-    for param in params:
-        with raises(InterfaceError) as exc_info:
-            kwargs = {
-                "engine_url": "engine_url",
-                **{p: p for p in params if p != param},
-            }
-            connect(**kwargs)
-        assert str(exc_info.value) == f"{param} is required to connect."
+
+def test_connect_access_token(
+    settings: Settings,
+    db_name: str,
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    check_token_callback: Callable,
+    query_url: str,
+    python_query_data: List[List[ColType]],
+    access_token: str,
+):
+    httpx_mock.add_callback(check_token_callback, url=query_url)
+    with (
+        connect(
+            engine_url=settings.server,
+            database=db_name,
+            access_token=access_token,
+            account_name="a",
+            api_endpoint=settings.server,
+        )
+    ) as connection:
+        cursor = connection.cursor()
+        assert cursor.execute("select*") == -1
+
+    with raises(ConfigurationError):
+        with connect(engine_url="engine_url", database="database"):
+            pass
+
+    with raises(ConfigurationError):
+        with connect(
+            engine_url="engine_url",
+            database="database",
+            username="username",
+            password="password",
+            access_token="access_token",
+        ):
+            pass
 
 
 def test_connect_engine_name(
@@ -112,7 +143,7 @@ def test_connect_engine_name(
 ):
     """connect properly handles engine_name"""
 
-    with raises(InterfaceError) as exc_info:
+    with raises(ConfigurationError):
         connect(
             engine_url="engine_url",
             engine_name="engine_name",
@@ -120,19 +151,6 @@ def test_connect_engine_name(
             username="username",
             password="password",
         )
-    assert str(exc_info.value).startswith(
-        "Both engine_name and engine_url are provided"
-    )
-
-    with raises(InterfaceError) as exc_info:
-        connect(
-            database="db",
-            username="username",
-            password="password",
-        )
-    assert str(exc_info.value).startswith(
-        "Neither engine_name nor engine_url are provided"
-    )
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
@@ -161,8 +179,50 @@ def test_connect_engine_name(
         assert connection.cursor().execute("select*") == len(python_query_data)
 
 
+def test_connect_default_engine(
+    settings: Settings,
+    db_name: str,
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    account_id_url: str,
+    account_id_callback: Callable,
+    engine_id: str,
+    get_engine_url: str,
+    get_engine_callback: Callable,
+    database_by_name_url: str,
+    database_by_name_callback: Callable,
+    database_id: str,
+    engine_by_db_url: str,
+    python_query_data: List[List[ColType]],
+    account_id: str,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    engine_by_db_url = f"{engine_by_db_url}?database_name={db_name}"
+
+    httpx_mock.add_response(
+        url=engine_by_db_url,
+        status_code=codes.OK,
+        json={
+            "engine_url": settings.server,
+        },
+    )
+    with connect(
+        database=db_name,
+        username="u",
+        password="p",
+        account_name=settings.account_name,
+        api_endpoint=settings.server,
+    ) as connection:
+        assert connection.cursor().execute("select*") == len(python_query_data)
+
+
 def test_connection_unclosed_warnings():
-    c = Connection("", "", "", "", "")
+    c = Connection("", "", ("", ""), "")
     with warns(UserWarning) as winfo:
         del c
 

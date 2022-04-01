@@ -13,10 +13,10 @@ from firebolt.common.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
-    NotSupportedError,
     OperationalError,
     QueryNotRunError,
 )
+from tests.unit.db_conftest import encode_param
 
 
 @mark.asyncio
@@ -37,6 +37,16 @@ async def test_cursor_state(
     await cursor.execute("select")
     assert cursor._state == CursorState.DONE
 
+    def error_query_callback(*args, **kwargs):
+        raise Exception()
+
+    httpx_mock.add_callback(error_query_callback, url=query_url)
+
+    cursor._reset()
+    with raises(Exception):
+        await cursor.execute("select")
+    assert cursor._state == CursorState.ERROR
+
     cursor._reset()
     assert cursor._state == CursorState.NONE
 
@@ -54,11 +64,9 @@ async def test_closed_cursor(cursor: Cursor):
         ("fetchone", ()),
         ("fetchmany", ()),
         ("fetchall", ()),
+        ("nextset", ()),
     )
-    methods = (
-        "setinputsizes",
-        "setoutputsize",
-    )
+    methods = ("setinputsizes", "setoutputsize")
 
     cursor.close()
 
@@ -110,6 +118,9 @@ async def test_cursor_no_query(
             await getattr(cursor, amethod)()
 
     with raises(QueryNotRunError):
+        await cursor.nextset()
+
+    with raises(QueryNotRunError):
         [r async for r in cursor]
 
     # No errors
@@ -147,8 +158,8 @@ async def test_cursor_execute(
     """Cursor is able to execute query, all fields are populated properly."""
 
     for query in (
-        lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None]),
+        lambda: cursor.execute("select * from t"),
+        lambda: cursor.executemany("select * from t", []),
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -192,18 +203,19 @@ async def test_cursor_execute_error(
     """Cursor handles all types of errors properly."""
     for query in (
         lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", [None]),
+        lambda: cursor.executemany("select *", []),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
 
         # Internal httpx error
-        def http_error(**kwargs):
+        def http_error(*args, **kwargs):
             raise StreamError("httpx error")
 
         httpx_mock.add_callback(http_error, url=query_url)
         with raises(StreamError) as excinfo:
             await query()
 
+        assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == "httpx error", "Invalid query error message"
 
         # HTTP error
@@ -212,17 +224,19 @@ async def test_cursor_execute_error(
             await query()
 
         errmsg = str(excinfo.value)
+        assert cursor._state == CursorState.ERROR
         assert "Bad Request" in errmsg, "Invalid query error message"
 
         # Database query error
         httpx_mock.add_response(
             status_code=codes.INTERNAL_SERVER_ERROR,
-            data="Query error message",
+            content="Query error message",
             url=query_url,
         )
         with raises(OperationalError) as excinfo:
             await query()
 
+        assert cursor._state == CursorState.ERROR
         assert (
             str(excinfo.value) == "Error executing query:\nQuery error message"
         ), "Invalid authentication error message"
@@ -230,7 +244,7 @@ async def test_cursor_execute_error(
         # Database does not exist error
         httpx_mock.add_response(
             status_code=codes.FORBIDDEN,
-            data="Query error message",
+            content="Query error message",
             url=query_url,
         )
         httpx_mock.add_response(
@@ -239,11 +253,12 @@ async def test_cursor_execute_error(
         )
         with raises(FireboltDatabaseError) as excinfo:
             await query()
+        assert cursor._state == CursorState.ERROR
 
         # Engine is not running error
         httpx_mock.add_response(
             status_code=codes.SERVICE_UNAVAILABLE,
-            data="Query error message",
+            content="Query error message",
             url=query_url,
         )
         httpx_mock.add_response(
@@ -255,6 +270,7 @@ async def test_cursor_execute_error(
         )
         with raises(EngineNotRunningError) as excinfo:
             await query()
+        assert cursor._state == CursorState.ERROR
 
         httpx_mock.reset(True)
 
@@ -410,7 +426,152 @@ async def test_set_parameters(
 
 
 @mark.asyncio
-async def test_cursor_multi_statement(cursor: Cursor):
+async def test_cursor_multi_statement(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    insert_query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
+):
     """executemany with multiple parameter sets is not supported"""
-    with raises(NotSupportedError):
-        await cursor.executemany("select ?", [(1,), (2,)])
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    rc = await cursor.execute(
+        "select * from t; insert into t values (1, 2); select * from t"
+    )
+    assert rc == len(python_query_data), "Invalid row count returned"
+    assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
+    for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
+        assert desc == exp, f"Invalid column description at position {i}"
+
+    for i in range(cursor.rowcount):
+        assert (
+            await cursor.fetchone() == python_query_data[i]
+        ), f"Invalid data row at position {i}"
+
+    assert await cursor.nextset()
+    assert cursor.rowcount == -1, "Invalid cursor row count"
+    assert cursor.description is None, "Invalid cursor description"
+    with raises(DataError) as exc_info:
+        await cursor.fetchall()
+
+    assert str(exc_info.value) == "no rows to fetch", "Invalid error message"
+
+    assert await cursor.nextset()
+
+    assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
+    for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
+        assert desc == exp, f"Invalid column description at position {i}"
+
+    for i in range(cursor.rowcount):
+        assert (
+            await cursor.fetchone() == python_query_data[i]
+        ), f"Invalid data row at position {i}"
+
+    assert await cursor.nextset() is None
+
+
+@mark.asyncio
+async def test_cursor_set_statements(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    select_one_query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
+):
+    """cursor correctly parses and processes set statements"""
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&a=b")
+
+    assert len(cursor._set_parameters) == 0
+
+    rc = await cursor.execute("set a = b")
+    assert rc == -1, "Invalid row count returned"
+    assert cursor.description is None, "Non-empty description for set"
+    with raises(DataError):
+        await cursor.fetchall()
+
+    assert (
+        len(cursor._set_parameters) == 1
+        and "a" in cursor._set_parameters
+        and cursor._set_parameters["a"] == "b"
+    )
+
+    cursor.flush_parameters()
+
+    assert len(cursor._set_parameters) == 0
+
+    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&param1=1")
+
+    rc = await cursor.execute("set param1=1")
+    assert rc == -1, "Invalid row count returned"
+    assert cursor.description is None, "Non-empty description for set"
+    with raises(DataError):
+        await cursor.fetchall()
+
+    assert (
+        len(cursor._set_parameters) == 1
+        and "param1" in cursor._set_parameters
+        and cursor._set_parameters["param1"] == "1"
+    )
+
+    httpx_mock.add_callback(
+        select_one_query_callback, url=f"{query_url}&param1=1&param2=0"
+    )
+
+    rc = await cursor.execute("set param2=0")
+    assert rc == -1, "Invalid row count returned"
+    assert cursor.description is None, "Non-empty description for set"
+    with raises(DataError):
+        await cursor.fetchall()
+
+    assert len(cursor._set_parameters) == 2
+
+    assert (
+        "param1" in cursor._set_parameters and cursor._set_parameters["param1"] == "1"
+    )
+
+    assert (
+        "param2" in cursor._set_parameters and cursor._set_parameters["param2"] == "0"
+    )
+
+    cursor.flush_parameters()
+
+    assert len(cursor._set_parameters) == 0
+
+
+@mark.asyncio
+async def test_cursor_set_parameters_sent(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_url: str,
+    query_with_params_callback: Callable,
+    select_one_query_callback: Callable,
+    cursor: Cursor,
+    set_params: Dict,
+):
+    """Cursor passes provided set parameters to engine"""
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    params = ""
+
+    for p, v in set_params.items():
+        v = encode_param(v)
+        params += f"&{p}={v}"
+        httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}{params}")
+        await cursor.execute(f"set {p} = {v}")
+
+    httpx_mock.add_callback(query_with_params_callback, url=f"{query_url}{params}")
+    await cursor.execute("select 1")

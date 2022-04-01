@@ -4,21 +4,23 @@ import functools
 import logging
 import time
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
 from pydantic import Field, PrivateAttr
 
 from firebolt.common.exception import NoAttachedDatabaseError
 from firebolt.common.urls import (
+    ACCOUNT_ENGINE_RESTART_URL,
     ACCOUNT_ENGINE_START_URL,
     ACCOUNT_ENGINE_STOP_URL,
     ACCOUNT_ENGINE_URL,
 )
+from firebolt.common.util import prune_dict
 from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
 from firebolt.model.database import Database
-from firebolt.model.engine_revision import EngineRevisionKey
+from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 from firebolt.model.region import RegionKey
 from firebolt.service.types import (
     EngineStatus,
@@ -36,6 +38,14 @@ logger = logging.getLogger(__name__)
 class EngineKey(FireboltBaseModel):
     account_id: str
     engine_id: str
+
+
+def wait(seconds: int, timeout_time: float, error_message: str, verbose: bool) -> None:
+    time.sleep(seconds)
+    if time.time() > timeout_time:
+        raise TimeoutError(error_message)
+    if verbose:
+        print(".", end="")
 
 
 class EngineSettings(FireboltBaseModel):
@@ -59,6 +69,7 @@ class EngineSettings(FireboltBaseModel):
         engine_type: EngineType = EngineType.GENERAL_PURPOSE,
         auto_stop_delay_duration: str = "1200s",
         warm_up: WarmupMethod = WarmupMethod.PRELOAD_INDEXES,
+        minimum_logging_level: str = "ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
     ) -> EngineSettings:
         if engine_type == EngineType.GENERAL_PURPOSE:
             preset = engine_type.GENERAL_PURPOSE.api_settings_preset_name  # type: ignore # noqa: E501
@@ -70,7 +81,7 @@ class EngineSettings(FireboltBaseModel):
         return cls(
             preset=preset,
             auto_stop_delay_duration=auto_stop_delay_duration,
-            minimum_logging_level="ENGINE_SETTINGS_LOGGING_LEVEL_INFO",
+            minimum_logging_level=minimum_logging_level,
             is_read_only=is_read_only,
             warm_up=warm_up.api_name,
         )
@@ -86,6 +97,10 @@ def check_attached_to_database(func: Callable) -> Callable:
         return func(self, *args, **kwargs)
 
     return inner
+
+
+class FieldMask(FireboltBaseModel):
+    paths: Sequence[str] = Field(alias="paths")
 
 
 class Engine(FireboltBaseModel):
@@ -204,13 +219,6 @@ class Engine(FireboltBaseModel):
         """
         timeout_time = time.time() + wait_timeout_seconds
 
-        def wait(seconds: int, error_message: str) -> None:
-            time.sleep(seconds)
-            if time.time() > timeout_time:
-                raise TimeoutError(error_message)
-            if verbose:
-                print(".", end="")
-
         engine = self.get_latest()
         if (
             engine.current_status_summary
@@ -238,9 +246,11 @@ class Engine(FireboltBaseModel):
             ):
                 wait(
                     seconds=5,
+                    timeout_time=timeout_time,
                     error_message=f"Engine "
                     f"(engine_id={engine.engine_id}, name={engine.name}) "
                     f"did not stop within {wait_timeout_seconds} seconds.",
+                    verbose=True,
                 )
                 engine = engine.get_latest()
 
@@ -248,20 +258,21 @@ class Engine(FireboltBaseModel):
                 f"Engine (engine_id={engine.engine_id}, name={engine.name}) stopped."
             )
 
-        engine = self._send_start()
+        engine = self._send_engine_request(ACCOUNT_ENGINE_START_URL)
         logger.info(
             f"Starting Engine (engine_id={engine.engine_id}, name={engine.name})"
         )
 
         # wait for engine to start
-        while (
-            wait_for_startup
-            and engine.current_status_summary
-            != EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING
-        ):
+        while wait_for_startup and engine.current_status_summary not in {
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING,
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED,
+        }:
             wait(
                 seconds=5,
+                timeout_time=timeout_time,
                 error_message=f"Could not start engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                verbose=verbose,
             )
             previous_status_summary = engine.current_status_summary
             engine = engine.get_latest()
@@ -273,28 +284,160 @@ class Engine(FireboltBaseModel):
 
         return engine
 
-    def _send_start(self) -> Engine:
-        response = self._service.client.post(
-            url=ACCOUNT_ENGINE_START_URL.format(
-                account_id=self._service.account_id, engine_id=self.engine_id
+    @check_attached_to_database
+    def stop(
+        self, wait_for_stop: bool = False, wait_timeout_seconds: int = 3600
+    ) -> Engine:
+        """Stop an Engine running on Firebolt."""
+        timeout_time = time.time() + wait_timeout_seconds
+
+        engine = self._send_engine_request(ACCOUNT_ENGINE_STOP_URL)
+        logger.info(f"Stopping Engine (engine_id={self.engine_id}, name={self.name})")
+
+        while wait_for_stop and engine.current_status_summary not in {
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPED,
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED,
+        }:
+            wait(
+                seconds=5,
+                timeout_time=timeout_time,
+                error_message=f"Could not stop engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                verbose=False,
             )
+
+            engine = engine.get_latest()
+
+        return engine
+
+    def update(
+        self,
+        name: Optional[str] = None,
+        engine_type: Optional[EngineType] = None,
+        scale: Optional[int] = None,
+        spec: Optional[str] = None,
+        auto_stop: Optional[int] = None,
+        warmup: Optional[WarmupMethod] = None,
+        description: Optional[str] = None,
+    ) -> Engine:
+        """
+        update the engine, and returns an updated version of the engine, all parameters
+        could be set to None, this would keep the old engine parameter value
+        """
+
+        class _EngineUpdateRequest(FireboltBaseModel):
+            """Helper model for sending Engine update requests."""
+
+            account_id: str
+            desired_revision: Optional[EngineRevision]
+            engine: Engine
+            engine_id: str
+            update_mask: FieldMask
+
+        # Update the engine parameters
+        self.name = name if name else self.name
+        self.description = description
+
+        # Update engine settings
+        engine_settings_params = {
+            "engine_type": engine_type,
+            "auto_stop_delay_duration": f"{auto_stop * 60}s" if auto_stop else None,
+            "warm_up": warmup,
+        }
+        self.settings = EngineSettings.default(**prune_dict(engine_settings_params))
+
+        # Update the engine desired_revision if needed
+        desired_revision = None
+        if (scale or spec) and self.latest_revision_key:
+            rm = self._service.resource_manager
+            desired_revision = rm.engine_revisions.get_by_key(self.latest_revision_key)
+
+            if spec:
+                instance_type_key = rm.instance_types.get_by_name(
+                    instance_type_name=spec,
+                    region_name=rm.regions.regions_by_key[self.compute_region_key].name,
+                ).key
+
+                desired_revision.specification.db_compute_instances_type_key = (
+                    instance_type_key
+                )
+                desired_revision.specification.proxy_instances_type_key = (
+                    instance_type_key
+                )
+
+            if scale:
+                desired_revision.specification.db_compute_instances_count = scale
+
+        update_mask_paths = list(
+            prune_dict(
+                {
+                    "name": name,
+                    "description": description,
+                    "settings.auto_stop_delay_duration": auto_stop,
+                    "settings.warm_up": warmup,
+                    "settings.is_read_only": engine_type,
+                    "settings.preset": engine_type,
+                }
+            ).keys()
         )
+
+        # Send the update request
+        response = self._service.client.patch(
+            url=ACCOUNT_ENGINE_URL.format(
+                engine_id=self.engine_id, account_id=self._service.account_id
+            ),
+            headers={"Content-type": "application/json"},
+            json=_EngineUpdateRequest(
+                account_id=self._service.account_id,
+                engine=self,
+                desired_revision=desired_revision,
+                engine_id=self.engine_id,
+                update_mask=FieldMask(paths=update_mask_paths),
+            ).jsonable_dict(by_alias=True),
+        )
+
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
 
     @check_attached_to_database
-    def stop(self) -> Engine:
-        """Stop an Engine running on Firebolt."""
-        response = self._service.client.post(
-            url=ACCOUNT_ENGINE_STOP_URL.format(
-                account_id=self._service.account_id, engine_id=self.engine_id
-            )
-        )
+    def restart(
+        self,
+        wait_for_startup: bool = True,
+        wait_timeout_seconds: int = 3600,
+    ) -> Engine:
+        """
+        Restart an engine.
+
+        Args:
+            wait_for_startup:
+                If True, wait for startup to complete.
+                If false, return immediately after requesting startup.
+            wait_timeout_seconds:
+                Number of seconds to wait for startup to complete
+                before raising a TimeoutError.
+
+        Returns:
+            The updated Engine from Firebolt.
+        """
+        timeout_time = time.time() + wait_timeout_seconds
+
+        engine = self._send_engine_request(ACCOUNT_ENGINE_RESTART_URL)
         logger.info(f"Stopping Engine (engine_id={self.engine_id}, name={self.name})")
-        return Engine.parse_obj_with_service(
-            obj=response.json()["engine"], engine_service=self._service
-        )
+
+        while wait_for_startup and engine.current_status_summary not in {
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_RUNNING,
+            EngineStatusSummary.ENGINE_STATUS_SUMMARY_FAILED,
+        }:
+            wait(
+                seconds=5,
+                timeout_time=timeout_time,
+                error_message=f"Could not restart engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                verbose=False,
+            )
+
+            engine = engine.get_latest()
+
+        return engine
 
     def delete(self) -> Engine:
         """Delete an Engine from Firebolt."""
@@ -307,3 +450,21 @@ class Engine(FireboltBaseModel):
         return Engine.parse_obj_with_service(
             obj=response.json()["engine"], engine_service=self._service
         )
+
+    def _send_engine_request(self, url: str) -> Engine:
+        response = self._service.client.post(
+            url=url.format(
+                account_id=self._service.account_id, engine_id=self.engine_id
+            )
+        )
+        return Engine.parse_obj_with_service(
+            obj=response.json()["engine"], engine_service=self._service
+        )
+
+
+class _EngineCreateRequest(FireboltBaseModel):
+    """Helper model for sending Engine create requests."""
+
+    account_id: str
+    engine: Engine
+    engine_revision: Optional[EngineRevision]

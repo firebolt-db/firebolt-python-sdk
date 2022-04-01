@@ -1,6 +1,7 @@
 from typing import Callable
 
 from httpx import codes
+from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
@@ -16,6 +17,7 @@ async def test_client_retry(
     test_username: str,
     test_password: str,
     test_token: str,
+    fs: FakeFilesystem,
 ):
     """
     Client retries with new auth token
@@ -57,13 +59,15 @@ async def test_client_different_auths(
     check_token_callback: Callable,
     test_username: str,
     test_password: str,
+    test_token: str,
+    fs: FakeFilesystem,
 ):
     """
-    Client propperly handles such auth types:
+    Client properly handles such auth types:
     - tuple(username, password)
     - Auth
     - None
-    All other types should raise TypeError
+    All other types should raise TypeError.
     """
 
     httpx_mock.add_callback(
@@ -76,6 +80,8 @@ async def test_client_different_auths(
     async with AsyncClient(auth=(test_username, test_password)) as client:
         await client.get("https://url")
     async with AsyncClient(auth=Auth(test_username, test_password)) as client:
+        await client.get("https://url")
+    async with AsyncClient(auth=Auth.from_token(test_token)) as client:
         await client.get("https://url")
 
     # client accepts None auth, but authorization fails
