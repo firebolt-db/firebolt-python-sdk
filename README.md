@@ -4,9 +4,8 @@
 [![Code quality checks](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/code-check.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/code-check.yml)
 [![Firebolt Security Scan](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/security-scan.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/security-scan.yml)
 [![Integration tests](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/integration-tests.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/ptiurin/65d5a42849fd78f4c6e62fad18490d20/raw/firebolt-sdk-coverage.json)
 
-[![GitHub license](https://img.shields.io/github/license/firebolt-db/firebolt-python-sdk)](https://github.com/firebolt-db/firebolt-python-sdk/blob/main/LICENSE)
-[![GitHub issues](https://img.shields.io/github/issues/firebolt-db/firebolt-python-sdk)](https://github.com/firebolt-db/firebolt-python-sdk/issues)
 
 ### Installation
 
