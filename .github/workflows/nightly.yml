@@ -11,7 +11,7 @@ jobs:
   security-scan:
     needs: [unit-tests]
     uses: ./.github/workflows/security-scan.yml
-    with:
+    secrets:
       FOSSA_TOKEN: ${{ secrets.FOSSA_TOKEN }}
       SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
   tests:
