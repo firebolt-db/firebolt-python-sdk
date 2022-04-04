@@ -43,6 +43,7 @@ jobs:
     - name: Extract coverage percent
       id: coverage
       if: github.event_name == 'push'
+      continue-on-error: true
       run: |
         fraction=$(sed -n 2p coverage.xml | sed 's/.*line-rate=\"\([0-9.]*\)\".*$/\1/')
         percentage=$(echo "scale=1; $fraction * 100" | bc -l)
@@ -54,6 +55,7 @@ jobs:
     - name: Create Coverage Badge
       uses: schneegans/dynamic-badges-action@v1.2.0
       if: github.event_name == 'push'
+      continue-on-error: true
       with:
         auth: ${{ secrets.GIST_PAT }}
         gistID: 65d5a42849fd78f4c6e62fad18490d20
