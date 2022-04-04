@@ -45,7 +45,7 @@ jobs:
       run: |
         fraction=$(sed -n 2p coverage.xml | sed 's/.*line-rate=\"\([0-9.]*\)\".*$/\1/')
         percentage=$(echo "scale=1; $fraction * 100" | bc -l)
-        echo "::set-output name=covered::${perc%.*}\n"
+        echo "::set-output name=covered::${percentage%.*}"
     
     - name: Create Coverage Badge
       uses: schneegans/dynamic-badges-action@v1.2.0
