@@ -5,6 +5,9 @@ name: Unit tests
 
 on:
   workflow_call:
+    secrets:
+      GIST_PAT:
+        required: true
   push:
     branches: [ main ]
 
