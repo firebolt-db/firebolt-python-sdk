@@ -36,3 +36,20 @@ jobs:
       with:
         name: pytest-coverage-report
         path: coverage.xml
+        
+    - name: Extract coverage percent
+      id: coverage
+      run: |
+        fraction=$(sed -n 2p coverage.xml | sed 's/.*line-rate=\"\([0-9.]*\)\".*$/\1/')
+        percentage=$(echo "scale=1; $fraction * 100" | bc -l)
+        echo "::set-output name=covered::${perc%.*}\n"
+    
+    - name: Create Coverage Badge
+      uses: schneegans/dynamic-badges-action@v1.2.0
+      with:
+        auth: ${{ secrets.GIST_PAT }}
+        gistID: 65d5a42849fd78f4c6e62fad18490d20
+        filename: firebolt-sdk-coverage.json
+        label: Coverage
+        message: ${{steps.coverage.outputs.covered}}%
+        color: orange
