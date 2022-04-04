@@ -45,7 +45,10 @@ jobs:
       run: |
         fraction=$(sed -n 2p coverage.xml | sed 's/.*line-rate=\"\([0-9.]*\)\".*$/\1/')
         percentage=$(echo "scale=1; $fraction * 100" | bc -l)
-        echo "::set-output name=covered::${percentage%.*}"
+        percentage_whole=$(echo "${percentage%.*}")
+        colour=$(if [ $percentage_whole -ge 80 ]; then echo "green"; else echo "orange"; fi)
+        echo "::set-output name=colour::$colour"
+        echo "::set-output name=covered::$percentage_whole"
     
     - name: Create Coverage Badge
       uses: schneegans/dynamic-badges-action@v1.2.0
@@ -55,4 +58,4 @@ jobs:
         filename: firebolt-sdk-coverage.json
         label: Coverage
         message: ${{steps.coverage.outputs.covered}}%
-        color: orange
+        color: ${{steps.coverage.outputs.colour}}
