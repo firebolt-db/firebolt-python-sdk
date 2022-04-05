@@ -1,4 +1,3 @@
-import time
 from collections import namedtuple
 
 import pytest
@@ -12,10 +11,14 @@ from firebolt.service.types import (
 )
 
 
+def make_engine_name(database_name: str, suffix: str) -> str:
+    return f"{database_name}_{suffix}"
+
+
 @pytest.mark.skip(reason="manual test")
-def test_create_start_stop_engine():
+def test_create_start_stop_engine(database_name: str):
     rm = ResourceManager()
-    name = f"integration_test_{int(time.time())}"
+    name = make_engine_name(database_name, "start_stop")
 
     engine = rm.engines.create(name=name)
     assert engine.name == name
@@ -40,9 +43,9 @@ def test_create_start_stop_engine():
 
 
 @pytest.mark.skip(reason="manual test")
-def test_copy_engine():
+def test_copy_engine(database_name):
     rm = ResourceManager()
-    name = f"integration_test_{int(time.time())}"
+    name = make_engine_name(database_name, "copy")
 
     engine = rm.engines.create(name=name)
     assert engine.name == name
@@ -111,7 +114,7 @@ ENGINE_UPDATE_PARAMS = {
 def test_engine_update_single_parameter(rm_settings: Settings, database_name: str):
     rm = ResourceManager(rm_settings)
 
-    name = f"integration_test_{int(time.time())}"
+    name = make_engine_name(database_name, "single_param")
     engine = rm.engines.create(name=name)
 
     engine.attach_to_database(database=rm.databases.get_by_name(database_name))
@@ -130,7 +133,7 @@ def test_engine_update_single_parameter(rm_settings: Settings, database_name: st
 def test_engine_update_multiple_parameters(rm_settings: Settings, database_name: str):
     rm = ResourceManager(rm_settings)
 
-    name = f"integration_test_{int(time.time())}"
+    name = make_engine_name(database_name, "multi_param")
     engine = rm.engines.create(name=name)
 
     engine.attach_to_database(database=rm.databases.get_by_name(database_name))

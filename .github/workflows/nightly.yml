@@ -6,6 +6,14 @@ on:
 jobs:
   code-check:
     uses: ./.github/workflows/code-check.yml
+  unit-tests:
+    uses: ./.github/workflows/unit-tests.yml
+  security-scan:
+    needs: [unit-tests]
+    uses: ./.github/workflows/security-scan.yml
+    secrets:
+      FOSSA_TOKEN: ${{ secrets.FOSSA_TOKEN }}
+      SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
