@@ -5,6 +5,9 @@ name: Unit tests
 
 on:
   workflow_call:
+    secrets:
+      GIST_PAT:
+        required: true
   push:
     branches: [ main ]
 
@@ -36,3 +39,27 @@ jobs:
       with:
         name: pytest-coverage-report
         path: coverage.xml
+        
+    - name: Extract coverage percent
+      id: coverage
+      if: github.event_name == 'push'
+      continue-on-error: true
+      run: |
+        fraction=$(sed -n 2p coverage.xml | sed 's/.*line-rate=\"\([0-9.]*\)\".*$/\1/')
+        percentage=$(echo "scale=1; $fraction * 100" | bc -l)
+        percentage_whole=$(echo "${percentage%.*}")
+        colour=$(if [ $percentage_whole -ge 80 ]; then echo "green"; else echo "orange"; fi)
+        echo "::set-output name=colour::$colour"
+        echo "::set-output name=covered::$percentage_whole"
+    
+    - name: Create Coverage Badge
+      uses: schneegans/dynamic-badges-action@v1.2.0
+      if: github.event_name == 'push'
+      continue-on-error: true
+      with:
+        auth: ${{ secrets.GIST_PAT }}
+        gistID: 65d5a42849fd78f4c6e62fad18490d20
+        filename: firebolt-sdk-coverage.json
+        label: Coverage
+        message: ${{steps.coverage.outputs.covered}}%
+        color: ${{steps.coverage.outputs.colour}}
