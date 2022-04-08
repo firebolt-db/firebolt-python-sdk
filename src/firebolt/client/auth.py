@@ -99,8 +99,8 @@ class Auth(HttpxAuth):
         Yields:
             Request: an http request to get token. Expects Response to be sent back
 
-        Returns:
-            None
+        Raises:
+            AuthenticationError: error while authenticating with provided credentials
         """
         try:
             response = yield Request(
@@ -133,8 +133,8 @@ class Auth(HttpxAuth):
         Args:
             request: Request: to add header to
 
-        Returns:
-            None:
+        Yields:
+            Request: request required for auth flow
         """
         if not self.token or self.expired:
             yield from self.get_new_token_generator()
@@ -153,9 +153,6 @@ class Auth(HttpxAuth):
 
         Args:
             response: dict: response data
-
-        Returns:
-            None
 
         Raises:
             AuthenticationError: if were unable to authenticate

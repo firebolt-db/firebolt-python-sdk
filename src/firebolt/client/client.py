@@ -42,6 +42,8 @@ class FireboltClientMixin(FireboltClientMixinBase):
         Returns:
             Optional[Auth]: Auth object
 
+        Raises:
+            TypeError: if auth argument has unsupported type
         """
         if auth is None or isinstance(auth, Auth):
             return auth
@@ -68,6 +70,12 @@ class Client(FireboltClientMixin, HttpxClient):
 
         If account_name is provided, returns it's id.
         Gets default account otherwise
+
+        Returns:
+            str: account id
+
+        Raises:
+            AccountNotFoundError: no account found with provided name
         """
         if self.account_name:
             response = self.get(
@@ -97,6 +105,12 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
         If account_name is provided, returns it's id.
         Gets default account otherwise
+
+        Returns:
+            str: account id
+
+        Raises:
+            AccountNotFoundError: no account found with provided name
         """
         if self.account_name:
             response = await self.get(

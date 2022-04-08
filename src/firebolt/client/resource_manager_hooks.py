@@ -13,9 +13,6 @@ def log_request(request: Request) -> None:
 
     Args:
         request (Request): request to log
-
-    Returns:
-        None
     """
     logger.debug(
         "Request event hook: %s %s - Waiting for response", request.method, request.url
@@ -29,9 +26,6 @@ def log_response(response: Response) -> None:
 
     Args:
         response (Response): response to log
-
-    Returns:
-        None
     """
     request = response.request
     logger.debug(
@@ -51,8 +45,10 @@ def raise_on_4xx_5xx(response: Response) -> None:
     Args:
         response (Response): response to check for error code
 
-    Returns:
-        None
+    Raises:
+        RequestError: error during performing request
+        RuntimeError: error processing request on server
+        HTTPStatusError: HTTP error
     """
     try:
         response.raise_for_status()
