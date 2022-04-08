@@ -12,16 +12,26 @@ from firebolt.common.util import fix_url_schema
 
 
 class Auth(HttpxAuth):
+    """Authentication class for Firebolt database.
 
-    """
-    Authentication class for Firebolt database. Gets authentication token using
+    Gets authentication token using
     provided credentials and updates it when it expires
+
+    Args:
+        username (str): username
+        password (str): password
+        api_endpoint (Optional[str]): environment api endpoint.
+            Default api.app.firebolt.io
+
+    Attributes:
+        username (str): username
+        password (str): password
     """
 
     __slots__ = (
         "username",
         "password",
-        "api_url",
+        "_api_endpoint",
         "_token",
         "_expires",
     )
@@ -30,6 +40,14 @@ class Auth(HttpxAuth):
 
     @staticmethod
     def from_token(token: str) -> "Auth":
+        """Create auth based on already acquired token.
+
+        Args:
+            token (str): Bearer token
+
+        Returns:
+            Auth: auth object
+        """
         a = Auth("", "")
         a._token = token
         return a
@@ -50,18 +68,40 @@ class Auth(HttpxAuth):
         self._expires: Optional[int] = None
 
     def copy(self) -> "Auth":
+        """Make another auth object with same credentials.
+
+        Returns:
+            Auth: auth object
+        """
         return Auth(self.username, self.password, self._api_endpoint)
 
     @property
     def token(self) -> Optional[str]:
+        """Acquired bearer token.
+
+        Returns:
+            Optional[str]: acquired token
+        """
         return self._token
 
     @property
     def expired(self) -> Optional[int]:
+        """Check if current token is expired.
+
+        Returns:
+            bool: True if expired, False otherwise
+        """
         return self._expires is not None and self._expires <= int(time())
 
     def get_new_token_generator(self) -> Generator[Request, Response, None]:
-        """Get new token using username and password"""
+        """Get new token using username and password.
+
+        Yields:
+            Request: an http request to get token. Expects Response to be sent back
+
+        Returns:
+            None
+        """
         try:
             response = yield Request(
                 "POST",
@@ -83,12 +123,19 @@ class Auth(HttpxAuth):
             self._token_storage.cache_token(parsed["access_token"], self._expires)
 
         except _REQUEST_ERRORS as e:
-            raise AuthenticationError(repr(e), self._api_endpoint)
+            raise AuthenticationError(repr(e), self._api_endpoint) from e
 
     def auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         """Add authorization token to request headers.
-        Overrides ``httpx.Auth.auth_flow``"""
 
+        Overrides ``httpx.Auth.auth_flow``
+
+        Args:
+            request: Request: to add header to
+
+        Returns:
+            None:
+        """
         if not self.token or self.expired:
             yield from self.get_new_token_generator()
 
@@ -102,6 +149,17 @@ class Auth(HttpxAuth):
             yield request
 
     def _check_response_error(self, response: dict) -> None:
+        """Check if response data contains errors.
+
+        Args:
+            response: dict: response data
+
+        Returns:
+            None
+
+        Raises:
+            AuthenticationError: if were unable to authenticate
+        """
         if "error" in response:
             raise AuthenticationError(
                 response.get("message", "unknown server error"),
