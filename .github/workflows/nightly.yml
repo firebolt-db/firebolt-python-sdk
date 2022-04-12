@@ -8,6 +8,8 @@ jobs:
     uses: ./.github/workflows/code-check.yml
   unit-tests:
     uses: ./.github/workflows/unit-tests.yml
+    secrets:
+      GIST_PAT: ${{ secrets.GIST_PAT }}
   security-scan:
     needs: [unit-tests]
     uses: ./.github/workflows/security-scan.yml
