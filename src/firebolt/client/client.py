@@ -37,13 +37,13 @@ class FireboltClientMixin(FireboltClientMixinBase):
         Overrides ``httpx.Client._build_auth``
 
         Args:
-            auth: _types.AuthTypes: provided auth
+            auth (_types.AuthTypes): Provided auth
 
         Returns:
             Optional[Auth]: Auth object
 
         Raises:
-            TypeError: if auth argument has unsupported type
+            TypeError: Auth argument has unsupported type
         """
         if auth is None or isinstance(auth, Auth):
             return auth
@@ -57,7 +57,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
 
 
 class Client(FireboltClientMixin, HttpxClient):
-    """An http client, based on httpx.Client.
+    """An HTTP client, based on httpx.Client.
 
     Handles the authentication for Firebolt database.
     Authentication can be passed through auth keyword as a tuple or as a
@@ -72,10 +72,10 @@ class Client(FireboltClientMixin, HttpxClient):
         Gets default account otherwise
 
         Returns:
-            str: account id
+            str: Account ID
 
         Raises:
-            AccountNotFoundError: no account found with provided name
+            AccountNotFoundError: No account found with provided name
         """
         if self.account_name:
             response = self.get(
@@ -92,7 +92,7 @@ class Client(FireboltClientMixin, HttpxClient):
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
-    """An http client, based on httpx.AsyncClient.
+    """An HTTP client, based on httpx.AsyncClient.
 
     Asyncronously handles authentication for Firebolt database.
     Authentication can be passed through auth keyword as a tuple or as a
@@ -107,10 +107,10 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
         Gets default account otherwise
 
         Returns:
-            str: account id
+            str: Account ID
 
         Raises:
-            AccountNotFoundError: no account found with provided name
+            AccountNotFoundError: No account found with provided name
         """
         if self.account_name:
             response = await self.get(

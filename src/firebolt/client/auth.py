@@ -18,14 +18,14 @@ class Auth(HttpxAuth):
     provided credentials and updates it when it expires
 
     Args:
-        username (str): username
-        password (str): password
-        api_endpoint (Optional[str]): environment api endpoint.
+        username (str): Username
+        password (str): Password
+        api_endpoint (Optional[str]): Environment api endpoint.
             Default api.app.firebolt.io
 
     Attributes:
-        username (str): username
-        password (str): password
+        username (str): Username
+        password (str): Password
     """
 
     __slots__ = (
@@ -46,7 +46,7 @@ class Auth(HttpxAuth):
             token (str): Bearer token
 
         Returns:
-            Auth: auth object
+            Auth: Auth object
         """
         a = Auth("", "")
         a._token = token
@@ -71,7 +71,7 @@ class Auth(HttpxAuth):
         """Make another auth object with same credentials.
 
         Returns:
-            Auth: auth object
+            Auth: Auth object
         """
         return Auth(self.username, self.password, self._api_endpoint)
 
@@ -80,7 +80,7 @@ class Auth(HttpxAuth):
         """Acquired bearer token.
 
         Returns:
-            Optional[str]: acquired token
+            Optional[str]: Acquired token
         """
         return self._token
 
@@ -97,10 +97,10 @@ class Auth(HttpxAuth):
         """Get new token using username and password.
 
         Yields:
-            Request: an http request to get token. Expects Response to be sent back
+            Request: An http request to get token. Expects Response to be sent back
 
         Raises:
-            AuthenticationError: error while authenticating with provided credentials
+            AuthenticationError: Error while authenticating with provided credentials
         """
         try:
             response = yield Request(
@@ -131,10 +131,10 @@ class Auth(HttpxAuth):
         Overrides ``httpx.Auth.auth_flow``
 
         Args:
-            request: Request: to add header to
+            request (Request): Request object to update
 
         Yields:
-            Request: request required for auth flow
+            Request: Request required for auth flow
         """
         if not self.token or self.expired:
             yield from self.get_new_token_generator()
@@ -152,10 +152,10 @@ class Auth(HttpxAuth):
         """Check if response data contains errors.
 
         Args:
-            response: dict: response data
+            response (dict): Response data
 
         Raises:
-            AuthenticationError: if were unable to authenticate
+            AuthenticationError: Were unable to authenticate
         """
         if "error" in response:
             raise AuthenticationError(

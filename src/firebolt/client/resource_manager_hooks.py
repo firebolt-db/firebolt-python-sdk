@@ -12,7 +12,7 @@ def log_request(request: Request) -> None:
     Hook for an HTTP client
 
     Args:
-        request (Request): request to log
+        request (Request): Request to log
     """
     logger.debug(
         "Request event hook: %s %s - Waiting for response", request.method, request.url
@@ -25,7 +25,7 @@ def log_response(response: Response) -> None:
     Hook for an HTTP client
 
     Args:
-        response (Response): response to log
+        response (Response): Response to log
     """
     request = response.request
     logger.debug(
@@ -43,11 +43,11 @@ def raise_on_4xx_5xx(response: Response) -> None:
     If an error is message is found raise as an ApiError
 
     Args:
-        response (Response): response to check for error code
+        response (Response): Response to check for error code
 
     Raises:
-        RequestError: error during performing request
-        RuntimeError: error processing request on server
+        RequestError: Error during performing request
+        RuntimeError: Error processing request on server
         HTTPStatusError: HTTP error
     """
     try:
