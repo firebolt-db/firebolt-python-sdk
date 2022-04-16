@@ -1,10 +1,10 @@
 =======================
-firebolt.common package
+Common
 =======================
 
-The common package contains a list of exceptions that are raised for errors when accessing Firebolt databases. 
+The common package contains settings parameters and error exceptions. 
 
-firebolt.common.exception module
+Common.exception
 --------------------------------
 
 .. automodule:: firebolt.common.exception
@@ -12,7 +12,7 @@ firebolt.common.exception module
    :undoc-members:
    :show-inheritance:
 
-firebolt.common.settings module
+Common.settings
 -------------------------------
 
 .. automodule:: firebolt.common.settings
@@ -20,11 +20,24 @@ firebolt.common.settings module
    :undoc-members:
    :show-inheritance:
 
+Common.urls
+---------------------------
+
 .. automodule:: firebolt.common.urls
    :members:
    :undoc-members:
    :show-inheritance:
 
+Common.token\_storage
+-------------------------------------
+
+.. automodule:: firebolt.common.token_storage
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Common.util
+---------------------------
 
 .. automodule:: firebolt.common.util
    :exclude-members: async_to_sync, cached_property, fix_url_schema, mixin_for, prune_dict

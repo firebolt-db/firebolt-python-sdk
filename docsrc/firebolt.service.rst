@@ -1,8 +1,8 @@
 ========================
-firebolt.service package
+Service
 ========================
 
-The service packages enables launching and cataloging Firebolt engines and databases.
+The service package enables launching and cataloging Firebolt engines and databases.
 
 .. automodule:: firebolt.service.base
    :members:
@@ -16,7 +16,7 @@ The service packages enables launching and cataloging Firebolt engines and datab
    :undoc-members:
    :show-inheritance:
 
-firebolt.service.database module
+Service.database
 --------------------------------
 
 .. automodule:: firebolt.service.database
@@ -24,7 +24,7 @@ firebolt.service.database module
    :undoc-members:
    :show-inheritance:
 
-firebolt.service.engine module
+Service.engine
 ------------------------------
 
 .. automodule:: firebolt.service.engine
@@ -38,7 +38,7 @@ firebolt.service.engine module
    :undoc-members:
    :show-inheritance:
 
-firebolt.service.instance\_type module
+Service.instance\_type
 --------------------------------------
 
 .. automodule:: firebolt.service.instance_type
@@ -47,7 +47,7 @@ firebolt.service.instance\_type module
    :undoc-members:
    :show-inheritance:
 
-firebolt.service.manager module
+Service.manager
 -------------------------------
 
 .. automodule:: firebolt.service.manager
@@ -55,7 +55,7 @@ firebolt.service.manager module
    :undoc-members:
    :show-inheritance:
 
-firebolt.service.provider module
+Service.provider
 --------------------------------
 
 .. automodule:: firebolt.service.provider
@@ -63,7 +63,7 @@ firebolt.service.provider module
    :undoc-members:
    :show-inheritance:
 
-firebolt.service.region module
+Service.region
 ------------------------------
 
 .. automodule:: firebolt.service.region
@@ -71,7 +71,7 @@ firebolt.service.region module
    :undoc-members:
    :show-inheritance:
 
-firebolt.service.types module
+Service.types
 -----------------------------
 
 .. automodule:: firebolt.service.types

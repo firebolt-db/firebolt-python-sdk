@@ -7,17 +7,59 @@
 **Firebolt-python-sdk**
 ########################
 
-The Firebolt Python SDK provides tools for connecting to Firebolt engines to execute database queries and fetch results. 
+The Firebolt Python SDK enables connecting to Firebolt, managing Firebolt resources and executing queries using a library of Python classes and functions. 
+
+========================
+Prerequisites
+========================
+
+* The Firebolt Python SDK requires Python version 3.7 or later along with the pip package installer. For more information, see the `Python <https://www.python.org/downloads/>`_ web page.
+
+* You need a Firebolt account and login credentials.
+
+========================
+Installation
+========================
+
+You can use pip to install the Firebolt Python SDK from the command line as shown in the example below: 
+
+``$ pip install firebolt-sdk`` 
+
+==========================
+Getting started
+==========================
+
+To use the Python SDK with a Firebolt account, you must provide your account information. These parameters are used to connect to a Firebolt database to execute commands and queries:
+
++------------------------------------+-------------------------------------------------------------------+
+| ``username``                       |  The email address associated with your Firebolt user.            |
++------------------------------------+-------------------------------------------------------------------+
+| ``password``                       |  The password used for connecting to Firebolt.                    |
++------------------------------------+-------------------------------------------------------------------+
+| ``database``                       |  The name of the database you would like to connect to.           |
++------------------------------------+-------------------------------------------------------------------+
+| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.           |
++------------------------------------+-------------------------------------------------------------------+
+
+
+Optional features 
+^^^^^^^^^^^^^^^^^^^
+
+By default, the Firebolt Python SDK uses the ``datetime`` module to parse date and datetime values, but this might be slow for large operations. In order to speed up datetime operations, its possible to use `ciso8601 <https://pypi.org/project/ciso8601/>`_ package. 
+
+To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install firebolt-sdk[ciso8601]``.
 
 .. note:: 
 
-   This project is under active development
+   This project is under active development.
 
-**Contributing**
+Contributing
+^^^^^^^^^^^^^^
 
-See: `contributing.md <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_
+To see the procedures and requirements for contributing, see our `contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_ page on Github. 
 
-**License**
+License
+^^^^^^^^
 
 The Firebolt DB API is licensed under the `Apache License Version 2.0 <https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE>`_ software license.
 
@@ -28,13 +70,13 @@ The Firebolt DB API is licensed under the `Apache License Version 2.0 <https://g
 .. toctree::
    :maxdepth: 2
 
-   Quickstart <quickstart>
-   async_db package <firebolt.async_db>
-   client package <firebolt.client>
-   common package <firebolt.common>
-   db package <firebolt.db>
-   model package <firebolt.model>
-   service package <firebolt.service>
+   Usage examples <examples>
+   Async_db <firebolt.async_db>
+   Client <firebolt.client>
+   Common <firebolt.common>
+   Db <firebolt.db>
+   Model <firebolt.model>
+   Service <firebolt.service>
 
 
 

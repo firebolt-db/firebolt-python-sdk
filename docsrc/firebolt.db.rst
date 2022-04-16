@@ -1,10 +1,10 @@
 ===================
-firebolt.db package
+Db
 ===================
 
-The db package enables connecting and making synchronous queries to a Firebolt database. For demonstrations of using this package, please see our `examples <https://github.com/firebolt-db/firebolt-sdk/tree/main/examples/dbapi.ipynb>`_ page. 
+The db package enables connecting to a Firebolt database for synchronous queries. 
 
-firebolt.db.connection module
+Db.connection
 -----------------------------
 
 .. automodule:: firebolt.db.connection
@@ -12,7 +12,7 @@ firebolt.db.connection module
    :undoc-members:
    :show-inheritance:
 
-firebolt.db.cursor module
+Db.cursor
 -------------------------
 
 .. automodule:: firebolt.db.cursor
