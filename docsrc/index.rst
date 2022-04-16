@@ -29,7 +29,7 @@ You can use pip to install the Firebolt Python SDK from the command line as show
 Getting started
 ==========================
 
-To use the Python SDK with a Firebolt account, you must provide your account information. These parameters are used to connect to a Firebolt database to execute commands and queries:
+To use the Python SDK, you must provide your account information. These parameters are used to connect to a Firebolt database to execute commands and queries:
 
 +------------------------------------+-------------------------------------------------------------------+
 | ``username``                       |  The email address associated with your Firebolt user.            |
@@ -38,7 +38,7 @@ To use the Python SDK with a Firebolt account, you must provide your account inf
 +------------------------------------+-------------------------------------------------------------------+
 | ``database``                       |  The name of the database you would like to connect to.           |
 +------------------------------------+-------------------------------------------------------------------+
-| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.           |
+| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.            |
 +------------------------------------+-------------------------------------------------------------------+
 
 
@@ -49,9 +49,12 @@ By default, the Firebolt Python SDK uses the ``datetime`` module to parse date a
 
 To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install firebolt-sdk[ciso8601]``.
 
-.. note:: 
 
-   This project is under active development.
+Release notes
+^^^^^^^^^^^^^^
+
+For information about changes in the latest version of the Firebolt Python SDK, see our `release notes <https://github.com/firebolt-db/firebolt-python-sdk/releases>`_
+
 
 Contributing
 ^^^^^^^^^^^^^^
@@ -63,14 +66,17 @@ License
 
 The Firebolt DB API is licensed under the `Apache License Version 2.0 <https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE>`_ software license.
 
+.. note:: 
 
+   This project is under active development.
 
 ========================================
 
 .. toctree::
    :maxdepth: 2
 
-   Usage examples <examples>
+   Connecting and running queries <Connecting_and_queries>
+   Managing engines and databases <Managing_resources>
    Async_db <firebolt.async_db>
    Client <firebolt.client>
    Common <firebolt.common>
