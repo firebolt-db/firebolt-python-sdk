@@ -124,6 +124,7 @@ The engine attached to your specified database must be started before executing 
 			'''SELECT * FROM test_table;'''
 		)
 
+	cursor.close()
 
 .. note:: 
 
@@ -185,6 +186,8 @@ To run a parameterized query, use the ``execute()`` cursor method. Add placehold
 			(1, "apple", "2018-01-01"),
 		)
 
+	cursor.close()
+
 .. _parameterized_query_executemany_example:
 
 If you need to run the same statement multiple times with different parameter inputs, you can use the ``executemany()`` cursor method. This allows multiple tuples to be passed as values in the second argument.
@@ -199,6 +202,8 @@ If you need to run the same statement multiple times with different parameter in
 			(4, "donut", "2021-01-01")
 		)
 	)
+
+	cursor.close()
 
 
 
@@ -219,6 +224,8 @@ Multiple-statement queries allow you to run a series of SQL statements sequentia
 	assert cursor.nextset()
 	print("Second query: ", cursor.fetchall())
 	assert cursor.nextset() is None
+
+	cursor.close()
 
 **Returns**: 
 
