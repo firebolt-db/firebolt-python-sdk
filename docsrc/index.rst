@@ -25,22 +25,6 @@ You can use pip to install the Firebolt Python SDK from the command line as show
 
 ``$ pip install firebolt-sdk`` 
 
-==========================
-Getting started
-==========================
-
-To use the Python SDK, you must provide your account information. These parameters are used to connect to a Firebolt database to execute commands and queries:
-
-+------------------------------------+-------------------------------------------------------------------+
-| ``username``                       |  The email address associated with your Firebolt user.            |
-+------------------------------------+-------------------------------------------------------------------+
-| ``password``                       |  The password used for connecting to Firebolt.                    |
-+------------------------------------+-------------------------------------------------------------------+
-| ``database``                       |  The name of the database you would like to connect to.           |
-+------------------------------------+-------------------------------------------------------------------+
-| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.            |
-+------------------------------------+-------------------------------------------------------------------+
-
 
 Optional features 
 ^^^^^^^^^^^^^^^^^^^
@@ -59,7 +43,7 @@ For information about changes in the latest version of the Firebolt Python SDK, 
 Contributing
 ^^^^^^^^^^^^^^
 
-To see the procedures and requirements for contributing, see our `contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_ page on Github. 
+For procedures and requirements for contributing to this SDK, see our `contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_ page on Github. 
 
 License
 ^^^^^^^^

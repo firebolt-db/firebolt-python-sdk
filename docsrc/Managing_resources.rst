@@ -25,18 +25,23 @@ Initializing a Settings object
 
 A Settings object contains the user credentials and other information needed to manage Firebolt databases and engines.   
 
-The Settings object requires the following parameters: 
+The Settings object uses the following parameters: 
 
-* ``user`` - The email address associated with your Firebolt user profile.
++---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| ``user``            |  The email address associated with your Firebolt user profile.                                                              |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| ``password``        |  The password used for connecting to Firebolt.                                                                              |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| ``server``          |  The API hostname for logging in. Defaults to ``api.app.firebolt.io`` if not included.                                      |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+| ``default_region``  |  The default region for creating new databases and engines.                                                                 |
+|                     |                                                                                                                             |
+|                     |  For more information, see `Available AWS Regions <https://docs.firebolt.io/general-reference/available-regions.html>`_.    |
++---------------------+-----------------------------------------------------------------------------------------------------------------------------+
 
-* ``password`` - The password used for connecting to Firebolt.   
-
-* ``server`` - Use ``api.app.firebolt.io``.
-
-* ``default_region`` - The default region for creating new databases and engines. For more information, see `Available AWS Regions <https://docs.firebolt.io/general-reference/available-regions.html>`_.
 
 
-A ``Settings`` object can be configured with parameters by two different methods.  
+A ``Settings`` object can be configured with parameters by multiple methods.  
 
 * Add the parameters manually in your command script. 
 
@@ -126,7 +131,7 @@ Find a specific Firebolt database and create a ``database`` object by using its 
 Getting database status
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to get metadata on a ``database`` object. This is a helpful command to run after a database operation to check if its execution was successful.    
+Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to format metadata from a ``database`` object. This is a helpful command to run after a database operation to check if its execution was successful.    
 
 ::	
 	
@@ -137,7 +142,7 @@ Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to get me
 Dropping a database
 ^^^^^^^^^^^^^^^^^^^^
 
-Drop a database by calling the ``delete`` function. 
+Drop a database by calling the ``delete`` function. The database is deleted along with all of its tables.
 
 :: 
 	
@@ -223,7 +228,7 @@ An engine must be attached to a database and started before it can run SQL comma
 Dropping an engine
 ^^^^^^^^^^^^^^^^^^^
 
-Drop an engine by calling the ``delete`` function. 
+Drop an engine by calling the ``delete`` function. The engine is removed from its attached database and deleted. 
 
 ::
 
@@ -253,7 +258,7 @@ Stop an engine by calling the ``stop`` function.
 Getting engine status
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to get metadata on an ``engine`` object. This is a helpful command to run after an engine operation to check if its execution was successful.    
+Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to format metadata from an ``engine`` object. This is a helpful command to run after an engine operation to check if its execution was successful.    
 
 ::	
 	

@@ -25,12 +25,23 @@ The Firebolt Python SDK requires you to import the following modules before maki
 Connecting to your database / engine
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-To access your Firebolt account, you must first provide your account information through a connection request. This information can be provided in multiple ways.
+To use the Python SDK to execute commands and queries, you must provide the following account information through a connection request. 
 
++------------------------------------+-------------------------------------------------------------------+
+| ``username``                       |  The email address associated with your Firebolt user.            |
++------------------------------------+-------------------------------------------------------------------+
+| ``password``                       |  The password used for connecting to Firebolt.                    |
++------------------------------------+-------------------------------------------------------------------+
+| ``database``                       |  The name of the database you would like to connect to.           |
++------------------------------------+-------------------------------------------------------------------+
+| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.            |
++------------------------------------+-------------------------------------------------------------------+
+
+This information can be provided in multiple ways.
 
 * **Set credentials manually**
 
-	You can manually include your account information in a connection object in your application for any queries you want to request. 
+	You can manually include your account information in a connection object in your code for any queries you want to request. 
 
 	Replace the values in the example code below with your Firebolt account credentials as appropriate. 
 
@@ -53,7 +64,7 @@ To access your Firebolt account, you must first provide your account information
 
 * **Use an .env file**
 
-	Consolidating all of your Firebolt credentials into a ``.env`` file can help protect sensitive information from exposure. Replace the values with your information in the example ``.env`` file below. 
+	Consolidating all of your Firebolt credentials into a ``.env`` file can help protect sensitive information from exposure. Create an ``.env`` file with the following key-value pairs, and replace the values with your information. 
 
 	::
 
@@ -64,7 +75,7 @@ To access your Firebolt account, you must first provide your account information
 
 	Be sure to place this ``.env`` file into your root directory. 
 
-	Your connection script can load these environmental variables from the ``.env`` file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_ package. Note that this package requires additional imports. 
+	Your connection script can load these environmental variables from the ``.env`` file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_ package. Note that the example below requires additional imports. 
 
 	::
 
@@ -83,19 +94,14 @@ To access your Firebolt account, you must first provide your account information
 		cursor = connection.cursor()
 
 
-
-
-
 Executing commands and queries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. _basic_execute_example:
 
-The ``cursor`` object created in the prior script can be used to run various SQL commands and queries on a database. The example below uses ``cursor`` to create a new table ``test_table``, insert rows into it, and then select the table's contents. 
+The ``cursor`` object created in the prior script can be used to run various SQL commands and queries on a database. The example below uses ``cursor`` to create a new table ``test_table``, inserts rows into it, and then selects the table's contents. 
 
 The engine attached to your specified database must be started before executing any queries. For help, see :ref:`starting an engine` 
-
-For a reference 
 
 ::
 
@@ -127,7 +133,7 @@ For a reference
 Fetching query results
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-After running a query, you can fetch the results using a ``cursor`` object. The examples below use ``test_table`` created in the :ref:`execute example <basic_execute_example>`. 
+After running a query, you can fetch the results using a ``cursor`` object. The examples below use the data queried from ``test_table`` created in the :ref:`execute example <basic_execute_example>`. 
 
 .. _fetch_example:
 
