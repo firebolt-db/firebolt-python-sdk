@@ -68,7 +68,7 @@ class Client(FireboltClientMixin, HttpxClient):
     def account_id(self) -> str:
         """User account id.
 
-        If account_name is provided, returns it's id.
+        If account_name was provided during Client construction, returns it's id.
         Gets default account otherwise
 
         Returns:
@@ -103,7 +103,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     async def account_id(self) -> str:
         """User account id.
 
-        If account_name is provided, returns it's id.
+        If account_name was provided during AsyncClient construction, returns it's id.
         Gets default account otherwise
 
         Returns:

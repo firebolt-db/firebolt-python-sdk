@@ -172,7 +172,7 @@ class FernetEncrypter:
             data (str): Encrypted data
 
         Returns:
-            str: Decrypted data
+            Optional[str]: Decrypted data
 
         """
         try:

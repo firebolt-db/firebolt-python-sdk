@@ -85,7 +85,7 @@ class Auth(HttpxAuth):
         return self._token
 
     @property
-    def expired(self) -> Optional[int]:
+    def expired(self) -> bool:
         """Check if current token is expired.
 
         Returns:
