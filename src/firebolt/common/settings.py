@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     account_name: str = Field(None, env="FIREBOLT_ACCOUNT")
     server: str = Field(..., env="FIREBOLT_SERVER")
     default_region: str = Field(..., env="FIREBOLT_DEFAULT_REGION")
+    use_token_cache: bool = Field(True)
 
     class Config:
         """Internal pydantic config."""
