@@ -37,10 +37,18 @@ from tests.unit.db_conftest import *  # noqa
 from tests.unit.util import list_to_paginated_response
 
 
+# Register nofakefs mark
+def pytest_configure(config):
+    config.addinivalue_line("markers", "nofakefs: don't use fakefs fixture")
+
+
 @fixture(autouse=True)
-def global_fake_fs() -> None:
-    with Patcher():
+def global_fake_fs(request) -> None:
+    if "nofakefs" in request.keywords:
         yield
+    else:
+        with Patcher():
+            yield
 
 
 @fixture

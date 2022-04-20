@@ -184,13 +184,21 @@ class Engine(FireboltBaseModel):
 
     @check_attached_to_database
     def get_connection(self) -> Connection:
-        """Get a connection to the attached database, for running queries."""
+        """Get a connection to the attached database, for running queries.
+
+        Returns:
+            Connection: engine connection instance
+
+        """
         return connect(
-            engine_url=self.endpoint,
             database=self.database.name,  # type: ignore # already checked by decorator
             username=self._service.settings.user,
             password=self._service.settings.password.get_secret_value(),
+            access_token=self._service.settings.access_token,
+            engine_url=self.endpoint,
+            account_name=self._service.settings.account_name,
             api_endpoint=self._service.settings.server,
+            use_token_cache=self._service.settings.use_token_cache,
         )
 
     @check_attached_to_database
@@ -226,7 +234,7 @@ class Engine(FireboltBaseModel):
         ):
             logger.info(
                 f"Engine (engine_id={self.engine_id}, name={self.name}) "
-                f"is already running."
+                "is already running."
             )
             return engine
 
@@ -238,7 +246,7 @@ class Engine(FireboltBaseModel):
         ):
             logger.info(
                 f"Engine (engine_id={engine.engine_id}, name={engine.name}) "
-                f"is in currently stopping, waiting for it to stop first."
+                "is in currently stopping, waiting for it to stop first."
             )
             while (
                 engine.current_status_summary
@@ -247,9 +255,11 @@ class Engine(FireboltBaseModel):
                 wait(
                     seconds=5,
                     timeout_time=timeout_time,
-                    error_message=f"Engine "
-                    f"(engine_id={engine.engine_id}, name={engine.name}) "
-                    f"did not stop within {wait_timeout_seconds} seconds.",
+                    error_message=(
+                        "Engine "
+                        f"(engine_id={engine.engine_id}, name={engine.name}) "
+                        f"did not stop within {wait_timeout_seconds} seconds."
+                    ),
                     verbose=True,
                 )
                 engine = engine.get_latest()
@@ -271,14 +281,16 @@ class Engine(FireboltBaseModel):
             wait(
                 seconds=5,
                 timeout_time=timeout_time,
-                error_message=f"Could not start engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                error_message=(  # noqa: E501
+                    f"Could not start engine within {wait_timeout_seconds} seconds."
+                ),
                 verbose=verbose,
             )
             previous_status_summary = engine.current_status_summary
             engine = engine.get_latest()
             if engine.current_status_summary != previous_status_summary:
                 logger.info(
-                    f"Engine status_summary="
+                    "Engine status_summary="
                     f"{getattr(engine.current_status_summary, 'name')}"
                 )
 
@@ -301,7 +313,9 @@ class Engine(FireboltBaseModel):
             wait(
                 seconds=5,
                 timeout_time=timeout_time,
-                error_message=f"Could not stop engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                error_message=(  # noqa: E501
+                    f"Could not stop engine within {wait_timeout_seconds} seconds."
+                ),
                 verbose=False,
             )
 
@@ -431,7 +445,9 @@ class Engine(FireboltBaseModel):
             wait(
                 seconds=5,
                 timeout_time=timeout_time,
-                error_message=f"Could not restart engine within {wait_timeout_seconds} seconds.",  # noqa: E501
+                error_message=(  # noqa: E501
+                    f"Could not restart engine within {wait_timeout_seconds} seconds."
+                ),
                 verbose=False,
             )
 
