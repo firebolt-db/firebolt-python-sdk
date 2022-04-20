@@ -34,7 +34,7 @@ repos:
         language-version: 3.9
 
   - repo: https://github.com/dfm/black_nbconvert
-    rev: v0.3.0
+    rev: v0.4.0
     hooks:
       - id: black_nbconvert
 
@@ -45,9 +45,9 @@ repos:
         additional_dependencies:
           - flake8-tidy-imports
           - flake8-quotes
-          - flake8-docstrings
-          - flake8-spellcheck
-          - darglint
+#          - flake8-docstrings
+#          - flake8-spellcheck
+#          - darglint
   - repo: local
     hooks:
       - id: mypy
