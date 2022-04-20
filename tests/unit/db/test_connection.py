@@ -1,12 +1,14 @@
 from typing import Callable, List
 
 from httpx import codes
-from pytest import raises, warns
+from pyfakefs.fake_filesystem_unittest import Patcher
+from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db._types import ColType
 from firebolt.common.exception import ConfigurationError, ConnectionClosedError
 from firebolt.common.settings import Settings
+from firebolt.common.token_storage import TokenSecureStorage
 from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL
 from firebolt.db import Connection, connect
 
@@ -238,3 +240,54 @@ def test_connection_commit(connection: Connection):
     connection.close()
     with raises(ConnectionClosedError):
         connection.commit()
+
+
+@mark.nofakefs
+def test_connection_token_caching(
+    settings: Settings,
+    db_name: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    python_query_data: List[List[ColType]],
+    access_token: str,
+) -> None:
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    with Patcher():
+        with connect(
+            database=db_name,
+            username=settings.user,
+            password=settings.password.get_secret_value(),
+            engine_url=settings.server,
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+            use_token_cache=True,
+        ) as connection:
+            assert connection.cursor().execute("select*") == len(python_query_data)
+        ts = TokenSecureStorage(
+            username=settings.user, password=settings.password.get_secret_value()
+        )
+        assert ts.get_cached_token() == access_token, "Invalid token value cached"
+
+    # Do the same, but with use_token_cache=False
+    with Patcher():
+        with connect(
+            database=db_name,
+            username=settings.user,
+            password=settings.password.get_secret_value(),
+            engine_url=settings.server,
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+            use_token_cache=False,
+        ) as connection:
+            assert connection.cursor().execute("select*") == len(python_query_data)
+        ts = TokenSecureStorage(
+            username=settings.user, password=settings.password.get_secret_value()
+        )
+        assert (
+            ts.get_cached_token() is None
+        ), "Token is cached even though caching is disabled"

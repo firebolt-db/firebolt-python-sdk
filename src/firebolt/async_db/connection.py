@@ -109,16 +109,32 @@ def _validate_engine_name_and_url(
 
 
 def _get_auth(
-    username: Optional[str], password: Optional[str], access_token: Optional[str]
-) -> AuthTypes:
+    username: Optional[str],
+    password: Optional[str],
+    access_token: Optional[str],
+    api_endpoint: str,
+    use_token_cache: bool,
+) -> Auth:
+    """Create Auth class based on provided credentials.
+
+    If access_token is provided, it's used for Auth creation.
+    Username and password are used otherwise.
+
+    Returns:
+        Auth: auth object
+
+    Raises:
+        ConfigurationError: Invalid combination of credentials provided
+
+    """
     if not access_token:
         if not username or not password:
             raise ConfigurationError(
                 "Neither username/password nor access_token are provided. Provide one"
                 " to authenticate"
             )
-        return (username, password)
-    elif username or password:
+        return Auth(username, password, api_endpoint, use_token_cache)
+    if username or password:
         raise ConfigurationError(
             "Either username/password and access_token are provided. Provide only one"
             " to authenticate"
@@ -136,18 +152,24 @@ def async_connect_factory(connection_class: Type) -> Callable:
         engine_url: Optional[str] = None,
         account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
+        use_token_cache: bool = True,
     ) -> Connection:
         """
         Connect to Firebolt database.
 
         Args:
-            database: name of the database to connect
-            username: user name to use for authentication
-            password: password to use for authentication
-            engine_name: Optional The name of the engine to connect to
-            engine_url: Optional. The engine endpoint to use
-            account_name: For customers with multiple accounts; if None uses default.
-            api_endpoint(optional): Firebolt API endpoint. Used for authentication.
+            database (str): Name of the database to connect
+            username (Optional[str]): User name to use for authentication
+            password (Optional[str]): Password to use for authentication
+            access_token (Optional[str]): Authentication token to use insead of
+                                          credentials
+            engine_name (Optional[str]): The name of the engine to connect to
+            engine_url (Optional[str]): The engine endpoint to use
+            account_name (Optional[str]): For customers with multiple accounts;
+                                          if None uses default.
+            api_endpoint (str): Firebolt API endpoint. Used for authentication.
+            use_token_cache (bool): Cached authentication token in filesystem.
+                                    Default: True
 
         Note:
             Providing both `engine_name` and `engine_url` would result in an error.
@@ -160,7 +182,9 @@ def async_connect_factory(connection_class: Type) -> Callable:
             raise ConfigurationError("database name is required to connect.")
 
         _validate_engine_name_and_url(engine_name, engine_url)
-        auth = _get_auth(username, password, access_token)
+        auth = _get_auth(
+            username, password, access_token, api_endpoint, use_token_cache
+        )
         api_endpoint = fix_url_schema(api_endpoint)
 
         # Mypy checks, this should never happen

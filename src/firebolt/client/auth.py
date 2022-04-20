@@ -8,7 +8,7 @@ from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
 from firebolt.common.exception import AuthenticationError
 from firebolt.common.token_storage import TokenSecureStorage
 from firebolt.common.urls import AUTH_URL
-from firebolt.common.util import fix_url_schema
+from firebolt.common.util import cached_property, fix_url_schema
 
 
 class Auth(HttpxAuth):
@@ -34,6 +34,7 @@ class Auth(HttpxAuth):
         "_api_endpoint",
         "_token",
         "_expires",
+        "_use_token_cache",
     )
 
     requires_response_body = True
@@ -48,7 +49,7 @@ class Auth(HttpxAuth):
         Returns:
             Auth: Auth object
         """
-        a = Auth("", "")
+        a = Auth("", "", use_token_cache=False)
         a._token = token
         return a
 
@@ -57,14 +58,15 @@ class Auth(HttpxAuth):
         username: str,
         password: str,
         api_endpoint: str = DEFAULT_API_URL,
+        use_token_cache: bool = True,
     ):
         self.username = username
         self.password = password
-        self._token_storage = TokenSecureStorage(username=username, password=password)
+        self._use_token_cache = use_token_cache
 
         # Add schema to url if it's missing
         self._api_endpoint = fix_url_schema(api_endpoint)
-        self._token: Optional[str] = self._token_storage.get_cached_token()
+        self._token: Optional[str] = self._get_cached_token()
         self._expires: Optional[int] = None
 
     def copy(self) -> "Auth":
@@ -93,6 +95,37 @@ class Auth(HttpxAuth):
         """
         return self._expires is not None and self._expires <= int(time())
 
+    @cached_property
+    def _token_storage(self) -> TokenSecureStorage:
+        """Token filesystem cache storage.
+
+        This is evaluated lazily, only if caching is enabled
+
+        Returns:
+            TokenSecureStorage: Token filesystem cache storage
+        """
+        return TokenSecureStorage(username=self.username, password=self.password)
+
+    def _get_cached_token(self) -> Optional[str]:
+        """If caching enabled, get token from filesystem cache.
+
+        If caching is disabled, None is returned
+
+        Returns:
+            Optional[str]: Token if any and if caching is enabled, None otherwise
+        """
+        if not self._use_token_cache:
+            return None
+        return self._token_storage.get_cached_token()
+
+    def _cache_token(self) -> None:
+        """If caching enabled, cache token to filesystem."""
+        if not self._use_token_cache:
+            return
+        # Only cache if token and expiration are retrieved
+        if self._token and self._expires:
+            self._token_storage.cache_token(self._token, self._expires)
+
     def get_new_token_generator(self) -> Generator[Request, Response, None]:
         """Get new token using username and password.
 
@@ -119,8 +152,7 @@ class Auth(HttpxAuth):
 
             self._token = parsed["access_token"]
             self._expires = int(time()) + int(parsed["expires_in"])
-
-            self._token_storage.cache_token(parsed["access_token"], self._expires)
+            self._cache_token()
 
         except _REQUEST_ERRORS as e:
             raise AuthenticationError(repr(e), self._api_endpoint) from e

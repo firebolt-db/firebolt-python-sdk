@@ -39,7 +39,12 @@ class ResourceManager:
         if self.settings.access_token:
             auth = Auth.from_token(self.settings.access_token)
         else:
-            auth = (self.settings.user, self.settings.password.get_secret_value())
+            auth = Auth(
+                self.settings.user,
+                self.settings.password.get_secret_value(),
+                self.settings.server,
+                self.settings.use_token_cache,
+            )
 
         self.client = Client(
             auth=auth,
