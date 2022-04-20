@@ -7,32 +7,53 @@ logger = getLogger(__name__)
 
 
 def log_request(request: Request) -> None:
-    """Hook to log http requests"""
+    """Log HTTP requests.
+
+    Hook for an HTTP client
+
+    Args:
+        request (Request): Request to log
+    """
     logger.debug(
-        f"Request event hook: {request.method} {request.url} - Waiting for response"
+        "Request event hook: %s %s - Waiting for response", request.method, request.url
     )
 
 
 def log_response(response: Response) -> None:
-    """Hook to log responses to http requests"""
+    """Log HTTP response.
+
+    Hook for an HTTP client
+
+    Args:
+        response (Response): Response to log
+    """
     request = response.request
     logger.debug(
-        f"Response event hook: {request.method} {request.url}"
-        f" - Status {response.status_code}"
+        "Response event hook: %s %s - Status %s",
+        request.method,
+        request.url,
+        response.status_code,
     )
 
 
 def raise_on_4xx_5xx(response: Response) -> None:
-    """
-    Hook to raise an error on http responses with codes indicating an error.
+    """Raise an error on HTTP response with error return code.
 
+    Hook for an HTTP client
     If an error is message is found raise as an ApiError
-    """
 
+    Args:
+        response (Response): Response to check for error code
+
+    Raises:
+        RequestError: Error during performing request
+        RuntimeError: Error processing request on server
+        HTTPStatusError: HTTP error
+    """
     try:
         response.raise_for_status()
     except RequestError as exc:
-        logger.debug(f"An error occurred while requesting {exc.request.url!r}.")
+        logger.debug("An error occurred while requesting %s.", exc.request.url)
         raise exc
     except HTTPStatusError as exc:
         response.read()  # without this, you can get a ResponseNotRead error
@@ -47,7 +68,7 @@ def raise_on_4xx_5xx(response: Response) -> None:
         )
         if "message" in parsed_response:
             error_message = parsed_response["message"]
-            logger.debug(f"{debug_message} Message: {error_message}")
+            logger.debug("%s Message: %s", debug_message, error_message)
             raise RuntimeError(error_message) from exc
         logger.debug(debug_message)
         raise exc

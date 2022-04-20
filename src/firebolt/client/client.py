@@ -17,6 +17,8 @@ FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
 
 class FireboltClientMixin(FireboltClientMixinBase):
+    """HttpxAsyncClient mixin with Firebolt authentication functionality."""
+
     def __init__(
         self,
         *args: Any,
@@ -30,34 +32,51 @@ class FireboltClientMixin(FireboltClientMixinBase):
         super().__init__(*args, auth=auth, **kwargs)
 
     def _build_auth(self, auth: _types.AuthTypes) -> Optional[Auth]:
+        """Create Auth objects based on auth provided.
+
+        Overrides ``httpx.Client._build_auth``
+
+        Args:
+            auth (_types.AuthTypes): Provided auth
+
+        Returns:
+            Optional[Auth]: Auth object
+
+        Raises:
+            TypeError: Auth argument has unsupported type
+        """
         if auth is None or isinstance(auth, Auth):
             return auth
-        elif isinstance(auth, tuple):
+        if isinstance(auth, tuple):
             return Auth(
                 username=str(auth[0]),
                 password=str(auth[1]),
                 api_endpoint=self._api_endpoint,
             )
-        else:
-            raise TypeError(f'Invalid "auth" argument: {auth!r}')
+        raise TypeError(f'Invalid "auth" argument: {auth!r}')
 
 
 class Client(FireboltClientMixin, HttpxClient):
+    """An HTTP client, based on httpx.Client.
 
-    """
-    An http client, based on httpx.Client, that handles the authentication
-    for Firebolt database.
-
+    Handles the authentication for Firebolt database.
     Authentication can be passed through auth keyword as a tuple or as a
     FireboltAuth instance
-
-    httpx.Client:
-
-    + (HttpxClient.__doc__ or "")
     """
 
     @cached_property
     def account_id(self) -> str:
+        """User account id.
+
+        If account_name was provided during Client construction, returns it's id.
+        Gets default account otherwise
+
+        Returns:
+            str: Account ID
+
+        Raises:
+            AccountNotFoundError: No account found with provided name
+        """
         if self.account_name:
             response = self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
@@ -67,25 +86,32 @@ class Client(FireboltClientMixin, HttpxClient):
             # process all other status codes
             response.raise_for_status()
             return response.json()["account_id"]
-        else:  # account_name isn't set, use the default account.
-            return self.get(url=ACCOUNT_URL).json()["account"]["id"]
+
+        # account_name isn't set, use the default account.
+        return self.get(url=ACCOUNT_URL).json()["account"]["id"]
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
-    """
-    An http client, based on httpx.AsyncClient, that asyncronously handles
-    authentication for Firebolt database.
+    """An HTTP client, based on httpx.AsyncClient.
 
+    Asyncronously handles authentication for Firebolt database.
     Authentication can be passed through auth keyword as a tuple or as a
     FireboltAuth instance
-
-    httpx.AsyncClient:
-
-    + (HttpxAsyncClient.__doc__ or "")
     """
 
     @async_cached_property
     async def account_id(self) -> str:
+        """User account id.
+
+        If account_name was provided during AsyncClient construction, returns it's id.
+        Gets default account otherwise
+
+        Returns:
+            str: Account ID
+
+        Raises:
+            AccountNotFoundError: No account found with provided name
+        """
         if self.account_name:
             response = await self.get(
                 url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
@@ -95,5 +121,6 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
             # process all other status codes
             response.raise_for_status()
             return response.json()["account_id"]
-        else:  # account_name isn't set; use the default account.
-            return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
+
+        # account_name isn't set; use the default account.
+        return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]

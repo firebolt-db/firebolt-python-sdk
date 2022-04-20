@@ -27,7 +27,7 @@ def test_client_retry(
     # auth get token
     httpx_mock.add_response(
         status_code=codes.OK,
-        json={"expires_in": 2 ** 30, "access_token": test_token},
+        json={"expires_in": 2**30, "access_token": test_token},
     )
 
     # client request failed authorization
@@ -38,7 +38,7 @@ def test_client_retry(
     # auth get another token
     httpx_mock.add_response(
         status_code=codes.OK,
-        json={"expires_in": 2 ** 30, "access_token": test_token},
+        json={"expires_in": 2**30, "access_token": test_token},
     )
 
     # client request success this time

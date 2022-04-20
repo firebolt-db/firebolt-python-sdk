@@ -45,7 +45,7 @@ async def test_auth_uses_same_token_if_valid(
     # To get token for the first time
     httpx_mock.add_response(
         status_code=codes.OK,
-        json={"expires_in": 2 ** 32, "access_token": test_token},
+        json={"expires_in": 2**32, "access_token": test_token},
     )
 
     # Request
@@ -56,7 +56,7 @@ async def test_auth_uses_same_token_if_valid(
     # To refresh token
     httpx_mock.add_response(
         status_code=codes.OK,
-        json={"expires_in": 2 ** 32, "access_token": test_token2},
+        json={"expires_in": 2**32, "access_token": test_token2},
     )
 
     # Request

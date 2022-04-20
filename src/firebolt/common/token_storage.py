@@ -19,10 +19,27 @@ APPNAME = "firebolt"
 
 
 def generate_salt() -> str:
+    """Generate salt for FernetExcrypter.
+
+    Returns:
+        str: Generated salt
+    """
     return b64encode(urandom(16)).decode("ascii")
 
 
 def generate_file_name(username: str, password: str) -> str:
+    """Generate unique file name based on username and password.
+
+    Username and password values are not exposed.
+
+    Args:
+        username (str): Username
+        password (str): Password
+
+    Returns:
+        str: File name 64 characters long
+
+    """
     username_hash = sha256(username.encode("utf-8")).hexdigest()[:32]
     password_hash = sha256(password.encode("utf-8")).hexdigest()[:32]
 
@@ -30,13 +47,16 @@ def generate_file_name(username: str, password: str) -> str:
 
 
 class TokenSecureStorage:
-    def __init__(self, username: str, password: str):
-        """
-        Class for permanent storage of token in the filesystem in encrypted way
+    """File system storage for token.
 
-        :param username: username used for toke encryption
-        :param password: password used for toke encryption
-        """
+    Token is encrypted using username and password.
+
+    Args:
+        username (str): Username
+        password (str): Password
+    """
+
+    def __init__(self, username: str, password: str):
         self._data_dir = user_data_dir(appname=APPNAME)
         makedirs(self._data_dir, exist_ok=True)
 
@@ -48,19 +68,19 @@ class TokenSecureStorage:
         self.encrypter = FernetEncrypter(self.salt, username, password)
 
     def _get_salt(self) -> str:
-        """
-        Get salt from the file if exists, or generate a new one
+        """Get salt from the file if exists, or generate a new one.
 
-        :return: salt
+        Returns:
+            str: Salt
         """
         res = self._read_data_json()
         return res.get("salt", generate_salt())
 
     def _read_data_json(self) -> dict:
-        """
-        Read json token file
+        """Read json token file.
 
-        :return: json object as dict
+        Returns:
+            dict: JSON object
         """
         if not path.exists(self._token_file):
             return {}
@@ -72,12 +92,13 @@ class TokenSecureStorage:
                 return {}
 
     def get_cached_token(self) -> Optional[str]:
-        """
-        Get decrypted token using username and password
-        If the token not found or token cannot be decrypted using username, password
-        None will be returned
+        """Get decrypted token.
 
-        :return: token or None
+        If token is not found, cannot be decrypted with username and password,
+        or is expired - None will be returned
+
+        Returns:
+            Optional[str]: Decrypted token or None
         """
         res = self._read_data_json()
         if "token" not in res:
@@ -90,10 +111,14 @@ class TokenSecureStorage:
         return self.encrypter.decrypt(res["token"])
 
     def cache_token(self, token: str, expiration_ts: int) -> None:
-        """
+        """Encrypt and store token in file system.
 
-        :param token:
-        :return:
+        Expiration timestamp is also stored with token in order to later
+        be ableto check if it's expired
+
+        Args:
+            token (str): Token to store
+            expiration_ts (int): Token expiration timestamp
         """
         token = self.encrypter.encrypt(token)
 
@@ -104,14 +129,17 @@ class TokenSecureStorage:
 
 
 class FernetEncrypter:
+    """PBDKF2HMAC based encrypter.
+
+    Username and password combination is used as a key
+
+    Args:
+        salt (str): Salt value for encryption
+        username: Username for key
+        password: Password for key
+    """
+
     def __init__(self, salt: str, username: str, password: str):
-        """
-
-        :param salt:
-        :param username:
-        :param password:
-        """
-
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             salt=b64decode(salt),
@@ -126,9 +154,27 @@ class FernetEncrypter:
         )
 
     def encrypt(self, data: str) -> str:
+        """Encrypt data string.
+
+        Args:
+            data (str): Data for encryption
+
+        Returns:
+            str: Encrypted data
+
+        """
         return self.fernet.encrypt(bytes(data, encoding="utf-8")).decode("utf-8")
 
     def decrypt(self, data: str) -> Optional[str]:
+        """Decrypt encrypted data.
+
+        Args:
+            data (str): Encrypted data
+
+        Returns:
+            Optional[str]: Decrypted data
+
+        """
         try:
             return self.fernet.decrypt(bytes(data, encoding="utf-8")).decode("utf-8")
         except InvalidToken:
