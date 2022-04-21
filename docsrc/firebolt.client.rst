@@ -1,9 +1,10 @@
 =======================
-firebolt.client package
+Client
 =======================
 
+The client package contains functionality for user authentication and logging requests. 
 
-firebolt.client.auth module
+Client.auth
 ---------------------------
 
 .. automodule:: firebolt.client.auth
@@ -11,7 +12,7 @@ firebolt.client.auth module
    :undoc-members:
    :show-inheritance:
 
-firebolt.client.client module
+Client.client
 -----------------------------
 
 .. automodule:: firebolt.client.client
@@ -20,12 +21,18 @@ firebolt.client.client module
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: firebolt.client.constants
+.. 
+   Client.constants
+   --------------------------------
+   .. automodule:: firebolt.client.constants
    :members:
    :undoc-members:
    :show-inheritance:
+   (no members)
 
-firebolt.client.resource\_manager\_hooks module
+
+
+Client.resource\_manager\_hooks
 -----------------------------------------------
 
 .. automodule:: firebolt.client.resource_manager_hooks

@@ -3,75 +3,83 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-=================
-**firebolt-sdk**
-=================
-
-Welcome to firebolt-sdk's documentation!
-
 ########################
-**Installation**
+**Firebolt-python-sdk**
 ########################
 
-*  Requires Python ``>=3.7``
-*  ``pip install firebolt-sdk`` 
+The Firebolt Python SDK enables connecting to Firebolt, managing Firebolt resources and executing queries using a library of Python classes and functions. 
 
-##########################
-**Connection parameters**
-##########################
+========================
+Prerequisites
+========================
 
-These parameters are used to connect to a Firebolt database:
+* Python version 3.7 or later along with the pip package installer. For more information, see the `Python <https://www.python.org/downloads/>`_ web page.
 
-* **engine_url** - url for a Firebolt engine to make requests to. This can be retrieved from our web interface, or from the `engine <https://github.com/firebolt-db/firebolt-sdk/tree/main/src/firebolt/model/engine.py>`_ attribute endpoint
-* **database** - the name of the database to receive queries
-* **username** - Firebolt account username
-* **password** - Firebolt account password
+* A Firebolt account and login credentials.
 
-Optional parameters
+========================
+Installation
+========================
 
-* **api_endpoint** - api hostname for logging in. Defaults to ``api.app.firebolt.io``.
+Use pip to install the Firebolt Python SDK from the command line as shown in the example below: 
 
-###############
-**Examples** 
-###############
-
-See `PEP-249 <https://www.python.org/dev/peps/pep-0249>`_ for the DB API reference and specifications. An example `jupyter notebook <https://github.com/firebolt-db/firebolt-sdk/tree/main/examples/dbapi.ipynb>`_ is included to illustrate the use of the Firebolt API.
+``$ pip install firebolt-sdk`` 
 
 
-#######################
-**Optional features** 
-#######################
+Optional features 
+^^^^^^^^^^^^^^^^^^^
 
-By default, firebolt-sdk uses ``datetime`` module to parse date and datetime values, which might be slow for a large amount of operations. In order to speed up datetime operations, it's possible to use `ciso8601 <https://pypi.org/project/ciso8601/>`_ package. 
+By default, the Firebolt Python SDK uses the ``datetime`` module to parse date and datetime values. For large operations involving date and datetime values, the Python SDK can achieve faster results by using the `ciso8601 <https://pypi.org/project/ciso8601/>`_ package, however this can cause installation issues in some cases.  
 
-To install firebolt-sdk with ``ciso8601`` support, run ``pip install firebolt-sdk[ciso8601]``
+To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install firebolt-sdk[ciso8601]``.
 
-###################
-**Contributing**
-###################
-See: `CONTRIBUTING.MD <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_
 
-###################
-**License**
-###################
+Release notes
+^^^^^^^^^^^^^^
+
+For information about changes in the latest version of the Firebolt Python SDK, see the `release notes <https://github.com/firebolt-db/firebolt-python-sdk/releases>`_
+
+
+Contributing
+^^^^^^^^^^^^^^
+
+For procedures and requirements for contributing to this SDK, see the `contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_ page on Github. 
+
+License
+^^^^^^^^
 
 The Firebolt DB API is licensed under the `Apache License Version 2.0 <https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE>`_ software license.
 
 .. note:: 
 
-   This project is under active development
+   This project is under active development.
 
 ========================================
+
+
+
+Walkthroughs and examples
+===========================
 
 .. toctree::
    :maxdepth: 1
 
-   firebolt.async_db
-   firebolt.client
-   firebolt.common
-   firebolt.db
-   firebolt.model
-   firebolt.service
+   Connecting and querying <Connecting_and_queries>
+   Managing resources <Managing_resources>
+
+
+Reference documentation
+========================
+
+.. toctree::
+   :maxdepth: 1
+
+   Async_db <firebolt.async_db>
+   Client <firebolt.client>
+   Common <firebolt.common>
+   Db <firebolt.db>
+   Model <firebolt.model>
+   Service <firebolt.service>
 
 
 
@@ -79,5 +87,3 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

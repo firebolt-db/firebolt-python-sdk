@@ -1,9 +1,10 @@
 ===================
-firebolt.db package
+Db
 ===================
 
+The db package enables connecting to a Firebolt database for synchronous queries. 
 
-firebolt.db.connection module
+Db.connection
 -----------------------------
 
 .. automodule:: firebolt.db.connection
@@ -11,7 +12,7 @@ firebolt.db.connection module
    :undoc-members:
    :show-inheritance:
 
-firebolt.db.cursor module
+Db.cursor
 -------------------------
 
 .. automodule:: firebolt.db.cursor
