@@ -37,10 +37,18 @@ from tests.unit.db_conftest import *  # noqa
 from tests.unit.util import list_to_paginated_response
 
 
+# Register nofakefs mark
+def pytest_configure(config):
+    config.addinivalue_line("markers", "nofakefs: don't use fakefs fixture")
+
+
 @fixture(autouse=True)
-def global_fake_fs() -> None:
-    with Patcher():
+def global_fake_fs(request) -> None:
+    if "nofakefs" in request.keywords:
         yield
+    else:
+        with Patcher():
+            yield
 
 
 @fixture
@@ -118,7 +126,7 @@ def auth_callback(auth_url: str) -> Callable:
         assert request.url == auth_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"access_token": "", "expires_in": 2 ** 32},
+            json={"access_token": "", "expires_in": 2**32},
         )
 
     return do_mock
@@ -335,7 +343,7 @@ def check_credentials_callback(settings: Settings, access_token: str) -> Callabl
 
         return Response(
             status_code=httpx.codes.OK,
-            json={"expires_in": 2 ** 32, "access_token": access_token},
+            json={"expires_in": 2**32, "access_token": access_token},
         )
 
     return check_credentials

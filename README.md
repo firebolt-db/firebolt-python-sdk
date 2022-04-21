@@ -1,4 +1,12 @@
 # firebolt-sdk
+[![Nightly code check](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/nightly.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/nightly.yml)
+[![Unit tests](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/unit-tests.yml)
+[![Code quality checks](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/code-check.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/code-check.yml)
+[![Firebolt Security Scan](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/security-scan.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/security-scan.yml)
+[![Integration tests](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/integration-tests.yml)
+![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/ptiurin/65d5a42849fd78f4c6e62fad18490d20/raw/firebolt-sdk-coverage.json)
+
+
 ### Installation
 
 * Requires Python `>=3.7`

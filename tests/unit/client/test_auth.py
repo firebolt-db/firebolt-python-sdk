@@ -3,11 +3,13 @@ import typing
 import pytest
 from httpx import Client, Request, StreamError, codes
 from pyfakefs.fake_filesystem import FakeFilesystem
+from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
 from firebolt.client import Auth
 from firebolt.common.exception import AuthenticationError
+from firebolt.common.token_storage import TokenSecureStorage
 from tests.unit.util import execute_generator_requests
 
 
@@ -27,7 +29,7 @@ def test_auth_basic(
     auth = Auth(test_username, test_password)
     execute_generator_requests(auth.get_new_token_generator())
     assert auth.token == test_token, "invalid access token"
-    assert auth._expires == 2 ** 32, "invalid expiration value"
+    assert auth._expires == 2**32, "invalid expiration value"
 
 
 def test_auth_refresh_on_expiration(
@@ -62,7 +64,7 @@ def test_auth_uses_same_token_if_valid(
     # To get token for the first time
     httpx_mock.add_response(
         status_code=codes.OK,
-        json={"expires_in": 2 ** 32, "access_token": test_token},
+        json={"expires_in": 2**32, "access_token": test_token},
     )
 
     # Request
@@ -73,7 +75,7 @@ def test_auth_uses_same_token_if_valid(
     # To refresh token
     httpx_mock.add_response(
         status_code=codes.OK,
-        json={"expires_in": 2 ** 32, "access_token": test_token2},
+        json={"expires_in": 2**32, "access_token": test_token2},
     )
 
     # Request
@@ -112,10 +114,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, fs: FakeFilesystem):
             execute_generator_requests(auth.get_new_token_generator())
 
         errmsg = str(excinfo.value)
-        assert (
-            errmsg.startswith("Failed to authenticate at https://host:")
-            and "Bad Request" in errmsg
-        ), "Invalid authentication error message"
+        assert "Bad Request" in errmsg, "Invalid authentication error message"
         httpx_mock.reset(True)
 
         # Firebolt api error
@@ -125,9 +124,6 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, fs: FakeFilesystem):
         with pytest.raises(AuthenticationError) as excinfo:
             execute_generator_requests(auth.get_new_token_generator())
 
-        assert (
-            str(excinfo.value) == "Failed to authenticate at https://host: firebolt."
-        ), "Invalid authentication error message"
         httpx_mock.reset(True)
 
 
@@ -152,3 +148,29 @@ def test_auth_adds_header(
     assert (
         request.headers["authorization"] == f"Bearer {test_token}"
     ), "missing authorization header"
+
+
+def test_auth_token_storage(
+    httpx_mock: HTTPXMock,
+    test_username: str,
+    test_password: str,
+    test_token,
+) -> None:
+    httpx_mock.add_response(
+        status_code=codes.OK,
+        json={"expires_in": 2 ^ 32, "access_token": test_token},
+    )
+    with Patcher():
+        auth = Auth(test_username, test_password, use_token_cache=True)
+        execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
+
+        st = TokenSecureStorage(test_username, test_password)
+        assert st.get_cached_token() == test_token, "Invalid token value cached"
+
+    with Patcher():
+        auth = Auth(test_username, test_password, use_token_cache=False)
+        execute_generator_requests(auth.auth_flow(Request("GET", "https://host")))
+        st = TokenSecureStorage(test_username, test_password)
+        assert (
+            st.get_cached_token() is None
+        ), "Token cached even though caching is disabled"
