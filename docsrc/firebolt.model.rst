@@ -1,9 +1,10 @@
 ======================
-firebolt.model package
+Model
 ======================
 
+The model package contains various classes and functions for managing Firebolt engines and databases.
 
-firebolt.model.database module
+Model.database
 ------------------------------
 
 .. automodule:: firebolt.model.database
@@ -12,7 +13,7 @@ firebolt.model.database module
    :undoc-members:
    :show-inheritance:
 
-firebolt.model.engine module
+Model.engine
 ----------------------------
 
 .. automodule:: firebolt.model.engine
@@ -21,7 +22,7 @@ firebolt.model.engine module
    :undoc-members:
    :show-inheritance:
 
-firebolt.model.engine\_revision module
+Model.engine\_revision
 --------------------------------------
 
 .. automodule:: firebolt.model.engine_revision
@@ -30,7 +31,7 @@ firebolt.model.engine\_revision module
    :undoc-members:
    :show-inheritance:
 
-firebolt.model.instance\_type module
+Model.instance\_type
 ------------------------------------
 
 .. automodule:: firebolt.model.instance_type
@@ -39,7 +40,7 @@ firebolt.model.instance\_type module
    :undoc-members:
    :show-inheritance:
 
-firebolt.model.provider module
+Model.provider
 ------------------------------
 
 .. automodule:: firebolt.model.provider
@@ -47,7 +48,7 @@ firebolt.model.provider module
    :undoc-members:
    :show-inheritance:
 
-firebolt.model.region module
+Model.region
 ----------------------------
 
 .. automodule:: firebolt.model.region
