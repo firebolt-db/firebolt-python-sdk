@@ -107,7 +107,7 @@ To get started, follow the steps below:
 
 	The ``cursor`` object can be used to send queries and commands to your Firebolt database and engine. See below for examples of functions using the ``cursor`` object. 
 
-Commands and query examples
+Command and query examples
 ============================
 
 This section includes Python examples of various SQL commands and queries. 

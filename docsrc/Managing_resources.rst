@@ -84,7 +84,7 @@ To get started, follow the steps below:
 
 	.. note:: 
 	
-		Subsequent examples in this section use the ``rm`` object for database and engine functions. 
+		Subsequent examples on this page use the ``rm`` object for database and engine functions. 
 
 
 Database function examples
@@ -133,13 +133,14 @@ Launch a new database and use it to create a ``database`` object.
 
 A newly created database uses the default region from your Settings unless you specify a different region as a parameter. 
 
-::
+	::
 
-	database = rm.databases.create(name="database_name", region="us-east-1")
+		database = rm.databases.create(name="database_name", region="us-east-1")
 
-.. note:: 
 
-	For a list of all database parameters, see :ref:`Service.database` 
+	.. note:: 
+
+		For a list of all database parameters, see :ref:`Service.database` 
 
 
 Locating a database
@@ -169,10 +170,10 @@ Getting database status
 
 Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to format metadata from a ``database`` object. This is a helpful command to run after a database operation to check if its execution was successful.    
 
-::	
+	::	
 	
-	from devtools import debug
-	debug(database)
+		from devtools import debug
+		debug(database)
 
 
 Dropping a database
@@ -180,9 +181,9 @@ Dropping a database
 
 Delete a database by calling the ``delete`` function. The database is deleted along with all of its tables.
 
-:: 
+	:: 
 	
-	database.delete()
+		database.delete()
 
 
 Engine function examples
@@ -197,9 +198,9 @@ Creating an engine
 
 Launch a new Firebolt engine and create an ``engine`` object. The created engine uses the default region included in your Settings unless you specify a different region as a parameter. 
 
-:: 
+	:: 
 
-	engine = rm.engines.create(name="engine_name")
+		engine = rm.engines.create(name="engine_name")
 
 
 .. note:: 
@@ -264,11 +265,11 @@ Attaching an engine
 
 Attach an engine to a database. An engine must be attached to a database and started before it can run SQL commands or queries. 
 
-:: 
+	:: 
 
-	engine = rm.engines.get_by_name(name="engine_name")
-	engine.attach_to_database(
-		database=rm.databases.get_by_name(name="database_name"))
+		engine = rm.engines.get_by_name(name="engine_name")
+		engine.attach_to_database(
+			database=rm.databases.get_by_name(name="database_name"))
 
 
 
@@ -277,9 +278,9 @@ Dropping an engine
 
 Delete an engine by calling the ``delete`` function. The engine is removed from its attached database and deleted. 
 
-::
+	::
 
-	engine.delete()
+		engine.delete()
 
 
 Starting an engine
@@ -287,9 +288,9 @@ Starting an engine
 
 Start an engine by calling the ``start`` function on an ``engine`` object. An engine must be attached to a database and started before it can run SQL commands or queries. 
 
-::
+	::
 
-	engine.start() 
+		engine.start() 
 
 
 
@@ -298,9 +299,9 @@ Stopping an engine
 
 Stop an engine by calling the ``stop`` function. When stopped, an engine is not available to run queries and does not accrue additional usage time on your account. 
 
-::
+	::
 
-	engine.stop()
+		engine.stop()
 
 Updating an engine
 ---------------------
@@ -308,17 +309,18 @@ Updating an engine
 Update an engine to change its specifications, returning an updated version of the engine. The engine must be stopped in order to be updated. 
 
 For a list of engine parameters that can be updated, see :meth:`~firebolt.model.engine.Engine.update`
-::
 
-	engine.update(description = "This is a new description.")
+	::
+
+		engine.update(description = "This is a new description.")
 
 Getting engine status
 ----------------------
 
 Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to format metadata from an ``engine`` object. This is a helpful command to run after an engine operation to check if its execution was successful.    
 
-::	
+	::	
 	
-	from devtools import debug
-	debug(engine)
+		from devtools import debug
+		debug(engine)
 
