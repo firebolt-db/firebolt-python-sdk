@@ -1,4 +1,3 @@
-.. _examples:
 
 ###############################
 Connecting and running queries
@@ -7,101 +6,121 @@ Connecting and running queries
 This topic provides a walkthrough and examples for how to use the Firebolt Python SDK to connect to Firebolt resources to run commands and query data. 
 
 
-Importing required modules
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Setting up a connection
+=========================
 
-The Firebolt Python SDK requires you to import the following modules before making any command or query requests to your Firebolt database. 
+To connect to a Firebolt database to run queries or command, you must provide your account credentials through a connection request. 
+
+To get started, follow the steps below: 
+
+**1. Import modules**
+
+	The Firebolt Python SDK requires you to import the following modules before making any command or query requests to your Firebolt database. 
 
 .. _required_connection_imports:
 
-:: 
+	:: 
 
-	from firebolt.db import connect
-	from firebolt.client import DEFAULT_API_URL
+		from firebolt.db import connect
+		from firebolt.client import DEFAULT_API_URL
 
 
 .. _connecting_with_credentials_example:
 
-Connecting to your database / engine
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**2. Connect to your database and engine**
 
-To use the Python SDK to execute commands and queries, you must provide the following account information through a connection request. 
 
-+------------------------------------+-------------------------------------------------------------------+
-| ``username``                       |  The email address associated with your Firebolt user.            |
-+------------------------------------+-------------------------------------------------------------------+
-| ``password``                       |  The password used for connecting to Firebolt.                    |
-+------------------------------------+-------------------------------------------------------------------+
-| ``database``                       |  The name of the database you would like to connect to.           |
-+------------------------------------+-------------------------------------------------------------------+
-| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.            |
-+------------------------------------+-------------------------------------------------------------------+
+	Your account information can be provided as parameters in a ``connection()`` function. 
 
-This information can be provided in multiple ways.
+	A connection requires the following parameters: 
 
-* **Set credentials manually**
+	+------------------------------------+-------------------------------------------------------------------+
+	| ``username``                       |  The email address associated with your Firebolt user.            |
+	+------------------------------------+-------------------------------------------------------------------+
+	| ``password``                       |  The password used for connecting to Firebolt.                    |
+	+------------------------------------+-------------------------------------------------------------------+
+	| ``database``                       |  The name of the database you would like to connect to.           |
+	+------------------------------------+-------------------------------------------------------------------+
+	| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.            |
+	|                                    |                                                                   |
+	|                                    |	If the engine is not specified, your default engine is used.     |
+	+------------------------------------+-------------------------------------------------------------------+
 
-	You can manually include your account information in a connection object in your code for any queries you want to request. 
+	This information can be provided in multiple ways.
 
-	Replace the values in the example code below with your Firebolt account credentials as appropriate. 
+		* **Set credentials manually**
 
-	::
+			You can manually include your account information in a connection object in your code for any queries you want to request. 
 
-		username = "your_username"
-		password = "your_password"
-		engine_name = "your_engine"
-		database_name = "your_database"
+			Replace the values in the example code below with your Firebolt account credentials as appropriate. 
 
-		connection = connect( 
-			engine_name=engine_name,
-			database=database_name,
-			username=username,
-			password=password,
-		)
+			::
+
+				username = "your_username"
+				password = "your_password"
+				engine_name = "your_engine"
+				database_name = "your_database"
+
+				connection = connect( 
+					engine_name=engine_name,
+					database=database_name,
+					username=username,
+					password=password,
+				)
 		
-		cursor = connection.cursor()
+				cursor = connection.cursor()
 
 
-* **Use an .env file**
+		* **Use an .env file**
 
-	Consolidating all of your Firebolt credentials into a ``.env`` file can help protect sensitive information from exposure. Create an ``.env`` file with the following key-value pairs, and replace the values with your information. 
+			Consolidating all of your Firebolt credentials into a ``.env`` file can help protect sensitive information from exposure. Create an ``.env`` file with the following key-value pairs, and replace the values with your information. 
 
-	::
+			::
 
-		FIREBOLT_USER="your_username"
-		FIREBOLT_PASSWORD="your_password"
-		FIREBOLT_ENGINE="your_engine"
-		FIREBOLT_DB="your_database"
+				FIREBOLT_USER="your_username"
+				FIREBOLT_PASSWORD="your_password"
+				FIREBOLT_ENGINE="your_engine"
+				FIREBOLT_DB="your_database"
 
-	Be sure to place this ``.env`` file into your root directory. 
+			Be sure to place this ``.env`` file into your root directory. 
 
-	Your connection script can load these environmental variables from the ``.env`` file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_ package. Note that the example below requires additional imports. 
+			Your connection script can load these environmental variables from the ``.env`` file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_ package. Note that the example below imports the ``os`` and ``dotenv`` modules in order to load the environmental variables.   
 
-	::
+			::
 
-		import os
-		from dotenv import load_dotenv
+				import os
+				from dotenv import load_dotenv
 
-		load_dotenv()
+				load_dotenv()
 
-		connection = connect(
-			username=os.getenv('FIREBOLT_USER'),
-			password=os.getenv('FIREBOLT_PASSWORD'),
-			engine_name=os.getenv('FIREBOLT_ENGINE'),
-			database=os.getenv('FIREBOLT_DB')
-		)
+				connection = connect(
+					username=os.getenv('FIREBOLT_USER'),
+					password=os.getenv('FIREBOLT_PASSWORD'),
+					engine_name=os.getenv('FIREBOLT_ENGINE'),
+					database=os.getenv('FIREBOLT_DB')
+				)
 
-		cursor = connection.cursor()
+				cursor = connection.cursor()
 
 
-Executing commands and queries
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**3. Execute commands using the cursor**
+
+	The ``cursor`` object can be used to send queries and commands to your Firebolt database and engine. See below for examples of functions using the ``cursor`` object. 
+
+Commands and query examples
+============================
+
+This section includes Python examples of various SQL commands and queries. 
+
+
+Inserting and selecting data
+-----------------------------
 
 .. _basic_execute_example:
 
-The ``cursor`` object created in the prior script can be used to run various SQL commands and queries on a database. The example below uses ``cursor`` to create a new table ``test_table``, inserts rows into it, and then selects the table's contents. 
+The example below uses ``cursor`` to create a new table called ``test_table``, insert rows into it, and then select the table's contents. 
 
-The engine attached to your specified database must be started before executing any queries. For help, see :ref:`starting an engine` 
+The engine attached to your specified database must be started before executing any queries. For help, see :ref:`starting an engine`. 
 
 ::
 
@@ -132,9 +151,9 @@ The engine attached to your specified database must be started before executing 
 
 
 Fetching query results
-^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------
 
-After running a query, you can fetch the results using a ``cursor`` object. The examples below use the data queried from ``test_table`` created in the :ref:`execute example <basic_execute_example>`. 
+After running a query, you can fetch the results using a ``cursor`` object. The examples below use the data queried from ``test_table`` created in the :ref:`Inserting and selecting data`. 
 
 .. _fetch_example:
 
@@ -158,7 +177,7 @@ After running a query, you can fetch the results using a ``cursor`` object. The 
 
 
 Executing parameterized queries
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
 .. _parameterized_query_execute_example:
 
@@ -208,7 +227,7 @@ If you need to run the same statement multiple times with different parameter in
 
 
 Executing multiple-statement queries
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+--------------------------------------
 
 Multiple-statement queries allow you to run a series of SQL statements sequentially with just one method call. Statements are separated using a semicolon ``;``, similar to making SQL statements in the Firebolt UI.
 
@@ -234,11 +253,15 @@ Multiple-statement queries allow you to run a series of SQL statements sequentia
 	First query:  [[2, 'banana', datetime.date(2019, 1, 1)], [3, 'carrot', datetime.date(2020, 1, 1)], [1, 'apple', datetime.date(2018, 1, 1)]]
 	Second query:  [[3, 'carrot', datetime.date(2020, 1, 1)], [4, 'donut', datetime.date(2021, 1, 1)]]
 
+.. note:: 
+
+	Multiple statement queries are not able to use placeholder values for parameterized queries. 
+
 
 Using DATE and DATETIME values
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
 
-DATE, DATETIME and TIMESTAMP values used in SQL insertion statements must be provided in a specific format, otherwise they could be read incorrectly. 
+DATE, DATETIME and TIMESTAMP values used in SQL insertion statements must be provided in a specific format; otherwise they could be read incorrectly. 
 
 * DATE values should be formatted as **YYYY-MM-DD** 
 
@@ -246,7 +269,7 @@ DATE, DATETIME and TIMESTAMP values used in SQL insertion statements must be pro
 
 The `datetime <https://docs.python.org/3/library/datetime.html>`_ module from the Python standard library contains various classes and methods to format DATE, TIMESTAMP and DATETIME data types. 
 
-You can import this module as follows.  
+You can import this module as follows:  
 
 :: 
 
