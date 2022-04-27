@@ -354,7 +354,9 @@ class Engine(FireboltBaseModel):
         # Update engine settings
         engine_settings_params = {
             "engine_type": engine_type,
-            "auto_stop_delay_duration": f"{auto_stop * 60}s" if auto_stop else None,
+            "auto_stop_delay_duration": f"{auto_stop * 60}s"
+            if auto_stop is not None
+            else None,
             "warm_up": warmup,
         }
         self.settings = EngineSettings.default(**prune_dict(engine_settings_params))
