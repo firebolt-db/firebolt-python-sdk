@@ -332,6 +332,7 @@ class Engine(FireboltBaseModel):
         auto_stop: Optional[int] = None,
         warmup: Optional[WarmupMethod] = None,
         description: Optional[str] = None,
+        use_spot: Optional[bool] = None,
     ) -> Engine:
         """
         update the engine, and returns an updated version of the engine, all parameters
@@ -361,7 +362,7 @@ class Engine(FireboltBaseModel):
 
         # Update the engine desired_revision if needed
         desired_revision = None
-        if (scale or spec) and self.latest_revision_key:
+        if (scale or spec or use_spot is not None) and self.latest_revision_key:
             rm = self._service.resource_manager
             desired_revision = rm.engine_revisions.get_by_key(self.latest_revision_key)
 
@@ -380,6 +381,9 @@ class Engine(FireboltBaseModel):
 
             if scale:
                 desired_revision.specification.db_compute_instances_count = scale
+
+            if use_spot is not None:
+                desired_revision.specification.db_compute_instances_use_spot = use_spot
 
         update_mask_paths = list(
             prune_dict(
