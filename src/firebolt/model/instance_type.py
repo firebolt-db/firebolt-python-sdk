@@ -19,8 +19,8 @@ class InstanceType(FireboltBaseModel):
     # optional
     is_spot_available: Optional[bool]
     cpu_virtual_cores_count: Optional[int]
-    memory_size_bytes: Optional[str]
-    storage_size_bytes: Optional[str]
+    memory_size_bytes: Optional[int]
+    storage_size_bytes: Optional[int]
     price_per_hour_cents: Optional[float]
     create_time: Optional[datetime]
     last_update_time: Optional[datetime]

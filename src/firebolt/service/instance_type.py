@@ -42,23 +42,32 @@ class InstanceTypeService(BaseService):
             for i in self.instance_types
         }
 
-    def cheapest_instance_in_region(self, region: Region) -> Optional[InstanceType]:
-        # Get only awailable instances in region
+    def get_instance_types_per_region(self, region: Region) -> List[InstanceType]:
+        """List of instance types available on Firebolt in specified region."""
+
         response = self.client.get(
             url=INSTANCE_TYPES_URL,
             params={"page.first": 5000, "filter.id_region_id_eq": region.key.region_id},
         )
-        instance_types = [
+
+        instance_list = [
             InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]
         ]
+
         # Filter out instances without storage
-        instance_list = [
+        return [
             i
-            for i in instance_types
+            for i in instance_list
             if i.storage_size_bytes and i.storage_size_bytes != "0"
         ]
+
+    def cheapest_instance_in_region(self, region: Region) -> Optional[InstanceType]:
+        # Get only available instances in region
+        instance_list = self.get_instance_types_per_region(region)
+
         if not instance_list:
             return None
+
         cheapest = min(
             instance_list,
             key=lambda x: x.price_per_hour_cents
