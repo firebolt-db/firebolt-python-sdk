@@ -25,7 +25,7 @@ def test_auth_basic(
 
     httpx_mock.add_callback(check_credentials_callback)
 
-    mocker.patch("firebolt.client.auth.time", return_value=0)
+    mocker.patch("firebolt.client.auth.auth.time", return_value=0)
     auth = Auth(test_username, test_password)
     execute_generator_requests(auth.get_new_token_generator())
     assert auth.token == test_token, "invalid access token"
