@@ -1,1 +1,2 @@
-from firebolt.client.auth.auth import Auth
+from firebolt.client.auth.base import Auth
+from firebolt.client.auth.username_password import UsernamePassword

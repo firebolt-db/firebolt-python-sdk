@@ -1,11 +1,11 @@
 from typing import Callable
 
 from httpx import codes
-from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
+from firebolt.client import DEFAULT_API_URL, AsyncClient
+from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.common import Settings
 from firebolt.common.urls import AUTH_URL
 from firebolt.common.util import fix_url_schema
@@ -17,7 +17,6 @@ async def test_client_retry(
     test_username: str,
     test_password: str,
     test_token: str,
-    fs: FakeFilesystem,
 ):
     """
     Client retries with new auth token
@@ -60,7 +59,6 @@ async def test_client_different_auths(
     test_username: str,
     test_password: str,
     test_token: str,
-    fs: FakeFilesystem,
 ):
     """
     Client properly handles such auth types:
@@ -79,7 +77,9 @@ async def test_client_different_auths(
 
     async with AsyncClient(auth=(test_username, test_password)) as client:
         await client.get("https://url")
-    async with AsyncClient(auth=Auth(test_username, test_password)) as client:
+    async with AsyncClient(
+        auth=UsernamePassword(test_username, test_password)
+    ) as client:
         await client.get("https://url")
     async with AsyncClient(auth=Auth.from_token(test_token)) as client:
         await client.get("https://url")

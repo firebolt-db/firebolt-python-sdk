@@ -11,7 +11,8 @@ from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 from httpx._types import AuthTypes
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
-from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
+from firebolt.client import DEFAULT_API_URL, AsyncClient
+from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.common.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -133,7 +134,7 @@ def _get_auth(
                 "Neither username/password nor access_token are provided. Provide one"
                 " to authenticate"
             )
-        return Auth(username, password, api_endpoint, use_token_cache)
+        return UsernamePassword(username, password, api_endpoint, use_token_cache)
     if username or password:
         raise ConfigurationError(
             "Either username/password and access_token are provided. Provide only one"

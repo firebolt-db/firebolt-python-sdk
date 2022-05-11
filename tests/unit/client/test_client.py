@@ -1,11 +1,11 @@
 from typing import Callable
 
 from httpx import codes
-from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import DEFAULT_API_URL, Auth, Client
+from firebolt.client import DEFAULT_API_URL, Client
+from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.common import Settings
 from firebolt.common.urls import AUTH_URL
 from firebolt.common.util import fix_url_schema
@@ -16,7 +16,6 @@ def test_client_retry(
     test_username: str,
     test_password: str,
     test_token: str,
-    fs: FakeFilesystem,
 ):
     """
     Client retries with new auth token
@@ -58,7 +57,6 @@ def test_client_different_auths(
     test_username: str,
     test_password: str,
     test_token: str,
-    fs: FakeFilesystem,
 ):
     """
     Client properly handles such auth types:
@@ -76,7 +74,7 @@ def test_client_different_auths(
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
     Client(auth=(test_username, test_password)).get("https://url")
-    Client(auth=Auth(test_username, test_password)).get("https://url")
+    Client(auth=UsernamePassword(test_username, test_password)).get("https://url")
     Client(auth=Auth.from_token(test_token)).get("https://url")
 
     # client accepts None auth, but authorization fails

@@ -3,13 +3,8 @@ from typing import Optional
 from httpx import Timeout
 from httpx._types import AuthTypes
 
-from firebolt.client import (
-    Auth,
-    Client,
-    log_request,
-    log_response,
-    raise_on_4xx_5xx,
-)
+from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
+from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.common import Settings
 from firebolt.service.provider import get_provider_id
 
@@ -39,7 +34,7 @@ class ResourceManager:
         if self.settings.access_token:
             auth = Auth.from_token(self.settings.access_token)
         else:
-            auth = Auth(
+            auth = UsernamePassword(
                 self.settings.user,
                 self.settings.password.get_secret_value(),
                 self.settings.server,

@@ -7,7 +7,7 @@ from httpx import _types
 from httpx import codes as HttpxCodes
 from httpx._types import AuthTypes
 
-from firebolt.client.auth import Auth
+from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.client.constants import DEFAULT_API_URL
 from firebolt.common.exception import AccountNotFoundError
 from firebolt.common.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
@@ -48,7 +48,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
         if auth is None or isinstance(auth, Auth):
             return auth
         if isinstance(auth, tuple):
-            return Auth(
+            return UsernamePassword(
                 username=str(auth[0]),
                 password=str(auth[1]),
                 api_endpoint=self._api_endpoint,
