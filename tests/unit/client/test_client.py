@@ -5,7 +5,7 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.client import DEFAULT_API_URL, Client
-from firebolt.client.auth import Auth, UsernamePassword
+from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common import Settings
 from firebolt.common.urls import AUTH_URL
 from firebolt.common.util import fix_url_schema
@@ -75,7 +75,7 @@ def test_client_different_auths(
 
     Client(auth=(test_username, test_password)).get("https://url")
     Client(auth=UsernamePassword(test_username, test_password)).get("https://url")
-    Client(auth=Auth.from_token(test_token)).get("https://url")
+    Client(auth=Token(test_token)).get("https://url")
 
     # client accepts None auth, but authorization fails
     with raises(AssertionError) as excinfo:

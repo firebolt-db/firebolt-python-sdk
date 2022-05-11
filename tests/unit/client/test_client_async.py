@@ -5,7 +5,7 @@ from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.client.auth import Auth, UsernamePassword
+from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common import Settings
 from firebolt.common.urls import AUTH_URL
 from firebolt.common.util import fix_url_schema
@@ -81,7 +81,7 @@ async def test_client_different_auths(
         auth=UsernamePassword(test_username, test_password)
     ) as client:
         await client.get("https://url")
-    async with AsyncClient(auth=Auth.from_token(test_token)) as client:
+    async with AsyncClient(auth=Token(test_token)) as client:
         await client.get("https://url")
 
     # client accepts None auth, but authorization fails

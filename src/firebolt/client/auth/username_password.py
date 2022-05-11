@@ -12,7 +12,7 @@ from firebolt.common.util import cached_property, fix_url_schema
 
 
 class UsernamePassword(Auth):
-    """Authentication class for Firebolt database.
+    """Username/Password authentication class for Firebolt database.
 
     Gets authentication token using
     provided credentials and updates it when it expires

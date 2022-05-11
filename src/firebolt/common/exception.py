@@ -112,21 +112,37 @@ class QueryNotRunError(CursorError):
 
 
 class AuthenticationError(FireboltError):
-    """Firebolt authentication error. Stores error cause and authentication endpoint.
+    """Firebolt authentication error.
+
+    Stores error cause and authentication endpoint.
 
     Args:
         api_endpoint (str): Environment api endpoint, used for authentication
-        cause (str): Roeason for authentication failure
+        cause (str): Reason for authentication failure
 
     Attributes:
         api_endpoint (str): Environment api endpoint, used for authentication
         cause (str): Reason for authentication failure
     """
 
-    def __init__(self, api_endpoint: str, cause: str):
+    def __init__(self, cause: str, api_endpoint: str):
         super().__init__(f"Failed to authenticate at {api_endpoint}: {cause}.")
         self.api_endpoint = api_endpoint
         self.cause = cause
+
+
+class AuthorizationError(FireboltError):
+    """Firebolt authentication error.
+
+    Args:
+        cause (str): Reason for authorization failure
+
+    Attributes:
+        cause (str): Reason for authorization failure
+    """
+
+    def __init__(self, cause: str):
+        super().__init__(f"Authorization failed: {cause}.")
 
 
 # PEP-249

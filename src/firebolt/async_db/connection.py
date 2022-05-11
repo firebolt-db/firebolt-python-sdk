@@ -12,7 +12,7 @@ from httpx._types import AuthTypes
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.client.auth import Auth, UsernamePassword
+from firebolt.client.auth import Auth, Token, UsernamePassword
 from firebolt.common.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -140,7 +140,7 @@ def _get_auth(
             "Either username/password and access_token are provided. Provide only one"
             " to authenticate"
         )
-    return Auth.from_token(access_token)
+    return Token(access_token)
 
 
 def async_connect_factory(connection_class: Type) -> Callable:

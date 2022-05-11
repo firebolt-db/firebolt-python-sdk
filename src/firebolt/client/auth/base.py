@@ -26,20 +26,6 @@ class Auth(HttpxAuth):
 
     requires_response_body = True
 
-    @staticmethod
-    def from_token(token: str) -> "Auth":
-        """Create auth based on already acquired token.
-
-        Args:
-            token (str): Bearer token
-
-        Returns:
-            Auth: Auth object
-        """
-        a = Auth(use_token_cache=False)
-        a._token = token
-        return a
-
     def __init__(self, use_token_cache: bool = True):
         self._use_token_cache = use_token_cache
         self._token: Optional[str] = self._get_cached_token()
