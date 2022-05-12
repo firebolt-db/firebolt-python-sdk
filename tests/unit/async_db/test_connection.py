@@ -7,6 +7,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Connection, connect
 from firebolt.async_db._types import ColType
+from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -320,3 +321,36 @@ async def test_connection_token_caching(
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"
+
+
+@mark.asyncio
+async def test_connect_with_auth(
+    httpx_mock: HTTPXMock,
+    settings: Settings,
+    db_name: str,
+    check_credentials_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    access_token: str,
+) -> None:
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    for auth in (
+        UsernamePassword(
+            settings.user,
+            settings.password.get_secret_value(),
+            api_endpoint=settings.server,
+            use_token_cache=False,
+        ),
+        Token(access_token),
+    ):
+        async with await connect(
+            auth=auth,
+            database=db_name,
+            engine_url=settings.server,
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+        ) as connection:
+            await connection.cursor().execute("select*")
