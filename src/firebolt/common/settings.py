@@ -63,32 +63,19 @@ class Settings(BaseSettings):
         Raises:
             ValueError: Either both or none of credentials and token are provided
         """
-        if values["user"] or values["password"]:
-            if values["access_token"]:
-                raise ValueError("Provide only one of user/password or access_token")
-        elif not values["access_token"]:
-            raise ValueError("Provide either user/password or access_token")
-        return values
 
-    @root_validator
-    def deprecate_credentials(cls, values: dict) -> dict:
-        """Raise deprecation warning if credentials are provided.
-
-        Args:
-            values (dict): settings initial values
-
-        Returns:
-            dict: Validated settings values
-
-        Raises:
-            ValueError: Auth is provided along with credentials
-        """
-        if any(
-            f in values for f in ("user", "password", "access_token", "use_token_cache")
-        ):
-            if values.get("auth"):
-                raise ValueError("Auth object is provided along with credentials")
-            else:
-                logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
+        params_present = (
+            values.get("user") is not None or values.get("password") is not None,
+            values.get("access_token") is not None,
+            values.get("auth") is not None,
+        )
+        if sum(params_present) == 0:
+            raise ValueError(
+                "Provide at least one of auth, user/password or access_token"
+            )
+        if sum(params_present) > 1:
+            raise ValueError("Provide only one of auth, user/password or access_token")
+        if any(values.get(f) for f in ("user", "password", "access_token")):
+            logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
 
         return values
