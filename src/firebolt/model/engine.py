@@ -192,13 +192,10 @@ class Engine(FireboltBaseModel):
         """
         return connect(
             database=self.database.name,  # type: ignore # already checked by decorator
-            username=self._service.settings.user,
-            password=self._service.settings.password.get_secret_value(),
-            access_token=self._service.settings.access_token,
+            auth=self._service.client.auth,
             engine_url=self.endpoint,
             account_name=self._service.settings.account_name,
             api_endpoint=self._service.settings.server,
-            use_token_cache=self._service.settings.use_token_cache,
         )
 
     @check_attached_to_database

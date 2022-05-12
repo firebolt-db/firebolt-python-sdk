@@ -47,12 +47,11 @@ class ResourceManager:
             account_name=self.settings.account_name,
             api_endpoint=self.settings.server,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
+            event_hooks={
+                "request": [log_request],
+                "response": [raise_on_4xx_5xx, log_response],
+            },
         )
-        self.client.event_hooks = {
-            "request": [log_request],
-            "response": [raise_on_4xx_5xx, log_response],
-        }
-
         self.account_id = self.client.account_id
         self._init_services()
 

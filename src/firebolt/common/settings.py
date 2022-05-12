@@ -1,4 +1,21 @@
+import logging
+
 from pydantic import BaseSettings, Field, SecretStr, root_validator
+
+from firebolt.client.auth import Auth
+
+logger = logging.getLogger(__name__)
+
+AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly in Settings is deprecated.
+ Please consider passing Auth object instead.
+ Examples:
+  >>> from firebolt.client.auth import UsernamePassword
+  >>> ...
+  >>> settings = Settings(auth=UsernamePassword(username, password), ...)
+ or
+  >>> from firebolt.client.auth import Token
+  >>> ...
+  >>> settings = Settings(auth=Token(access_token), ...)"""
 
 
 class Settings(BaseSettings):
@@ -16,6 +33,7 @@ class Settings(BaseSettings):
         default_region (str): Default region for provisioning
     """
 
+    auth: Auth = Field(None)
     # Authorization
     user: str = Field(None, env="FIREBOLT_USER")
     password: SecretStr = Field(None, env="FIREBOLT_PASSWORD")
@@ -50,4 +68,27 @@ class Settings(BaseSettings):
                 raise ValueError("Provide only one of user/password or access_token")
         elif not values["access_token"]:
             raise ValueError("Provide either user/password or access_token")
+        return values
+
+    @root_validator
+    def deprecate_credentials(cls, values: dict) -> dict:
+        """Raise deprecation warning if credentials are provided.
+
+        Args:
+            values (dict): settings initial values
+
+        Returns:
+            dict: Validated settings values
+
+        Raises:
+            ValueError: Auth is provided along with credentials
+        """
+        if any(
+            f in values for f in ("user", "password", "access_token", "use_token_cache")
+        ):
+            if values.get("auth"):
+                raise ValueError("Auth object is provided along with credentials")
+            else:
+                logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
+
         return values

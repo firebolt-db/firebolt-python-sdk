@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
@@ -29,6 +30,18 @@ from firebolt.common.util import fix_url_schema
 DEFAULT_TIMEOUT_SECONDS: int = 5
 KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
+AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly to `connect` function is deprecated.
+ Please consider passing Auth object instead.
+ Examples:
+  >>> from firebolt.client.auth import UsernamePassword
+  >>> ...
+  >>> connect(auth=UsernamePassword(username, password), ...)
+ or
+  >>> from firebolt.client.auth import Token
+  >>> ...
+  >>> connect(auth=Token(access_token), ...)"""
+
+logger = logging.getLogger(__name__)
 
 
 async def _resolve_engine_url(
@@ -149,6 +162,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         username: Optional[str] = None,
         password: Optional[str] = None,
         access_token: Optional[str] = None,
+        auth: Auth = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
         account_name: Optional[str] = None,
@@ -183,9 +197,15 @@ def async_connect_factory(connection_class: Type) -> Callable:
             raise ConfigurationError("database name is required to connect.")
 
         _validate_engine_name_and_url(engine_name, engine_url)
-        auth = _get_auth(
-            username, password, access_token, api_endpoint, use_token_cache
-        )
+
+        if not auth:
+            if any([username, password, access_token, api_endpoint, use_token_cache]):
+                logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
+                auth = _get_auth(
+                    username, password, access_token, api_endpoint, use_token_cache
+                )
+            else:
+                raise ConfigurationError("No authentication provided.")
         api_endpoint = fix_url_schema(api_endpoint)
 
         # Mypy checks, this should never happen
