@@ -4,8 +4,8 @@ from typing import Generator, Optional
 from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
-from firebolt.common.token_storage import TokenSecureStorage
-from firebolt.common.util import cached_property
+from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.utils.util import cached_property
 
 
 class Auth(HttpxAuth):

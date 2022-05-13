@@ -6,7 +6,7 @@ from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
 from firebolt.client.auth import UsernamePassword
-from firebolt.common.exception import AuthenticationError
+from firebolt.utils.exception import AuthenticationError
 from tests.unit.util import execute_generator_requests
 
 

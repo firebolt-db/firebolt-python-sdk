@@ -8,14 +8,14 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db import Connection, connect
 from firebolt.async_db._types import ColType
 from firebolt.client.auth import Token, UsernamePassword
-from firebolt.common.exception import (
+from firebolt.common.settings import Settings
+from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
 )
-from firebolt.common.settings import Settings
-from firebolt.common.token_storage import TokenSecureStorage
-from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL
+from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.utils.urls import ACCOUNT_ENGINE_BY_NAME_URL
 
 
 @mark.asyncio

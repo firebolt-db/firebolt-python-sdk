@@ -8,14 +8,6 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
 
 from pydantic import Field, PrivateAttr
 
-from firebolt.common.exception import NoAttachedDatabaseError
-from firebolt.common.urls import (
-    ACCOUNT_ENGINE_RESTART_URL,
-    ACCOUNT_ENGINE_START_URL,
-    ACCOUNT_ENGINE_STOP_URL,
-    ACCOUNT_ENGINE_URL,
-)
-from firebolt.common.util import prune_dict
 from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
 from firebolt.model.binding import Binding
@@ -28,6 +20,14 @@ from firebolt.service.types import (
     EngineType,
     WarmupMethod,
 )
+from firebolt.utils.exception import NoAttachedDatabaseError
+from firebolt.utils.urls import (
+    ACCOUNT_ENGINE_RESTART_URL,
+    ACCOUNT_ENGINE_START_URL,
+    ACCOUNT_ENGINE_STOP_URL,
+    ACCOUNT_ENGINE_URL,
+)
+from firebolt.utils.util import prune_dict
 
 if TYPE_CHECKING:
     from firebolt.service.engine import EngineService

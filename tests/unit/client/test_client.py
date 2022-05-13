@@ -7,8 +7,8 @@ from pytest_httpx import HTTPXMock
 from firebolt.client import DEFAULT_API_URL, Client
 from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common import Settings
-from firebolt.common.urls import AUTH_URL
-from firebolt.common.util import fix_url_schema
+from firebolt.utils.urls import AUTH_URL
+from firebolt.utils.util import fix_url_schema
 
 
 def test_client_retry(

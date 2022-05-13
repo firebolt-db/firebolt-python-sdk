@@ -9,9 +9,9 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.client.constants import DEFAULT_API_URL
-from firebolt.common.exception import AccountNotFoundError
-from firebolt.common.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
-from firebolt.common.util import cached_property, fix_url_schema, mixin_for
+from firebolt.utils.exception import AccountNotFoundError
+from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
+from firebolt.utils.util import cached_property, fix_url_schema, mixin_for
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 

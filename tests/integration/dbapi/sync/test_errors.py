@@ -1,7 +1,8 @@
 from httpx import ConnectError
 from pytest import raises
 
-from firebolt.common.exception import (
+from firebolt.db import Connection, connect
+from firebolt.utils.exception import (
     AccountNotFoundError,
     AuthenticationError,
     EngineNotRunningError,
@@ -9,7 +10,6 @@ from firebolt.common.exception import (
     FireboltEngineError,
     OperationalError,
 )
-from firebolt.db import Connection, connect
 
 
 def test_invalid_credentials(

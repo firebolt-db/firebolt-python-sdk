@@ -5,10 +5,10 @@ from httpx import Request, Response
 
 from firebolt.client.auth.base import Auth
 from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
-from firebolt.common.exception import AuthenticationError
-from firebolt.common.token_storage import TokenSecureStorage
-from firebolt.common.urls import AUTH_URL
-from firebolt.common.util import cached_property, fix_url_schema
+from firebolt.utils.exception import AuthenticationError
+from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.utils.urls import AUTH_URL
+from firebolt.utils.util import cached_property, fix_url_schema
 
 
 class UsernamePassword(Auth):

@@ -3,7 +3,7 @@ from typing import Generator
 from httpx import Request, Response
 
 from firebolt.client.auth import Auth
-from firebolt.common.exception import AuthorizationError
+from firebolt.utils.exception import AuthorizationError
 
 
 class Token(Auth):

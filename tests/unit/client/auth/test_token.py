@@ -5,7 +5,7 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Token
-from firebolt.common.exception import AuthorizationError
+from firebolt.utils.exception import AuthorizationError
 from tests.unit.util import execute_generator_requests
 
 

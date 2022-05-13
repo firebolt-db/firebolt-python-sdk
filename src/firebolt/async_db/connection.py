@@ -14,18 +14,18 @@ from httpx._types import AuthTypes
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.client.auth import Auth, Token, UsernamePassword
-from firebolt.common.exception import (
+from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
     InterfaceError,
 )
-from firebolt.common.urls import (
+from firebolt.utils.urls import (
     ACCOUNT_ENGINE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
-from firebolt.common.util import fix_url_schema
+from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 KEEPALIVE_FLAG: int = 1

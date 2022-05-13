@@ -6,8 +6,8 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common.settings import Settings
-from firebolt.common.token_storage import TokenSecureStorage
 from firebolt.service.manager import ResourceManager
+from firebolt.utils.token_storage import TokenSecureStorage
 
 
 def test_rm_credentials(

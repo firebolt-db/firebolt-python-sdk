@@ -6,7 +6,7 @@ from pytest import mark
 from pytest_httpx import HTTPXMock
 
 from firebolt.client import Auth
-from firebolt.common.token_storage import TokenSecureStorage
+from firebolt.utils.token_storage import TokenSecureStorage
 from tests.unit.util import async_execute_generator_requests
 
 
