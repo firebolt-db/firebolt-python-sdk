@@ -28,7 +28,7 @@ See [PEP-249](https://www.python.org/dev/peps/pep-0249) for the DB API reference
 
 ## Optional features
 ### Faster datetime with ciso8601
-By default, firebolt-sdk uses `datetime` module to parse date and datetime values, which might be slow for a large amount of operations. In order to speed up datetime operations, it's possible to use [ciso8601](https://pypi.org/project/ciso8601/) package. In order to install firebolt-sdk with `ciso8601` support, run `pip install firebolt-sdk[ciso8601]`
+By default, firebolt-sdk uses `datetime` module to parse date and datetime values, which might be slow for a large amount of operations. In order to speed up datetime operations, it's possible to use [ciso8601](https://pypi.org/project/ciso8601/) package. In order to install firebolt-sdk with `ciso8601` support, run `pip install "firebolt-sdk[ciso8601]"`
 
 ## Contributing
 
