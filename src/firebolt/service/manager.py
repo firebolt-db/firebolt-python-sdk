@@ -30,16 +30,19 @@ class ResourceManager:
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or Settings()
 
-        auth: AuthTypes = None
-        if self.settings.access_token:
-            auth = Token(self.settings.access_token)
-        else:
-            auth = UsernamePassword(
-                self.settings.user,
-                self.settings.password.get_secret_value(),
-                self.settings.server,
-                self.settings.use_token_cache,
-            )
+        auth: AuthTypes = self.settings.auth
+
+        # Deprecated: we shouldn't support passing credentials after 1.0 release
+        if auth is None:
+            if self.settings.access_token:
+                auth = Token(self.settings.access_token)
+            else:
+                auth = UsernamePassword(
+                    self.settings.user,
+                    self.settings.password.get_secret_value(),
+                    self.settings.server,
+                    self.settings.use_token_cache,
+                )
 
         self.client = Client(
             auth=auth,
