@@ -4,11 +4,11 @@ from typing import Generator, Optional
 from httpx import Request, Response
 
 from firebolt.client.auth.base import Auth
-from firebolt.client.constants import _REQUEST_ERRORS, DEFAULT_API_URL
+from firebolt.client.constants import _REQUEST_ERRORS
 from firebolt.utils.exception import AuthenticationError
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_URL
-from firebolt.utils.util import cached_property, fix_url_schema
+from firebolt.utils.util import cached_property
 
 
 class UsernamePassword(Auth):
@@ -20,8 +20,6 @@ class UsernamePassword(Auth):
     Args:
         username (str): Username
         password (str): Password
-        api_endpoint (Optional[str]): Environment api endpoint.
-            Default api.app.firebolt.io
         use_token_cache (bool): True if token should be cached in filesystem,
             False otherwise
 
@@ -33,7 +31,6 @@ class UsernamePassword(Auth):
     __slots__ = (
         "username",
         "password",
-        "_api_endpoint",
         "_token",
         "_expires",
         "_use_token_cache",
@@ -45,13 +42,10 @@ class UsernamePassword(Auth):
         self,
         username: str,
         password: str,
-        api_endpoint: str = DEFAULT_API_URL,
         use_token_cache: bool = True,
     ):
         self.username = username
         self.password = password
-        # Add schema to url if it's missing
-        self._api_endpoint = fix_url_schema(api_endpoint)
         super().__init__(use_token_cache)
 
     def copy(self) -> "UsernamePassword":
@@ -60,9 +54,7 @@ class UsernamePassword(Auth):
         Returns:
             UsernamePassword: Auth object
         """
-        return UsernamePassword(
-            self.username, self.password, self._api_endpoint, self._use_token_cache
-        )
+        return UsernamePassword(self.username, self.password, self._use_token_cache)
 
     @cached_property
     def _token_storage(self) -> Optional[TokenSecureStorage]:
@@ -85,9 +77,9 @@ class UsernamePassword(Auth):
             AuthenticationError: Error while authenticating with provided credentials
         """
         try:
-            response = yield Request(
+            response = yield self.request_class(
                 "POST",
-                AUTH_URL.format(api_endpoint=self._api_endpoint),
+                AUTH_URL,
                 headers={
                     "Content-Type": "application/json;charset=UTF-8",
                     "User-Agent": "firebolt-sdk",
@@ -103,7 +95,7 @@ class UsernamePassword(Auth):
             self._expires = int(time()) + int(parsed["expires_in"])
 
         except _REQUEST_ERRORS as e:
-            raise AuthenticationError(repr(e), self._api_endpoint) from e
+            raise AuthenticationError(repr(e)) from e
 
     def _check_response_error(self, response: dict) -> None:
         """Check if response data contains errors.
@@ -117,5 +109,4 @@ class UsernamePassword(Auth):
         if "error" in response:
             raise AuthenticationError(
                 response.get("message", "unknown server error"),
-                self._api_endpoint,
             )

@@ -341,7 +341,6 @@ async def test_connect_with_auth(
         UsernamePassword(
             settings.user,
             settings.password.get_secret_value(),
-            api_endpoint=settings.server,
             use_token_cache=False,
         ),
         Token(access_token),

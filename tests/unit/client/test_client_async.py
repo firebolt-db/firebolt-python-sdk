@@ -22,7 +22,9 @@ async def test_client_retry(
     Client retries with new auth token
     if first attempt fails with Unauthorized error
     """
-    async with AsyncClient(auth=(test_username, test_password)) as client:
+    async with AsyncClient(
+        auth=UsernamePassword(test_username, test_password)
+    ) as client:
 
         # auth get token
         httpx_mock.add_response(
@@ -70,13 +72,11 @@ async def test_client_different_auths(
 
     httpx_mock.add_callback(
         check_credentials_callback,
-        url=AUTH_URL.format(api_endpoint=f"https://{DEFAULT_API_URL}"),
+        url=f"https://{DEFAULT_API_URL}{AUTH_URL}",
     )
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    async with AsyncClient(auth=(test_username, test_password)) as client:
-        await client.get("https://url")
     async with AsyncClient(
         auth=UsernamePassword(test_username, test_password)
     ) as client:
@@ -114,7 +114,7 @@ async def test_client_account_id(
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     async with AsyncClient(
-        auth=(test_username, test_password),
+        auth=UsernamePassword(test_username, test_password),
         base_url=fix_url_schema(settings.server),
         api_endpoint=settings.server,
     ) as c:

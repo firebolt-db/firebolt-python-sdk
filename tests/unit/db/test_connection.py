@@ -225,7 +225,7 @@ def test_connect_default_engine(
 
 
 def test_connection_unclosed_warnings():
-    c = Connection("", "", ("", ""), "")
+    c = Connection("", "", None, "")
     with warns(UserWarning) as winfo:
         del c
 
@@ -311,7 +311,6 @@ def test_connect_with_auth(
         UsernamePassword(
             settings.user,
             settings.password.get_secret_value(),
-            api_endpoint=settings.server,
             use_token_cache=False,
         ),
         Token(access_token),

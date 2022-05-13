@@ -134,7 +134,7 @@ def auth_callback(auth_url: str) -> Callable:
 
 @fixture
 def auth_url(settings: Settings) -> str:
-    return AUTH_URL.format(api_endpoint=f"https://{settings.server}")
+    return f"https://{settings.server}{AUTH_URL}"
 
 
 @fixture

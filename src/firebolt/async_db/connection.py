@@ -9,7 +9,6 @@ from typing import Any, Callable, List, Optional, Type
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
 from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
-from httpx._types import AuthTypes
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
@@ -46,7 +45,7 @@ logger = logging.getLogger(__name__)
 
 async def _resolve_engine_url(
     engine_name: str,
-    auth: AuthTypes,
+    auth: Auth,
     api_endpoint: str,
     account_name: Optional[str] = None,
 ) -> str:
@@ -85,7 +84,7 @@ async def _resolve_engine_url(
 
 async def _get_database_default_engine_url(
     database: str,
-    auth: AuthTypes,
+    auth: Auth,
     api_endpoint: str,
     account_name: Optional[str] = None,
 ) -> str:
@@ -126,7 +125,6 @@ def _get_auth(
     username: Optional[str],
     password: Optional[str],
     access_token: Optional[str],
-    api_endpoint: str,
     use_token_cache: bool,
 ) -> Auth:
     """Create Auth class based on provided credentials.
@@ -147,7 +145,7 @@ def _get_auth(
                 "Neither username/password nor access_token are provided. Provide one"
                 " to authenticate"
             )
-        return UsernamePassword(username, password, api_endpoint, use_token_cache)
+        return UsernamePassword(username, password, use_token_cache)
     if username or password:
         raise ConfigurationError(
             "Either username/password and access_token are provided. Provide only one"
@@ -169,15 +167,15 @@ def async_connect_factory(connection_class: Type) -> Callable:
         api_endpoint: str = DEFAULT_API_URL,
         use_token_cache: bool = True,
     ) -> Connection:
-        """
-        Connect to Firebolt database.
+        """Connect to Firebolt database.
 
         Args:
             database (str): Name of the database to connect
-            username (Optional[str]): User name to use for authentication
-            password (Optional[str]): Password to use for authentication
+            username (Optional[str]): User name to use for authentication (Deprecated)
+            password (Optional[str]): Password to use for authentication (Deprecated)
             access_token (Optional[str]): Authentication token to use insead of
-                                          credentials
+                                          credentials (Deprecated)
+            auth (Auth)L Authentication object
             engine_name (Optional[str]): The name of the engine to connect to
             engine_url (Optional[str]): The engine endpoint to use
             account_name (Optional[str]): For customers with multiple accounts;
@@ -201,9 +199,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         if not auth:
             if any([username, password, access_token, api_endpoint, use_token_cache]):
                 logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
-                auth = _get_auth(
-                    username, password, access_token, api_endpoint, use_token_cache
-                )
+                auth = _get_auth(username, password, access_token, use_token_cache)
             else:
                 raise ConfigurationError("No authentication provided.")
         api_endpoint = fix_url_schema(api_endpoint)
@@ -287,7 +283,7 @@ class BaseConnection:
         self,
         engine_url: str,
         database: str,
-        auth: AuthTypes,
+        auth: Auth,
         api_endpoint: str = DEFAULT_API_URL,
     ):
         # Override tcp keepalive settings for connection

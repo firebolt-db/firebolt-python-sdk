@@ -8,6 +8,10 @@ from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.util import cached_property
 
 
+class AuthRequest(Request):
+    """Class to distinguish auth requests from regular"""
+
+
 class Auth(HttpxAuth):
     """Base authentication class for Firebolt database.
 
@@ -25,6 +29,7 @@ class Auth(HttpxAuth):
     )
 
     requires_response_body = True
+    request_class = AuthRequest
 
     def __init__(self, use_token_cache: bool = True):
         self._use_token_cache = use_token_cache

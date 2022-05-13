@@ -31,9 +31,7 @@ def test_auth_username_password(
 def test_auth_error_handling(httpx_mock: HTTPXMock):
     """Auth handles various errors properly."""
     for api_endpoint in ("https://host", "host"):
-        auth = UsernamePassword(
-            "user", "password", api_endpoint=api_endpoint, use_token_cache=False
-        )
+        auth = UsernamePassword("user", "password", use_token_cache=False)
 
         # Internal httpx error
         def http_error(*args, **kwargs):
@@ -41,7 +39,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
 
         httpx_mock.add_callback(http_error)
         with pytest.raises(StreamError) as excinfo:
-            execute_generator_requests(auth.get_new_token_generator())
+            execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
 
         assert str(excinfo.value) == "httpx", "Invalid authentication error message"
         httpx_mock.reset(True)
@@ -49,7 +47,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
         # HTTP error
         httpx_mock.add_response(status_code=codes.BAD_REQUEST)
         with pytest.raises(AuthenticationError) as excinfo:
-            execute_generator_requests(auth.get_new_token_generator())
+            execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
 
         errmsg = str(excinfo.value)
         assert "Bad Request" in errmsg, "Invalid authentication error message"
@@ -60,6 +58,6 @@ def test_auth_error_handling(httpx_mock: HTTPXMock):
             status_code=codes.OK, json={"error": "", "message": "firebolt"}
         )
         with pytest.raises(AuthenticationError) as excinfo:
-            execute_generator_requests(auth.get_new_token_generator())
+            execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
 
         httpx_mock.reset(True)

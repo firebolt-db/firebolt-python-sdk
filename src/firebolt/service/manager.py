@@ -1,7 +1,6 @@
 from typing import Optional
 
 from httpx import Timeout
-from httpx._types import AuthTypes
 
 from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
 from firebolt.client.auth import Token, UsernamePassword
@@ -30,7 +29,7 @@ class ResourceManager:
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or Settings()
 
-        auth: AuthTypes = self.settings.auth
+        auth = self.settings.auth
 
         # Deprecated: we shouldn't support passing credentials after 1.0 release
         if auth is None:
@@ -40,7 +39,6 @@ class ResourceManager:
                 auth = UsernamePassword(
                     self.settings.user,
                     self.settings.password.get_secret_value(),
-                    self.settings.server,
                     self.settings.use_token_cache,
                 )
 

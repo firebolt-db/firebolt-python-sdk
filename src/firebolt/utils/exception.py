@@ -125,9 +125,8 @@ class AuthenticationError(FireboltError):
         cause (str): Reason for authentication failure
     """
 
-    def __init__(self, cause: str, api_endpoint: str):
-        super().__init__(f"Failed to authenticate at {api_endpoint}: {cause}.")
-        self.api_endpoint = api_endpoint
+    def __init__(self, cause: str):
+        super().__init__(f"Failed to authenticate: {cause}.")
         self.cause = cause
 
 
