@@ -6,8 +6,12 @@
 [![Integration tests](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/firebolt-db/firebolt-python-sdk/actions/workflows/integration-tests.yml)
 ![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/ptiurin/65d5a42849fd78f4c6e62fad18490d20/raw/firebolt-sdk-coverage.json)
 
+## Documentation
 
-### Installation
+For tutorials and reference documentation, please read our documentation at https://python-sdk.docs.firebolt.io/.
+
+
+## Installation
 
 * Requires Python `>=3.7`
 * `pip install firebolt-sdk`
