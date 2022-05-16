@@ -59,6 +59,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
     def _merge_auth_request(self, request: Request) -> Request:
         if isinstance(request, AuthRequest):
             request.url = merge_urls(self._api_endpoint, request.url)
+            request._prepare(dict(request.headers))
         return request
 
 
