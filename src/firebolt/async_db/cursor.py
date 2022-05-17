@@ -422,7 +422,7 @@ class BaseCursor:
             parameters_seq (Sequence[Sequence[ParameterType]]): A sequence of
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
-               for each subset are executed sequentially
+               for each subset are executed sequentially.
 
         Returns:
             int: Query row count
@@ -533,10 +533,12 @@ class Cursor(BaseCursor):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
+        skip_parsing: bool = False,
     ) -> int:
         async with self._async_query_lock.writer:
-            return await super().execute(query, parameters, set_parameters)
-        """Prepare and execute a database query"""
+            return await super().execute(
+                query, parameters, set_parameters, skip_parsing
+            )
 
     @wraps(BaseCursor.executemany)
     async def executemany(
