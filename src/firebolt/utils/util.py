@@ -16,6 +16,8 @@ from typing import (
     TypeVar,
 )
 
+from httpx import URL
+
 T = TypeVar("T")
 
 
@@ -178,3 +180,21 @@ def async_to_sync(f: Callable, async_job_thread: AsyncJobThread = None) -> Calla
         return loop.run_until_complete(f(*args, **kwargs))
 
     return sync
+
+
+def merge_urls(base: URL, merge: URL) -> URL:
+    """Merge a base and merge urls.
+
+    If merge is not a relative url, do nothing
+
+    Args:
+        base (URL): Base URL to merge to
+        merge (URL): URL to merge
+
+    Returns:
+        URL: Resulting URL
+    """
+    if merge.is_relative_url:
+        merge_raw_path = base.raw_path + merge.raw_path.lstrip(b"/")
+        return base.copy_with(raw_path=merge_raw_path)
+    return merge

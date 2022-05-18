@@ -1,10 +1,10 @@
 from typing import Dict, List, NamedTuple, Optional
 
-from firebolt.common.urls import INSTANCE_TYPES_URL
-from firebolt.common.util import cached_property
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.model.region import Region
 from firebolt.service.base import BaseService
+from firebolt.utils.urls import INSTANCE_TYPES_URL
+from firebolt.utils.util import cached_property
 
 
 class InstanceTypeLookup(NamedTuple):

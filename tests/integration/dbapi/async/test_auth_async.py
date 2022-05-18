@@ -3,7 +3,7 @@ from time import time
 from pytest import mark, raises
 
 from firebolt.async_db import Connection
-from firebolt.common.exception import AuthenticationError
+from firebolt.utils.exception import AuthenticationError
 
 
 @mark.skip(reason="flaky, token not updated each time")

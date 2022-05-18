@@ -1,10 +1,10 @@
 from typing import Dict, List
 
-from firebolt.common.urls import REGIONS_URL
-from firebolt.common.util import cached_property
 from firebolt.model.region import Region, RegionKey
 from firebolt.service.base import BaseService
 from firebolt.service.manager import ResourceManager
+from firebolt.utils.urls import REGIONS_URL
+from firebolt.utils.util import cached_property
 
 
 class RegionService(BaseService):
