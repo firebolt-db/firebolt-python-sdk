@@ -16,6 +16,7 @@ from typing import (
     Optional,
     Sequence,
     Tuple,
+    Union,
 )
 
 from aiorwlock import RWLock
@@ -289,6 +290,7 @@ class BaseCursor:
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         set_parameters: Optional[Dict] = None,
+        skip_parsing: bool = False,
     ) -> None:
         self._reset()
         if set_parameters is not None:
@@ -298,7 +300,16 @@ class BaseCursor:
             )
         try:
 
-            queries = split_format_sql(raw_query, parameters)
+            if parameters and skip_parsing:
+                logger.warning(
+                    "Query formatting parameters are provided with skip_parsing."
+                    " They will be ignored"
+                )
+
+            # Allow users to manually skip parsing for performance improvement
+            queries: List[Union[SetParameter, str]] = (
+                [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
+            )
 
             for query in queries:
 
@@ -351,20 +362,70 @@ class BaseCursor:
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
+        skip_parsing: bool = False,
     ) -> int:
-        """Prepare and execute a database query. Return row count."""
+        """Prepare and execute a database query.
 
+        Supported features:
+            Parameterized queries: placeholder characters ('?') are substituted
+                with values provided in `parameters`. Values are formatted to
+                be properly recognized by database and to exclude SQL injection.
+            Multi-statement queries: multiple statements, provided in a single query
+                and separated by semicolon are executed separatelly and sequentially.
+                To switch to next statement result, `nextset` method should be used.
+            SET statements: to provide additional query execution parameters, execute
+                `SET param=value` statement before it. All parameters are stored in
+                cursor object until it's closed. They can also be removed with
+                `flush_parameters` method call.
+
+        Args:
+            query (str): SQL query to execute
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values
+            set_parameters (Optional[Dict]): List of set parameters to execute
+                a query with. DEPRECATED: Use SET SQL statements instead
+            skip_parsing (bool): Flag to disable query parsing. This will
+                disable parameterized, multi-statement and SET queries,
+                while improving performance
+
+        Returns:
+            int: Query row count
+        """
         params_list = [parameters] if parameters else []
-        await self._do_execute(query, params_list, set_parameters)
+        await self._do_execute(query, params_list, set_parameters, skip_parsing)
         return self.rowcount
 
     @check_not_closed
     async def executemany(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> int:
-        """
-        Prepare and execute a database query against all parameter
-        sequences provided. Return last query row count.
+        """Prepare and execute a database query.
+
+        Supports providing multiple substitution parameter sets, executing them
+        as multiple statements sequentially.
+
+        Supported features:
+            Parameterized queries: placeholder characters ('?') are substituted
+                with values provided in `parameters`. Values are formatted to
+                be properly recognized by database and to exclude SQL injection.
+            Multi-statement queries: multiple statements, provided in a single query
+                and separated by semicolon are executed separatelly and sequentially.
+                To switch to next statement result, `nextset` method should be used.
+            SET statements: to provide additional query execution parameters, execute
+                `SET param=value` statement before it. All parameters are stored in
+                cursor object until it's closed. They can also be removed with
+                `flush_parameters` method call.
+
+        Args:
+            query (str): SQL query to execute
+            parameters_seq (Sequence[Sequence[ParameterType]]): A sequence of
+               substitution parameter sets. Used to replace '?' placeholders inside a
+               query with actual values from each set in a sequence. Resulting queries
+               for each subset are executed sequentially.
+
+        Returns:
+            int: Query row count
         """
         await self._do_execute(query, parameters_seq)
         return self.rowcount
@@ -472,10 +533,12 @@ class Cursor(BaseCursor):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
+        skip_parsing: bool = False,
     ) -> int:
         async with self._async_query_lock.writer:
-            return await super().execute(query, parameters, set_parameters)
-        """Prepare and execute a database query"""
+            return await super().execute(
+                query, parameters, set_parameters, skip_parsing
+            )
 
     @wraps(BaseCursor.executemany)
     async def executemany(
