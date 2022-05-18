@@ -34,7 +34,7 @@ from firebolt.async_db._types import (
 )
 from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.client import AsyncClient
-from firebolt.common.exception import (
+from firebolt.utils.exception import (
     CursorClosedError,
     DataError,
     EngineNotRunningError,

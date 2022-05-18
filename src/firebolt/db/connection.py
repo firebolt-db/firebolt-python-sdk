@@ -9,9 +9,9 @@ from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.async_db.connection import BaseConnection as AsyncBaseConnection
 from firebolt.async_db.connection import async_connect_factory
-from firebolt.common.exception import ConnectionClosedError
-from firebolt.common.util import AsyncJobThread, async_to_sync
 from firebolt.db.cursor import Cursor
+from firebolt.utils.exception import ConnectionClosedError
+from firebolt.utils.util import AsyncJobThread, async_to_sync
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 

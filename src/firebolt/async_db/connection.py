@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
@@ -8,31 +9,43 @@ from typing import Any, Callable, List, Optional, Type
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
 from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
-from httpx._types import AuthTypes
 
 from firebolt.async_db.cursor import BaseCursor, Cursor
-from firebolt.client import DEFAULT_API_URL, AsyncClient, Auth
-from firebolt.common.exception import (
+from firebolt.client import DEFAULT_API_URL, AsyncClient
+from firebolt.client.auth import Auth, Token, UsernamePassword
+from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
     InterfaceError,
 )
-from firebolt.common.urls import (
+from firebolt.utils.urls import (
     ACCOUNT_ENGINE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
-from firebolt.common.util import fix_url_schema
+from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
 KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
+AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly to `connect` function is deprecated.
+ Please consider passing Auth object instead.
+ Examples:
+  >>> from firebolt.client.auth import UsernamePassword
+  >>> ...
+  >>> connect(auth=UsernamePassword(username, password), ...)
+ or
+  >>> from firebolt.client.auth import Token
+  >>> ...
+  >>> connect(auth=Token(access_token), ...)"""
+
+logger = logging.getLogger(__name__)
 
 
 async def _resolve_engine_url(
     engine_name: str,
-    auth: AuthTypes,
+    auth: Auth,
     api_endpoint: str,
     account_name: Optional[str] = None,
 ) -> str:
@@ -71,7 +84,7 @@ async def _resolve_engine_url(
 
 async def _get_database_default_engine_url(
     database: str,
-    auth: AuthTypes,
+    auth: Auth,
     api_endpoint: str,
     account_name: Optional[str] = None,
 ) -> str:
@@ -112,7 +125,6 @@ def _get_auth(
     username: Optional[str],
     password: Optional[str],
     access_token: Optional[str],
-    api_endpoint: str,
     use_token_cache: bool,
 ) -> Auth:
     """Create Auth class based on provided credentials.
@@ -133,13 +145,13 @@ def _get_auth(
                 "Neither username/password nor access_token are provided. Provide one"
                 " to authenticate"
             )
-        return Auth(username, password, api_endpoint, use_token_cache)
+        return UsernamePassword(username, password, use_token_cache)
     if username or password:
         raise ConfigurationError(
             "Either username/password and access_token are provided. Provide only one"
             " to authenticate"
         )
-    return Auth.from_token(access_token)
+    return Token(access_token)
 
 
 def async_connect_factory(connection_class: Type) -> Callable:
@@ -148,21 +160,22 @@ def async_connect_factory(connection_class: Type) -> Callable:
         username: Optional[str] = None,
         password: Optional[str] = None,
         access_token: Optional[str] = None,
+        auth: Auth = None,
         engine_name: Optional[str] = None,
         engine_url: Optional[str] = None,
         account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
         use_token_cache: bool = True,
     ) -> Connection:
-        """
-        Connect to Firebolt database.
+        """Connect to Firebolt database.
 
         Args:
             database (str): Name of the database to connect
-            username (Optional[str]): User name to use for authentication
-            password (Optional[str]): Password to use for authentication
+            username (Optional[str]): User name to use for authentication (Deprecated)
+            password (Optional[str]): Password to use for authentication (Deprecated)
             access_token (Optional[str]): Authentication token to use insead of
-                                          credentials
+                                          credentials (Deprecated)
+            auth (Auth)L Authentication object
             engine_name (Optional[str]): The name of the engine to connect to
             engine_url (Optional[str]): The engine endpoint to use
             account_name (Optional[str]): For customers with multiple accounts;
@@ -182,9 +195,13 @@ def async_connect_factory(connection_class: Type) -> Callable:
             raise ConfigurationError("database name is required to connect.")
 
         _validate_engine_name_and_url(engine_name, engine_url)
-        auth = _get_auth(
-            username, password, access_token, api_endpoint, use_token_cache
-        )
+
+        if not auth:
+            if any([username, password, access_token, api_endpoint, use_token_cache]):
+                logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
+                auth = _get_auth(username, password, access_token, use_token_cache)
+            else:
+                raise ConfigurationError("No authentication provided.")
         api_endpoint = fix_url_schema(api_endpoint)
 
         # Mypy checks, this should never happen
@@ -266,7 +283,7 @@ class BaseConnection:
         self,
         engine_url: str,
         database: str,
-        auth: AuthTypes,
+        auth: Auth,
         api_endpoint: str = DEFAULT_API_URL,
     ):
         # Override tcp keepalive settings for connection

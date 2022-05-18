@@ -6,11 +6,12 @@ from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db._types import ColType
-from firebolt.common.exception import ConfigurationError, ConnectionClosedError
+from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common.settings import Settings
-from firebolt.common.token_storage import TokenSecureStorage
-from firebolt.common.urls import ACCOUNT_ENGINE_BY_NAME_URL
 from firebolt.db import Connection, connect
+from firebolt.utils.exception import ConfigurationError, ConnectionClosedError
+from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.utils.urls import ACCOUNT_ENGINE_BY_NAME_URL
 
 
 def test_closed_connection(connection: Connection) -> None:
@@ -224,7 +225,7 @@ def test_connect_default_engine(
 
 
 def test_connection_unclosed_warnings():
-    c = Connection("", "", ("", ""), "")
+    c = Connection("", "", None, "")
     with warns(UserWarning) as winfo:
         del c
 
@@ -291,3 +292,34 @@ def test_connection_token_caching(
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"
+
+
+def test_connect_with_auth(
+    httpx_mock: HTTPXMock,
+    settings: Settings,
+    db_name: str,
+    check_credentials_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    access_token: str,
+) -> None:
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    for auth in (
+        UsernamePassword(
+            settings.user,
+            settings.password.get_secret_value(),
+            use_token_cache=False,
+        ),
+        Token(access_token),
+    ):
+        with connect(
+            auth=auth,
+            database=db_name,
+            engine_url=settings.server,
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+        ) as connection:
+            connection.cursor().execute("select*")

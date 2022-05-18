@@ -13,7 +13,7 @@ from firebolt.async_db.cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.common.util import AsyncJobThread, async_to_sync
+from firebolt.utils.util import AsyncJobThread, async_to_sync
 
 
 class Cursor(AsyncBaseCursor):

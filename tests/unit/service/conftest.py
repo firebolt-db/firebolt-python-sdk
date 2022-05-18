@@ -7,7 +7,16 @@ import pytest
 from httpx import Response
 
 from firebolt.common.settings import Settings
-from firebolt.common.urls import (
+from firebolt.model.binding import Binding, BindingKey
+from firebolt.model.database import Database, DatabaseKey
+from firebolt.model.engine import Engine, EngineKey, EngineSettings
+from firebolt.model.engine_revision import (
+    EngineRevision,
+    EngineRevisionSpecification,
+)
+from firebolt.model.instance_type import InstanceType, InstanceTypeKey
+from firebolt.model.region import Region
+from firebolt.utils.urls import (
     ACCOUNT_BINDINGS_URL,
     ACCOUNT_DATABASE_BINDING_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
@@ -19,15 +28,6 @@ from firebolt.common.urls import (
     PROVIDERS_URL,
     REGIONS_URL,
 )
-from firebolt.model.binding import Binding, BindingKey
-from firebolt.model.database import Database, DatabaseKey
-from firebolt.model.engine import Engine, EngineKey, EngineSettings
-from firebolt.model.engine_revision import (
-    EngineRevision,
-    EngineRevisionSpecification,
-)
-from firebolt.model.instance_type import InstanceType, InstanceTypeKey
-from firebolt.model.region import Region
 from tests.unit.util import list_to_paginated_response
 
 

@@ -1,6 +1,6 @@
 from firebolt.client import Client
-from firebolt.common.urls import PROVIDERS_URL
 from firebolt.model.provider import Provider
+from firebolt.utils.urls import PROVIDERS_URL
 
 
 def get_provider_id(client: Client) -> str:

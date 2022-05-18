@@ -12,7 +12,7 @@ from firebolt.async_db import (
     TimestampFromTicks,
 )
 from firebolt.async_db._types import parse_type, parse_value
-from firebolt.common.exception import DataError, NotSupportedError
+from firebolt.utils.exception import DataError, NotSupportedError
 
 
 def test_parse_type(types_map: Dict[str, type]) -> None:

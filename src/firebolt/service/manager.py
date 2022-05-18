@@ -1,15 +1,9 @@
 from typing import Optional
 
 from httpx import Timeout
-from httpx._types import AuthTypes
 
-from firebolt.client import (
-    Auth,
-    Client,
-    log_request,
-    log_response,
-    raise_on_4xx_5xx,
-)
+from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
+from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common import Settings
 from firebolt.service.provider import get_provider_id
 
@@ -35,16 +29,18 @@ class ResourceManager:
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or Settings()
 
-        auth: AuthTypes = None
-        if self.settings.access_token:
-            auth = Auth.from_token(self.settings.access_token)
-        else:
-            auth = Auth(
-                self.settings.user,
-                self.settings.password.get_secret_value(),
-                self.settings.server,
-                self.settings.use_token_cache,
-            )
+        auth = self.settings.auth
+
+        # Deprecated: we shouldn't support passing credentials after 1.0 release
+        if auth is None:
+            if self.settings.access_token:
+                auth = Token(self.settings.access_token)
+            else:
+                auth = UsernamePassword(
+                    self.settings.user,
+                    self.settings.password.get_secret_value(),
+                    self.settings.use_token_cache,
+                )
 
         self.client = Client(
             auth=auth,
@@ -52,12 +48,11 @@ class ResourceManager:
             account_name=self.settings.account_name,
             api_endpoint=self.settings.server,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
+            event_hooks={
+                "request": [log_request],
+                "response": [raise_on_4xx_5xx, log_response],
+            },
         )
-        self.client.event_hooks = {
-            "request": [log_request],
-            "response": [raise_on_4xx_5xx, log_response],
-        }
-
         self.account_id = self.client.account_id
         self._init_services()
 

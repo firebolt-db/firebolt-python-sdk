@@ -7,13 +7,13 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import ColType, Column, CursorState
-from firebolt.common.exception import (
+from firebolt.db import Cursor
+from firebolt.utils.exception import (
     CursorClosedError,
     DataError,
     OperationalError,
     QueryNotRunError,
 )
-from firebolt.db import Cursor
 from tests.unit.db_conftest import encode_param
 
 

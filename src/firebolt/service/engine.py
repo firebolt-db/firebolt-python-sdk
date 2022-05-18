@@ -1,14 +1,6 @@
 from logging import getLogger
 from typing import Any, Dict, List, Optional, Union
 
-from firebolt.common.exception import FireboltError
-from firebolt.common.urls import (
-    ACCOUNT_ENGINE_BY_NAME_URL,
-    ACCOUNT_ENGINE_URL,
-    ACCOUNT_ENGINES_URL,
-    ENGINES_BY_IDS_URL,
-)
-from firebolt.common.util import prune_dict
 from firebolt.model.engine import Engine, EngineSettings, _EngineCreateRequest
 from firebolt.model.engine_revision import (
     EngineRevision,
@@ -17,6 +9,14 @@ from firebolt.model.engine_revision import (
 from firebolt.model.region import Region
 from firebolt.service.base import BaseService
 from firebolt.service.types import EngineOrder, EngineType, WarmupMethod
+from firebolt.utils.exception import FireboltError
+from firebolt.utils.urls import (
+    ACCOUNT_ENGINE_BY_NAME_URL,
+    ACCOUNT_ENGINE_URL,
+    ACCOUNT_ENGINES_URL,
+    ENGINES_BY_IDS_URL,
+)
+from firebolt.utils.util import prune_dict
 
 logger = getLogger(__name__)
 

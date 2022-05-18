@@ -6,11 +6,11 @@ from typing import TYPE_CHECKING, Any, List, Optional, Sequence
 
 from pydantic import Field, PrivateAttr
 
-from firebolt.common.exception import AttachedEngineInUseError
-from firebolt.common.urls import ACCOUNT_DATABASE_URL
 from firebolt.model import FireboltBaseModel
 from firebolt.model.region import RegionKey
 from firebolt.service.types import EngineStatusSummary
+from firebolt.utils.exception import AttachedEngineInUseError
+from firebolt.utils.urls import ACCOUNT_DATABASE_URL
 
 if TYPE_CHECKING:
     from firebolt.model.binding import Binding

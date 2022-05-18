@@ -4,7 +4,7 @@ from unittest.mock import patch
 from appdirs import user_config_dir
 from pyfakefs.fake_filesystem import FakeFilesystem
 
-from firebolt.common.token_storage import (
+from firebolt.utils.token_storage import (
     FernetEncrypter,
     TokenSecureStorage,
     generate_salt,
@@ -51,7 +51,7 @@ def test_encrypter_wrong_parameter():
     assert encrypter2.decrypt(encrypted_token) == token
 
 
-@patch("firebolt.common.token_storage.time", return_value=0)
+@patch("firebolt.utils.token_storage.time", return_value=0)
 def test_token_storage_happy_path(fs: FakeFilesystem):
     """
     Test storage happy path cache token and get token
@@ -69,7 +69,7 @@ def test_token_storage_happy_path(fs: FakeFilesystem):
     assert token == TokenSecureStorage(**settings).get_cached_token()
 
 
-@patch("firebolt.common.token_storage.time", return_value=0)
+@patch("firebolt.utils.token_storage.time", return_value=0)
 def test_token_storage_wrong_parameter(fs: FakeFilesystem):
     """
     Test getting token with different username or password
@@ -106,7 +106,7 @@ def test_token_storage_json_broken(fs: FakeFilesystem):
     assert TokenSecureStorage(**settings).get_cached_token() is None
 
 
-@patch("firebolt.common.token_storage.time", return_value=0)
+@patch("firebolt.utils.token_storage.time", return_value=0)
 def test_multiple_tokens(fs: FakeFilesystem) -> None:
     """
     Check that the TokenSecureStorage properly handles multiple tokens hashed
@@ -135,7 +135,7 @@ def test_multiple_tokens(fs: FakeFilesystem) -> None:
     assert st2.get_cached_token() == token2
 
 
-@patch("firebolt.common.token_storage.time", return_value=0)
+@patch("firebolt.utils.token_storage.time", return_value=0)
 def test_expired_token(fs: FakeFilesystem) -> None:
     """
     Check that TokenSecureStorage ignores expired tokens

@@ -15,7 +15,9 @@ from firebolt.async_db._types import (
     Timestamp,
     TimestampFromTicks,
 )
-from firebolt.common.exception import (
+from firebolt.db.connection import Connection, connect
+from firebolt.db.cursor import Cursor
+from firebolt.utils.exception import (
     DatabaseError,
     DataError,
     Error,
@@ -27,8 +29,6 @@ from firebolt.common.exception import (
     ProgrammingError,
     Warning,
 )
-from firebolt.db.connection import Connection, connect
-from firebolt.db.cursor import Cursor
 
 apilevel = "2.0"
 threadsafety = 3  # threads may share the module, connections and cursors

@@ -1,6 +1,6 @@
-from firebolt.common.urls import ACCOUNT_ENGINE_REVISION_URL
 from firebolt.model.engine_revision import EngineRevision, EngineRevisionKey
 from firebolt.service.base import BaseService
+from firebolt.utils.urls import ACCOUNT_ENGINE_REVISION_URL
 
 
 class EngineRevisionService(BaseService):

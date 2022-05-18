@@ -2,7 +2,7 @@ from httpx import ConnectError
 from pytest import mark, raises
 
 from firebolt.async_db import Connection, connect
-from firebolt.common.exception import (
+from firebolt.utils.exception import (
     AccountNotFoundError,
     AuthenticationError,
     EngineNotRunningError,

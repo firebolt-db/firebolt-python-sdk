@@ -7,7 +7,10 @@ from pydantic import SecretStr
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.common.exception import (
+from firebolt.common.settings import Settings
+from firebolt.model.provider import Provider
+from firebolt.model.region import Region, RegionKey
+from firebolt.utils.exception import (
     DatabaseError,
     DataError,
     Error,
@@ -19,8 +22,7 @@ from firebolt.common.exception import (
     ProgrammingError,
     Warning,
 )
-from firebolt.common.settings import Settings
-from firebolt.common.urls import (
+from firebolt.utils.urls import (
     ACCOUNT_BY_NAME_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
@@ -31,8 +33,6 @@ from firebolt.common.urls import (
     ENGINES_URL,
     PROVIDERS_URL,
 )
-from firebolt.model.provider import Provider
-from firebolt.model.region import Region, RegionKey
 from tests.unit.db_conftest import *  # noqa
 from tests.unit.util import list_to_paginated_response
 
@@ -134,7 +134,7 @@ def auth_callback(auth_url: str) -> Callable:
 
 @fixture
 def auth_url(settings: Settings) -> str:
-    return AUTH_URL.format(api_endpoint=f"https://{settings.server}")
+    return f"https://{settings.server}{AUTH_URL}"
 
 
 @fixture

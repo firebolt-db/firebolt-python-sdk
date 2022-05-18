@@ -27,12 +27,12 @@ except ImportError:
         return datetime.fromisoformat(date_string)
 
 
-from firebolt.common.exception import (
+from firebolt.utils.exception import (
     DataError,
     InterfaceError,
     NotSupportedError,
 )
-from firebolt.common.util import cached_property
+from firebolt.utils.util import cached_property
 
 _NoneType = type(None)
 _col_types = (int, float, str, datetime, date, bool, list, Decimal, _NoneType)

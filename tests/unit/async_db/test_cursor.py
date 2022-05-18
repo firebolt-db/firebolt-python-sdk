@@ -9,7 +9,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db import Cursor
 from firebolt.async_db._types import Column
 from firebolt.async_db.cursor import ColType, CursorState
-from firebolt.common.exception import (
+from firebolt.utils.exception import (
     CursorClosedError,
     DataError,
     EngineNotRunningError,

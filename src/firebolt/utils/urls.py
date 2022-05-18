@@ -1,4 +1,4 @@
-AUTH_URL = "{api_endpoint}/auth/v1/login"
+AUTH_URL = "/auth/v1/login"
 
 DATABASES_URL = "/core/v1/account/databases"
 

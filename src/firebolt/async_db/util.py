@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 
 from httpx import URL, Response
 
-from firebolt.common.urls import DATABASES_URL, ENGINES_URL
+from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection

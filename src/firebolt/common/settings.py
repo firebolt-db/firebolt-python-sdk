@@ -1,4 +1,21 @@
+import logging
+
 from pydantic import BaseSettings, Field, SecretStr, root_validator
+
+from firebolt.client.auth import Auth
+
+logger = logging.getLogger(__name__)
+
+AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly in Settings is deprecated.
+ Please consider passing Auth object instead.
+ Examples:
+  >>> from firebolt.client.auth import UsernamePassword
+  >>> ...
+  >>> settings = Settings(auth=UsernamePassword(username, password), ...)
+ or
+  >>> from firebolt.client.auth import Token
+  >>> ...
+  >>> settings = Settings(auth=Token(access_token), ...)"""
 
 
 class Settings(BaseSettings):
@@ -16,6 +33,7 @@ class Settings(BaseSettings):
         default_region (str): Default region for provisioning
     """
 
+    auth: Auth = Field(None)
     # Authorization
     user: str = Field(None, env="FIREBOLT_USER")
     password: SecretStr = Field(None, env="FIREBOLT_PASSWORD")
@@ -45,9 +63,19 @@ class Settings(BaseSettings):
         Raises:
             ValueError: Either both or none of credentials and token are provided
         """
-        if values["user"] or values["password"]:
-            if values["access_token"]:
-                raise ValueError("Provide only one of user/password or access_token")
-        elif not values["access_token"]:
-            raise ValueError("Provide either user/password or access_token")
+
+        params_present = (
+            values.get("user") is not None or values.get("password") is not None,
+            values.get("access_token") is not None,
+            values.get("auth") is not None,
+        )
+        if sum(params_present) == 0:
+            raise ValueError(
+                "Provide at least one of auth, user/password or access_token"
+            )
+        if sum(params_present) > 1:
+            raise ValueError("Provide only one of auth, user/password or access_token")
+        if any(values.get(f) for f in ("user", "password", "access_token")):
+            logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
+
         return values

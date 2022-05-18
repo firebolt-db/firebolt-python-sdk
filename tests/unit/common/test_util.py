@@ -3,7 +3,7 @@ from threading import Thread
 
 from pytest import mark, raises
 
-from firebolt.common.util import async_to_sync
+from firebolt.utils.util import async_to_sync
 
 
 def test_async_to_sync_happy_path():
