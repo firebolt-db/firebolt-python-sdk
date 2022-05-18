@@ -48,10 +48,11 @@ class Cursor(AsyncBaseCursor):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
+        skip_parsing: bool = False,
     ) -> int:
         with self._query_lock.gen_wlock():
             return async_to_sync(super().execute, self._async_job_thread)(
-                query, parameters, set_parameters
+                query, parameters, set_parameters, skip_parsing
             )
 
     @wraps(AsyncBaseCursor.executemany)
