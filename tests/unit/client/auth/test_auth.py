@@ -1,4 +1,5 @@
 from types import MethodType
+from unittest.mock import PropertyMock, patch
 
 from httpx import Request, codes
 from pyfakefs.fake_filesystem_unittest import Patcher
@@ -89,12 +90,6 @@ def test_auth_token_storage(
     test_password: str,
     test_token,
 ) -> None:
-    # Hack to replace Auth._token_cache attribute
-    class MAuth(Auth):
-        @property
-        def _token_storage(self):
-            return TokenSecureStorage(test_username, test_password)
-
     # Mock auth flow
     def set_token(token: str) -> callable:
         def inner(self):
@@ -106,8 +101,12 @@ def test_auth_token_storage(
 
     url = "https://host"
     httpx_mock.add_response(status_code=codes.OK, url=url)
-    with Patcher():
-        auth = MAuth(use_token_cache=True)
+    with Patcher(), patch(
+        "firebolt.client.auth.base.Auth._token_storage",
+        new_callable=PropertyMock,
+        return_value=TokenSecureStorage(test_username, test_password),
+    ):
+        auth = Auth(use_token_cache=True)
         # Get token
         auth.get_new_token_generator = MethodType(set_token(test_token), auth)
         execute_generator_requests(auth.auth_flow(Request("GET", url)))
@@ -115,8 +114,12 @@ def test_auth_token_storage(
         st = TokenSecureStorage(test_username, test_password)
         assert st.get_cached_token() == test_token, "Invalid token value cached"
 
-    with Patcher():
-        auth = MAuth(use_token_cache=False)
+    with Patcher(), patch(
+        "firebolt.client.auth.base.Auth._token_storage",
+        new_callable=PropertyMock,
+        return_value=TokenSecureStorage(test_username, test_password),
+    ):
+        auth = Auth(use_token_cache=False)
         # Get token
         auth.get_new_token_generator = MethodType(set_token(test_token), auth)
         execute_generator_requests(auth.auth_flow(Request("GET", url)))

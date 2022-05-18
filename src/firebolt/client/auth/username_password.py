@@ -79,6 +79,8 @@ class UsernamePassword(Auth):
         try:
             response = yield self.request_class(
                 "POST",
+                # The full url is generated on client side by attaching
+                # it to api_endpoint
                 AUTH_URL,
                 headers={
                     "Content-Type": "application/json;charset=UTF-8",
