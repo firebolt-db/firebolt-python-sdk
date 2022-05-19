@@ -21,7 +21,7 @@ def test_auth_username_password(
     """Auth can retrieve token and expiration values."""
     httpx_mock.add_callback(check_credentials_callback)
 
-    mocker.patch("firebolt.client.auth.username_password.time", return_value=0)
+    mocker.patch("firebolt.client.auth.request_based.time", return_value=0)
     auth = UsernamePassword(test_username, test_password)
     execute_generator_requests(auth.get_new_token_generator())
     assert auth.token == test_token, "invalid access token"
