@@ -4,9 +4,10 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark
 from pytest_httpx import HTTPXMock
 
+from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common.settings import Settings
-from firebolt.common.token_storage import TokenSecureStorage
 from firebolt.service.manager import ResourceManager
+from firebolt.utils.token_storage import TokenSecureStorage
 
 
 def test_rm_credentials(
@@ -39,6 +40,24 @@ def test_rm_credentials(
     )
 
     rm = ResourceManager(token_settings)
+    rm.client.get(url)
+
+    auth_username_password_settings = Settings(
+        auth=UsernamePassword(settings.user, settings.password.get_secret_value()),
+        server=settings.server,
+        default_region=settings.default_region,
+    )
+
+    rm = ResourceManager(auth_username_password_settings)
+    rm.client.get(url)
+
+    auth_token_settings = Settings(
+        auth=Token(access_token),
+        server=settings.server,
+        default_region=settings.default_region,
+    )
+
+    rm = ResourceManager(auth_token_settings)
     rm.client.get(url)
 
 

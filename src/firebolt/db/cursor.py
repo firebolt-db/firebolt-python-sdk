@@ -13,7 +13,7 @@ from firebolt.async_db.cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.common.util import AsyncJobThread, async_to_sync
+from firebolt.utils.util import AsyncJobThread, async_to_sync
 
 
 class Cursor(AsyncBaseCursor):
@@ -48,10 +48,11 @@ class Cursor(AsyncBaseCursor):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
+        skip_parsing: bool = False,
     ) -> int:
         with self._query_lock.gen_wlock():
             return async_to_sync(super().execute, self._async_job_thread)(
-                query, parameters, set_parameters
+                query, parameters, set_parameters, skip_parsing
             )
 
     @wraps(AsyncBaseCursor.executemany)

@@ -17,7 +17,7 @@ from firebolt.async_db._types import (
 )
 from firebolt.async_db.connection import Connection, connect
 from firebolt.async_db.cursor import Cursor
-from firebolt.common.exception import (
+from firebolt.utils.exception import (
     DatabaseError,
     DataError,
     Error,
