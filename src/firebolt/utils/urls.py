@@ -1,4 +1,5 @@
 AUTH_URL = "/auth/v1/login"
+TOKEN_AUTH_URL = "/auth/v1/token"
 
 DATABASES_URL = "/core/v1/account/databases"
 

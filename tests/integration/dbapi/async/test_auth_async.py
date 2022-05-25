@@ -8,9 +8,9 @@ from firebolt.utils.exception import AuthenticationError
 
 @mark.skip(reason="flaky, token not updated each time")
 @mark.asyncio
-async def test_refresh_token(connection: Connection) -> None:
+async def test_refresh_token(any_auth_connection: Connection) -> None:
     """Auth refreshes token on expiration/invalidation"""
-    with connection.cursor() as c:
+    with any_auth_connection.cursor() as c:
         # Works fine
         await c.execute("show tables")
 
@@ -30,16 +30,18 @@ async def test_refresh_token(connection: Connection) -> None:
 
 
 @mark.asyncio
-async def test_credentials_invalidation(connection: Connection) -> None:
+async def test_credentials_invalidation(any_auth_connection: Connection) -> None:
     """Auth raises Authentication Error on credentials invalidation"""
-    with connection.cursor() as c:
+    with any_auth_connection.cursor() as c:
         # Works fine
         await c.execute("show tables")
 
         # Invalidate the token
         c._client.auth._token += "_"
-        c._client.auth.username += "_"
-        c._client.auth.password += "_"
+        # Invalidate credentials
+        for cred in ("username", "password", "client_id", "client_secret"):
+            if hasattr(c._client.auth, cred):
+                setattr(c._client.auth, cred, "_")
 
         with raises(AuthenticationError) as exc_info:
             await c.execute("show tables")

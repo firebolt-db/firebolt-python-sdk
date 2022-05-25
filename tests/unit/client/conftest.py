@@ -70,7 +70,13 @@ def check_service_account_credentials_callback(
         **kwargs,
     ) -> Response:
         assert request, "empty request"
-        body = json.loads(request.read())
+
+        body = {
+            k: v
+            for k, v in [
+                pair.split("=") for pair in request.read().decode("utf-8").split("&")
+            ]
+        }
         assert "client_id" in body, "Missing client_id"
         assert body["client_id"] == client_id, "Invalid client_id"
         assert "client_secret" in body, "Missing client_secret"

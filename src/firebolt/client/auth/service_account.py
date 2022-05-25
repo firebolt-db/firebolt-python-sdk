@@ -4,7 +4,7 @@ from httpx import Request
 
 from firebolt.client.auth.request_based import _RequestBased
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.urls import AUTH_URL
+from firebolt.utils.urls import TOKEN_AUTH_URL
 from firebolt.utils.util import cached_property
 
 
@@ -69,12 +69,11 @@ class ServiceAccount(_RequestBased):
             "POST",
             # The full url is generated on client side by attaching
             # it to api_endpoint
-            AUTH_URL,
+            TOKEN_AUTH_URL,
             headers={
-                "Content-Type": "application/json;charset=UTF-8",
                 "User-Agent": "firebolt-sdk",
             },
-            json={
+            data={
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
                 "grant_type": "client_credentials",

@@ -16,36 +16,6 @@ def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
     ), f"{msg}: {got}(got) != {expected}(expected)"
 
 
-def test_connect_engine_name(
-    connection_engine_name: Connection,
-    all_types_query: str,
-    all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
-) -> None:
-    """Connecting with engine name is handled properly."""
-    test_select(
-        connection_engine_name,
-        all_types_query,
-        all_types_query_description,
-        all_types_query_response,
-    )
-
-
-def test_connect_no_engine(
-    connection_no_engine: Connection,
-    all_types_query: str,
-    all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
-) -> None:
-    """Connecting with engine name is handled properly."""
-    test_select(
-        connection_no_engine,
-        all_types_query,
-        all_types_query_description,
-        all_types_query_response,
-    )
-
-
 def test_select(
     connection: Connection,
     all_types_query: str,
@@ -336,3 +306,15 @@ def test_set_invalid_parameter(connection: Connection):
             c.execute("set some_invalid_parameter = 1")
 
         assert len(c._set_parameters) == 0
+
+
+def test_all_auths_queries(any_auth_connection: Connection) -> None:
+    """All auth types are handled by a connection properly"""
+    with any_auth_connection.cursor() as c:
+        assert c.execute("select 1") == 1
+
+
+def test_all_engines_queries(any_engine_connection: Connection) -> None:
+    """All engine parameters are handled by a connection properly"""
+    with any_engine_connection.cursor() as c:
+        assert c.execute("select 1") == 1
