@@ -1,6 +1,9 @@
-from typing import Callable
+from asyncio import gather
+from re import compile
+from types import MethodType
+from typing import Any, Callable
 
-from httpx import codes
+from httpx import Response, codes
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
@@ -119,3 +122,37 @@ async def test_client_account_id(
         api_endpoint=settings.server,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
+
+
+@mark.asyncio
+async def test_concurent_auth_lock(
+    httpx_mock: HTTPXMock,
+    test_username: str,
+    test_password: str,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    check_token_callback: Callable,
+    settings: Settings,
+) -> None:
+    CONCURENT_COUNT = 10
+    url = "https://url"
+
+    call_count = 0
+
+    async def mock_send_handling_redirects(self, *args: Any, **kwargs: Any) -> Response:
+        nonlocal call_count
+        call_count += 1
+        return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
+
+    httpx_mock.add_callback(check_token_callback, url=compile(f"{url}/."))
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+
+    async with AsyncClient(
+        auth=UsernamePassword(test_username, test_password),
+        api_endpoint=settings.server,
+    ) as c:
+        c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
+        await gather(*[c.get(f"{url}/{i}") for i in range(CONCURENT_COUNT)])
+
+    # 1 authorization request + CONCURENT_COUNT of GET requestsx
+    assert call_count == 1 + CONCURENT_COUNT
