@@ -37,6 +37,8 @@ jobs:
         env:
           USER_NAME: ${{ secrets.FIREBOLT_USERNAME }}
           PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+          CLIENT_ID: ${{ secrets.FIREBOLT_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
