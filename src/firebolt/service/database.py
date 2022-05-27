@@ -1,16 +1,16 @@
 import logging
 from typing import List, Optional, Union
 
-from firebolt.common.urls import (
-    ACCOUNT_DATABASE_BY_NAME_URL,
-    ACCOUNT_DATABASE_URL,
-    ACCOUNT_DATABASES_URL,
-)
-from firebolt.common.util import prune_dict
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
 from firebolt.service.base import BaseService
 from firebolt.service.types import DatabaseOrder
+from firebolt.utils.urls import (
+    ACCOUNT_DATABASE_BY_NAME_URL,
+    ACCOUNT_DATABASE_URL,
+    ACCOUNT_DATABASES_URL,
+)
+from firebolt.utils.util import prune_dict
 
 logger = logging.getLogger(__name__)
 

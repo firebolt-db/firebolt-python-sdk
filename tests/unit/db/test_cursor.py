@@ -1,18 +1,19 @@
 from inspect import cleandoc
 from typing import Callable, Dict, List
+from unittest.mock import patch
 
 from httpx import HTTPStatusError, StreamError, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import ColType, Column, CursorState
-from firebolt.common.exception import (
+from firebolt.db import Cursor
+from firebolt.utils.exception import (
     CursorClosedError,
     DataError,
     OperationalError,
     QueryNotRunError,
 )
-from firebolt.db import Cursor
 from tests.unit.db_conftest import encode_param
 
 
@@ -518,3 +519,24 @@ def test_cursor_set_parameters_sent(
 
     httpx_mock.add_callback(query_with_params_callback, url=f"{query_url}{params}")
     cursor.execute("select 1")
+
+
+def test_cursor_skip_parse(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_url: str,
+    query_callback: Callable,
+    cursor: Cursor,
+):
+    """Cursor doesn't process a query if skip_parsing is provided"""
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    with patch("firebolt.async_db.cursor.split_format_sql") as split_format_sql_mock:
+        cursor.execute("non-an-actual-sql")
+        split_format_sql_mock.assert_called_once()
+
+    with patch("firebolt.async_db.cursor.split_format_sql") as split_format_sql_mock:
+        cursor.execute("non-an-actual-sql", skip_parsing=True)
+        split_format_sql_mock.assert_not_called()

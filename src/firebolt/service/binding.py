@@ -1,16 +1,16 @@
 import logging
 from typing import List, Optional
 
-from firebolt.common.exception import AlreadyBoundError
-from firebolt.common.urls import (
-    ACCOUNT_BINDINGS_URL,
-    ACCOUNT_DATABASE_BINDING_URL,
-)
-from firebolt.common.util import prune_dict
 from firebolt.model.binding import Binding, BindingKey
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
 from firebolt.service.base import BaseService
+from firebolt.utils.exception import AlreadyBoundError
+from firebolt.utils.urls import (
+    ACCOUNT_BINDINGS_URL,
+    ACCOUNT_DATABASE_BINDING_URL,
+)
+from firebolt.utils.util import prune_dict
 
 logger = logging.getLogger(__name__)
 
