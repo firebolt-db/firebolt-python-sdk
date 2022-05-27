@@ -31,7 +31,7 @@ Optional features
 
 By default, the Firebolt Python SDK uses the ``datetime`` module to parse date and datetime values. For large operations involving date and datetime values, the Python SDK can achieve faster results by using the `ciso8601 <https://pypi.org/project/ciso8601/>`_ package, however this can cause installation issues in some cases.  
 
-To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install firebolt-sdk[ciso8601]``.
+To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install "firebolt-sdk[ciso8601]"``.
 
 
 Release notes
