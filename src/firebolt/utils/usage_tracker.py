@@ -10,41 +10,57 @@ from firebolt import __version__
 logger = logging.getLogger(__name__)
 
 
-def os_compare(file: str, path: str) -> bool:
-    return file.endswith(path) or file.endswith(path.replace("/", "\\"))
+def _os_compare(file: str, expected: str) -> bool:
+    """
+    System-independent path comparison.
+
+    Args:
+        file: file path to check against
+        expected: expected file path
+
+    Returns:
+        True if file ends with path
+    """
+    return file.endswith(expected) or file.endswith(expected.replace("/", "\\"))
 
 
-def is_cli(func: str, file: str) -> bool:
-    return func == "create_connection" and os_compare(file, "firebolt_cli/utils.py")
+def _is_cli(func: str, file: str) -> bool:
+    return func == "create_connection" and _os_compare(file, "firebolt_cli/utils.py")
 
 
-def is_alchemy(func: str, file: str) -> bool:
-    return func == "connect" and os_compare(file, "sqlalchemy/engine/default.py")
+def _is_alchemy(func: str, file: str) -> bool:
+    return func == "connect" and _os_compare(file, "sqlalchemy/engine/default.py")
 
 
-def is_airbyte_source(func: str, file: str) -> bool:
+def _is_airbyte_source(func: str, file: str) -> bool:
     return (
         func == "establish_connection" or func == "establish_async_connection"
-    ) and os_compare(file, "source_firebolt/source.py")
+    ) and _os_compare(file, "source_firebolt/source.py")
 
 
-def is_airbyte_destination(func: str, file: str) -> bool:
+def _is_airbyte_destination(func: str, file: str) -> bool:
     return (
         func == "establish_connection" or func == "establish_async_connection"
-    ) and os_compare(file, "destination_firebolt/destination.py")
+    ) and _os_compare(file, "destination_firebolt/destination.py")
 
 
-def is_airflow(func: str, file: str) -> bool:
-    return func == "get_conn" and os_compare(
+def _is_airflow(func: str, file: str) -> bool:
+    return func == "get_conn" and _os_compare(
         file, "firebolt_provider/hooks/firebolt.py"
     )
 
 
-def is_dbt(func: str, file: str) -> bool:
-    return func == "open" and os_compare(file, "dbt/adapters/firebolt/connections.py")
+def _is_dbt(func: str, file: str) -> bool:
+    return func == "open" and _os_compare(file, "dbt/adapters/firebolt/connections.py")
 
 
 def get_sdk_properties() -> Tuple[str, str, str, str]:
+    """
+    Detect Python, OS and SDK versions.
+
+    Returns:
+        Python version, SDK version, OS name and "ciso" if imported
+    """
     py_version = python_version()
     sdk_version = __version__
     os_version = f"{system()} {release()}"
@@ -60,28 +76,31 @@ def get_sdk_properties() -> Tuple[str, str, str, str]:
 
 
 class UsageTracker:
+    """
+    Tracking SDK usage by detecting the parent connector and system specs.
+    """
     def __init__(self) -> None:
         self.connectors: Dict[str, str] = {}
         stack = inspect.stack()
         for f in stack:
             try:
-                if is_cli(f.function, f.filename):
+                if _is_cli(f.function, f.filename):
                     from firebolt_cli import __version__  # type: ignore
 
                     self.connectors["FireboltCLI"] = __version__
-                elif is_alchemy(f.function, f.filename):
+                elif _is_alchemy(f.function, f.filename):
                     from firebolt_db import __version__  # type: ignore
 
                     self.connectors["SQLAlchemy"] = __version__
-                elif is_airbyte_source(f.function, f.filename):
+                elif _is_airbyte_source(f.function, f.filename):
                     self.connectors["AibyteSource"] = ""  # TODO: version?
-                elif is_airbyte_destination(f.function, f.filename):
+                elif _is_airbyte_destination(f.function, f.filename):
                     self.connectors["AibyteDestination"] = ""
-                elif is_airflow(f.function, f.filename):
+                elif _is_airflow(f.function, f.filename):
                     from firebolt_provider import __version__  # type: ignore
 
                     self.connectors["Airflow"] = __version__
-                elif is_dbt(f.function, f.filename):
+                elif _is_dbt(f.function, f.filename):
                     from dbt.adapters.firebolt import (  # type: ignore
                         __version__,
                     )
@@ -93,15 +112,29 @@ class UsageTracker:
                 )
         logger.debug("Detected running from packages: %s", str(self.connectors))
 
-    def add_connector_information(self, caller: str, version: str) -> None:
-        self.connectors[caller] = version
+    def add_connector_information(self, connector: str, version: str) -> None:
+        """
+        Manually add/override a connector for tracking. Useful for tracing
+        unofficial implementations or improving the auto-detected information.
+
+        Args:
+            connector: Connector name
+            version: Relevant version e.g. "1.0.1-alpha"
+        """
+        self.connectors[connector] = version
         # Invalidate cache
         if getattr(self, "user_agent"):
             del self.user_agent
-        logger.debug("Manually added: %s ver:%s", caller, version)
+        logger.debug("Manually added: %s ver:%s", connector, version)
 
     @cached_property
     def user_agent(self) -> str:
+        """
+        Return a representation of a stored tracking data as a user-agent header.
+
+        Returns:
+            String of the current detected connector stack.
+        """
         py, sdk, os, ciso = get_sdk_properties()
         sdk_format = f"PythonSDK/{sdk} (Python {py}; {os}; {ciso})"
         connector_format = " ".join(
