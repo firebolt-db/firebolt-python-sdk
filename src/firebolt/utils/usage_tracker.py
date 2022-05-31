@@ -79,6 +79,7 @@ class UsageTracker:
     """
     Tracking SDK usage by detecting the parent connector and system specs.
     """
+
     def __init__(self) -> None:
         self.connectors: Dict[str, str] = {}
         stack = inspect.stack()
@@ -93,8 +94,12 @@ class UsageTracker:
 
                     self.connectors["SQLAlchemy"] = __version__
                 elif _is_airbyte_source(f.function, f.filename):
-                    self.connectors["AibyteSource"] = ""  # TODO: version?
+                    # Airbyte version is stored in a Docker label,
+                    # can't easily extract it
+                    self.connectors["AibyteSource"] = ""
                 elif _is_airbyte_destination(f.function, f.filename):
+                    # Airbyte version is stored in a Docker label,
+                    # can't easily extract it
                     self.connectors["AibyteDestination"] = ""
                 elif _is_airflow(f.function, f.filename):
                     from firebolt_provider import __version__  # type: ignore

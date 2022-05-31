@@ -6,7 +6,7 @@ from subprocess import PIPE, run
 from pytest import fixture, mark
 
 TEST_FOLDER = "tmp_test_code/"
-TEST_SCRIPT_MODEL = "tests/integration/utils/sample_usage_test.py"
+TEST_SCRIPT_MODEL = "tests/integration/utils/sample_usage.model"
 
 
 MOCK_MODULES = [
