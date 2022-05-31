@@ -283,7 +283,7 @@ class BaseCursor:
                 **(set_parameters or dict()),
             },
             content=query,
-            headers={"User-Agent": self.connection.usage_tracker.user_agent}
+            headers={"User-Agent": self.connection.usage_tracker.user_agent},
         )
 
     async def _do_execute(
