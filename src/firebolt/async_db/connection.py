@@ -24,6 +24,7 @@ from firebolt.utils.urls import (
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
+from firebolt.utils.usage_tracker import UsageTracker
 from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
@@ -289,6 +290,7 @@ class BaseConnection:
         "engine_url",
         "api_endpoint",
         "_is_closed",
+        "usage_tracker",
     )
 
     def __init__(
@@ -301,7 +303,6 @@ class BaseConnection:
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
-
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,
@@ -314,6 +315,7 @@ class BaseConnection:
         self.database = database
         self._cursors: List[BaseCursor] = []
         self._is_closed = False
+        self.usage_tracker = UsageTracker()
 
     def _cursor(self, **kwargs: Any) -> BaseCursor:
         """
