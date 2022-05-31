@@ -1,4 +1,5 @@
 from asyncio import gather
+from asyncio import sleep as asleep
 from re import Pattern, compile
 from types import MethodType
 from typing import Any, Callable
@@ -139,6 +140,7 @@ async def test_concurent_auth_lock(
     async def mock_send_handling_redirects(self, *args: Any, **kwargs: Any) -> Response:
         nonlocal call_count
         call_count += 1
+        await asleep(0.01)
         return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
 
     httpx_mock.add_callback(check_token_callback, url=compile(f"{url}/."))
