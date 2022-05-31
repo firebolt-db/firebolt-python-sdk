@@ -128,7 +128,7 @@ class UsageTracker:
         """
         self.connectors[connector] = version
         # Invalidate cache
-        UsageTracker.user_agent.fget.cache_clear()
+        UsageTracker.user_agent.fget.cache_clear()  # type: ignore
         logger.debug("Manually added: %s ver:%s", connector, version)
 
     @cached_property
