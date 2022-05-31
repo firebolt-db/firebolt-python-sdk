@@ -23,7 +23,6 @@ def create_cli_mock():
         os.makedirs(os.path.dirname(f"{TEST_FOLDER}{file}"))
         with open(f"{TEST_FOLDER}{file}", "w") as f:
             f.write(f"__version__ = '1.0.{i}'")
-    Path(f"{TEST_FOLDER}firebolt_provider/hooks/__init__.py").touch()
     # Additional setup for proper dbt import
     Path(f"{TEST_FOLDER}dbt/adapters/firebolt/dbt/__init__.py").touch()
     Path(f"{TEST_FOLDER}/dbt/adapters/firebolt/dbt/adapters/__init__.py").touch()
@@ -31,9 +30,13 @@ def create_cli_mock():
     rmtree(TEST_FOLDER)
 
 
-def create_test_file(function_name: str, file_path: str):
+@fixture(scope="module")
+def test_model():
     with open(TEST_SCRIPT_MODEL) as f:
-        code = f.read()
+        return f.read()
+
+
+def create_test_file(code: str, function_name: str, file_path: str):
     code = code.format(function_name=function_name)
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     with open(file_path, "w") as f:
@@ -61,9 +64,9 @@ def create_test_file(function_name: str, file_path: str):
         ("open", "dbt/adapters/firebolt/connections.py", "DBT/1.0.3"),
     ],
 )
-def test_usage_detection(function, path, expected):
+def test_usage_detection(function, path, expected, test_model):
     test_path = TEST_FOLDER + path
-    create_test_file(function, test_path)
+    create_test_file(test_model, function, test_path)
     result = run(
         ["python3", test_path],
         stdout=PIPE,
