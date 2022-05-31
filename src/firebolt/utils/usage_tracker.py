@@ -128,8 +128,7 @@ class UsageTracker:
         """
         self.connectors[connector] = version
         # Invalidate cache
-        if getattr(self, "user_agent"):
-            del self.user_agent
+        UsageTracker.user_agent.fget.cache_clear()
         logger.debug("Manually added: %s ver:%s", connector, version)
 
     @cached_property
