@@ -1,11 +1,11 @@
 import inspect
 import logging
-from functools import cached_property
 from platform import python_version, release, system
 from sys import modules
 from typing import Dict, Tuple
 
 from firebolt import __version__
+from firebolt.utils.util import cached_property
 
 logger = logging.getLogger(__name__)
 
