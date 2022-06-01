@@ -3,7 +3,11 @@ from unittest.mock import MagicMock, patch
 
 from pytest import mark
 
-from firebolt.utils.usage_tracker import UsageTracker, get_sdk_properties
+from firebolt.utils.usage_tracker import (
+    Format,
+    UsageTracker,
+    get_sdk_properties,
+)
 
 
 @patch("firebolt.utils.usage_tracker.python_version", MagicMock(return_value="3.10.1"))
@@ -100,34 +104,34 @@ def test_detect_connectors(stack, expected):
 
 
 def test_add_connector():
-    ut = UsageTracker()
-    ut.add_connector_information("MyAwesomeConnector", "0.1.1")
+    ut = UsageTracker(("MyAwesomeConnector", "0.1.1"))
     assert "MyAwesomeConnector" in ut.connectors
     assert ut.connectors["MyAwesomeConnector"] == "0.1.1"
 
 
-@patch("firebolt.utils.usage_tracker.get_sdk_properties")
-def test_user_agent(mock_properties):
-    ut = UsageTracker()
-    mock_properties.return_value = ("1", "2", "Win", "ciso")
-    ut.connectors = {"ConnectorA": "0.1.1", "ConnectorB": "0.2.0"}
-    assert (
-        ut.user_agent
-        == "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0"
-    )
-    # Check consecutive calls are cached
-    mock_properties.assert_called_once()
-    mock_properties.reset_mock()
-    assert (
-        ut.user_agent
-        == "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0"
-    )
-    mock_properties.assert_not_called()
-    mock_properties.reset_mock()
-    # Adding new connector resets the cache
-    ut.add_connector_information("ConnectorC", "0.3.0")
-    assert (
-        ut.user_agent
-        == "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0 ConnectorC/0.3.0"
-    )
-    mock_properties.assert_called_once()
+def test_add_connector_list():
+    connectors = [("MyAwesomeConnector", "0.1.1"), ("MyLessAwesomeConnector", "0.0.1")]
+    ut = UsageTracker(connectors)
+    for name, version in connectors:
+        assert name in ut.connectors
+        assert ut.connectors[name] == version
+
+
+@mark.parametrize(
+    "connectors,expected_string",
+    [
+        (None, "PythonSDK/2 (Python 1; Win; ciso)"),
+        (("ConnectorA", "0.1.1"), "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1"),
+        (
+            [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
+            "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
+        ),
+    ],
+)
+@patch(
+    "firebolt.utils.usage_tracker.get_sdk_properties",
+    MagicMock(return_value=("1", "2", "Win", "ciso")),
+)
+def test_user_agent(connectors, expected_string):
+    ut = UsageTracker(connectors)
+    assert ut.format(Format.USER_AGENT) == expected_string

@@ -1,13 +1,17 @@
 import inspect
 import logging
+from enum import Enum
 from platform import python_version, release, system
 from sys import modules
-from typing import Dict, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 from firebolt import __version__
-from firebolt.utils.util import cached_property
 
 logger = logging.getLogger(__name__)
+
+
+class Format(Enum):
+    USER_AGENT = 1
 
 
 def _os_compare(file: str, expected: str) -> bool:
@@ -80,8 +84,26 @@ class UsageTracker:
     Tracking SDK usage by detecting the parent connector and system specs.
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        custom_connectors: Optional[
+            Union[Tuple[str, str], List[Tuple[str, str]]]
+        ] = None,
+    ) -> None:
         self.connectors: Dict[str, str] = {}
+        self.detect_connectors()
+        logger.debug("Detected running from packages: %s", str(self.connectors))
+        if type(custom_connectors) == tuple:
+            self.connectors[custom_connectors[0]] = custom_connectors[1]
+        elif type(custom_connectors) == list:
+            for name, version in custom_connectors:
+                self.connectors[name] = version
+
+    def detect_connectors(self) -> None:
+        """
+        Detect which connectors are running the code by parsing the stack.
+        Exceptions are ignored since this is intended for logging only.
+        """
         stack = inspect.stack()
         for f in stack:
             try:
@@ -115,24 +137,8 @@ class UsageTracker:
                 logger.debug(
                     "Failed to extract version from %s in %s", f.function, f.filename
                 )
-        logger.debug("Detected running from packages: %s", str(self.connectors))
 
-    def add_connector_information(self, connector: str, version: str) -> None:
-        """
-        Manually add/override a connector for tracking. Useful for tracing
-        unofficial implementations or improving the auto-detected information.
-
-        Args:
-            connector: Connector name
-            version: Relevant version e.g. "1.0.1-alpha"
-        """
-        self.connectors[connector] = version
-        # Invalidate cache
-        UsageTracker.user_agent.fget.cache_clear()  # type: ignore
-        logger.debug("Manually added: %s ver:%s", connector, version)
-
-    @cached_property
-    def user_agent(self) -> str:
+    def _format_user_agent(self) -> str:
         """
         Return a representation of a stored tracking data as a user-agent header.
 
@@ -146,3 +152,8 @@ class UsageTracker:
         )
         connector_format = " " + connector_format if connector_format else ""
         return sdk_format + connector_format
+
+    def format(self, how: Format) -> str:
+        if how == Format.USER_AGENT:
+            return self._format_user_agent()
+        return ""

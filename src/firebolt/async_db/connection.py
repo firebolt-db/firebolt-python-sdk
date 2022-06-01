@@ -4,7 +4,7 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, List, Optional, Tuple, Type, Union
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
@@ -24,7 +24,7 @@ from firebolt.utils.urls import (
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
-from firebolt.utils.usage_tracker import UsageTracker
+from firebolt.utils.usage_tracker import Format, UsageTracker
 from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
@@ -290,7 +290,6 @@ class BaseConnection:
         "engine_url",
         "api_endpoint",
         "_is_closed",
-        "usage_tracker",
     )
 
     def __init__(
@@ -299,24 +298,25 @@ class BaseConnection:
         database: str,
         auth: Auth,
         api_endpoint: str = DEFAULT_API_URL,
+        connector_versions: Union[Tuple[str, str], List[Tuple[str, str]]] = None,
     ):
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
-
+        user_agent = UsageTracker(connector_versions).format(Format.USER_AGENT)
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
             transport=transport,
+            headers={"User-Agent": user_agent},
         )
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
         self.database = database
         self._cursors: List[BaseCursor] = []
         self._is_closed = False
-        self.usage_tracker = UsageTracker()
 
     def _cursor(self, **kwargs: Any) -> BaseCursor:
         """
@@ -375,6 +375,9 @@ class Connection(BaseConnection):
         username: Firebolt account username
         password: Firebolt account password
         api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
+        connector_versions: Optional. Tuple of connector name and version or
+            list of tuples of your connector stack. Useful for tracking custom
+            connector usage.
 
     Note:
         Firebolt currenly doesn't support transactions
