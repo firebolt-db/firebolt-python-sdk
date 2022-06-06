@@ -1,6 +1,5 @@
 import inspect
 import logging
-from enum import Enum
 from platform import python_version, release, system
 from sys import modules
 from typing import Dict, List, Optional, Tuple, Union
@@ -8,10 +7,6 @@ from typing import Dict, List, Optional, Tuple, Union
 from firebolt import __version__
 
 logger = logging.getLogger(__name__)
-
-
-class Format(Enum):
-    USER_AGENT = 1
 
 
 def _os_compare(file: str, expected: str) -> bool:
@@ -79,81 +74,71 @@ def get_sdk_properties() -> Tuple[str, str, str, str]:
     return (py_version, sdk_version, os_version, ciso)
 
 
-class UsageTracker:
+def detect_connectors() -> Dict[str, str]:
     """
-    Tracking SDK usage by detecting the parent connector and system specs.
+    Detect which connectors are running the code by parsing the stack.
+    Exceptions are ignored since this is intended for logging only.
     """
+    connectors: Dict[str, str] = {}
+    stack = inspect.stack()
+    for f in stack:
+        try:
+            if _is_cli(f.function, f.filename):
+                from firebolt_cli import __version__  # type: ignore
 
-    def __init__(
-        self,
-        custom_connectors: Optional[
-            Union[Tuple[str, str], List[Tuple[str, str]]]
-        ] = None,
-    ) -> None:
-        self.connectors: Dict[str, str] = {}
-        self.detect_connectors()
-        logger.debug("Detected running from packages: %s", str(self.connectors))
-        if type(custom_connectors) == tuple:
-            self.connectors[custom_connectors[0]] = custom_connectors[1]
-        elif type(custom_connectors) == list:
-            for name, version in custom_connectors:
-                self.connectors[name] = version
+                connectors["FireboltCLI"] = __version__
+            elif _is_alchemy(f.function, f.filename):
+                from firebolt_db import __version__  # type: ignore
 
-    def detect_connectors(self) -> None:
-        """
-        Detect which connectors are running the code by parsing the stack.
-        Exceptions are ignored since this is intended for logging only.
-        """
-        stack = inspect.stack()
-        for f in stack:
-            try:
-                if _is_cli(f.function, f.filename):
-                    from firebolt_cli import __version__  # type: ignore
+                connectors["SQLAlchemy"] = __version__
+            elif _is_airbyte_source(f.function, f.filename):
+                # Airbyte version is stored in a Docker label,
+                # can't easily extract it
+                connectors["AibyteSource"] = ""
+            elif _is_airbyte_destination(f.function, f.filename):
+                # Airbyte version is stored in a Docker label,
+                # can't easily extract it
+                connectors["AibyteDestination"] = ""
+            elif _is_airflow(f.function, f.filename):
+                from firebolt_provider import __version__  # type: ignore
 
-                    self.connectors["FireboltCLI"] = __version__
-                elif _is_alchemy(f.function, f.filename):
-                    from firebolt_db import __version__  # type: ignore
+                connectors["Airflow"] = __version__
+            elif _is_dbt(f.function, f.filename):
+                from dbt.adapters.firebolt import __version__  # type: ignore
 
-                    self.connectors["SQLAlchemy"] = __version__
-                elif _is_airbyte_source(f.function, f.filename):
-                    # Airbyte version is stored in a Docker label,
-                    # can't easily extract it
-                    self.connectors["AibyteSource"] = ""
-                elif _is_airbyte_destination(f.function, f.filename):
-                    # Airbyte version is stored in a Docker label,
-                    # can't easily extract it
-                    self.connectors["AibyteDestination"] = ""
-                elif _is_airflow(f.function, f.filename):
-                    from firebolt_provider import __version__  # type: ignore
+                connectors["DBT"] = __version__
+        except Exception:
+            logger.debug(
+                "Failed to extract version from %s in %s", f.function, f.filename
+            )
+    return connectors
 
-                    self.connectors["Airflow"] = __version__
-                elif _is_dbt(f.function, f.filename):
-                    from dbt.adapters.firebolt import (  # type: ignore
-                        __version__,
-                    )
 
-                    self.connectors["DBT"] = __version__
-            except Exception:
-                logger.debug(
-                    "Failed to extract version from %s in %s", f.function, f.filename
-                )
+def format_as_user_agent(connectors: Dict[str, str]) -> str:
+    """
+    Return a representation of a stored tracking data as a user-agent header.
 
-    def _format_user_agent(self) -> str:
-        """
-        Return a representation of a stored tracking data as a user-agent header.
+    Returns:
+        String of the current detected connector stack.
+    """
+    py, sdk, os, ciso = get_sdk_properties()
+    sdk_format = f"PythonSDK/{sdk} (Python {py}; {os}; {ciso})"
+    connector_format = " ".join(
+        [f"{connector}/{version}" for connector, version in connectors.items()]
+    )
+    connector_format = " " + connector_format if connector_format else ""
+    return sdk_format + connector_format
 
-        Returns:
-            String of the current detected connector stack.
-        """
-        py, sdk, os, ciso = get_sdk_properties()
-        sdk_format = f"PythonSDK/{sdk} (Python {py}; {os}; {ciso})"
-        connector_format = " ".join(
-            [f"{connector}/{version}" for connector, version in self.connectors.items()]
-        )
-        connector_format = " " + connector_format if connector_format else ""
-        return sdk_format + connector_format
 
-    def format(self, how: Format) -> str:
-        if how == Format.USER_AGENT:
-            return self._format_user_agent()
-        return ""
+def get_user_agent_header(
+    custom_connectors: Optional[Union[Tuple[str, str], List[Tuple[str, str]]]] = None
+) -> str:
+    connectors = detect_connectors()
+    logger.debug("Detected running from packages: %s", str(connectors))
+    # Override auto-detected connectors with info provided manually
+    if type(custom_connectors) == tuple:
+        connectors[custom_connectors[0]] = custom_connectors[1]
+    elif type(custom_connectors) == list:
+        for name, version in custom_connectors:
+            connectors[name] = version
+    return format_as_user_agent(connectors)

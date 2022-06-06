@@ -24,7 +24,7 @@ from firebolt.utils.urls import (
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
-from firebolt.utils.usage_tracker import Format, UsageTracker
+from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
@@ -309,7 +309,7 @@ class BaseConnection:
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
         connector_versions = additional_parameters.get("connector_versions", None)
-        user_agent = UsageTracker(connector_versions).format(Format.USER_AGENT)
+        user_agent = get_user_agent_header(connector_versions)
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,

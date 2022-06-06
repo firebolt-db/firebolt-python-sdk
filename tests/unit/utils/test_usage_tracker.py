@@ -4,9 +4,9 @@ from unittest.mock import MagicMock, patch
 from pytest import mark
 
 from firebolt.utils.usage_tracker import (
-    Format,
-    UsageTracker,
+    detect_connectors,
     get_sdk_properties,
+    get_user_agent_header,
 )
 
 
@@ -100,21 +100,7 @@ def test_detect_connectors(stack, expected):
     with patch(
         "firebolt.utils.usage_tracker.inspect.stack", MagicMock(return_value=stack)
     ):
-        assert UsageTracker().connectors == expected
-
-
-def test_add_connector():
-    ut = UsageTracker(("MyAwesomeConnector", "0.1.1"))
-    assert "MyAwesomeConnector" in ut.connectors
-    assert ut.connectors["MyAwesomeConnector"] == "0.1.1"
-
-
-def test_add_connector_list():
-    connectors = [("MyAwesomeConnector", "0.1.1"), ("MyLessAwesomeConnector", "0.0.1")]
-    ut = UsageTracker(connectors)
-    for name, version in connectors:
-        assert name in ut.connectors
-        assert ut.connectors[name] == version
+        assert detect_connectors() == expected
 
 
 @mark.parametrize(
@@ -133,5 +119,4 @@ def test_add_connector_list():
     MagicMock(return_value=("1", "2", "Win", "ciso")),
 )
 def test_user_agent(connectors, expected_string):
-    ut = UsageTracker(connectors)
-    assert ut.format(Format.USER_AGENT) == expected_string
+    assert get_user_agent_header(connectors) == expected_string
