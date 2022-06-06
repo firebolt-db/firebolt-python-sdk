@@ -3,7 +3,7 @@ from typing import Dict, List, NamedTuple, Optional
 from firebolt.model.instance_type import InstanceType, InstanceTypeKey
 from firebolt.model.region import Region
 from firebolt.service.base import BaseService
-from firebolt.utils.urls import INSTANCE_TYPES_URL
+from firebolt.utils.urls import ACCOUNT_INSTANCE_TYPES_URL
 from firebolt.utils.util import cached_property
 
 
@@ -19,7 +19,10 @@ class InstanceTypeService(BaseService):
     def instance_types(self) -> List[InstanceType]:
         """List of instance types available on Firebolt."""
 
-        response = self.client.get(url=INSTANCE_TYPES_URL, params={"page.first": 5000})
+        response = self.client.get(
+            url=ACCOUNT_INSTANCE_TYPES_URL.format(account_id=self.account_id),
+            params={"page.first": 5000},
+        )
         return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     @cached_property
@@ -46,7 +49,7 @@ class InstanceTypeService(BaseService):
         """List of instance types available on Firebolt in specified region."""
 
         response = self.client.get(
-            url=INSTANCE_TYPES_URL,
+            url=ACCOUNT_INSTANCE_TYPES_URL.format(account_id=self.account_id),
             params={"page.first": 5000, "filter.id_region_id_eq": region.key.region_id},
         )
 

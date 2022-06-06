@@ -24,6 +24,7 @@ ACCOUNT_DATABASE_BY_NAME_URL = ACCOUNT_DATABASES_URL + ":getIdByName"
 
 ACCOUNT_BINDINGS_URL = "/core/v1/accounts/{account_id}/bindings"
 
+ACCOUNT_INSTANCE_TYPES_URL = "/aws/v2/accounts/{account_id}/instanceTypes"
+
 PROVIDERS_URL = "/compute/v1/providers"
 REGIONS_URL = "/compute/v1/regions"
-INSTANCE_TYPES_URL = "/compute/v1/instanceTypes"
