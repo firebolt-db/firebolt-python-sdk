@@ -1,3 +1,4 @@
+from re import Pattern
 from typing import Callable, List
 
 from pydantic import ValidationError
@@ -29,7 +30,7 @@ def test_engine_create(
     mock_engine: Engine,
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_callback: Callable,
     engine_url: str,
 ):
@@ -63,7 +64,7 @@ def test_engine_create_with_kwargs(
     mock_engine: Engine,
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_callback: Callable,
     engine_url: str,
     account_id: str,
@@ -121,7 +122,7 @@ def test_engine_create_with_kwargs_fail(
     settings: Settings,
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
@@ -158,7 +159,7 @@ def test_engine_create_no_available_types(
     mock_instance_types: List[InstanceType],
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_url: str,
     region_2: Region,
 ):
@@ -192,7 +193,7 @@ def test_engine_no_attached_database(
     mock_engine: Engine,
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_callback: Callable,
     engine_url: str,
     account_engine_callback: Callable,
@@ -236,7 +237,7 @@ def test_engine_start_binding_to_missing_database(
     mock_engine: Engine,
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_callback: Callable,
     engine_url: str,
     database_not_found_callback: Callable,
@@ -279,7 +280,7 @@ def test_get_connection(
     mock_engine: Engine,
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_callback: Callable,
     engine_url: str,
     db_name: str,
@@ -320,7 +321,7 @@ def test_attach_to_database(
     instance_type_region_1_url: str,
     settings: Settings,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     create_databases_callback: Callable,
     databases_url: str,
     database_get_callback: Callable,
@@ -382,7 +383,7 @@ def test_engine_update(
     mock_engine: Engine,
     engine_name: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_callback: Callable,
     engine_url: str,
     account_engine_url: str,
@@ -418,7 +419,7 @@ def test_engine_restart(
     settings: Settings,
     mock_engine: Engine,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     engine_callback: Callable,
     account_engine_url: str,
     bindings_callback: Callable,

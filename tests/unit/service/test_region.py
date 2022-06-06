@@ -1,3 +1,4 @@
+from re import Pattern
 from typing import Callable, List
 
 from pytest_httpx import HTTPXMock
@@ -16,7 +17,7 @@ def test_region(
     region_callback: Callable,
     region_url: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     settings: Settings,
     mock_regions: List[Region],
 ):
