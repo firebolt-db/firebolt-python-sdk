@@ -104,7 +104,6 @@ def test_connect_access_token(
             engine_url=settings.server,
             database=db_name,
             access_token=access_token,
-            account_name="a",
             api_endpoint=settings.server,
         )
     ) as connection:

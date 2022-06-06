@@ -222,6 +222,16 @@ def async_connect_factory(connection_class: Type) -> Callable:
                 account_name=account_name,
                 api_endpoint=api_endpoint,
             )
+        elif account_name:
+            # We need to manually validate account_name since it's not validated
+            # in neither of above cases
+            async with AsyncClient(
+                auth=auth,
+                base_url=api_endpoint,
+                account_name=account_name,
+                api_endpoint=api_endpoint,
+            ) as client:
+                await client.account_id
 
         assert engine_url is not None
 

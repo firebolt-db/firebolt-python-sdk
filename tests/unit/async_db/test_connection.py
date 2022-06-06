@@ -71,7 +71,6 @@ async def test_cursor_initialized(
                 database=db_name,
                 username="u",
                 password="p",
-                account_name="a",
                 api_endpoint=settings.server,
             )
         ) as connection:
@@ -116,7 +115,6 @@ async def test_connect_access_token(
             engine_url=settings.server,
             database=db_name,
             access_token=access_token,
-            account_name="a",
             api_endpoint=settings.server,
         )
     ) as connection:
