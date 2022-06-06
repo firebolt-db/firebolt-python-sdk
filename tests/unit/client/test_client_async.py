@@ -1,3 +1,4 @@
+from re import Pattern
 from typing import Callable
 
 from httpx import codes
@@ -104,7 +105,7 @@ async def test_client_account_id(
     test_username: str,
     test_password: str,
     account_id: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
     auth_url: str,
     auth_callback: Callable,

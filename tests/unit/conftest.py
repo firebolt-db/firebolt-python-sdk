@@ -1,5 +1,5 @@
 from json import loads
-from re import compile
+from re import Pattern, compile
 from typing import Callable, List
 
 import httpx
@@ -166,12 +166,7 @@ def db_description() -> str:
 
 
 @fixture
-def default_account_id_url(settings: Settings) -> str:
-    return f"https://{settings.server}{ACCOUNT_URL}"
-
-
-@fixture
-def account_id_url(settings: Settings) -> str:
+def account_id_url(settings: Settings) -> Pattern:
     base = f"https://{settings.server}{ACCOUNT_BY_NAME_URL}?account_name="
     default_base = f"https://{settings.server}{ACCOUNT_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
@@ -182,7 +177,6 @@ def account_id_url(settings: Settings) -> str:
 @fixture
 def account_id_callback(
     account_id: str,
-    account_id_url: str,
     settings: Settings,
 ) -> Callable:
     def do_mock(

@@ -1,3 +1,4 @@
+from re import Pattern
 from typing import Callable
 
 from pyfakefs.fake_filesystem_unittest import Patcher
@@ -17,7 +18,7 @@ def test_rm_credentials(
     check_credentials_callback: Callable,
     settings: Settings,
     auth_url: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
     provider_callback: Callable,
     provider_url: str,
@@ -69,7 +70,7 @@ def test_rm_token_cache(
     check_credentials_callback: Callable,
     settings: Settings,
     auth_url: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
     provider_callback: Callable,
     provider_url: str,
@@ -121,7 +122,7 @@ def test_rm_invalid_account_name(
     settings: Settings,
     check_credentials_callback: Callable,
     auth_url: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
 ) -> None:
     """Resource manager raises an error on invalid account name."""

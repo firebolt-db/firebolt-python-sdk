@@ -1,3 +1,4 @@
+from re import Pattern
 from typing import Callable, List
 
 from httpx import codes
@@ -146,7 +147,7 @@ async def test_connect_engine_name(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
     engine_id: str,
     get_engine_url: str,
@@ -222,7 +223,7 @@ async def test_connect_default_engine(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
     engine_id: str,
     get_engine_url: str,
@@ -362,7 +363,7 @@ async def test_connect_account_name(
     db_name: str,
     auth_url: str,
     check_credentials_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
 ):
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
