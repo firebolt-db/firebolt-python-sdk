@@ -28,4 +28,3 @@ ACCOUNT_INSTANCE_TYPES_URL = "/aws/v2/accounts/{account_id}/instanceTypes"
 
 PROVIDERS_URL = "/compute/v1/providers"
 REGIONS_URL = "/compute/v1/regions"
-INSTANCE_TYPES_URL = "/compute/v1/instanceTypes"
