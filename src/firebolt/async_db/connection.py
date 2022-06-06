@@ -4,7 +4,7 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
@@ -167,6 +167,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
         use_token_cache: bool = True,
+        additional_parameters: Dict[str, Any] = {},
     ) -> Connection:
         """Connect to Firebolt database.
 
@@ -184,6 +185,8 @@ def async_connect_factory(connection_class: Type) -> Callable:
             api_endpoint (str): Firebolt API endpoint. Used for authentication.
             use_token_cache (bool): Cached authentication token in filesystem.
                                     Default: True
+            additional_parameters (Optional[Dict]): Dictionary of less widely-used
+                                    arguments for connection.
 
         Note:
             Providing both `engine_name` and `engine_url` would result in an error.
@@ -239,7 +242,9 @@ def async_connect_factory(connection_class: Type) -> Callable:
         assert engine_url is not None
 
         engine_url = fix_url_schema(engine_url)
-        return connection_class(engine_url, database, auth, api_endpoint)
+        return connection_class(
+            engine_url, database, auth, api_endpoint, additional_parameters
+        )
 
     return connect_inner
 
@@ -298,11 +303,12 @@ class BaseConnection:
         database: str,
         auth: Auth,
         api_endpoint: str = DEFAULT_API_URL,
-        connector_versions: Union[Tuple[str, str], List[Tuple[str, str]]] = None,
+        additional_parameters: Dict[str, Any] = {},
     ):
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
+        connector_versions = additional_parameters.get("connector_versions", None)
         user_agent = UsageTracker(connector_versions).format(Format.USER_AGENT)
         self._client = AsyncClient(
             auth=auth,
