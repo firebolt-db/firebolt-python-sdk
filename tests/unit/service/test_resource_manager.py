@@ -1,12 +1,13 @@
 from typing import Callable
 
 from pyfakefs.fake_filesystem_unittest import Patcher
-from pytest import mark
+from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client.auth import Token, UsernamePassword
+from firebolt.client.auth import Auth, Token, UsernamePassword
 from firebolt.common.settings import Settings
 from firebolt.service.manager import ResourceManager
+from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.token_storage import TokenSecureStorage
 
 
@@ -112,3 +113,27 @@ def test_rm_token_cache(
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"
+
+
+def test_rm_invalid_account_name(
+    httpx_mock: HTTPXMock,
+    auth: Auth,
+    settings: Settings,
+    check_credentials_callback: Callable,
+    auth_url: str,
+    account_id_url: str,
+    account_id_callback: Callable,
+) -> None:
+    """Resource manager raises an error on invalid account name."""
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+
+    local_settings = Settings(
+        auth=auth,
+        account_name="invalid",
+        server=settings.server,
+        default_region=settings.default_region,
+    )
+
+    with raises(AccountNotFoundError):
+        ResourceManager(local_settings)
