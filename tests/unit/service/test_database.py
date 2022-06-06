@@ -1,4 +1,4 @@
-import re
+from re import Pattern, compile
 from typing import Callable
 
 from pytest_httpx import HTTPXMock
@@ -18,7 +18,7 @@ def test_database_create(
     region_url: str,
     settings: Settings,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     create_databases_callback: Callable,
     databases_url: str,
     db_name: str,
@@ -46,7 +46,7 @@ def test_database_get_by_name(
     provider_url: str,
     settings: Settings,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     database_get_by_name_callback: Callable,
     database_get_by_name_url: str,
     database_get_callback: Callable,
@@ -75,7 +75,7 @@ def test_database_get_many(
     provider_url: str,
     settings: Settings,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     database_get_by_name_callback: Callable,
     database_get_by_name_url: str,
     databases_get_callback: Callable,
@@ -89,7 +89,7 @@ def test_database_get_many(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
         databases_get_callback,
-        url=re.compile(databases_url + "?[a-zA-Z0-9=&]*"),
+        url=compile(databases_url + "?[a-zA-Z0-9=&]*"),
         method="GET",
     )
 
@@ -112,7 +112,7 @@ def test_database_update(
     provider_url: str,
     settings: Settings,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     database_update_callback: Callable,
     database_url: str,
     mock_database: Database,

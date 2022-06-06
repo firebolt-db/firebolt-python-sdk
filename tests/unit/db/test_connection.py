@@ -1,3 +1,4 @@
+from re import Pattern
 from typing import Callable, List
 
 from httpx import codes
@@ -6,10 +7,14 @@ from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db._types import ColType
-from firebolt.client.auth import Token, UsernamePassword
+from firebolt.client.auth import Auth, Token, UsernamePassword
 from firebolt.common.settings import Settings
 from firebolt.db import Connection, connect
-from firebolt.utils.exception import ConfigurationError, ConnectionClosedError
+from firebolt.utils.exception import (
+    AccountNotFoundError,
+    ConfigurationError,
+    ConnectionClosedError,
+)
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import ACCOUNT_ENGINE_BY_NAME_URL
 
@@ -104,7 +109,6 @@ def test_connect_access_token(
             engine_url=settings.server,
             database=db_name,
             access_token=access_token,
-            account_name="a",
             api_endpoint=settings.server,
         )
     ) as connection:
@@ -134,7 +138,7 @@ def test_connect_engine_name(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
     engine_id: str,
     get_engine_url: str,
@@ -190,7 +194,7 @@ def test_connect_default_engine(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
-    account_id_url: str,
+    account_id_url: Pattern,
     account_id_callback: Callable,
     engine_id: str,
     get_engine_url: str,
@@ -323,3 +327,36 @@ def test_connect_with_auth(
             api_endpoint=settings.server,
         ) as connection:
             connection.cursor().execute("select*")
+
+
+def test_connect_account_name(
+    httpx_mock: HTTPXMock,
+    auth: Auth,
+    settings: Settings,
+    db_name: str,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    account_id_url: Pattern,
+    account_id_callback: Callable,
+):
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+
+    with raises(AccountNotFoundError):
+        with connect(
+            auth=auth,
+            database=db_name,
+            engine_url=settings.server,
+            account_name="invalid",
+            api_endpoint=settings.server,
+        ):
+            pass
+
+    with connect(
+        auth=auth,
+        database=db_name,
+        engine_url=settings.server,
+        account_name=settings.account_name,
+        api_endpoint=settings.server,
+    ):
+        pass

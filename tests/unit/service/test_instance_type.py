@@ -1,3 +1,4 @@
+from re import Pattern
 from typing import Callable, List
 
 from pytest_httpx import HTTPXMock
@@ -21,7 +22,7 @@ def test_instance_type(
     instance_type_region_1_url: str,
     instance_type_region_2_url: str,
     account_id_callback: Callable,
-    account_id_url: str,
+    account_id_url: Pattern,
     settings: Settings,
     mock_instance_types: List[InstanceType],
     cheapest_instance: InstanceType,
