@@ -1,16 +1,19 @@
 from json import loads
+from re import compile
 from typing import Callable, List
 
 import httpx
-from httpx import Response
+from httpx import Request, Response
 from pydantic import SecretStr
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
+from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.common.settings import Settings
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
 from firebolt.utils.exception import (
+    AccountNotFoundError,
     DatabaseError,
     DataError,
     Error,
@@ -49,6 +52,16 @@ def global_fake_fs(request) -> None:
     else:
         with Patcher():
             yield
+
+
+@fixture
+def username() -> str:
+    return "email@domain.com"
+
+
+@fixture
+def password() -> str:
+    return "*****"
 
 
 @fixture
@@ -107,14 +120,19 @@ def mock_regions(region_1, region_2) -> List[Region]:
 
 
 @fixture
-def settings(server, region_1) -> Settings:
+def settings(server: str, region_1: str, username: str, password: str) -> Settings:
     return Settings(
         server=server,
-        user="email@domain.com",
-        password=SecretStr("*****"),
+        user=username,
+        password=SecretStr(password),
         default_region=region_1.name,
         account_name=None,
     )
+
+
+@fixture
+def auth(username: str, password: str) -> Auth:
+    return UsernamePassword(username, password)
 
 
 @fixture
@@ -148,30 +166,36 @@ def db_description() -> str:
 
 
 @fixture
+def default_account_id_url(settings: Settings) -> str:
+    return f"https://{settings.server}{ACCOUNT_URL}"
+
+
+@fixture
 def account_id_url(settings: Settings) -> str:
-    if not settings.account_name:  # if None or ''
-        return f"https://{settings.server}{ACCOUNT_URL}"
-    else:
-        return (
-            f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
-            f"?account_name={settings.account_name}"
-        )
+    base = f"https://{settings.server}{ACCOUNT_BY_NAME_URL}?account_name="
+    default_base = f"https://{settings.server}{ACCOUNT_URL}"
+    base = base.replace("/", "\\/").replace("?", "\\?")
+    default_base = default_base.replace("/", "\\/").replace("?", "\\?")
+    return compile(f"(?:{base}.*|{default_base})")
 
 
 @fixture
 def account_id_callback(
-    account_id: str, account_id_url: str, settings: Settings
+    account_id: str,
+    account_id_url: str,
+    settings: Settings,
 ) -> Callable:
     def do_mock(
-        request: httpx.Request = None,
+        request: Request,
         **kwargs,
     ) -> Response:
-        assert request.url == account_id_url
-        if account_id_url.endswith(ACCOUNT_URL):  # account_name shouldn't be specified.
+        if "account_name" not in request.url.params:
             return Response(
                 status_code=httpx.codes.OK, json={"account": {"id": account_id}}
             )
         # In this case, an account_name *should* be specified.
+        if request.url.params["account_name"] != settings.account_name:
+            raise AccountNotFoundError(request.url.params["account_name"])
         return Response(status_code=httpx.codes.OK, json={"account_id": account_id})
 
     return do_mock
@@ -194,7 +218,7 @@ def get_engine_callback(
     get_engine_url: str, engine_id: str, settings: Settings
 ) -> Callable:
     def do_mock(
-        request: httpx.Request = None,
+        request: Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == get_engine_url
@@ -230,7 +254,7 @@ def get_providers_url(settings: Settings, account_id: str, engine_id: str) -> st
 @fixture
 def get_providers_callback(get_providers_url: str, provider: Provider) -> Callable:
     def do_mock(
-        request: httpx.Request = None,
+        request: Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == get_providers_url
@@ -269,7 +293,7 @@ def database_by_name_url(settings: Settings, account_id: str, db_name: str) -> s
 @fixture
 def database_by_name_callback(account_id: str, database_id: str) -> str:
     def do_mock(
-        request: httpx.Request = None,
+        request: Request = None,
         **kwargs,
     ) -> Response:
         return Response(
@@ -312,7 +336,7 @@ def db_api_exceptions():
 
 @fixture
 def check_token_callback(access_token: str) -> Callable:
-    def check_token(request: httpx.Request = None, **kwargs) -> Response:
+    def check_token(request: Request = None, **kwargs) -> Response:
         prefix = "Bearer "
         assert request, "empty request"
         assert "authorization" in request.headers, "missing authorization header"
@@ -329,7 +353,7 @@ def check_token_callback(access_token: str) -> Callable:
 @fixture
 def check_credentials_callback(settings: Settings, access_token: str) -> Callable:
     def check_credentials(
-        request: httpx.Request = None,
+        request: Request = None,
         **kwargs,
     ) -> Response:
         assert request, "empty request"
