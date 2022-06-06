@@ -225,8 +225,8 @@ def async_connect_factory(connection_class: Type) -> Callable:
         elif account_name:
             # In above if branches account name is validated since it's used to
             # resolve or get an engine url.
-            # We need to manually validate account_name since it's not validated
-            # in neither of above cases.
+            # We need to manually validate account_name if none of the above
+            # cases are triggered.
             async with AsyncClient(
                 auth=auth,
                 base_url=api_endpoint,
