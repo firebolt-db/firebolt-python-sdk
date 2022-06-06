@@ -24,7 +24,7 @@ from firebolt.utils.urls import (
     ACCOUNT_DATABASES_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINES_URL,
-    INSTANCE_TYPES_URL,
+    ACCOUNT_INSTANCE_TYPES_URL,
     PROVIDERS_URL,
     REGIONS_URL,
 )
@@ -214,23 +214,33 @@ def instance_type_empty_callback() -> Callable:
 
 
 @pytest.fixture
-def instance_type_url(settings: Settings) -> str:
-    return f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000"
-
-
-@pytest.fixture
-def instance_type_region_1_url(settings: Settings, region_1: Region) -> str:
+def instance_type_url(settings: Settings, account_id: str) -> str:
     return (
-        f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000&"
-        f"filter.id_region_id_eq={region_1.key.region_id}"
+        f"https://{settings.server}"
+        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
+        + "?page.first=5000"
     )
 
 
 @pytest.fixture
-def instance_type_region_2_url(settings: Settings, region_2: Region) -> str:
+def instance_type_region_1_url(
+    settings: Settings, region_1: Region, account_id: str
+) -> str:
     return (
-        f"https://{settings.server}{INSTANCE_TYPES_URL}?page.first=5000&"
-        f"filter.id_region_id_eq={region_2.key.region_id}"
+        f"https://{settings.server}"
+        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
+        + f"?page.first=5000&filter.id_region_id_eq={region_1.key.region_id}"
+    )
+
+
+@pytest.fixture
+def instance_type_region_2_url(
+    settings: Settings, region_2: Region, account_id: str
+) -> str:
+    return (
+        f"https://{settings.server}"
+        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
+        + f"?page.first=5000&filter.id_region_id_eq={region_2.key.region_id}"
     )
 
 
