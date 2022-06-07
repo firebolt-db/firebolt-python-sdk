@@ -236,8 +236,8 @@ def test_connection_unclosed_warnings():
         del c
         gc.collect()
 
-    assert "Unclosed" in str(
-        winfo.list[0].message
+    assert any(
+        "Unclosed" in str(warning.message) for warning in winfo.list
     ), "Invalid unclosed connection warning"
 
 
