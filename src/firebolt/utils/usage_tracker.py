@@ -96,7 +96,7 @@ def detect_connectors() -> Dict[str, str]:
                 if f.function == func and _os_compare(Path(f.filename), path):
                     if version_path:
                         m = import_module(version_path)
-                        connectors[name] = m.__version__
+                        connectors[name] = m.__version__  # type: ignore
                     else:
                         # Some connectors don't have versions specified
                         connectors[name] = ""
