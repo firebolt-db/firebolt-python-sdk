@@ -442,4 +442,4 @@ async def test_connect_no_user_agent(
             api_endpoint=settings.server,
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with(None)
+        ut.assert_called_once_with([])

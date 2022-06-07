@@ -4,9 +4,20 @@ from importlib import import_module
 from pathlib import Path
 from platform import python_version, release, system
 from sys import modules
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
+
+from pydantic import BaseModel
 
 from firebolt import __version__
+
+
+class ConnectorVersions(BaseModel):
+    """
+    Verify correct parameter types
+    """
+
+    versions: List[Tuple[str, str]]
+
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +124,9 @@ def format_as_user_agent(connectors: Dict[str, str]) -> str:
     """
     Return a representation of a stored tracking data as a user-agent header.
 
+    Args:
+        connectors: Dictionary of connector to version mappings
+
     Returns:
         String of the current detected connector stack.
     """
@@ -125,14 +139,21 @@ def format_as_user_agent(connectors: Dict[str, str]) -> str:
 
 
 def get_user_agent_header(
-    custom_connectors: Optional[Union[Tuple[str, str], List[Tuple[str, str]]]] = None
+    connector_versions: Optional[List[Tuple[str, str]]] = []
 ) -> str:
+    """
+    Return a user agent header with connector stack and system information.
+
+    Args:
+        connector_versions(Optional): User-supplied list of tuples of all connectors
+            and their versions intended for tracking.
+
+    Returns:
+        String representation of a user-agent tracking information
+    """
     connectors = detect_connectors()
     logger.debug("Detected running from packages: %s", str(connectors))
     # Override auto-detected connectors with info provided manually
-    if type(custom_connectors) == tuple:
-        connectors[custom_connectors[0]] = custom_connectors[1]
-    elif type(custom_connectors) == list:
-        for name, version in custom_connectors:
-            connectors[name] = version
+    for name, version in ConnectorVersions(versions=connector_versions).versions:
+        connectors[name] = version
     return format_as_user_agent(connectors)

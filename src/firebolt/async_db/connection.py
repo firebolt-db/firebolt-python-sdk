@@ -308,7 +308,7 @@ class BaseConnection:
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
-        connector_versions = additional_parameters.get("connector_versions", None)
+        connector_versions = additional_parameters.get("connector_versions", [])
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,

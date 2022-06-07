@@ -1,7 +1,8 @@
 from collections import namedtuple
 from unittest.mock import MagicMock, patch
 
-from pytest import mark
+from pydantic import ValidationError
+from pytest import mark, raises
 
 from firebolt.utils.usage_tracker import (
     detect_connectors,
@@ -106,8 +107,15 @@ def test_detect_connectors(stack, expected):
 @mark.parametrize(
     "connectors,expected_string",
     [
-        (None, "PythonSDK/2 (Python 1; Win; ciso)"),
-        (("ConnectorA", "0.1.1"), "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1"),
+        ([], "PythonSDK/2 (Python 1; Win; ciso)"),
+        (
+            [("ConnectorA", "0.1.1")],
+            "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1",
+        ),
+        (
+            (("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")),
+            "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
+        ),
         (
             [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
             "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
@@ -120,3 +128,20 @@ def test_detect_connectors(stack, expected):
 )
 def test_user_agent(connectors, expected_string):
     assert get_user_agent_header(connectors) == expected_string
+
+
+@mark.parametrize(
+    "connectors",
+    [
+        ([1]),
+        ((("Con1", "v1.1"), ("Con2"))),
+        (("Connector1.1")),
+    ],
+)
+@patch(
+    "firebolt.utils.usage_tracker.get_sdk_properties",
+    MagicMock(return_value=("1", "2", "Win", "ciso")),
+)
+def test_incorrect_user_agent(connectors):
+    with raises(ValidationError):
+        get_user_agent_header(connectors)
