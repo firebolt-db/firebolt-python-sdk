@@ -1,3 +1,5 @@
+import gc
+import warnings
 from re import Pattern
 from typing import Callable, List
 
@@ -232,10 +234,20 @@ def test_connection_unclosed_warnings():
     c = Connection("", "", None, "")
     with warns(UserWarning) as winfo:
         del c
+        gc.collect()
 
     assert "Unclosed" in str(
         winfo.list[0].message
     ), "Invalid unclosed connection warning"
+
+
+def test_connection_no_warnings():
+    c = Connection("", "", None, "")
+    c.close()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        del c
+        gc.collect()
 
 
 def test_connection_commit(connection: Connection):
