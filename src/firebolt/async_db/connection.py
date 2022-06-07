@@ -309,14 +309,13 @@ class BaseConnection:
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
         connector_versions = additional_parameters.get("connector_versions", None)
-        user_agent = get_user_agent_header(connector_versions)
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
             transport=transport,
-            headers={"User-Agent": user_agent},
+            headers={"User-Agent": get_user_agent_header(connector_versions)},
         )
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
