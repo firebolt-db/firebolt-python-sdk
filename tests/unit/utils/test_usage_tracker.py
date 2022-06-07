@@ -71,15 +71,15 @@ StackItem = namedtuple("StackItem", "function filename")
         ),
         (
             [StackItem("establish_connection", "source_firebolt/source.py")],
-            {"AibyteSource": ""},
+            {"AirbyteSource": ""},
         ),
         (
             [StackItem("establish_async_connection", "source_firebolt/source.py")],
-            {"AibyteSource": ""},
+            {"AirbyteSource": ""},
         ),
         (
             [StackItem("establish_connection", "destination_firebolt/destination.py")],
-            {"AibyteDestination": ""},
+            {"AirbyteDestination": ""},
         ),
         (
             [
@@ -87,7 +87,7 @@ StackItem = namedtuple("StackItem", "function filename")
                     "establish_async_connection", "destination_firebolt/destination.py"
                 )
             ],
-            {"AibyteDestination": ""},
+            {"AirbyteDestination": ""},
         ),
         (
             [StackItem("get_conn", "firebolt_provider/hooks/firebolt.py")],

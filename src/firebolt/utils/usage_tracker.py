@@ -1,5 +1,6 @@
 import inspect
 import logging
+from importlib import import_module
 from platform import python_version, release, system
 from sys import modules
 from typing import Dict, List, Optional, Tuple, Union
@@ -7,6 +8,28 @@ from typing import Dict, List, Optional, Tuple, Union
 from firebolt import __version__
 
 logger = logging.getLogger(__name__)
+
+
+CONNECTOR_MAP = [
+    ("DBT", "open", "dbt/adapters/firebolt/connections.py", "dbt.adapters.firebolt"),
+    ("Airflow", "get_conn", "firebolt_provider/hooks/firebolt.py", "firebolt_provider"),
+    (
+        "AirbyteDestination",
+        "establish_connection",
+        "destination_firebolt/destination.py",
+        "",
+    ),
+    (
+        "AirbyteDestination",
+        "establish_async_connection",
+        "destination_firebolt/destination.py",
+        "",
+    ),
+    ("AirbyteSource", "establish_connection", "source_firebolt/source.py", ""),
+    ("AirbyteSource", "establish_async_connection", "source_firebolt/source.py", ""),
+    ("SQLAlchemy", "connect", "sqlalchemy/engine/default.py", "firebolt_db"),
+    ("FireboltCLI", "create_connection", "firebolt_cli/utils.py", "firebolt_cli"),
+]
 
 
 def _os_compare(file: str, expected: str) -> bool:
@@ -21,36 +44,6 @@ def _os_compare(file: str, expected: str) -> bool:
         True if file ends with path
     """
     return file.endswith(expected) or file.endswith(expected.replace("/", "\\"))
-
-
-def _is_cli(func: str, file: str) -> bool:
-    return func == "create_connection" and _os_compare(file, "firebolt_cli/utils.py")
-
-
-def _is_alchemy(func: str, file: str) -> bool:
-    return func == "connect" and _os_compare(file, "sqlalchemy/engine/default.py")
-
-
-def _is_airbyte_source(func: str, file: str) -> bool:
-    return (
-        func == "establish_connection" or func == "establish_async_connection"
-    ) and _os_compare(file, "source_firebolt/source.py")
-
-
-def _is_airbyte_destination(func: str, file: str) -> bool:
-    return (
-        func == "establish_connection" or func == "establish_async_connection"
-    ) and _os_compare(file, "destination_firebolt/destination.py")
-
-
-def _is_airflow(func: str, file: str) -> bool:
-    return func == "get_conn" and _os_compare(
-        file, "firebolt_provider/hooks/firebolt.py"
-    )
-
-
-def _is_dbt(func: str, file: str) -> bool:
-    return func == "open" and _os_compare(file, "dbt/adapters/firebolt/connections.py")
 
 
 def get_sdk_properties() -> Tuple[str, str, str, str]:
@@ -83,30 +76,16 @@ def detect_connectors() -> Dict[str, str]:
     stack = inspect.stack()
     for f in stack:
         try:
-            if _is_cli(f.function, f.filename):
-                from firebolt_cli import __version__  # type: ignore
-
-                connectors["FireboltCLI"] = __version__
-            elif _is_alchemy(f.function, f.filename):
-                from firebolt_db import __version__  # type: ignore
-
-                connectors["SQLAlchemy"] = __version__
-            elif _is_airbyte_source(f.function, f.filename):
-                # Airbyte version is stored in a Docker label,
-                # can't easily extract it
-                connectors["AibyteSource"] = ""
-            elif _is_airbyte_destination(f.function, f.filename):
-                # Airbyte version is stored in a Docker label,
-                # can't easily extract it
-                connectors["AibyteDestination"] = ""
-            elif _is_airflow(f.function, f.filename):
-                from firebolt_provider import __version__  # type: ignore
-
-                connectors["Airflow"] = __version__
-            elif _is_dbt(f.function, f.filename):
-                from dbt.adapters.firebolt import __version__  # type: ignore
-
-                connectors["DBT"] = __version__
+            for name, func, path, version_path in CONNECTOR_MAP:
+                if f.function == func and _os_compare(f.filename, path):
+                    if version_path:
+                        m = import_module(version_path)
+                        connectors[name] = m.__version__
+                    else:
+                        # Some connectors don't have versions specified
+                        connectors[name] = ""
+                    # No need to carry on if connector is detected
+                    break
         except Exception:
             logger.debug(
                 "Failed to extract version from %s in %s", f.function, f.filename

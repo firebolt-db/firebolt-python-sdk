@@ -48,17 +48,17 @@ def create_test_file(code: str, function_name: str, file_path: str):
     [
         ("create_connection", "firebolt_cli/utils.py", "FireboltCLI/1.0.0"),
         ("connect", "sqlalchemy/engine/default.py", "SQLAlchemy/1.0.1"),
-        ("establish_connection", "source_firebolt/source.py", "AibyteSource/"),
-        ("establish_async_connection", "source_firebolt/source.py", "AibyteSource/"),
+        ("establish_connection", "source_firebolt/source.py", "AirbyteSource/"),
+        ("establish_async_connection", "source_firebolt/source.py", "AirbyteSource/"),
         (
             "establish_connection",
             "destination_firebolt/destination.py",
-            "AibyteDestination/",
+            "AirbyteDestination/",
         ),
         (
             "establish_async_connection",
             "destination_firebolt/destination.py",
-            "AibyteDestination/",
+            "AirbyteDestination/",
         ),
         ("get_conn", "firebolt_provider/hooks/firebolt.py", "Airflow/1.0.2"),
         ("open", "dbt/adapters/firebolt/connections.py", "DBT/1.0.3"),
