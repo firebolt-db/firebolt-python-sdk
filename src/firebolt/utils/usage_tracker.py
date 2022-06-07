@@ -1,6 +1,7 @@
 import inspect
 import logging
 from importlib import import_module
+from pathlib import Path
 from platform import python_version, release, system
 from sys import modules
 from typing import Dict, List, Optional, Tuple, Union
@@ -11,28 +12,43 @@ logger = logging.getLogger(__name__)
 
 
 CONNECTOR_MAP = [
-    ("DBT", "open", "dbt/adapters/firebolt/connections.py", "dbt.adapters.firebolt"),
-    ("Airflow", "get_conn", "firebolt_provider/hooks/firebolt.py", "firebolt_provider"),
+    (
+        "DBT",
+        "open",
+        Path("dbt/adapters/firebolt/connections.py"),
+        "dbt.adapters.firebolt",
+    ),
+    (
+        "Airflow",
+        "get_conn",
+        Path("firebolt_provider/hooks/firebolt.py"),
+        "firebolt_provider",
+    ),
     (
         "AirbyteDestination",
         "establish_connection",
-        "destination_firebolt/destination.py",
+        Path("destination_firebolt/destination.py"),
         "",
     ),
     (
         "AirbyteDestination",
         "establish_async_connection",
-        "destination_firebolt/destination.py",
+        Path("destination_firebolt/destination.py"),
         "",
     ),
-    ("AirbyteSource", "establish_connection", "source_firebolt/source.py", ""),
-    ("AirbyteSource", "establish_async_connection", "source_firebolt/source.py", ""),
-    ("SQLAlchemy", "connect", "sqlalchemy/engine/default.py", "firebolt_db"),
-    ("FireboltCLI", "create_connection", "firebolt_cli/utils.py", "firebolt_cli"),
+    ("AirbyteSource", "establish_connection", Path("source_firebolt/source.py"), ""),
+    (
+        "AirbyteSource",
+        "establish_async_connection",
+        Path("source_firebolt/source.py"),
+        "",
+    ),
+    ("SQLAlchemy", "connect", Path("sqlalchemy/engine/default.py"), "firebolt_db"),
+    ("FireboltCLI", "create_connection", Path("firebolt_cli/utils.py"), "firebolt_cli"),
 ]
 
 
-def _os_compare(file: str, expected: str) -> bool:
+def _os_compare(file: Path, expected: Path) -> bool:
     """
     System-independent path comparison.
 
@@ -43,7 +59,7 @@ def _os_compare(file: str, expected: str) -> bool:
     Returns:
         True if file ends with path
     """
-    return file.endswith(expected) or file.endswith(expected.replace("/", "\\"))
+    return file.parts[-len(expected.parts) :] == expected.parts
 
 
 def get_sdk_properties() -> Tuple[str, str, str, str]:
@@ -77,7 +93,7 @@ def detect_connectors() -> Dict[str, str]:
     for f in stack:
         try:
             for name, func, path, version_path in CONNECTOR_MAP:
-                if f.function == func and _os_compare(f.filename, path):
+                if f.function == func and _os_compare(Path(f.filename), path):
                     if version_path:
                         m = import_module(version_path)
                         connectors[name] = m.__version__

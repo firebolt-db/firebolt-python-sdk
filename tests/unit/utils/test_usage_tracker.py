@@ -60,7 +60,7 @@ StackItem = namedtuple("StackItem", "function filename")
             [
                 StackItem(
                     "create_connection",
-                    "my_documents\\some_other_dir\\firebolt_cli\\utils.py",
+                    "my_documents/some_other_dir/firebolt_cli/utils.py",
                 )
             ],
             {"FireboltCLI": "0.1.1"},
