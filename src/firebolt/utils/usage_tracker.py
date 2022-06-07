@@ -102,10 +102,9 @@ def format_as_user_agent(connectors: Dict[str, str]) -> str:
     """
     py, sdk, os, ciso = get_sdk_properties()
     sdk_format = f"PythonSDK/{sdk} (Python {py}; {os}; {ciso})"
-    connector_format = " ".join(
-        [f"{connector}/{version}" for connector, version in connectors.items()]
+    connector_format = "".join(
+        [f" {connector}/{version}" for connector, version in connectors.items()]
     )
-    connector_format = " " + connector_format if connector_format else ""
     return sdk_format + connector_format
 
 
