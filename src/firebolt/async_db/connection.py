@@ -4,7 +4,7 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Callable, List, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
@@ -24,6 +24,7 @@ from firebolt.utils.urls import (
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
+from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 5
@@ -166,6 +167,7 @@ def async_connect_factory(connection_class: Type) -> Callable:
         account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
         use_token_cache: bool = True,
+        additional_parameters: Dict[str, Any] = {},
     ) -> Connection:
         """Connect to Firebolt database.
 
@@ -183,6 +185,8 @@ def async_connect_factory(connection_class: Type) -> Callable:
             api_endpoint (str): Firebolt API endpoint. Used for authentication.
             use_token_cache (bool): Cached authentication token in filesystem.
                                     Default: True
+            additional_parameters (Optional[Dict]): Dictionary of less widely-used
+                                    arguments for connection.
 
         Note:
             Providing both `engine_name` and `engine_url` would result in an error.
@@ -238,7 +242,9 @@ def async_connect_factory(connection_class: Type) -> Callable:
         assert engine_url is not None
 
         engine_url = fix_url_schema(engine_url)
-        return connection_class(engine_url, database, auth, api_endpoint)
+        return connection_class(
+            engine_url, database, auth, api_endpoint, additional_parameters
+        )
 
     return connect_inner
 
@@ -297,17 +303,19 @@ class BaseConnection:
         database: str,
         auth: Auth,
         api_endpoint: str = DEFAULT_API_URL,
+        additional_parameters: Dict[str, Any] = {},
     ):
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
-
+        connector_versions = additional_parameters.get("connector_versions", [])
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
             transport=transport,
+            headers={"User-Agent": get_user_agent_header(connector_versions)},
         )
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
@@ -372,6 +380,9 @@ class Connection(BaseConnection):
         username: Firebolt account username
         password: Firebolt account password
         api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
+        connector_versions: Optional. Tuple of connector name and version or
+            list of tuples of your connector stack. Useful for tracking custom
+            connector usage.
 
     Note:
         Firebolt currenly doesn't support transactions
