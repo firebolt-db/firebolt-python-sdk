@@ -71,7 +71,7 @@ def test_usage_detection(function, path, expected, test_model):
         ["python3", test_path],
         stdout=PIPE,
         stderr=PIPE,
-        env={"PYTHONPATH": os.getenv("PYTHONPATH")},
+        env={"PYTHONPATH": os.getenv("PYTHONPATH", ""), "PATH": os.getenv("PATH", "")},
     )
     assert not result.stderr
     assert expected in result.stdout.decode("utf-8")
