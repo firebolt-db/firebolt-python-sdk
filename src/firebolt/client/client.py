@@ -38,7 +38,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
         self._api_endpoint = URL(fix_url_schema(api_endpoint))
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(self, auth: AuthTypes) -> Optional[Auth]:
+    def _build_auth(self, auth: Optional[AuthTypes]) -> Optional[Auth]:
         """Create Auth object based on auth provided.
 
         Overrides ``httpx.Client._build_auth``
