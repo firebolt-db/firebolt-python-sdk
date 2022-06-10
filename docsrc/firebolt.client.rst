@@ -2,7 +2,7 @@
 Client
 =======================
 
-The client package contains functionality for user authentication and logging requests. 
+The client package contains functionality for user authentication and logging requests.
 
 Client.auth
 ---------------------------
@@ -21,7 +21,7 @@ Client.client
    :undoc-members:
    :show-inheritance:
 
-.. 
+..
    Client.constants
    --------------------------------
    .. automodule:: firebolt.client.constants
@@ -31,13 +31,9 @@ Client.client
    (no members)
 
 
-
-Client.resource\_manager\_hooks
------------------------------------------------
-
-.. automodule:: firebolt.client.resource_manager_hooks
+   Client.resource\_manager\_hooks
+   -----------------------------------------------
+   .. automodule:: firebolt.client.resource_manager_hooks
    :members:
    :undoc-members:
    :show-inheritance:
-
-
