@@ -9,7 +9,7 @@ Model.database
 
 .. automodule:: firebolt.model.database
    :members:
-   :exclude-members: DatabaseKey
+   :exclude-members: DatabaseKey, FieldMask
    :undoc-members:
    :show-inheritance:
 
@@ -18,7 +18,7 @@ Model.engine
 
 .. automodule:: firebolt.model.engine
    :members:
-   :exclude-members: EngineKey
+   :exclude-members: EngineKey, FieldMask, check_attached_to_database, wait
    :undoc-members:
    :show-inheritance:
 
@@ -56,5 +56,3 @@ Model.region
    :exclude-members: RegionKey
    :undoc-members:
    :show-inheritance:
-
-

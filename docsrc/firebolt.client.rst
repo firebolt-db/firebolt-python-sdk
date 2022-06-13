@@ -7,10 +7,16 @@ The client package contains functionality for user authentication and logging re
 Client.auth
 ---------------------------
 
-.. automodule:: firebolt.client.auth
+.. automodule:: firebolt.client.auth.username_password.UsernamePassword
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. automodule:: firebolt.client.auth.token.Token
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 
 Client.client
 -----------------------------

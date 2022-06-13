@@ -2,48 +2,58 @@
 Common
 =======================
 
-The common package contains settings parameters and error exceptions. 
+The common package contains settings parameters and error exceptions.
 
-Common.exception
---------------------------------
+..
 
-.. automodule:: firebolt.common.exception
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   Common.exception
+   --------------------------------
+
+   .. automodule:: firebolt.common.exception
+      :members:
+      :undoc-members:
+      :show-inheritance:
 
 Common.settings
 -------------------------------
 
 .. automodule:: firebolt.common.settings
+   :exclude-members: Config, access_token, account_name, auth, default_region, mutual_exclusive_with_creds, password, server, use_token_cache, user
    :members:
    :undoc-members:
    :show-inheritance:
 
-Common.urls
----------------------------
+Utils.exception
+--------------------------------
 
-.. automodule:: firebolt.common.urls
+.. automodule:: firebolt.utils.exception
    :members:
    :undoc-members:
    :show-inheritance:
 
-Common.token\_storage
--------------------------------------
+..
 
-.. automodule:: firebolt.common.token_storage
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   Common.urls
+   ---------------------------
 
-Common.util
----------------------------
+   .. automodule:: firebolt.common.urls
+      :members:
+      :undoc-members:
+      :show-inheritance:
 
-.. automodule:: firebolt.common.util
-   :exclude-members: async_to_sync, cached_property, fix_url_schema, mixin_for, prune_dict
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   Common.token\_storage
+   -------------------------------------
 
+   .. automodule:: firebolt.common.token_storage
+      :members:
+      :undoc-members:
+      :show-inheritance:
 
+   Common.util
+   ---------------------------
 
+   .. automodule:: firebolt.common.util
+      :exclude-members: async_to_sync, cached_property, fix_url_schema, mixin_for, prune_dict
+      :members:
+      :undoc-members:
+      :show-inheritance:
