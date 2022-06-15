@@ -21,6 +21,7 @@ from typing import (
 
 from aiorwlock import RWLock
 from httpx import Response, codes
+from pydantic import BaseModel
 
 from firebolt.async_db._types import (
     ColType,
@@ -60,6 +61,20 @@ class CursorState(Enum):
     CLOSED = 4
 
 
+class Statistics(BaseModel):
+    """
+    Class for query execution statistics
+    """
+
+    elapsed: float
+    rows_read: int
+    bytes_read: int
+    time_before_execution: float
+    time_to_execute: float
+    scanned_bytes_cache: Optional[float]
+    scanned_bytes_storage: Optional[float]
+
+
 def check_not_closed(func: Callable) -> Callable:
     """(Decorator) ensure cursor is not closed before calling method."""
 
@@ -96,6 +111,7 @@ class BaseCursor:
         "_client",
         "_state",
         "_descriptions",
+        "_statistics",
         "_rowcount",
         "_rows",
         "_idx",
@@ -114,8 +130,14 @@ class BaseCursor:
         # These fields initialized here for type annotations purpose
         self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
+        self._statistics: Optional[Statistics] = None
         self._row_sets: List[
-            Tuple[int, Optional[List[Column]], Optional[List[List[RawColType]]]]
+            Tuple[
+                int,
+                Optional[List[Column]],
+                Optional[Statistics],
+                Optional[List[List[RawColType]]],
+            ]
         ] = []
         self._set_parameters: Dict[str, Any] = dict()
         self._rowcount = -1
@@ -142,6 +164,12 @@ class BaseCursor:
             * ``null_ok``
         """
         return self._descriptions
+
+    @property  # type: ignore
+    @check_not_closed
+    def statistics(self) -> Optional[Statistics]:
+        """Query execution statistics returned by the backend"""
+        return self._statistics
 
     @property  # type: ignore
     @check_not_closed
@@ -193,9 +221,12 @@ class BaseCursor:
         """
         if self._next_set_idx >= len(self._row_sets):
             return None
-        self._rowcount, self._descriptions, self._rows = self._row_sets[
-            self._next_set_idx
-        ]
+        (
+            self._rowcount,
+            self._descriptions,
+            self._statistics,
+            self._rows,
+        ) = self._row_sets[self._next_set_idx]
         self._idx = 0
         self._next_set_idx += 1
         return True
@@ -231,6 +262,7 @@ class BaseCursor:
         self._state = CursorState.NONE
         self._rows = None
         self._descriptions = None
+        self._statistics = None
         self._rowcount = -1
         self._idx = 0
         self._row_sets = []
@@ -238,12 +270,17 @@ class BaseCursor:
 
     def _row_set_from_response(
         self, response: Response
-    ) -> Tuple[int, Optional[List[Column]], Optional[List[List[RawColType]]]]:
+    ) -> Tuple[
+        int,
+        Optional[List[Column]],
+        Optional[Statistics],
+        Optional[List[List[RawColType]]],
+    ]:
         """Fetch information about executed query from http response"""
 
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
-            return (-1, None, None)
+            return (-1, None, None, None)
 
         try:
             # Skip parsing floats to properly parse them later
@@ -253,16 +290,21 @@ class BaseCursor:
                 Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
                 for d in query_data["meta"]
             ]
-
+            statistics = Statistics(**query_data["statistics"])
             # Parse data during fetch
             rows = query_data["data"]
-            return (rowcount, descriptions, rows)
+            return (rowcount, descriptions, statistics, rows)
         except (KeyError, ValueError) as err:
             raise DataError(f"Invalid query data format: {str(err)}")
 
     def _append_row_set(
         self,
-        row_set: Tuple[int, Optional[List[Column]], Optional[List[List[RawColType]]]],
+        row_set: Tuple[
+            int,
+            Optional[List[Column]],
+            Optional[Statistics],
+            Optional[List[List[RawColType]]],
+        ],
     ) -> None:
         """Store information about executed query."""
         self._row_sets.append(row_set)
@@ -324,8 +366,11 @@ class BaseCursor:
 
                 # Define type for mypy
                 row_set: Tuple[
-                    int, Optional[List[Column]], Optional[List[List[RawColType]]]
-                ] = (-1, None, None)
+                    int,
+                    Optional[List[Column]],
+                    Optional[Statistics],
+                    Optional[List[List[RawColType]]],
+                ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
                     # Validate parameter by executing simple query with it
                     resp = await self._api_request(
