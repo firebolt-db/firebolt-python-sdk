@@ -116,7 +116,6 @@ def query_callback(
             "meta": [{"name": c.name, "type": c.type_code} for c in query_description],
             "data": query_data,
             "rows": len(query_data),
-            # Real example of statistics field value, not used by our code
             "statistics": {
                 "elapsed": 0.002983335,
                 "time_before_execution": 0.002729331,
