@@ -58,7 +58,7 @@ async def test_cursor_state(
 @mark.asyncio
 async def test_closed_cursor(cursor: Cursor):
     """Most of cursor methods are unavailable for closed cursor."""
-    fields = ("description", "rowcount")
+    fields = ("description", "rowcount", "statistics")
     async_methods = (
         ("execute", (cursor,)),
         ("executemany", (cursor, [])),
@@ -460,6 +460,8 @@ async def test_cursor_multi_statement(
     assert await cursor.nextset()
     assert cursor.rowcount == -1, "Invalid cursor row count"
     assert cursor.description is None, "Invalid cursor description"
+    assert cursor.statistics is None, "Invalid cursor statistics"
+
     with raises(DataError) as exc_info:
         await cursor.fetchall()
 
@@ -470,6 +472,14 @@ async def test_cursor_multi_statement(
     assert cursor.rowcount == len(python_query_data), "Invalid cursor row count"
     for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
         assert desc == exp, f"Invalid column description at position {i}"
+
+    assert cursor.statistics.elapsed == 0.002983335
+    assert cursor.statistics.time_before_execution == 0.002729331
+    assert cursor.statistics.time_to_execute == 0.000215215
+    assert cursor.statistics.rows_read == 1
+    assert cursor.statistics.bytes_read == 1
+    assert cursor.statistics.scanned_bytes_cache == 0
+    assert cursor.statistics.scanned_bytes_storage == 0
 
     for i in range(cursor.rowcount):
         assert (
