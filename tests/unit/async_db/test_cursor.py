@@ -460,7 +460,7 @@ async def test_cursor_multi_statement(
     assert await cursor.nextset()
     assert cursor.rowcount == -1, "Invalid cursor row count"
     assert cursor.description is None, "Invalid cursor description"
-    assert cursor.statistics is None, "Invalid cursor description"
+    assert cursor.statistics is None, "Invalid cursor statistics"
 
     with raises(DataError) as exc_info:
         await cursor.fetchall()
