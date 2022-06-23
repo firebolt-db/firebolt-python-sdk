@@ -1,0 +1,16 @@
+name: Release new version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:    
+    - name: Check out code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 
+        token: ${{ secrets.RELEASE_PAT }}
