@@ -24,15 +24,24 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
+      - name: Setup database and engine
+        id: setup
+        uses: firebolt-db/integration-testing-setup@master
+        with:
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
+          api-endpoint: "api.dev.firebolt.io"
+          region: "us-east-1"
+
       - name: Run integration tests
         env:
           USER_NAME: ${{ secrets.FIREBOLT_USERNAME }}
           PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
-          DATABASE_NAME: "integration_testing__1656065595"
-          ENGINE_NAME: "integration_testing__1656065595"
-          ENGINE_URL: "integration-testing-1656065595.firebolt.us-east-1.dev.firebolt.io"
-          STOPPED_ENGINE_NAME: "integration_testing__1656065595_stopped"
-          STOPPED_ENGINE_URL: "integration-testing-1656065595-stopped.firebolt.us-east-1.dev.firebolt.io"
+          DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
+          ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
+          ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
+          STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
+          STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
           API_ENDPOINT: "api.dev.firebolt.io"
           ACCOUNT_NAME: "firebolt"
         run: |
