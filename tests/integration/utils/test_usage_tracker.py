@@ -17,7 +17,8 @@ MOCK_MODULES = [
 ]
 
 
-@fixture(scope="module", autouse=True)
+@mark.xdist_group(name="usage_tracker")
+@fixture(scope="module")
 def create_cli_mock():
     # Cleanup before starting
     rmtree(TEST_FOLDER, ignore_errors=True)
@@ -32,6 +33,7 @@ def create_cli_mock():
     rmtree(TEST_FOLDER)
 
 
+@mark.xdist_group(name="usage_tracker")
 @fixture(scope="module")
 def test_model():
     with open(TEST_SCRIPT_MODEL) as f:
@@ -45,6 +47,7 @@ def create_test_file(code: str, function_name: str, file_path: str):
         f.write(code)
 
 
+@mark.xdist_group(name="usage_tracker")
 @mark.parametrize(
     "function,path,expected",
     [
@@ -66,7 +69,7 @@ def create_test_file(code: str, function_name: str, file_path: str):
         ("open", "dbt/adapters/firebolt/connections.py", "DBT/1.0.3"),
     ],
 )
-def test_usage_detection(function, path, expected, test_model):
+def test_usage_detection(function, path, expected, test_model, create_cli_mock):
     test_path = TEST_FOLDER + path
     create_test_file(test_model, function, test_path)
     result = run(
