@@ -17,6 +17,7 @@ MOCK_MODULES = [
 ]
 
 
+@mark.xdist_group(name="usage_tracker")
 @fixture(scope="module", autouse=True)
 def create_cli_mock():
     # Cleanup before starting
@@ -32,6 +33,8 @@ def create_cli_mock():
     rmtree(TEST_FOLDER)
 
 
+
+@mark.xdist_group(name="usage_tracker")
 @fixture(scope="module")
 def test_model():
     with open(TEST_SCRIPT_MODEL) as f:
@@ -45,6 +48,7 @@ def create_test_file(code: str, function_name: str, file_path: str):
         f.write(code)
 
 
+@mark.xdist_group(name="usage_tracker")
 @mark.parametrize(
     "function,path,expected",
     [
