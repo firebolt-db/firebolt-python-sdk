@@ -33,7 +33,6 @@ def create_cli_mock():
     rmtree(TEST_FOLDER)
 
 
-
 @mark.xdist_group(name="usage_tracker")
 @fixture(scope="module")
 def test_model():
