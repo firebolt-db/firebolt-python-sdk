@@ -19,6 +19,8 @@ MOCK_MODULES = [
 
 @fixture(scope="module", autouse=True)
 def create_cli_mock():
+    # Cleanup before starting
+    rmtree(TEST_FOLDER, ignore_errors=True)
     for i, file in enumerate(MOCK_MODULES):
         os.makedirs(os.path.dirname(f"{TEST_FOLDER}{file}"))
         with open(f"{TEST_FOLDER}{file}", "w") as f:
