@@ -16,19 +16,14 @@ class ConnectorVersions(BaseModel):
     Verify correct parameter types
     """
 
-    versions: List[Tuple[str, str]]
+    clients: List[Tuple[str, str]]
+    drivers: List[Tuple[str, str]]
 
 
 logger = logging.getLogger(__name__)
 
 
-CONNECTOR_MAP = [
-    (
-        "DBT",
-        "open",
-        Path("dbt/adapters/firebolt/connections.py"),
-        "dbt.adapters.firebolt",
-    ),
+CLIENT_MAP = [
     (
         "Airflow",
         "get_conn",
@@ -54,8 +49,17 @@ CONNECTOR_MAP = [
         Path("source_firebolt/source.py"),
         "",
     ),
-    ("SQLAlchemy", "connect", Path("sqlalchemy/engine/default.py"), "firebolt_db"),
     ("FireboltCLI", "create_connection", Path("firebolt_cli/utils.py"), "firebolt_cli"),
+]
+
+DRIVER_MAP = [
+    (
+        "DBT",
+        "open",
+        Path("dbt/adapters/firebolt/connections.py"),
+        "dbt.adapters.firebolt",
+    ),
+    ("SQLAlchemy", "connect", Path("sqlalchemy/engine/default.py"), "firebolt_db"),
 ]
 
 
@@ -94,7 +98,9 @@ def get_sdk_properties() -> Tuple[str, str, str, str]:
     return (py_version, sdk_version, os_version, ciso)
 
 
-def detect_connectors() -> Dict[str, str]:
+def detect_connectors(
+    connector_map: List[Tuple[str, str, Path, str]]
+) -> Dict[str, str]:
     """
     Detect which connectors are running the code by parsing the stack.
     Exceptions are ignored since this is intended for logging only.
@@ -103,7 +109,7 @@ def detect_connectors() -> Dict[str, str]:
     stack = inspect.stack()
     for f in stack:
         try:
-            for name, func, path, version_path in CONNECTOR_MAP:
+            for name, func, path, version_path in connector_map:
                 if f.function == func and _os_compare(Path(f.filename), path):
                     if version_path:
                         m = import_module(version_path)
@@ -120,7 +126,7 @@ def detect_connectors() -> Dict[str, str]:
     return connectors
 
 
-def format_as_user_agent(connectors: Dict[str, str]) -> str:
+def format_as_user_agent(drivers: Dict[str, str], clients: Dict[str, str]) -> str:
     """
     Return a representation of a stored tracking data as a user-agent header.
 
@@ -132,14 +138,18 @@ def format_as_user_agent(connectors: Dict[str, str]) -> str:
     """
     py, sdk, os, ciso = get_sdk_properties()
     sdk_format = f"PythonSDK/{sdk} (Python {py}; {os}; {ciso})"
-    connector_format = "".join(
-        [f" {connector}/{version}" for connector, version in connectors.items()]
+    driver_format = "".join(
+        [f" {connector}/{version}" for connector, version in drivers.items()]
     )
-    return sdk_format + connector_format
+    client_format = "".join(
+        [f"{connector}/{version} " for connector, version in clients.items()]
+    )
+    return client_format + sdk_format + driver_format
 
 
 def get_user_agent_header(
-    connector_versions: Optional[List[Tuple[str, str]]] = []
+    user_drivers: Optional[List[Tuple[str, str]]] = [],
+    user_clients: Optional[List[Tuple[str, str]]] = [],
 ) -> str:
     """
     Return a user agent header with connector stack and system information.
@@ -151,9 +161,15 @@ def get_user_agent_header(
     Returns:
         String representation of a user-agent tracking information
     """
-    connectors = detect_connectors()
-    logger.debug("Detected running from packages: %s", str(connectors))
+    drivers = detect_connectors(DRIVER_MAP)
+    clients = detect_connectors(CLIENT_MAP)
+    logger.debug(
+        "Detected running with drivers: %s and clients %s ", str(drivers), str(clients)
+    )
     # Override auto-detected connectors with info provided manually
-    for name, version in ConnectorVersions(versions=connector_versions).versions:
-        connectors[name] = version
-    return format_as_user_agent(connectors)
+    versions = ConnectorVersions(clients=user_clients, drivers=user_drivers)
+    for name, version in versions.clients:
+        clients[name] = version
+    for name, version in versions.drivers:
+        drivers[name] = version
+    return format_as_user_agent(drivers, clients)

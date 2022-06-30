@@ -308,14 +308,15 @@ class BaseConnection:
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
-        connector_versions = additional_parameters.get("connector_versions", [])
+        user_drivers = additional_parameters.get("user_drivers", [])
+        user_clients = additional_parameters.get("user_clients", [])
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,
             api_endpoint=api_endpoint,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
             transport=transport,
-            headers={"User-Agent": get_user_agent_header(connector_versions)},
+            headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
         )
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
