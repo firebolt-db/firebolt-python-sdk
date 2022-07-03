@@ -7,7 +7,7 @@ from firebolt.utils.util import async_to_sync
 
 
 def test_async_to_sync_happy_path():
-    """async_to_sync properly converts coroutine to sync function"""
+    """async_to_sync properly converts coroutine to sync function."""
 
     class JobMarker(Exception):
         pass
@@ -21,7 +21,7 @@ def test_async_to_sync_happy_path():
 
 
 def test_async_to_sync_thread():
-    """async_to_sync properly works in threads"""
+    """async_to_sync works correctly in threads."""
 
     marks = [False] * 3
 
@@ -35,7 +35,7 @@ def test_async_to_sync_thread():
 
 
 def test_async_to_sync_after_run():
-    """async_to_sync properly runs after asyncio.run"""
+    """async_to_sync runs correctly after asyncio.run."""
 
     class JobMarker(Exception):
         pass
@@ -54,7 +54,7 @@ def test_async_to_sync_after_run():
 
 @mark.asyncio
 async def test_nested_loops() -> None:
-    """async_to_sync properly works inside a running loop"""
+    """async_to_sync works correctly inside a running loop."""
 
     class JobMarker(Exception):
         pass

@@ -50,9 +50,9 @@ def wait(seconds: int, timeout_time: float, error_message: str, verbose: bool) -
 
 class EngineSettings(FireboltBaseModel):
     """
-    Engine Settings.
+    Engine settings.
 
-    See Also: :py:class:`EngineRevisionSpecification
+    See also: :py:class:`EngineRevisionSpecification
     <firebolt.model.engine_revision.EngineRevisionSpecification>`
     which also contains engine configuration.
     """
@@ -162,7 +162,7 @@ class Engine(FireboltBaseModel):
         )
 
     def get_latest(self) -> Engine:
-        """Get an up-to-date instance of the Engine from Firebolt."""
+        """Get an up-to-date instance of the engine from Firebolt."""
         return self._service.get(id_=self.engine_id)
 
     def attach_to_database(
@@ -172,7 +172,7 @@ class Engine(FireboltBaseModel):
         Attach this engine to a database.
 
         Args:
-            database: Database to which the engine will be attached.
+            database: Database to which the engine will be attached
             is_default_engine:
                 Whether this engine should be used as default for this database.
                 Only one engine can be set as default for a single database.
@@ -184,7 +184,7 @@ class Engine(FireboltBaseModel):
 
     @check_attached_to_database
     def get_connection(self) -> Connection:
-        """Get a connection to the attached database, for running queries.
+        """Get a connection to the attached database for running queries.
 
         Returns:
             Connection: engine connection instance
@@ -211,16 +211,16 @@ class Engine(FireboltBaseModel):
         Args:
             wait_for_startup:
                 If True, wait for startup to complete.
-                If false, return immediately after requesting startup.
+                If False, return immediately after requesting startup.
             wait_timeout_seconds:
                 Number of seconds to wait for startup to complete
-                before raising a TimeoutError.
+                before raising a TimeoutError
             verbose:
                 If True, print dots periodically while waiting for engine startup.
-                If false, do not print any dots.
+                If False, do not print any dots.
 
         Returns:
-            The updated Engine from Firebolt.
+            The updated engine from Firebolt.
         """
         timeout_time = time.time() + wait_timeout_seconds
 
@@ -332,12 +332,12 @@ class Engine(FireboltBaseModel):
         use_spot: Optional[bool] = None,
     ) -> Engine:
         """
-        update the engine, and returns an updated version of the engine, all parameters
-        could be set to None, this would keep the old engine parameter value
+        Updates the engine and returns an updated version of the engine. If all parameters
+        are set to None, old engine parameter values remain.
         """
 
         class _EngineUpdateRequest(FireboltBaseModel):
-            """Helper model for sending Engine update requests."""
+            """Helper model for sending engine update requests."""
 
             account_id: str
             desired_revision: Optional[EngineRevision]
@@ -428,13 +428,13 @@ class Engine(FireboltBaseModel):
         Args:
             wait_for_startup:
                 If True, wait for startup to complete.
-                If false, return immediately after requesting startup.
+                If False, return immediately after requesting startup.
             wait_timeout_seconds:
                 Number of seconds to wait for startup to complete
                 before raising a TimeoutError.
 
         Returns:
-            The updated Engine from Firebolt.
+            The updated engine from Firebolt.
         """
         timeout_time = time.time() + wait_timeout_seconds
 
@@ -459,7 +459,7 @@ class Engine(FireboltBaseModel):
         return engine
 
     def delete(self) -> Engine:
-        """Delete an Engine from Firebolt."""
+        """Delete an engine from Firebolt."""
         response = self._service.client.delete(
             url=ACCOUNT_ENGINE_URL.format(
                 account_id=self._service.account_id, engine_id=self.engine_id
@@ -482,7 +482,7 @@ class Engine(FireboltBaseModel):
 
 
 class _EngineCreateRequest(FireboltBaseModel):
-    """Helper model for sending Engine create requests."""
+    """Helper model for sending engine create requests."""
 
     account_id: str
     engine: Engine
