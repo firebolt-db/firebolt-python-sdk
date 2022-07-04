@@ -155,8 +155,14 @@ def get_user_agent_header(
     Return a user agent header with connector stack and system information.
 
     Args:
-        connector_versions(Optional): User-supplied list of tuples of all connectors
-            and their versions intended for tracking.
+        user_drivers(Optional): User-supplied list of tuples of all drivers
+            and their versions intended for tracking. Driver is a programmatic
+            module that facilitates interaction between a clients and underlying
+            database.
+        user_clients(Optional): User-supplied list of tuples of all clients
+            and their versions intended for tracking. Client is a user-facing
+            module or application that allows interaction with the database
+            via drivers or directly.
 
     Returns:
         String representation of a user-agent tracking information
