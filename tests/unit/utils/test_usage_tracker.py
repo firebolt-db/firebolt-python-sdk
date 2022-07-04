@@ -5,6 +5,8 @@ from pydantic import ValidationError
 from pytest import mark, raises
 
 from firebolt.utils.usage_tracker import (
+    CLIENT_MAP,
+    DRIVER_MAP,
     detect_connectors,
     get_sdk_properties,
     get_user_agent_header,
@@ -48,13 +50,14 @@ StackItem = namedtuple("StackItem", "function filename")
     },
 )
 @mark.parametrize(
-    "stack,expected",
+    "stack,map,expected",
     [
         (
             [
                 StackItem("create_connection", "dir1/dir2/firebolt_cli/utils.py"),
                 StackItem("dummy", "dummy.py"),
             ],
+            CLIENT_MAP,
             {"FireboltCLI": "0.1.1"},
         ),
         (
@@ -64,22 +67,27 @@ StackItem = namedtuple("StackItem", "function filename")
                     "my_documents/some_other_dir/firebolt_cli/utils.py",
                 )
             ],
+            CLIENT_MAP,
             {"FireboltCLI": "0.1.1"},
         ),
         (
             [StackItem("connect", "sqlalchemy/engine/default.py")],
+            DRIVER_MAP,
             {"SQLAlchemy": "0.1.2"},
         ),
         (
             [StackItem("establish_connection", "source_firebolt/source.py")],
+            CLIENT_MAP,
             {"AirbyteSource": ""},
         ),
         (
             [StackItem("establish_async_connection", "source_firebolt/source.py")],
+            CLIENT_MAP,
             {"AirbyteSource": ""},
         ),
         (
             [StackItem("establish_connection", "destination_firebolt/destination.py")],
+            CLIENT_MAP,
             {"AirbyteDestination": ""},
         ),
         (
@@ -88,37 +96,56 @@ StackItem = namedtuple("StackItem", "function filename")
                     "establish_async_connection", "destination_firebolt/destination.py"
                 )
             ],
+            CLIENT_MAP,
             {"AirbyteDestination": ""},
         ),
         (
             [StackItem("get_conn", "firebolt_provider/hooks/firebolt.py")],
+            CLIENT_MAP,
             {"Airflow": "0.1.3"},
         ),
-        ([StackItem("open", "dbt/adapters/firebolt/connections.py")], {"DBT": "0.1.4"}),
+        (
+            [StackItem("open", "dbt/adapters/firebolt/connections.py")],
+            DRIVER_MAP,
+            {"DBT": "0.1.4"},
+        ),
+        (
+            [StackItem("open", "dbt/adapters/firebolt/connections.py")],
+            CLIENT_MAP,
+            {},
+        ),
     ],
 )
-def test_detect_connectors(stack, expected):
+def test_detect_connectors(stack, map, expected):
     with patch(
         "firebolt.utils.usage_tracker.inspect.stack", MagicMock(return_value=stack)
     ):
-        assert detect_connectors() == expected
+        assert detect_connectors(map) == expected
 
 
 @mark.parametrize(
-    "connectors,expected_string",
+    "drivers,clients,expected_string",
     [
-        ([], "PythonSDK/2 (Python 1; Win; ciso)"),
+        ([], [], "PythonSDK/2 (Python 1; Win; ciso)"),
         (
             [("ConnectorA", "0.1.1")],
+            [],
             "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1",
         ),
         (
             (("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")),
+            (),
             "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
         ),
         (
             [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
+            [],
             "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
+        ),
+        (
+            [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
+            [("ClientA", "1.0.1")],
+            "ClientA/1.0.1 PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
         ),
     ],
 )
@@ -126,22 +153,28 @@ def test_detect_connectors(stack, expected):
     "firebolt.utils.usage_tracker.get_sdk_properties",
     MagicMock(return_value=("1", "2", "Win", "ciso")),
 )
-def test_user_agent(connectors, expected_string):
-    assert get_user_agent_header(connectors) == expected_string
+def test_user_agent(drivers, clients, expected_string):
+    assert get_user_agent_header(drivers, clients) == expected_string
 
 
 @mark.parametrize(
-    "connectors",
+    "drivers,clients",
     [
-        ([1]),
-        ((("Con1", "v1.1"), ("Con2"))),
-        (("Connector1.1")),
+        ([1], []),
+        ((("Con1", "v1.1"), ("Con2")), []),
+        (("Connector1.1"), ()),
+        (
+            [],
+            [1],
+        ),
+        ([], (("Con1", "v1.1"), ("Con2"))),
+        ((), ("Connector1.1")),
     ],
 )
 @patch(
     "firebolt.utils.usage_tracker.get_sdk_properties",
     MagicMock(return_value=("1", "2", "Win", "ciso")),
 )
-def test_incorrect_user_agent(connectors):
+def test_incorrect_user_agent(drivers, clients):
     with raises(ValidationError):
-        get_user_agent_header(connectors)
+        get_user_agent_header(drivers, clients)
