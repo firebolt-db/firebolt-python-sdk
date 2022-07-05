@@ -400,11 +400,11 @@ async def test_connect_with_user_agent(
     access_token: str,
 ) -> None:
     with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
-        ut.return_value = "MyConnector/1.0"
+        ut.return_value = "MyConnector/1.0 DriverA/1.1"
         httpx_mock.add_callback(
             query_callback,
             url=query_url,
-            match_headers={"User-Agent": "MyConnector/1.0"},
+            match_headers={"User-Agent": "MyConnector/1.0 DriverA/1.1"},
         )
 
         async with await connect(
@@ -413,10 +413,13 @@ async def test_connect_with_user_agent(
             engine_url=settings.server,
             account_name=settings.account_name,
             api_endpoint=settings.server,
-            additional_parameters={"connector_versions": [("MyConnector", "1.0")]},
+            additional_parameters={
+                "user_clients": [("MyConnector", "1.0")],
+                "user_drivers": [("DriverA", "1.1")],
+            },
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([("MyConnector", "1.0")])
+        ut.assert_called_once_with([("DriverA", "1.1")], [("MyConnector", "1.0")])
 
 
 @mark.asyncio
@@ -442,4 +445,4 @@ async def test_connect_no_user_agent(
             api_endpoint=settings.server,
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([])
+        ut.assert_called_once_with([], [])
