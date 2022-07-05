@@ -89,7 +89,7 @@ Column = namedtuple(
 
 
 class ARRAY:
-    """Class for holding information about the `array` column type in Firebolt DB."""
+    """Class for holding `array` column type information in Firebolt DB."""
 
     _prefix = "Array("
 
@@ -109,7 +109,7 @@ class ARRAY:
 
 
 class DECIMAL:
-    """Class for holding information about the `decimal` value in Firebolt DB."""
+    """Class for holding `decimal` value information in Firebolt DB."""
 
     _prefix = "Decimal("
 
@@ -127,7 +127,7 @@ class DECIMAL:
 
 
 class DATETIME64:
-    """Class for holding imformation about the`datetime64` value in Firebolt DB."""
+    """Class for holding `datetime64` value information in Firebolt DB."""
 
     _prefix = "DateTime64("
 
@@ -147,7 +147,7 @@ NULLABLE_PREFIX = "Nullable("
 
 
 class _InternalType(Enum):
-    """Enum of all internal Firebolt types except for `array`."""
+    """Enum of all internal Firebolt types, except for `array`."""
 
     # INT, INTEGER
     Int8 = "Int8"
@@ -244,7 +244,7 @@ def parse_value(
     value: RawColType,
     ctype: Union[type, ARRAY, DECIMAL, DATETIME64],
 ) -> ColType:
-    """Provided raw value, and Python type, parses first into Python value."""
+    """Provided raw value, and Python type; parses first into Python value."""
     if value is None:
         return None
     if ctype in (int, str, float):
@@ -336,7 +336,10 @@ SetParameter = namedtuple("SetParameter", ["name", "value"])
 
 
 def statement_to_set(statement: Statement) -> Optional[SetParameter]:
-    """Try to parse `statement` as a `SET` command. Return `None` if it's not a `SET` command."""
+    """
+    Try to parse `statement` as a `SET` command.
+    Return `None` if it's not a `SET` command.
+    """
     # Filter out meaningless tokens like Punctuation and Whitespaces
     tokens = [
         token
@@ -370,8 +373,8 @@ def split_format_sql(
     query: str, parameters: Sequence[Sequence[ParameterType]]
 ) -> List[Union[str, SetParameter]]:
     """
-    Attempting to format a multi-statement query will result in `NotSupportedError`.
-    Instead, split a query into a separate statement and format it with parameters.
+    Multi-statement query formatting will result in `NotSupportedError`.
+    Instead, split a query into a separate statement and format with parameters.
     """
     statements = parse_sql(query)
     if not statements:

@@ -30,7 +30,8 @@ from firebolt.utils.util import fix_url_schema
 DEFAULT_TIMEOUT_SECONDS: int = 5
 KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
-AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly to the `connect` function is deprecated.
+AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials
+ directly to the `connect` function is deprecated.
  Pass the `Auth` object instead.
  Examples:
   >>> from firebolt.client.auth import UsernamePassword

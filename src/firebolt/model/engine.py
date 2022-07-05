@@ -105,7 +105,7 @@ class FieldMask(FireboltBaseModel):
 
 class Engine(FireboltBaseModel):
     """
-    A Firebolt engine. Responsible for performing work (queries, data ingestion).
+    A Firebolt engine. Responsible for performing work (queries, ingestion).
 
     Engines are configured in :py:class:`Settings
     <firebolt.model.engine.EngineSettings>`
@@ -216,7 +216,7 @@ class Engine(FireboltBaseModel):
                 Number of seconds to wait for startup to complete
                 before raising a TimeoutError
             verbose:
-                If True, print dots periodically while waiting for engine startup.
+                If True, print dots periodically while waiting for engine start.
                 If False, do not print any dots.
 
         Returns:
@@ -332,8 +332,8 @@ class Engine(FireboltBaseModel):
         use_spot: Optional[bool] = None,
     ) -> Engine:
         """
-        Updates the engine and returns an updated version of the engine. If all parameters
-        are set to None, old engine parameter values remain.
+        Updates the engine and returns an updated version of the engine. If all
+        parameters are set to None, old engine parameter values remain.
         """
 
         class _EngineUpdateRequest(FireboltBaseModel):
