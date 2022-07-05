@@ -173,24 +173,24 @@ def async_connect_factory(connection_class: Type) -> Callable:
         """Connect to Firebolt database.
 
         Args:
-            `database` (str): Name of the database to connect.
-            `username` (Optional[str]): User name to use for authentication (Deprecated).
-            `password` (Optional[str]): Password to use for authentication (Deprecated).
+            `database` (str): Name of the database to connect
+            `username` (Optional[str]): User name to use for authentication (Deprecated)
+            `password` (Optional[str]): Password to use for authentication (Deprecated)
             `access_token` (Optional[str]): Authentication token to use instead of
-                                          credentials (Deprecated).
+                                          credentials (Deprecated)
             `auth` (Auth)L Authentication object.
             `engine_name` (Optional[str]): Name of the engine to connect to
             `engine_url` (Optional[str]): The engine endpoint to use
             `account_name` (Optional[str]): For customers with multiple accounts;
-                                          if none, default is used.
-            `api_endpoint` (str): Firebolt API endpoint. Used for authentication.
-            `use_token_cache` (bool): Cached authentication token in filesystem.
+                                          if none, default is used
+            `api_endpoint` (str): Firebolt API endpoint. Used for authentication
+            `use_token_cache` (bool): Cached authentication token in filesystem
                                     Default: True
             `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
-                                    arguments for connection.
+                                    arguments for connection
 
         Note:
-            Providing both `engine_name` and `engine_url` will result in an error.
+            Providing both `engine_name` and `engine_url` will result in an error
 
         """
         # These parameters are optional in function signature
@@ -381,7 +381,7 @@ class Connection(BaseConnection):
         `database`: Firebolt database name
         `username`: Firebolt account username
         `password`: Firebolt account password
-        `api_endpoint`: Optional. Firebolt API endpoint. Used for authentication.
+        `api_endpoint`: Optional. Firebolt API endpoint used for authentication
         `connector_versions`: Optional. Tuple of connector name and version, or
             a list of tuples of your connector stack. Useful for tracking custom
             connector usage.
