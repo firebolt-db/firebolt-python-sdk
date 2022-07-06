@@ -1,10 +1,10 @@
 ===================
-Db
+DB
 ===================
 
-The db package enables connecting to a Firebolt database for synchronous queries.
+The DB package enables connecting to a Firebolt database for synchronous queries.
 
-Db.connect
+Connect
 -----------------------------
 
 .. automodule:: firebolt.db.connect
@@ -13,7 +13,7 @@ Db.connect
    :undoc-members:
    :show-inheritance:
 
-Db.connection
+Connection
 -----------------------------
 
 .. note::
@@ -25,10 +25,11 @@ Db.connection
    :undoc-members:
    :show-inheritance:
 
-Db.cursor
+Cursor
 -------------------------
 
 .. automodule:: firebolt.db.cursor
    :members:
+   :exclude-members: is_db_available, is_engine_running
    :undoc-members:
    :show-inheritance:

@@ -6,7 +6,7 @@ The common package contains settings parameters and error exceptions.
 
 ..
 
-   Common.exception
+   Exception
    --------------------------------
 
    .. automodule:: firebolt.common.exception
@@ -14,7 +14,7 @@ The common package contains settings parameters and error exceptions.
       :undoc-members:
       :show-inheritance:
 
-Common.settings
+Settings
 -------------------------------
 
 .. automodule:: firebolt.common.settings
@@ -23,7 +23,7 @@ Common.settings
    :undoc-members:
    :show-inheritance:
 
-Utils.exception
+Exception
 --------------------------------
 
 .. automodule:: firebolt.utils.exception
@@ -33,7 +33,7 @@ Utils.exception
 
 ..
 
-   Common.urls
+   URLs
    ---------------------------
 
    .. automodule:: firebolt.common.urls
@@ -41,7 +41,7 @@ Utils.exception
       :undoc-members:
       :show-inheritance:
 
-   Common.token\_storage
+   Storage
    -------------------------------------
 
    .. automodule:: firebolt.common.token_storage
@@ -49,7 +49,7 @@ Utils.exception
       :undoc-members:
       :show-inheritance:
 
-   Common.util
+   Util
    ---------------------------
 
    .. automodule:: firebolt.common.util
