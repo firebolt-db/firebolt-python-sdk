@@ -478,7 +478,7 @@ class BaseCursor:
         self,
         query: str,
         parameters_seq: Sequence[Sequence[ParameterType]],
-        async_execution: Optional[bool],
+        async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -524,12 +524,10 @@ class BaseCursor:
         ]
 
     def _get_next_range(self, size: int) -> Tuple[int, int]:
-        cleandoc(
-            """
-            Return range of next rows of size (if possible),
-            and update _idx to point to the end of this range
-            """
-        )
+        """
+        Return range of next rows of size (if possible),
+        and update _idx to point to the end of this range
+        """
 
         if self._rows is None:
             # No elements to take
@@ -624,15 +622,15 @@ class Cursor(BaseCursor):
     ) -> Union[int, str]:
         async with self._async_query_lock.writer:
             return await super().execute(
-                query, parameters, set_parameters, skip_parsing
+                query, parameters, set_parameters, skip_parsing, async_execution
             )
 
     @wraps(BaseCursor.executemany)
     async def executemany(
-        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
+        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]], async_execution: Optional[bool] = False
     ) -> int:
         async with self._async_query_lock.writer:
-            return await super().executemany(query, parameters_seq)
+            return await super().executemany(query, parameters_seq, async_execution)
         """
             Prepare and execute a database query against all parameter
             sequences provided

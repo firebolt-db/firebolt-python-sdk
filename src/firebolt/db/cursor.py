@@ -61,7 +61,7 @@ class Cursor(AsyncBaseCursor):
         self,
         query: str,
         parameters_seq: Sequence[Sequence[ParameterType]],
-        async_execution: Optional[bool],
+        async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         with self._query_lock.gen_wlock():
             return async_to_sync(super().executemany, self._async_job_thread)(
