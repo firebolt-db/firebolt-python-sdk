@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import wraps
 from threading import Lock
-from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Generator, List, Optional, Sequence, Tuple, Union
 
 from readerwriterlock.rwlock import RWLockWrite
 
@@ -49,19 +49,23 @@ class Cursor(AsyncBaseCursor):
         parameters: Optional[Sequence[ParameterType]] = None,
         set_parameters: Optional[Dict] = None,
         skip_parsing: bool = False,
-    ) -> int:
+        async_execution: Optional[bool] = False,
+    ) -> Union[int, str]:
         with self._query_lock.gen_wlock():
             return async_to_sync(super().execute, self._async_job_thread)(
-                query, parameters, set_parameters, skip_parsing
+                query, parameters, set_parameters, skip_parsing, async_execution
             )
 
     @wraps(AsyncBaseCursor.executemany)
     def executemany(
-        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
-    ) -> int:
+        self,
+        query: str,
+        parameters_seq: Sequence[Sequence[ParameterType]],
+        async_execution: Optional[bool],
+    ) -> Union[int, str]:
         with self._query_lock.gen_wlock():
             return async_to_sync(super().executemany, self._async_job_thread)(
-                query, parameters_seq
+                query, parameters_seq, async_execution
             )
 
     @wraps(AsyncBaseCursor._get_next_range)

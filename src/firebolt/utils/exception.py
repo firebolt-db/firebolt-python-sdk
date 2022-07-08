@@ -7,11 +7,11 @@ class FireboltEngineError(FireboltError):
 
 
 class EngineNotRunningError(FireboltEngineError):
-    """Engine, that's being queried, is not running."""
+    """Engine that's being queried, is not running."""
 
 
 class NoAttachedDatabaseError(FireboltEngineError):
-    """Engine, that's being accessed, is not running.
+    """Engine that's being accessed is not running.
 
     Args:
         method_name (str): Name of the method, which caused issue
@@ -222,3 +222,17 @@ class NotSupportedError(DatabaseError):
 
 class ConfigurationError(InterfaceError):
     """Invalid configuration error."""
+
+
+class AsyncExecutionUnavailableError(ProgrammingError):
+    """
+    If `use_standard_sql` is specified the query status endpoint returns a JSON
+    object with empty values instead of a proper status object. In that case,
+    it is not possible to retrieve the results of an asynchronous query.
+    """
+
+    def __init__(self):  # type: ignore
+        super().__init__(
+            "It is not possible to execute queries asynchronously if "
+            "use_standard_sql is in use."
+        )
