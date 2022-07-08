@@ -5,7 +5,6 @@ import re
 import time
 from enum import Enum
 from functools import wraps
-from inspect import cleandoc
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -627,7 +626,10 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.executemany)
     async def executemany(
-        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]], async_execution: Optional[bool] = False
+        self,
+        query: str,
+        parameters_seq: Sequence[Sequence[ParameterType]],
+        async_execution: Optional[bool] = False,
     ) -> int:
         async with self._async_query_lock.writer:
             return await super().executemany(query, parameters_seq, async_execution)
