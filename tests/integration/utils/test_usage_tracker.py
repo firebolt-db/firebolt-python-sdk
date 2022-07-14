@@ -72,11 +72,12 @@ def create_test_file(code: str, function_name: str, file_path: str):
 def test_usage_detection(function, path, expected, test_model, create_cli_mock):
     test_path = TEST_FOLDER + path
     create_test_file(test_model, function, test_path)
+    env = os.environ.copy()
     result = run(
         ["python3", test_path],
         stdout=PIPE,
         stderr=PIPE,
-        env={"PYTHONPATH": os.getenv("PYTHONPATH", ""), "PATH": os.getenv("PATH", "")},
+        env=env,
     )
     assert not result.stderr
     assert expected in result.stdout.decode("utf-8")
