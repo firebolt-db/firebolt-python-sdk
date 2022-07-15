@@ -192,6 +192,58 @@ async def test_cursor_execute(
 
 
 @mark.asyncio
+async def test_cursor_execute_async(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    insert_query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
+):
+    """
+    Cursor is able to execute query asynchronously, all fields are populated
+    properly.
+    """
+
+    for query in (
+        lambda: cursor.execute(query="select * from t", async_execution=True),
+        lambda: cursor.executemany(
+            query="select * from t", parameters=[], async_execution=True
+        ),
+    ):
+        # Query with json output
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(query_callback, url=query_url)
+        assert await query() == len(python_query_data), "Invalid row count returned"
+        assert cursor.rowcount == len(python_query_data), "Invalid rowcount value"
+        for i, (desc, exp) in enumerate(
+            zip(cursor.description, python_query_description)
+        ):
+            assert desc == exp, f"Invalid column description at position {i}"
+
+        for i in range(cursor.rowcount):
+            assert (
+                await cursor.fetchone() == python_query_data[i]
+            ), f"Invalid data row at position {i}"
+
+        assert (
+            await cursor.fetchone() is None
+        ), "Non-empty fetchone after all data received"
+
+        httpx_mock.reset(True)
+
+        # Query with empty output
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(insert_query_callback, url=query_url)
+        assert await query() == -1, "Invalid row count for insert query"
+        assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
+        assert cursor.description is None, "Invalid description for insert query"
+
+
+@mark.asyncio
 async def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,

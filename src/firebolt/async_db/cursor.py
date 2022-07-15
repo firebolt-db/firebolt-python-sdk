@@ -153,7 +153,7 @@ class BaseCursor:
         self._rowcount = -1
         self._idx = 0
         self._next_set_idx = 0
-        self._query_id = 0
+        self._query_id = ""
         self._reset()
 
     def __del__(self) -> None:
@@ -190,7 +190,7 @@ class BaseCursor:
 
     @property  # type: ignore
     @check_not_closed
-    def query_id(self) -> int:
+    def query_id(self) -> str:
         """The query id of a query executed asynchronously."""
         return self._query_id
 
@@ -282,6 +282,7 @@ class BaseCursor:
         self._idx = 0
         self._row_sets = []
         self._next_set_idx = 0
+        self._query_id = ""
 
     def _row_set_from_response(
         self, response: Response
@@ -296,7 +297,6 @@ class BaseCursor:
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
             return (-1, None, None, None)
-
         try:
             # Skip parsing floats to properly parse them later
             query_data = response.json(parse_float=str)
@@ -337,7 +337,21 @@ class BaseCursor:
                 "database": self.connection.database,
                 "output_format": JSON_OUTPUT_FORMAT,
                 **self._set_parameters,
-                **(set_parameters or dict()),
+            },
+            content=query,
+        )
+
+    async def _async_api_request(self, query: str) -> Response:
+        """Do query request using SET async_execution=1."""
+        return await self._client.request(
+            url="/",
+            method="POST",
+            params={
+                "database": self.connection.database,
+                "output_format": JSON_OUTPUT_FORMAT,
+                **self._set_parameters,
+                "async_execution": 1,
+                "advanced_mode": 1,
             },
             content=query,
         )
@@ -346,21 +360,10 @@ class BaseCursor:
         self,
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
-        set_parameters: Optional[Dict] = None,
         skip_parsing: bool = False,
+        async_execution: bool = False,
     ) -> None:
-        self._reset()
-        if set_parameters and "async_execution" not in set_parameters:
-            # async_execution is set using an SDK call, never using SET.
-            logger.warning(
-                "Passing set parameters as an argument is deprecated. Please run "
-                "a query 'SET <param> = <value>'"
-            )
-        elif (
-            set_parameters
-            and set_parameters.get("async_execution", 0) == 1
-            and set_parameters.get("use_standard_sql", 0) == 1
-        ):
+        if async_execution and "use_standard_sql" in self._set_parameters:
             raise AsyncExecutionUnavailableError()
         try:
 
@@ -405,12 +408,18 @@ class BaseCursor:
 
                     # set parameter passed validation
                     self._set_parameters[query.name] = query.value
+                elif async_execution:
+                    resp = await self._async_api_request(
+                        query,
+                    )
+                    await self._raise_if_error(resp)
+                    self._row_set_from_response(resp)
                 else:
-                    resp = await self._api_request(query, set_parameters)
+                    resp = await self._api_request(query, {})
                     await self._raise_if_error(resp)
                     row_set = self._row_set_from_response(resp)
 
-                self._append_row_set(row_set)
+                    self._append_row_set(row_set)
 
                 logger.info(
                     f"Query fetched {self.rowcount} rows in"
@@ -428,7 +437,6 @@ class BaseCursor:
         self,
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
-        set_parameters: Optional[Dict] = None,
         skip_parsing: bool = False,
         async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
@@ -451,8 +459,6 @@ class BaseCursor:
             parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
                 parameters. Used to replace '?' placeholders inside a query with
                 actual values
-            set_parameters (Optional[Dict]): List of set parameters to execute
-                a query with. DEPRECATED: Use SET SQL statements instead
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized, multi-statement and SET queries,
                 while improving performance
@@ -463,13 +469,9 @@ class BaseCursor:
         """
         params_list = [parameters] if parameters else []
         if async_execution:
-            if set_parameters:
-                set_parameters["async_execution"] = 1
-            else:
-                set_parameters = {"async_execution": 1}
-            await self._do_execute(query, params_list, set_parameters, skip_parsing)
+            await self._do_execute(query, params_list, skip_parsing, True)
             return self.query_id
-        await self._do_execute(query, params_list, set_parameters, skip_parsing)
+        await self._do_execute(query, params_list, skip_parsing, False)
         return self.rowcount
 
     @check_not_closed
@@ -509,10 +511,10 @@ class BaseCursor:
             query ID string for asynchronous execution.
         """
         if async_execution:
-            await self._do_execute(query, parameters_seq, {"async_execution": 1})
+            await self._do_execute(query, parameters_seq, True)
             return self.query_id
         else:
-            await self._do_execute(query, parameters_seq)
+            await self._do_execute(query, parameters_seq, False)
             return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
