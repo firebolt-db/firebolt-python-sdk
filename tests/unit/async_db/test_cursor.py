@@ -192,7 +192,7 @@ async def test_cursor_execute(
 
 
 @mark.asyncio
-async def test_cursor_execute_async(
+async def test_cursor_server_side_async(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
@@ -200,8 +200,6 @@ async def test_cursor_execute_async(
     insert_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
-    python_query_description: List[Column],
-    python_query_data: List[List[ColType]],
 ):
     """
     Cursor is able to execute query asynchronously, all fields are populated
@@ -216,9 +214,9 @@ async def test_cursor_execute_async(
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(query_callback, url=query_url)
-        assert await query() == len(python_query_data), "Invalid row count returned"
-        assert cursor.rowcount == len(python_query_data), "Invalid rowcount value"
+        httpx_mock.add_callback(server_side_async_id_callback, url=query_url)
+
+        assert await query() == server_side_async_id, "Invalid query id returned."
         for i, (desc, exp) in enumerate(
             zip(cursor.description, python_query_description)
         ):

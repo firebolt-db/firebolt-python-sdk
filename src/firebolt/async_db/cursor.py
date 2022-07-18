@@ -284,6 +284,12 @@ class BaseCursor:
         self._next_set_idx = 0
         self._query_id = ""
 
+    def _query_id_from_response_async(self, response: Response) -> str:
+        if response.headers.get("content-length", "") == "0":
+            return ""  # Should this error out?
+        query_data = response.json(parse_float=str)
+        return query_data["query_id"]
+
     def _row_set_from_response(
         self, response: Response
     ) -> Tuple[
@@ -409,11 +415,9 @@ class BaseCursor:
                     # set parameter passed validation
                     self._set_parameters[query.name] = query.value
                 elif async_execution:
-                    resp = await self._async_api_request(
-                        query,
-                    )
+                    resp = await self._async_api_request(query)
                     await self._raise_if_error(resp)
-                    self._row_set_from_response(resp)
+                    self._query_id = self._query_id_from_response_async(resp)
                 else:
                     resp = await self._api_request(query, {})
                     await self._raise_if_error(resp)
