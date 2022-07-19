@@ -1,6 +1,7 @@
 from datetime import date, datetime
 from typing import Dict
 
+import pytest_asyncio
 from pytest import fixture
 
 from firebolt.async_db import (
@@ -15,7 +16,7 @@ from firebolt.common.settings import Settings
 from tests.unit.db_conftest import *  # noqa
 
 
-@fixture
+@pytest_asyncio.fixture
 async def connection(settings: Settings, db_name: str) -> Connection:
     async with (
         await connect(
@@ -30,7 +31,7 @@ async def connection(settings: Settings, db_name: str) -> Connection:
         yield connection
 
 
-@fixture
+@pytest_asyncio.fixture
 async def cursor(connection: Connection, settings: Settings) -> Cursor:
     return connection.cursor()
 
