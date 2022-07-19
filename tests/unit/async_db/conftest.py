@@ -1,8 +1,8 @@
 from datetime import date, datetime
 from typing import Dict
 
+import pytest
 import pytest_asyncio
-from pytest import fixture
 
 from firebolt.async_db import (
     ARRAY,
@@ -36,7 +36,7 @@ async def cursor(connection: Connection, settings: Settings) -> Cursor:
     return connection.cursor()
 
 
-@fixture
+@pytest.fixture
 def types_map() -> Dict[str, type]:
     base_types = {
         "UInt8": int,
