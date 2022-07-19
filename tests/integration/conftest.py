@@ -1,7 +1,8 @@
 from logging import getLogger
 from os import environ
 
-from pytest import fixture
+import pytest
+import pytest_asyncio
 
 from firebolt.service.manager import Settings
 
@@ -24,7 +25,7 @@ def must_env(var_name: str) -> str:
     return environ[var_name]
 
 
-@fixture(scope="session")
+@pytest_asyncio.fixture(scope="session")
 def rm_settings(api_endpoint, username, password) -> Settings:
     return Settings(
         server=api_endpoint,
@@ -34,46 +35,46 @@ def rm_settings(api_endpoint, username, password) -> Settings:
     )
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def engine_url() -> str:
     return must_env(ENGINE_URL_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def stopped_engine_url() -> str:
     return must_env(STOPPED_ENGINE_URL_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def engine_name() -> str:
     return must_env(ENGINE_NAME_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def stopped_engine_name() -> str:
     return must_env(STOPPED_ENGINE_URL_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def database_name() -> str:
     return must_env(DATABASE_NAME_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def username() -> str:
     return must_env(USER_NAME_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def password() -> str:
     return must_env(PASSWORD_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def account_name() -> str:
     return must_env(ACCOUNT_NAME_ENV)
 
 
-@fixture(scope="session")
+@pytest.fixture(scope="session")
 def api_endpoint() -> str:
     return must_env(API_ENDPOINT_ENV)
