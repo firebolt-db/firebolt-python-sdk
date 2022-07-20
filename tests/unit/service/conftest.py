@@ -3,8 +3,8 @@ from typing import Callable, List
 from urllib.parse import urlparse
 
 import httpx
-import pytest
 from httpx import Response
+from pytest import fixture
 
 from firebolt.common.settings import Settings
 from firebolt.model.binding import Binding, BindingKey
@@ -31,22 +31,22 @@ from firebolt.utils.urls import (
 from tests.unit.util import list_to_paginated_response
 
 
-@pytest.fixture
+@fixture
 def engine_name() -> str:
     return "my_engine"
 
 
-@pytest.fixture
+@fixture
 def engine_scale() -> int:
     return 2
 
 
-@pytest.fixture
+@fixture
 def engine_settings() -> EngineSettings:
     return EngineSettings.default()
 
 
-@pytest.fixture
+@fixture
 def mock_engine(engine_name, region_1, engine_settings, account_id, settings) -> Engine:
     return Engine(
         name=engine_name,
@@ -57,7 +57,7 @@ def mock_engine(engine_name, region_1, engine_settings, account_id, settings) ->
     )
 
 
-@pytest.fixture
+@fixture
 def mock_engine_revision_spec(
     instance_type_2, engine_scale
 ) -> EngineRevisionSpecification:
@@ -68,12 +68,12 @@ def mock_engine_revision_spec(
     )
 
 
-@pytest.fixture
+@fixture
 def mock_engine_revision(mock_engine_revision_spec) -> EngineRevision:
     return EngineRevision(specification=mock_engine_revision_spec)
 
 
-@pytest.fixture
+@fixture
 def instance_type_1(provider, region_1) -> InstanceType:
     return InstanceType(
         key=InstanceTypeKey(
@@ -87,7 +87,7 @@ def instance_type_1(provider, region_1) -> InstanceType:
     )
 
 
-@pytest.fixture
+@fixture
 def instance_type_2(provider, region_2) -> InstanceType:
     return InstanceType(
         key=InstanceTypeKey(
@@ -101,7 +101,7 @@ def instance_type_2(provider, region_2) -> InstanceType:
     )
 
 
-@pytest.fixture
+@fixture
 def instance_type_3(provider, region_2) -> InstanceType:
     return InstanceType(
         key=InstanceTypeKey(
@@ -115,19 +115,19 @@ def instance_type_3(provider, region_2) -> InstanceType:
     )
 
 
-@pytest.fixture
+@fixture
 def cheapest_instance(instance_type_2) -> InstanceType:
     return instance_type_2
 
 
-@pytest.fixture
+@fixture
 def mock_instance_types(
     instance_type_1, instance_type_2, instance_type_3
 ) -> List[InstanceType]:
     return [instance_type_1, instance_type_2, instance_type_3]
 
 
-@pytest.fixture
+@fixture
 def provider_callback(provider_url: str, mock_providers) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -142,12 +142,12 @@ def provider_callback(provider_url: str, mock_providers) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def provider_url(settings: Settings) -> str:
     return f"https://{settings.server}{PROVIDERS_URL}"
 
 
-@pytest.fixture
+@fixture
 def region_callback(region_url: str, mock_regions) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -162,12 +162,12 @@ def region_callback(region_url: str, mock_regions) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def region_url(settings: Settings) -> str:
     return f"https://{settings.server}{REGIONS_URL}?page.first=5000"
 
 
-@pytest.fixture
+@fixture
 def instance_type_callback(instance_type_url: str, mock_instance_types) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -182,7 +182,7 @@ def instance_type_callback(instance_type_url: str, mock_instance_types) -> Calla
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def instance_type_region_1_callback(
     instance_type_region_1_url: str, mock_instance_types
 ) -> Callable:
@@ -199,7 +199,7 @@ def instance_type_region_1_callback(
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def instance_type_empty_callback() -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -213,7 +213,7 @@ def instance_type_empty_callback() -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def instance_type_url(settings: Settings, account_id: str) -> str:
     return (
         f"https://{settings.server}"
@@ -222,7 +222,7 @@ def instance_type_url(settings: Settings, account_id: str) -> str:
     )
 
 
-@pytest.fixture
+@fixture
 def instance_type_region_1_url(
     settings: Settings, region_1: Region, account_id: str
 ) -> str:
@@ -233,7 +233,7 @@ def instance_type_region_1_url(
     )
 
 
-@pytest.fixture
+@fixture
 def instance_type_region_2_url(
     settings: Settings, region_2: Region, account_id: str
 ) -> str:
@@ -244,7 +244,7 @@ def instance_type_region_2_url(
     )
 
 
-@pytest.fixture
+@fixture
 def engine_callback(engine_url: str, mock_engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -259,14 +259,14 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def engine_url(settings: Settings, account_id) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINES_URL.format(
         account_id=account_id
     )
 
 
-@pytest.fixture
+@fixture
 def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -281,7 +281,7 @@ def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id,
@@ -289,7 +289,7 @@ def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
     )
 
 
-@pytest.fixture
+@fixture
 def mock_database(region_1, account_id) -> Database:
     return Database(
         name="mock_db_name",
@@ -301,7 +301,7 @@ def mock_database(region_1, account_id) -> Database:
     )
 
 
-@pytest.fixture
+@fixture
 def create_databases_callback(databases_url: str, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -321,7 +321,7 @@ def create_databases_callback(databases_url: str, mock_database) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def databases_get_callback(databases_url: str, mock_database) -> Callable:
     def get_databases_callback_inner(
         request: httpx.Request = None, **kwargs
@@ -333,14 +333,14 @@ def databases_get_callback(databases_url: str, mock_database) -> Callable:
     return get_databases_callback_inner
 
 
-@pytest.fixture
+@fixture
 def databases_url(settings: Settings, account_id: str) -> str:
     return f"https://{settings.server}" + ACCOUNT_DATABASES_URL.format(
         account_id=account_id
     )
 
 
-@pytest.fixture
+@fixture
 def database_callback(database_url: str, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -355,7 +355,7 @@ def database_callback(database_url: str, mock_database) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def database_not_found_callback(database_url: str) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -370,14 +370,14 @@ def database_not_found_callback(database_url: str) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def database_url(settings: Settings, account_id: str, mock_database) -> str:
     return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
         account_id=account_id, database_id=mock_database.database_id
     )
 
 
-@pytest.fixture
+@fixture
 def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -392,7 +392,7 @@ def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Ca
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def database_get_by_name_url(settings: Settings, account_id: str, mock_database) -> str:
     return (
         f"https://{settings.server}"
@@ -401,7 +401,7 @@ def database_get_by_name_url(settings: Settings, account_id: str, mock_database)
     )
 
 
-@pytest.fixture
+@fixture
 def database_update_callback(database_get_url, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -418,7 +418,7 @@ def database_update_callback(database_get_url, mock_database) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def database_get_callback(database_get_url, mock_database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -434,14 +434,14 @@ def database_get_callback(database_get_url, mock_database) -> Callable:
 
 
 # duplicates database_url
-@pytest.fixture
+@fixture
 def database_get_url(settings: Settings, account_id: str, mock_database) -> str:
     return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
         account_id=account_id, database_id=mock_database.database_id
     )
 
 
-@pytest.fixture
+@fixture
 def binding(account_id, mock_engine, mock_database) -> Binding:
     return Binding(
         binding_key=BindingKey(
@@ -453,7 +453,7 @@ def binding(account_id, mock_engine, mock_database) -> Binding:
     )
 
 
-@pytest.fixture
+@fixture
 def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -468,7 +468,7 @@ def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def no_bindings_callback(bindings_url: str) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -483,7 +483,7 @@ def no_bindings_callback(bindings_url: str) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def bindings_url(settings: Settings, account_id: str, mock_engine: Engine) -> str:
     return (
         f"https://{settings.server}"
@@ -492,7 +492,7 @@ def bindings_url(settings: Settings, account_id: str, mock_engine: Engine) -> st
     )
 
 
-@pytest.fixture
+@fixture
 def create_binding_callback(create_binding_url: str, binding) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -507,7 +507,7 @@ def create_binding_callback(create_binding_url: str, binding) -> Callable:
     return do_mock
 
 
-@pytest.fixture
+@fixture
 def create_binding_url(
     settings: Settings, account_id: str, mock_database: Database, mock_engine: Engine
 ) -> str:
