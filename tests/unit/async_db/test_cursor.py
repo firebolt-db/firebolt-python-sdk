@@ -439,24 +439,6 @@ async def test_cursor_fetchall(
         await cursor.fetchall()
 
 
-# This tests a temporary functionality, needs to be removed when the
-# functionality is removed
-@mark.asyncio
-async def test_set_parameters(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_with_params_url: str,
-    query_with_params_callback: Callable,
-    cursor: Cursor,
-    set_params: Dict,
-):
-    """Cursor passes provided set parameters to engine"""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_with_params_callback, url=query_with_params_url)
-    await cursor.execute("select 1", set_parameters=set_params)
-
-
 @mark.asyncio
 async def test_cursor_multi_statement(
     httpx_mock: HTTPXMock,
