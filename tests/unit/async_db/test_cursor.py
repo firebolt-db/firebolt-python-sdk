@@ -1,4 +1,3 @@
-from inspect import cleandoc
 from typing import Callable, Dict, List
 from unittest.mock import patch
 
@@ -353,16 +352,16 @@ async def test_cursor_fetchone(
 
     await cursor.execute("sql")
 
-    assert (await cursor.fetchone())[0] == 0, "Invalid rows order returned by fetchone"
-    assert (await cursor.fetchone())[0] == 1, "Invalid rows order returned by fetchone"
+    assert (await cursor.fetchone())[0] == 0, "Invalid rows order returned by fetchone."
+    assert (await cursor.fetchone())[0] == 1, "Invalid rows order returned by fetchone."
 
     assert (
         len(await cursor.fetchall()) == cursor.rowcount - 2
-    ), "Invalid row number returned by fetchall"
+    ), "Invalid row number returned by fetchall."
 
     assert (
         await cursor.fetchone() is None
-    ), "fetchone should return None when no rows left to fetch"
+    ), "fetchone should return None when no rows left to fetch."
 
     httpx_mock.add_callback(insert_query_callback, url=query_url)
     await cursor.execute("sql")
@@ -380,12 +379,10 @@ async def test_cursor_fetchmany(
     query_url: str,
     cursor: Cursor,
 ):
-    cleandoc(
-        """
-        Cursor's fetchmany fetches the provided amount of rows, or arraysize by
-        default. If not enough rows left, returns less or None if there are no rows.
-        """
-    )
+    """
+    Cursor's fetchmany fetches the provided amount of rows, or arraysize by
+    default. If not enough rows left, returns less or None if there are no rows.
+    """
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
