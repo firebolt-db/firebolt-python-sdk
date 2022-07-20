@@ -192,53 +192,34 @@ async def test_cursor_execute(
 
 
 @mark.asyncio
-async def test_cursor_server_side_async(
+async def test_cursor_server_side_async_execute(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
-    query_callback: Callable,
+    server_side_async_id_callback: Callable,
+    server_side_async_id: Callable,
     insert_query_callback: Callable,
-    query_url: str,
+    query_with_params_url: str,
     cursor: Cursor,
 ):
     """
-    Cursor is able to execute query asynchronously, all fields are populated
-    properly.
+    Cursor is able to execute query server-side asynchronously and
+    query_id is returned.
     """
 
     for query in (
         lambda: cursor.execute(query="select * from t", async_execution=True),
         lambda: cursor.executemany(
-            query="select * from t", parameters=[], async_execution=True
+            query="select * from t", parameters_seq=[], async_execution=True
         ),
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(server_side_async_id_callback, url=query_url)
+        httpx_mock.add_callback(
+            server_side_async_id_callback, url=query_with_params_url
+        )
 
         assert await query() == server_side_async_id, "Invalid query id returned."
-        for i, (desc, exp) in enumerate(
-            zip(cursor.description, python_query_description)
-        ):
-            assert desc == exp, f"Invalid column description at position {i}"
-
-        for i in range(cursor.rowcount):
-            assert (
-                await cursor.fetchone() == python_query_data[i]
-            ), f"Invalid data row at position {i}"
-
-        assert (
-            await cursor.fetchone() is None
-        ), "Non-empty fetchone after all data received"
-
-        httpx_mock.reset(True)
-
-        # Query with empty output
-        httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(insert_query_callback, url=query_url)
-        assert await query() == -1, "Invalid row count for insert query"
-        assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
-        assert cursor.description is None, "Invalid description for insert query"
 
 
 @mark.asyncio

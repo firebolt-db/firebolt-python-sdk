@@ -343,6 +343,7 @@ class BaseCursor:
                 "database": self.connection.database,
                 "output_format": JSON_OUTPUT_FORMAT,
                 **self._set_parameters,
+                **(set_parameters or dict()),
             },
             content=query,
         )
@@ -422,7 +423,6 @@ class BaseCursor:
                     resp = await self._api_request(query, {})
                     await self._raise_if_error(resp)
                     row_set = self._row_set_from_response(resp)
-
                     self._append_row_set(row_set)
 
                 logger.info(
@@ -475,8 +475,9 @@ class BaseCursor:
         if async_execution:
             await self._do_execute(query, params_list, skip_parsing, True)
             return self.query_id
-        await self._do_execute(query, params_list, skip_parsing, False)
-        return self.rowcount
+        else:
+            await self._do_execute(query, params_list, skip_parsing, False)
+            return self.rowcount
 
     @check_not_closed
     async def executemany(
@@ -515,10 +516,10 @@ class BaseCursor:
             query ID string for asynchronous execution.
         """
         if async_execution:
-            await self._do_execute(query, parameters_seq, True)
+            await self._do_execute(query, parameters_seq, async_execution=True)
             return self.query_id
         else:
-            await self._do_execute(query, parameters_seq, False)
+            await self._do_execute(query, parameters_seq, async_execution=False)
             return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
@@ -621,13 +622,12 @@ class Cursor(BaseCursor):
         self,
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
-        set_parameters: Optional[Dict] = None,
         skip_parsing: bool = False,
         async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         async with self._async_query_lock.writer:
             return await super().execute(
-                query, parameters, set_parameters, skip_parsing, async_execution
+                query, parameters, skip_parsing, async_execution
             )
 
     @wraps(BaseCursor.executemany)

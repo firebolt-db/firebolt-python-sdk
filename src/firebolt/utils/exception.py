@@ -7,7 +7,7 @@ class FireboltEngineError(FireboltError):
 
 
 class EngineNotRunningError(FireboltEngineError):
-    """Engine that's being queried, is not running."""
+    """Engine that's being queried is not running."""
 
 
 class NoAttachedDatabaseError(FireboltEngineError):

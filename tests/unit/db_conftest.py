@@ -108,7 +108,7 @@ def python_query_data() -> List[List[ColType]]:
 
 
 @fixture
-def server_side_async_id_callback():
+def server_side_async_id_callback() -> Response:
     def do_query(request: Request, **kwargs) -> Response:
         query_response = {"query_id": "1a3f53d"}
         return Response(status_code=codes.OK, json=query_response)
