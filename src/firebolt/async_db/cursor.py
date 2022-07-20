@@ -61,12 +61,6 @@ class CursorState(Enum):
     CLOSED = 4
 
 
-class QueryResponse(Enum):
-    RUNNING = 1
-    ENDED_SUCCESSFULLY = 2
-    ENDED_UNSUCCESSFULLY = 3
-
-
 class Statistics(BaseModel):
     """
     Class for query execution statistics
@@ -106,11 +100,6 @@ def check_query_executed(func: Callable) -> Callable:
         return func(self, *args, **kwargs)
 
     return inner
-
-
-# def get_query_status(query_id: str) -> QueryResponse:
-#     """Check to see if query has successfully succeeded."""
-#     return
 
 
 class BaseCursor:
@@ -298,7 +287,7 @@ class BaseCursor:
         Optional[Statistics],
         Optional[List[List[RawColType]]],
     ]:
-        """Fetch information about executed query from http response"""
+        """Fetch information about executed query from http response."""
 
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
@@ -370,6 +359,7 @@ class BaseCursor:
         skip_parsing: bool = False,
         async_execution: bool = False,
     ) -> None:
+        self._reset()
         if async_execution and "use_standard_sql" in self._set_parameters:
             raise AsyncExecutionUnavailableError()
         try:
@@ -404,7 +394,7 @@ class BaseCursor:
                     Optional[List[List[RawColType]]],
                 ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
-                    # Validate parameter by executing simple query with it
+                    # Validate parameter by executing simple query with it.
                     resp = await self._api_request(
                         "select 1", {query.name: query.value}
                     )
@@ -423,7 +413,8 @@ class BaseCursor:
                     resp = await self._api_request(query, {})
                     await self._raise_if_error(resp)
                     row_set = self._row_set_from_response(resp)
-                    self._append_row_set(row_set)
+
+                self._append_row_set(row_set)
 
                 logger.info(
                     f"Query fetched {self.rowcount} rows in"
