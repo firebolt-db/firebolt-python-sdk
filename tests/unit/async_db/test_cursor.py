@@ -159,13 +159,14 @@ async def test_cursor_execute(
     """Cursor is able to execute query, all fields are populated properly."""
 
     for query in (
-        lambda: cursor.execute("select * from t"),
-        lambda: cursor.executemany("select * from t", []),
+        (lambda: cursor.execute("select * from t"), "execute one"),
+        (lambda: cursor.executemany("select * from t", []), "execute many"),
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
         httpx_mock.add_callback(query_callback, url=query_url)
-        assert await query() == len(python_query_data), "Invalid row count returned"
+        print("\n\n** ", lambda: cursor.execute("select * from t"), "\n\n")
+        assert await query[0]() == len(python_query_data), "Invalid row count returned"
         assert cursor.rowcount == len(python_query_data), "Invalid rowcount value"
         for i, (desc, exp) in enumerate(
             zip(cursor.description, python_query_description)
@@ -186,9 +187,13 @@ async def test_cursor_execute(
         # Query with empty output
         httpx_mock.add_callback(auth_callback, url=auth_url)
         httpx_mock.add_callback(insert_query_callback, url=query_url)
-        assert await query() == -1, f"Invalid row count for insert query{query}"
-        assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
-        assert cursor.description is None, "Invalid description for insert query"
+        assert await query[0]() == -1, f"Invalid row count for insert using {query[1]}."
+        assert (
+            cursor.rowcount == -1
+        ), f"Invalid rowcount value for insert using {query[1]}."
+        assert (
+            cursor.description is None
+        ), f"Invalid description for insert using {query[1]}."
 
 
 @mark.asyncio
