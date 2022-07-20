@@ -186,7 +186,7 @@ async def test_cursor_execute(
         # Query with empty output
         httpx_mock.add_callback(auth_callback, url=auth_url)
         httpx_mock.add_callback(insert_query_callback, url=query_url)
-        assert await query() == -1, "Invalid row count for insert query"
+        assert await query() == -1, f"Invalid row count for insert query{query}"
         assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
         assert cursor.description is None, "Invalid description for insert query"
 
