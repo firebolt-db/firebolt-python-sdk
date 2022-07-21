@@ -241,6 +241,12 @@ async def test_cursor_server_side_async_execute(
         assert (
             await query() == server_side_async_id
         ), f"Invalid query id returned for {message}."
+        assert (
+            cursor.rowcount == -1
+        ), f"Invalid rowcount value for insert using {message}."
+        assert (
+            cursor.description is None
+        ), f"Invalid description for insert using {message}."
 
 
 @mark.asyncio
