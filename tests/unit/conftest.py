@@ -155,11 +155,6 @@ def auth_url(settings: Settings) -> str:
     return f"https://{settings.server}{AUTH_URL}"
 
 
-# @fixture
-# def server_side_async_url(settings: Settings) -> str:
-#     return f"https//{settings.server}{}"
-
-
 @fixture
 def db_name() -> str:
     return "database"

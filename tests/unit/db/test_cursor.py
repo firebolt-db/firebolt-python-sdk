@@ -187,7 +187,7 @@ def test_cursor_execute(
         ), f"Invalid description for insert using {query[1]}."
 
 
-async def test_cursor_server_side_async_execute(
+def test_cursor_server_side_async_execute(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,

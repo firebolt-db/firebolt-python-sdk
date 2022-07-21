@@ -197,7 +197,7 @@ async def test_cursor_execute(
         httpx_mock.add_callback(insert_query_callback, url=query_url)
         assert await query() == -1, f"Invalid row count for insert using {message}."
         assert (
-            cursor.row[count] == -1
+            cursor.rowcount == -1
         ), f"Invalid rowcount value for insert using {message}."
         assert (
             cursor.description is None
