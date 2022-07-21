@@ -40,6 +40,7 @@ from firebolt.utils.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
+    InternalError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -275,7 +276,7 @@ class BaseCursor:
 
     def _query_id_from_response_async(self, response: Response) -> str:
         if response.headers.get("content-length", "") == "0":
-            return ""  # Should this error out?
+            raise InternalError("No response to asynchronous query.")
         query_data = response.json(parse_float=str)
         return query_data["query_id"]
 
@@ -352,7 +353,10 @@ class BaseCursor:
     ) -> None:
         self._reset()
         if async_execution and "use_standard_sql" in self._set_parameters:
-            raise AsyncExecutionUnavailableError()
+            raise AsyncExecutionUnavailableError(
+                "It is not possible to execute queries asynchronously if "
+                "use_standard_sql is in use."
+            )
         try:
 
             if parameters and skip_parsing:

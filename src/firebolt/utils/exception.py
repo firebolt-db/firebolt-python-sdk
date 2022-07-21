@@ -231,8 +231,5 @@ class AsyncExecutionUnavailableError(ProgrammingError):
     it is not possible to retrieve the results of an asynchronous query.
     """
 
-    def __init__(self):  # type: ignore
-        super().__init__(
-            "It is not possible to execute queries asynchronously if "
-            "use_standard_sql is in use."
-        )
+    def __init__(self, error_message):  # type: ignore
+        super().__init__(error_message)
