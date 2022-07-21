@@ -339,17 +339,8 @@ class BaseCursor:
 
     async def _async_api_request(self, query: str) -> Response:
         """Do query request using SET async_execution=1."""
-        return await self._client.request(
-            url="/",
-            method="POST",
-            params={
-                "database": self.connection.database,
-                "output_format": JSON_OUTPUT_FORMAT,
-                **self._set_parameters,
-                "async_execution": 1,
-                "advanced_mode": 1,
-            },
-            content=query,
+        return await self._api_request(
+            query, {"async_execution": 1, "advanced_mode": 1}
         )
 
     async def _do_execute(
@@ -357,7 +348,7 @@ class BaseCursor:
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
-        async_execution: bool = False,
+        async_execution: Optional[bool] = False,
     ) -> None:
         self._reset()
         if async_execution and "use_standard_sql" in self._set_parameters:
@@ -463,11 +454,10 @@ class BaseCursor:
             int: Query row count
         """
         params_list = [parameters] if parameters else []
+        await self._do_execute(query, params_list, skip_parsing, async_execution)
         if async_execution:
-            await self._do_execute(query, params_list, skip_parsing, True)
             return self.query_id
         else:
-            await self._do_execute(query, params_list, skip_parsing, False)
             return self.rowcount
 
     @check_not_closed
@@ -506,11 +496,10 @@ class BaseCursor:
             int|str: Query row count for synchronous execution of queries,
             query ID string for asynchronous execution.
         """
+        await self._do_execute(query, parameters_seq, async_execution=async_execution)
         if async_execution:
-            await self._do_execute(query, parameters_seq, async_execution=True)
             return self.query_id
         else:
-            await self._do_execute(query, parameters_seq, async_execution=False)
             return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
