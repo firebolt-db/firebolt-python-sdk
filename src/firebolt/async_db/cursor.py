@@ -349,6 +349,22 @@ class BaseCursor:
             query, {"async_execution": 1, "advanced_mode": 1}
         )
 
+    async def _validate_set_parameter(self, parameter: SetParameter) -> None:
+        """Validate parameter by executing simple query with it."""
+        if parameter.name == "async_execution":
+            logger.info(
+                "As async_execution was specified using a SET parameter, "
+                "the following query will still be executed synchronously."
+            )
+        resp = await self._api_request("select 1", {parameter.name: parameter.value})
+        # Handle invalid set parameter
+        if resp.status_code == codes.BAD_REQUEST:
+            raise OperationalError(resp.text)
+        await self._raise_if_error(resp)
+
+        # set parameter passed validation
+        self._set_parameters[parameter.name] = parameter.value
+
     async def _do_execute(
         self,
         raw_query: str,
@@ -394,17 +410,7 @@ class BaseCursor:
                     Optional[List[List[RawColType]]],
                 ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
-                    # Validate parameter by executing simple query with it.
-                    resp = await self._api_request(
-                        "select 1", {query.name: query.value}
-                    )
-                    # Handle invalid set parameter
-                    if resp.status_code == codes.BAD_REQUEST:
-                        raise OperationalError(resp.text)
-                    await self._raise_if_error(resp)
-
-                    # set parameter passed validation
-                    self._set_parameters[query.name] = query.value
+                    await self._validate_set_parameter(query)
                 elif async_execution:
                     resp = await self._async_execution_api_request(query)
                     await self._raise_if_error(resp)
