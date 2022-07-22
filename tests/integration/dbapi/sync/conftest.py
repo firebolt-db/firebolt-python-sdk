@@ -1,9 +1,9 @@
-from pytest_asyncio import fixture
+from pytest_asyncio import fixture as async_fixture
 
 from firebolt.db import Connection, connect
 
 
-@fixture
+@async_fixture
 def connection(
     engine_url: str,
     database_name: str,
@@ -24,7 +24,7 @@ def connection(
     connection.close()
 
 
-@fixture
+@async_fixture
 def connection_engine_name(
     engine_name: str,
     database_name: str,
@@ -45,7 +45,7 @@ def connection_engine_name(
     connection.close()
 
 
-@fixture
+@async_fixture
 def connection_no_engine(
     database_name: str,
     username: str,
