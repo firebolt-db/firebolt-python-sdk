@@ -277,7 +277,7 @@ class BaseCursor:
         if response.headers.get("content-length", "") == "0":
             raise OperationalError("No response to asynchronous query.")
         query_data = response.json()
-        if "query" not in query_data:
+        if "query_id" not in query_data:
             raise OperationalError(
                 "Invalid response to asynchronous query: missing query_id."
             )
