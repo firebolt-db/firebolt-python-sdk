@@ -62,6 +62,14 @@ class CursorState(Enum):
     CLOSED = 4
 
 
+class QueryResponse(Enum):
+    """Class for query responses on server-side async queries."""
+
+    RUNNING = 1
+    ENDED_SUCCESSFULLY = 2
+    ENDED_UNSUCCESSFULLY = 3
+
+
 class Statistics(BaseModel):
     """
     Class for query execution statistics
