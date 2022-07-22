@@ -40,7 +40,6 @@ from firebolt.utils.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
-    InternalError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -276,8 +275,8 @@ class BaseCursor:
 
     def _query_id_from_response_async(self, response: Response) -> str:
         if response.headers.get("content-length", "") == "0":
-            raise InternalError("No response to asynchronous query.")
-        query_data = response.json(parse_float=str)
+            raise OperationalError("No response to asynchronous query.")
+        query_data = response.json()
         return query_data["query_id"]
 
     def _row_set_from_response(
@@ -324,7 +323,9 @@ class BaseCursor:
             self._pop_next_set()
 
     async def _api_request(
-        self, query: str, set_parameters: Optional[dict]
+        self,
+        query: str,
+        set_parameters: Optional[dict] = None,
     ) -> Response:
         return await self._client.request(
             url="/",
@@ -338,7 +339,7 @@ class BaseCursor:
             content=query,
         )
 
-    async def _async_api_request(self, query: str) -> Response:
+    async def _async_execution_api_request(self, query: str) -> Response:
         """Do query request using SET async_execution=1."""
         return await self._api_request(
             query, {"async_execution": 1, "advanced_mode": 1}
@@ -401,11 +402,11 @@ class BaseCursor:
                     # set parameter passed validation
                     self._set_parameters[query.name] = query.value
                 elif async_execution:
-                    resp = await self._async_api_request(query)
+                    resp = await self._async_execution_api_request(query)
                     await self._raise_if_error(resp)
                     self._query_id = self._query_id_from_response_async(resp)
                 else:
-                    resp = await self._api_request(query, {})
+                    resp = await self._api_request(query)
                     await self._raise_if_error(resp)
                     row_set = self._row_set_from_response(resp)
 
@@ -459,10 +460,7 @@ class BaseCursor:
         """
         params_list = [parameters] if parameters else []
         await self._do_execute(query, params_list, skip_parsing, async_execution)
-        if async_execution:
-            return self.query_id
-        else:
-            return self.rowcount
+        return self.query_id if async_execution else self.rowcount
 
     @check_not_closed
     async def executemany(
