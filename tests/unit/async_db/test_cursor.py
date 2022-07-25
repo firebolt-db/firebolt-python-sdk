@@ -343,6 +343,99 @@ async def test_cursor_execute_error(
 
 
 @mark.asyncio
+async def test_cursor_async_execute_error(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_url: str,
+    get_engines_url: str,
+    get_databases_url: str,
+    cursor: Cursor,
+):
+    """Cursor handles all types of errors properly."""
+    for query, message in (
+        (
+            lambda: cursor.execute("select * from t"),
+            "server-side synchronous execute()",
+        ),
+        (
+            lambda: cursor.executemany("select * from t", []),
+            "server-side synchronous executemany()",
+        ),
+    ):
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+
+        # Internal httpx error
+        def http_error(*args, **kwargs):
+            raise StreamError("httpx error")
+
+        httpx_mock.add_callback(http_error, url=query_url)
+        with raises(StreamError) as excinfo:
+            await query()
+
+        assert cursor._state == CursorState.ERROR
+        assert (
+            str(excinfo.value) == "httpx error"
+        ), f"Invalid query error message for {message}."
+
+        # HTTP error
+        httpx_mock.add_response(status_code=codes.BAD_REQUEST, url=query_url)
+        with raises(HTTPStatusError) as excinfo:
+            await query()
+
+        errmsg = str(excinfo.value)
+        assert cursor._state == CursorState.ERROR
+        assert "Bad Request" in errmsg, f"Invalid query error message for {message}."
+
+        # Database query error
+        httpx_mock.add_response(
+            status_code=codes.INTERNAL_SERVER_ERROR,
+            content="Query error message",
+            url=query_url,
+        )
+        with raises(OperationalError) as excinfo:
+            await query()
+
+        assert cursor._state == CursorState.ERROR
+        assert (
+            str(excinfo.value) == "Error executing query:\nQuery error message"
+        ), f"Invalid authentication error message for {message}."
+
+        # Database does not exist error
+        httpx_mock.add_response(
+            status_code=codes.FORBIDDEN,
+            content="Query error message",
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            json={"edges": []},
+            url=get_databases_url + "?filter.name_contains=database",
+        )
+        with raises(FireboltDatabaseError) as excinfo:
+            await query()
+        assert cursor._state == CursorState.ERROR
+
+        # Engine is not running error
+        httpx_mock.add_response(
+            status_code=codes.SERVICE_UNAVAILABLE,
+            content="Query error message",
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            json={"edges": []},
+            url=(
+                get_engines_url + "?filter.name_contains=api"
+                "&filter.current_status_eq=ENGINE_STATUS_RUNNING"
+            ),
+        )
+        with raises(EngineNotRunningError) as excinfo:
+            await query()
+        assert cursor._state == CursorState.ERROR
+
+        httpx_mock.reset(True)
+
+
+@mark.asyncio
 async def test_cursor_fetchone(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
