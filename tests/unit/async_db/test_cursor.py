@@ -347,7 +347,7 @@ async def test_cursor_async_execute_error(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
-    query_url: str,
+    query_with_params_url: str,
     get_engines_url: str,
     get_databases_url: str,
     cursor: Cursor,
@@ -355,12 +355,12 @@ async def test_cursor_async_execute_error(
     """Cursor handles all types of errors properly."""
     for query, message in (
         (
-            lambda: cursor.execute("select * from t"),
-            "server-side synchronous execute()",
+            lambda: cursor.execute("select * from t", async_execution=True),
+            "server-side asynchronous execute()",
         ),
         (
-            lambda: cursor.executemany("select * from t", []),
-            "server-side synchronous executemany()",
+            lambda: cursor.executemany("select * from t", [], async_execution=True),
+            "server-side asynchronous executemany()",
         ),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -369,7 +369,7 @@ async def test_cursor_async_execute_error(
         def http_error(*args, **kwargs):
             raise StreamError("httpx error")
 
-        httpx_mock.add_callback(http_error, url=query_url)
+        httpx_mock.add_callback(http_error, url=query_with_params_url)
         with raises(StreamError) as excinfo:
             await query()
 
@@ -379,7 +379,9 @@ async def test_cursor_async_execute_error(
         ), f"Invalid query error message for {message}."
 
         # HTTP error
-        httpx_mock.add_response(status_code=codes.BAD_REQUEST, url=query_url)
+        httpx_mock.add_response(
+            status_code=codes.BAD_REQUEST, url=query_with_params_url
+        )
         with raises(HTTPStatusError) as excinfo:
             await query()
 
@@ -391,7 +393,7 @@ async def test_cursor_async_execute_error(
         httpx_mock.add_response(
             status_code=codes.INTERNAL_SERVER_ERROR,
             content="Query error message",
-            url=query_url,
+            url=query_with_params_url,
         )
         with raises(OperationalError) as excinfo:
             await query()
@@ -405,7 +407,7 @@ async def test_cursor_async_execute_error(
         httpx_mock.add_response(
             status_code=codes.FORBIDDEN,
             content="Query error message",
-            url=query_url,
+            url=query_with_params_url,
         )
         httpx_mock.add_response(
             json={"edges": []},
@@ -419,7 +421,7 @@ async def test_cursor_async_execute_error(
         httpx_mock.add_response(
             status_code=codes.SERVICE_UNAVAILABLE,
             content="Query error message",
-            url=query_url,
+            url=query_with_params_url,
         )
         httpx_mock.add_response(
             json={"edges": []},
