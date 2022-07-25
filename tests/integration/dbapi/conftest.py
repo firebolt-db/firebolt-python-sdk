@@ -16,7 +16,7 @@ LOGGER = getLogger(__name__)
 def all_types_query() -> str:
     return (
         "select 1 as uint8, "
-        "-1 as int8, "
+        "-1 as int_8, "  # int8 is a reserved keyword
         "257 as uint16, "
         "-257 as int16, "
         "80000 as uint32, "
@@ -31,7 +31,7 @@ def all_types_query() -> str:
         "CAST('2019-07-31 01:01:01' AS DATETIME) as \"datetime\", "
         "CAST('2019-07-31 01:01:01.1234' AS TIMESTAMP_EXT(4)) as \"datetime64\", "
         'true as "bool",'
-        '[1,2,3,4] as "array", cast(1231232.123459999990457054844258706536 as '
+        "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
         "cast(null as  int) as nullable"
     )
@@ -41,7 +41,7 @@ def all_types_query() -> str:
 def all_types_query_description() -> List[Column]:
     return [
         Column("uint8", int, None, None, None, None, None),
-        Column("int8", int, None, None, None, None, None),
+        Column("int_8", int, None, None, None, None, None),
         Column("uint16", int, None, None, None, None, None),
         Column("int16", int, None, None, None, None, None),
         Column("uint32", int, None, None, None, None, None),
