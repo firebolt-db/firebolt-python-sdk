@@ -16,7 +16,7 @@ LOGGER = getLogger(__name__)
 def all_types_query() -> str:
     return (
         "select 1 as uint8, "
-        "-1 as int_8, "
+        "-1 as int_8, "  # int8 is a reserved keyword
         "257 as uint16, "
         "-257 as int16, "
         "80000 as uint32, "
