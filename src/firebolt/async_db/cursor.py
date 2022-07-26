@@ -390,7 +390,11 @@ class BaseCursor:
             queries: List[Union[SetParameter, str]] = (
                 [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
             )
-
+            if len(queries) > 1 and async_execution:
+                raise AsyncExecutionUnavailableError(
+                    "It is not possible to execute multi-statement "
+                    "queries asynchronously."
+                )
             for query in queries:
 
                 start_time = time.time()
