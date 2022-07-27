@@ -375,10 +375,17 @@ async def test_cursor_async_execute_error(
             "It is not possible to execute multi-statement " "queries asynchronously."
         ), f"Multi-statement query was allowed for {message}."
 
-        httpx_mock.add_callback(query_callback, url=f"{query_url}&use_standard_sql=1")
+        httpx_mock.add_callback(
+            query_callback, url=(f"{query_url}" "&use_standard_sql=1")
+        )
         httpx_mock.add_callback(
             query_callback,
-            url=f"{query_url}&use_standard_sql=1&advanced_mode=1&async_execution=1",
+            url=(
+                f"{query_url}"
+                "&use_standard_sql=1"
+                "&advanced_mode=1"
+                "&async_execution=1"
+            ),
         )
 
         await cursor.execute("set use_standard_sql=1")
