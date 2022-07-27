@@ -9,6 +9,7 @@ from firebolt.async_db import Cursor
 from firebolt.async_db._types import Column
 from firebolt.async_db.cursor import ColType, CursorState
 from firebolt.utils.exception import (
+    AsyncExecutionUnavailableError,
     CursorClosedError,
     DataError,
     EngineNotRunningError,
@@ -156,7 +157,6 @@ async def test_cursor_execute(
     python_query_data: List[List[ColType]],
 ):
     """Cursor is able to execute query, all fields are populated properly."""
-
     for query, message in (
         (
             lambda: cursor.execute("select * from t"),
@@ -211,7 +211,6 @@ async def test_cursor_server_side_async_execute(
     auth_url: str,
     server_side_async_id_callback: Callable,
     server_side_async_id: Callable,
-    insert_query_callback: Callable,
     query_with_params_url: str,
     cursor: Cursor,
 ):
@@ -219,7 +218,6 @@ async def test_cursor_server_side_async_execute(
     Cursor is able to execute query server-side asynchronously and
     query_id is returned.
     """
-
     for query, message in (
         (
             lambda: cursor.execute("select * from t", async_execution=True),
@@ -345,94 +343,47 @@ async def test_cursor_execute_error(
 @mark.asyncio
 async def test_cursor_async_execute_error(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
+    # auth_callback: Callable,
+    # auth_url: str,
+    query_with_params_callback: Callable,
     query_with_params_url: str,
     get_engines_url: str,
     get_databases_url: str,
     cursor: Cursor,
 ):
-    """Cursor handles all types of errors properly."""
+    """
+    Cursor handles all types of errors properly using server-side
+    async queries.
+    """
     for query, message in (
         (
-            lambda: cursor.execute("select * from t", async_execution=True),
+            lambda sql: cursor.execute(sql, async_execution=True),
             "server-side asynchronous execute()",
         ),
         (
-            lambda: cursor.executemany("select * from t", [], async_execution=True),
+            lambda sql: cursor.executemany(sql, async_execution=True),
             "server-side asynchronous executemany()",
         ),
     ):
-        httpx_mock.add_callback(auth_callback, url=auth_url)
+        # httpx_mock.add_callback(auth_callback, url=auth_url)
 
-        # Internal httpx error
-        def http_error(*args, **kwargs):
-            raise StreamError("httpx error")
-
-        httpx_mock.add_callback(http_error, url=query_with_params_url)
-        with raises(StreamError) as excinfo:
-            await query()
+        with raises(AsyncExecutionUnavailableError) as excinfo:
+            await query("select * from t; select * from s")
 
         assert cursor._state == CursorState.ERROR
-        assert (
-            str(excinfo.value) == "httpx error"
-        ), f"Invalid query error message for {message}."
-
-        # HTTP error
-        httpx_mock.add_response(
-            status_code=codes.BAD_REQUEST, url=query_with_params_url
-        )
-        with raises(HTTPStatusError) as excinfo:
-            await query()
-
-        errmsg = str(excinfo.value)
-        assert cursor._state == CursorState.ERROR
-        assert "Bad Request" in errmsg, f"Invalid query error message for {message}."
-
-        # Database query error
-        httpx_mock.add_response(
-            status_code=codes.INTERNAL_SERVER_ERROR,
-            content="Query error message",
-            url=query_with_params_url,
-        )
-        with raises(OperationalError) as excinfo:
-            await query()
+        assert str(excinfo.value) == (
+            "It is not possible to execute multi-statement " "queries asynchronously."
+        ), f"Multi-statement query was allowed for {message}."
+        httpx_mock.add_callback(query_with_params_callback, url=query_with_params_url)
+        await cursor.execute("set use_standard_sql=1")
+        with raises(AsyncExecutionUnavailableError) as excinfo:
+            await query("select * from s")
 
         assert cursor._state == CursorState.ERROR
-        assert (
-            str(excinfo.value) == "Error executing query:\nQuery error message"
-        ), f"Invalid authentication error message for {message}."
-
-        # Database does not exist error
-        httpx_mock.add_response(
-            status_code=codes.FORBIDDEN,
-            content="Query error message",
-            url=query_with_params_url,
-        )
-        httpx_mock.add_response(
-            json={"edges": []},
-            url=get_databases_url + "?filter.name_contains=database",
-        )
-        with raises(FireboltDatabaseError) as excinfo:
-            await query()
-        assert cursor._state == CursorState.ERROR
-
-        # Engine is not running error
-        httpx_mock.add_response(
-            status_code=codes.SERVICE_UNAVAILABLE,
-            content="Query error message",
-            url=query_with_params_url,
-        )
-        httpx_mock.add_response(
-            json={"edges": []},
-            url=(
-                get_engines_url + "?filter.name_contains=api"
-                "&filter.current_status_eq=ENGINE_STATUS_RUNNING"
-            ),
-        )
-        with raises(EngineNotRunningError) as excinfo:
-            await query()
-        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == (
+            "It is not  to execute queries asynchronously if "
+            "use_standard_sql is in use."
+        ), f"use_standard_sql=1 was allowed for server-side asynchronous queries on {message}."
 
         httpx_mock.reset(True)
 
