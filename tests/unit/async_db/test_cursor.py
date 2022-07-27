@@ -346,6 +346,8 @@ async def test_cursor_async_execute_error(
     auth_callback: Callable,
     auth_url: str,
     query_callback: Callable,
+    server_side_async_id_callback: Callable,
+    query_with_params_url: str,
     query_url: str,
     get_engines_url: str,
     get_databases_url: str,
@@ -366,7 +368,9 @@ async def test_cursor_async_execute_error(
         ),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
-
+        httpx_mock.add_callback(
+            server_side_async_id_callback, url=query_with_params_url
+        )
         with raises(AsyncExecutionUnavailableError) as excinfo:
             await query("select * from t; select * from s")
 
@@ -375,25 +379,14 @@ async def test_cursor_async_execute_error(
             "It is not possible to execute multi-statement " "queries asynchronously."
         ), f"Multi-statement query was allowed for {message}."
 
-        httpx_mock.add_callback(
-            query_callback, url=(f"{query_url}" "&use_standard_sql=1")
-        )
-        httpx_mock.add_callback(
-            query_callback,
-            url=(
-                f"{query_url}"
-                "&use_standard_sql=1"
-                "&advanced_mode=1"
-                "&async_execution=1"
-            ),
-        )
+        # httpx_mock.add_callback(query_callback, url=(f"{query_url}"
+        #                                              "&use_standard_sql=1"))
+        # httpx_mock.add_callback(query_callback, url=(f"{query_url}"
+        #                                              "&use_standard_sql=1"
+        #                                              "&advanced_mode=1"
+        #                                              "&async_execution=1"))
 
         await cursor.execute("set use_standard_sql=1")
-        assert (
-            len(cursor._set_parameters) == 1
-            and "use_standard_sql" in cursor._set_parameters
-            and cursor._set_parameters["use_standard_sql"] == "1"
-        )
         with raises(AsyncExecutionUnavailableError) as excinfo:
             await query("select * from s")
 
