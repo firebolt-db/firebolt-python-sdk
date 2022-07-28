@@ -376,7 +376,7 @@ async def test_cursor_async_execute_error(
 
         assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == (
-            "It is not possible to execute multi-statement " "queries asynchronously."
+            "It is not possible to execute multi-statement queries asynchronously."
         ), f"Multi-statement query was allowed for {message}."
 
         # httpx_mock.add_callback(auth_callback, url=(f"{query_url}"
