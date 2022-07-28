@@ -345,12 +345,8 @@ async def test_cursor_async_execute_error(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
-    query_callback: Callable,
     server_side_async_id_callback: Callable,
     query_with_params_url: str,
-    query_url: str,
-    get_engines_url: str,
-    get_databases_url: str,
     cursor: Cursor,
 ):
     """
@@ -389,11 +385,8 @@ async def test_cursor_async_execute_error(
             "use_standard_sql is in use."
         ), f"use_standard_sql=1 was allowed for server-side asynchronous queries on {message}."
 
-        # Have to add this callback again or next execute fails.
+        # Have to reauth or next execute fails. Not sure why.
         httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(
-            server_side_async_id_callback, url=query_with_params_url
-        )
         await cursor.execute("set use_standard_sql=0")
         httpx_mock.reset(True)
 
@@ -596,12 +589,9 @@ async def test_cursor_set_statements(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
-    query_callback: Callable,
     select_one_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
-    python_query_description: List[Column],
-    python_query_data: List[List[ColType]],
 ):
     """cursor correctly parses and processes set statements"""
     httpx_mock.add_callback(auth_callback, url=auth_url)
