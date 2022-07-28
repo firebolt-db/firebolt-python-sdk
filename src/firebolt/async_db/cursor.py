@@ -373,13 +373,16 @@ class BaseCursor:
         async_execution: Optional[bool] = False,
     ) -> None:
         self._reset()
-        if async_execution and self._set_parameters.get("use_standard_sql", 0) == 1:
-            raise AsyncExecutionUnavailableError(
-                "It is not possible to execute queries asynchronously if "
-                "use_standard_sql is in use."
-            )
-        try:
 
+        try:
+            if (
+                async_execution
+                and self._set_parameters.get("use_standard_sql", "0") == "1"
+            ):
+                raise AsyncExecutionUnavailableError(
+                    "It is not possible to execute queries asynchronously if "
+                    "use_standard_sql is in use."
+                )
             if parameters and skip_parsing:
                 logger.warning(
                     "Query formatting parameters are provided with skip_parsing."
