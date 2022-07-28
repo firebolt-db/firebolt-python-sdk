@@ -367,10 +367,10 @@ async def test_cursor_async_execute_error(
             "server-side asynchronous executemany()",
         ),
     ):
-        # httpx_mock.add_callback(auth_callback, url=auth_url)
-        # httpx_mock.add_callback(
-        #     server_side_async_id_callback, url=query_with_params_url
-        # )
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(
+            server_side_async_id_callback, url=query_with_params_url
+        )
         with raises(AsyncExecutionUnavailableError) as excinfo:
             await query("select * from t; select * from s")
 
@@ -379,28 +379,22 @@ async def test_cursor_async_execute_error(
             "It is not possible to execute multi-statement queries asynchronously."
         ), f"Multi-statement query was allowed for {message}."
 
-        # httpx_mock.add_callback(auth_callback, url=(f"{query_url}"
-        #                                              "&use_standard_sql=1"))
-        # httpx_mock.add_callback(auth_callback, url=(f"{query_url}"
-        #                                              "&use_standard_sql=0"))
-        # httpx_mock.add_callback(auth_callback, url=(f"{query_url}"
-        #                                              "&use_standard_sql=1"
-        #                                              "&advanced_mode=1"
-        #                                              "&async_execution=1"))
+        await cursor.execute("set use_standard_sql=1")
+        with raises(AsyncExecutionUnavailableError) as excinfo:
+            await query("select * from s")
 
-        # await cursor.execute("set use_standard_sql=1")
-        # with raises(AsyncExecutionUnavailableError) as excinfo:
-        #     await query('select * from s')
+        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == (
+            "It is not possible to execute queries asynchronously if "
+            "use_standard_sql is in use."
+        ), f"use_standard_sql=1 was allowed for server-side asynchronous queries on {message}."
 
-        # assert cursor._state == CursorState.ERROR
-        # assert (
-        #     str(excinfo.value) ==  (
-        #         "It is not possible to execute queries asynchronously if "
-        #         "use_standard_sql is in use."
-        #     )
-        # ), f"use_standard_sql=1 was allowed for server-side asynchronous queries on {message}."
-
-        # await cursor.execute("set use_standard_sql=0")
+        # Have to add this callback again or next execute fails.
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(
+            server_side_async_id_callback, url=query_with_params_url
+        )
+        await cursor.execute("set use_standard_sql=0")
         httpx_mock.reset(True)
 
 
