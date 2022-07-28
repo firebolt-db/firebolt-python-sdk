@@ -345,7 +345,7 @@ async def test_cursor_async_execute_error(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
-    server_side_async_id_callback: Callable,
+    query_callback: Callable,
     query_with_params_url: str,
     cursor: Cursor,
 ):
@@ -364,9 +364,17 @@ async def test_cursor_async_execute_error(
         ),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(
-            server_side_async_id_callback, url=query_with_params_url
+        httpx_mock.add_callback(query_callback, url=query_with_params_url)
+        with raises(OperationalError) as excinfo:
+            await query("sql")
+
+        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == (
+            "Invalid response to asynchronous query: missing query_id."
         )
+
+        # Multi-statement queries are not possible with async_execution error.
+        httpx_mock.add_callback(auth_callback, url=auth_url)
         with raises(AsyncExecutionUnavailableError) as excinfo:
             await query("select * from t; select * from s")
 
@@ -375,6 +383,7 @@ async def test_cursor_async_execute_error(
             "It is not possible to execute multi-statement queries asynchronously."
         ), f"Multi-statement query was allowed for {message}."
 
+        # Error out when async_execution and use_standard_sql are set.
         await cursor.execute("set use_standard_sql=1")
         with raises(AsyncExecutionUnavailableError) as excinfo:
             await query("select * from s")
