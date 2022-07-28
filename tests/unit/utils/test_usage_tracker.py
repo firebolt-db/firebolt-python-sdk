@@ -106,12 +106,12 @@ StackItem = namedtuple("StackItem", "function filename")
         ),
         (
             [StackItem("open", "dbt/adapters/firebolt/connections.py")],
-            DRIVER_MAP,
+            CLIENT_MAP,
             {"DBT": "0.1.4"},
         ),
         (
             [StackItem("open", "dbt/adapters/firebolt/connections.py")],
-            CLIENT_MAP,
+            DRIVER_MAP,
             {},
         ),
     ],
