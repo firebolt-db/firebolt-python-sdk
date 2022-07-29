@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class BindingService(BaseService):
     def get_by_key(self, binding_key: BindingKey) -> Binding:
-        """Get a binding by it's BindingKey"""
+        """Get a binding by its BindingKey"""
         response = self.client.get(
             url=ACCOUNT_DATABASE_BINDING_URL.format(
                 account_id=binding_key.account_id,
@@ -50,7 +50,7 @@ class BindingService(BaseService):
                 If None, do not filter on this parameter.
 
         Returns:
-            List of bindings matching the filter parameters.
+            List of bindings matching the filter parameters
         """
 
         response = self.client.get(
@@ -67,7 +67,7 @@ class BindingService(BaseService):
         return [Binding.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     def get_database_bound_to_engine(self, engine: Engine) -> Optional[Database]:
-        """Get the Database to which an engine is bound, if any."""
+        """Get the database to which an engine is bound, if any."""
         try:
             binding = self.get_many(engine_id=engine.engine_id)[0]
         except IndexError:

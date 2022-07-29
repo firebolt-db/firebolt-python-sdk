@@ -18,7 +18,7 @@ class Auth(HttpxAuth):
     Updates all http requests with bearer token authorization header
 
     Args:
-        use_token_cache (bool): True if token should be cached in filesystem,
+        use_token_cache (bool): True if token should be cached in filesystem;
             False otherwise
     """
 
@@ -66,7 +66,7 @@ class Auth(HttpxAuth):
     def _token_storage(self) -> Optional[TokenSecureStorage]:
         """Token filesystem cache storage.
 
-        This is evaluated lazily, only if caching is enabled
+        This is evaluated lazily, only if caching is enabled.
 
         Returns:
             Optional[TokenSecureStorage]: Token filesystem cache storage if any
@@ -74,19 +74,19 @@ class Auth(HttpxAuth):
         return None
 
     def _get_cached_token(self) -> Optional[str]:
-        """If caching enabled, get token from filesystem cache.
+        """If caching is enabled, get token from filesystem cache.
 
-        If caching is disabled, None is returned
+        If caching is disabled, None is returned.
 
         Returns:
-            Optional[str]: Token if any and if caching is enabled, None otherwise
+            Optional[str]: Token if any, and if caching is enabled; None otherwise
         """
         if not self._use_token_cache or not self._token_storage:
             return None
         return self._token_storage.get_cached_token()
 
     def _cache_token(self) -> None:
-        """If caching enabled, cache token to filesystem."""
+        """If caching isenabled, cache token to filesystem."""
         if not self._use_token_cache or not self._token_storage:
             return
         # Only cache if token and expiration are retrieved

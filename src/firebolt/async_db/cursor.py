@@ -63,7 +63,7 @@ class CursorState(Enum):
 
 class Statistics(BaseModel):
     """
-    Class for query execution statistics
+    Class for query execution statistics.
     """
 
     elapsed: float
@@ -152,7 +152,7 @@ class BaseCursor:
     @check_not_closed
     def description(self) -> Optional[List[Column]]:
         """
-        Provides information about a single result row of a query
+        Provides information about a single result row of a query.
 
         Attributes:
             * ``name``
@@ -168,7 +168,7 @@ class BaseCursor:
     @property  # type: ignore
     @check_not_closed
     def statistics(self) -> Optional[Statistics]:
-        """Query execution statistics returned by the backend"""
+        """Query execution statistics returned by the backend."""
         return self._statistics
 
     @property  # type: ignore
@@ -210,8 +210,8 @@ class BaseCursor:
         """
         Skip to the next available set, discarding any remaining rows
         from the current set.
-        Returns True if operation was successful,
-        None if there are no more sets to retrive
+        Returns True if operation was successful;
+        None if there are no more sets to retrive.
         """
         return self._pop_next_set()
 
@@ -338,14 +338,14 @@ class BaseCursor:
         if set_parameters is not None:
             logger.warning(
                 "Passing set parameters as an argument is deprecated. Please run "
-                "a query 'SET <param> = <value>'"
+                "a query 'SET <param> = <value>'."
             )
         try:
 
             if parameters and skip_parsing:
                 logger.warning(
                     "Query formatting parameters are provided with skip_parsing."
-                    " They will be ignored"
+                    " They will be ignored."
                 )
 
             # Allow users to manually skip parsing for performance improvement
@@ -416,7 +416,7 @@ class BaseCursor:
                 with values provided in `parameters`. Values are formatted to
                 be properly recognized by database and to exclude SQL injection.
             Multi-statement queries: multiple statements, provided in a single query
-                and separated by semicolon are executed separatelly and sequentially.
+                and separated by semicolon, are executed separatelly and sequentially.
                 To switch to next statement result, `nextset` method should be used.
             SET statements: to provide additional query execution parameters, execute
                 `SET param=value` statement before it. All parameters are stored in
@@ -427,15 +427,15 @@ class BaseCursor:
             query (str): SQL query to execute
             parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
                 parameters. Used to replace '?' placeholders inside a query with
-                actual values
+                actual values.
             set_parameters (Optional[Dict]): List of set parameters to execute
-                a query with. DEPRECATED: Use SET SQL statements instead
+                a query with. DEPRECATED: Use SET SQL statements instead.
             skip_parsing (bool): Flag to disable query parsing. This will
-                disable parameterized, multi-statement and SET queries,
-                while improving performance
+                disable parameterized, multi-statement, and SET queries,
+                while improving performance.
 
         Returns:
-            int: Query row count
+            int: Query row count.
         """
         params_list = [parameters] if parameters else []
         await self._do_execute(query, params_list, set_parameters, skip_parsing)
@@ -451,19 +451,19 @@ class BaseCursor:
         as multiple statements sequentially.
 
         Supported features:
-            Parameterized queries: placeholder characters ('?') are substituted
+            Parameterized queries: Placeholder characters ('?') are substituted
                 with values provided in `parameters`. Values are formatted to
                 be properly recognized by database and to exclude SQL injection.
-            Multi-statement queries: multiple statements, provided in a single query
-                and separated by semicolon are executed separatelly and sequentially.
-                To switch to next statement result, `nextset` method should be used.
-            SET statements: to provide additional query execution parameters, execute
+            Multi-statement queries: Multiple statements, provided in a single query
+                and separated by semicolon, are executed separately and sequentially.
+                To switch to next statement result, use `nextset` method.
+            SET statements: To provide additional query execution parameters, execute
                 `SET param=value` statement before it. All parameters are stored in
                 cursor object until it's closed. They can also be removed with
                 `flush_parameters` method call.
 
         Args:
-            query (str): SQL query to execute
+            query (str): SQL query to execute.
             parameters_seq (Sequence[Sequence[ParameterType]]): A sequence of
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
@@ -476,7 +476,7 @@ class BaseCursor:
         return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
-        """Parse a single data row based on query column types"""
+        """Parse a single data row based on query column types."""
         assert len(row) == len(self.description)
         return [
             parse_value(col, self.description[i].type_code) for i, col in enumerate(row)
@@ -486,7 +486,7 @@ class BaseCursor:
         cleandoc(
             """
             Return range of next rows of size (if possible),
-            and update _idx to point to the end of this range
+            and update _idx to point to the end of this range.
             """
         )
 
@@ -514,7 +514,7 @@ class BaseCursor:
     @check_query_executed
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         """
-        Fetch the next set of rows of a query result,
+        Fetch the next set of rows of a query result;
         cursor.arraysize is default size.
         """
         size = size if size is not None else self.arraysize
@@ -553,16 +553,16 @@ class BaseCursor:
 
 class Cursor(BaseCursor):
     """
-    Class, responsible for executing asyncio queries to Firebolt Database.
-    Should not be created directly,
+    Executes asyncio queries to Firebolt Database.
+    Should not be created directly;
     use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
     Args:
-        description: information about a single result row
-        rowcount: the number of rows produced by last query
-        closed: True if connection is closed, False otherwise
+        description: Information about a single result row.
+        rowcount: The number of rows produced by last query.
+        closed: True if connection is closed; False otherwise.
         arraysize: Read/Write, specifies the number of rows to fetch at a time
-            with the :py:func:`fetchmany` method
+            with the :py:func:`fetchmany` method.
 
     """
 
@@ -593,27 +593,27 @@ class Cursor(BaseCursor):
             return await super().executemany(query, parameters_seq)
         """
             Prepare and execute a database query against all parameter
-            sequences provided
+            sequences provided.
         """
 
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
         async with self._async_query_lock.reader:
             return super().fetchone()
-        """Fetch the next row of a query result set"""
+        """Fetch the next row of a query result set."""
 
     @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
             return super().fetchmany(size)
-        """fetch the next set of rows of a query result,
-          size is cursor.arraysize by default"""
+        """Fetch the next set of rows of a query result;
+          size is cursor.arraysize by default."""
 
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
             return super().fetchall()
-        """Fetch all remaining rows of a query result"""
+        """Fetch all remaining rows of a query result."""
 
     @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:

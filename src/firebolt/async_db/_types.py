@@ -46,18 +46,18 @@ Date = date
 
 
 def DateFromTicks(t: int) -> date:
-    """Convert ticks to date for firebolt db."""
+    """Convert `ticks` to `date` for Firebolt DB."""
     return datetime.fromtimestamp(t).date()
 
 
 def Time(hour: int, minute: int, second: int) -> None:
-    """Unsupported: construct time for firebolt db."""
-    raise NotSupportedError("time is not supported by Firebolt")
+    """Unsupported: Construct `time`, for Firebolt DB."""
+    raise NotSupportedError("The time construct is not supported by Firebolt")
 
 
 def TimeFromTicks(t: int) -> None:
-    """Unsupported: convert ticks to time for firebolt db."""
-    raise NotSupportedError("time is not supported by Firebolt")
+    """Unsupported: Convert `ticks` to `time` for Firebolt DB."""
+    raise NotSupportedError("The time construct is not supported by Firebolt")
 
 
 Timestamp = datetime
@@ -65,7 +65,7 @@ TimestampFromTicks = datetime.fromtimestamp
 
 
 def Binary(value: str) -> str:
-    """Convert string to binary for firebolt db, does nothing."""
+    """Convert string to binary for Firebolt DB does nothing."""
     return value
 
 
@@ -89,7 +89,7 @@ Column = namedtuple(
 
 
 class ARRAY:
-    """Class for holding information about array column type in firebolt db."""
+    """Class for holding `array` column type information in Firebolt DB."""
 
     _prefix = "Array("
 
@@ -109,7 +109,7 @@ class ARRAY:
 
 
 class DECIMAL:
-    """Class for holding imformation about decimal value in firebolt db."""
+    """Class for holding `decimal` value information in Firebolt DB."""
 
     _prefix = "Decimal("
 
@@ -127,7 +127,7 @@ class DECIMAL:
 
 
 class DATETIME64:
-    """Class for holding imformation about datetime64 value in firebolt db."""
+    """Class for holding `datetime64` value information in Firebolt DB."""
 
     _prefix = "DateTime64("
 
@@ -147,7 +147,7 @@ NULLABLE_PREFIX = "Nullable("
 
 
 class _InternalType(Enum):
-    """Enum of all internal firebolt types except for array."""
+    """Enum of all internal Firebolt types, except for `array`."""
 
     # INT, INTEGER
     Int8 = "Int8"
@@ -182,7 +182,7 @@ class _InternalType(Enum):
 
     @cached_property
     def python_type(self) -> type:
-        """Convert internal type to python type."""
+        """Convert internal type to Python type."""
         types = {
             _InternalType.Int8: int,
             _InternalType.UInt8: int,
@@ -205,7 +205,7 @@ class _InternalType(Enum):
 
 
 def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:
-    """Parse typename, provided by query metadata into python type."""
+    """Parse typename provided by query metadata into Python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
     # Handle arrays
@@ -244,7 +244,7 @@ def parse_value(
     value: RawColType,
     ctype: Union[type, ARRAY, DECIMAL, DATETIME64],
 ) -> ColType:
-    """Provided raw value and python type, parses first into python value."""
+    """Provided raw value, and Python type; parses first into Python value."""
     if value is None:
         return None
     if ctype in (int, str, float):
@@ -276,7 +276,7 @@ escape_chars = {
 
 
 def format_value(value: ParameterType) -> str:
-    """For python value to be used in a SQL query"""
+    """For Python value to be used in a SQL query."""
     if isinstance(value, bool):
         return str(int(value))
     if isinstance(value, (int, float, Decimal)):
@@ -299,7 +299,7 @@ def format_value(value: ParameterType) -> str:
 
 def format_statement(statement: Statement, parameters: Sequence[ParameterType]) -> str:
     """
-    Substitute placeholders in a sqlparse statement with provided values.
+    Substitute placeholders in a `sqlparse` statement with provided values.
     """
     idx = 0
 
@@ -336,7 +336,10 @@ SetParameter = namedtuple("SetParameter", ["name", "value"])
 
 
 def statement_to_set(statement: Statement) -> Optional[SetParameter]:
-    """Try to parse statement as a SET command. Return None if it's not a SET command"""
+    """
+    Try to parse `statement` as a `SET` command.
+    Return `None` if it's not a `SET` command.
+    """
     # Filter out meaningless tokens like Punctuation and Whitespaces
     tokens = [
         token
@@ -370,9 +373,8 @@ def split_format_sql(
     query: str, parameters: Sequence[Sequence[ParameterType]]
 ) -> List[Union[str, SetParameter]]:
     """
-    Split a query into separate statement, and format it with parameters
-    if it's a single statement
-    Trying to format a multi-statement query would result in NotSupportedError
+    Multi-statement query formatting will result in `NotSupportedError`.
+    Instead, split a query into a separate statement and format with parameters.
     """
     statements = parse_sql(query)
     if not statements:
