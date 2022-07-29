@@ -8,7 +8,7 @@ from firebolt.utils.util import cached_property
 
 
 class InstanceTypeLookup(NamedTuple):
-    """Helper tuple for looking up instance types by names"""
+    """Helper tuple for looking up instance types by names."""
 
     region_name: str
     instance_type_name: str
@@ -93,13 +93,13 @@ class InstanceTypeService(BaseService):
         Get an instance type by name.
 
         Args:
-            instance_type_name: Name of the instance (eg. "i3.4xlarge").
+            instance_type_name: Name of the instance (eg. "i3.4xlarge")
             region_name:
                 Name of the AWS region from which to get the instance.
                 If not provided, use the default region name from the client.
 
         Returns:
-            The requested instance type.
+            The requested instance type
         """
 
         # Will raise an error if neither set

@@ -12,15 +12,15 @@ from firebolt.utils.util import cached_property
 
 
 class UsernamePassword(Auth):
-    """Username/Password authentication class for Firebolt database.
+    """Username/Password authentication class for Firebolt Database.
 
     Gets authentication token using
-    provided credentials and updates it when it expires
+    provided credentials and updates it when it expires.
 
     Args:
         username (str): Username
         password (str): Password
-        use_token_cache (bool): True if token should be cached in filesystem,
+        use_token_cache (bool): True if token should be cached in filesystem;
             False otherwise
 
     Attributes:

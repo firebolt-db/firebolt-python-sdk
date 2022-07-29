@@ -30,8 +30,9 @@ from firebolt.utils.util import fix_url_schema
 DEFAULT_TIMEOUT_SECONDS: int = 5
 KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
-AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly to `connect` function is deprecated.
- Please consider passing Auth object instead.
+AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials
+ directly to the `connect` function is deprecated.
+ Pass the `Auth` object instead.
  Examples:
   >>> from firebolt.client.auth import UsernamePassword
   >>> ...
@@ -128,29 +129,29 @@ def _get_auth(
     access_token: Optional[str],
     use_token_cache: bool,
 ) -> Auth:
-    """Create Auth class based on provided credentials.
+    """Create `Auth` class based on provided credentials.
 
-    If access_token is provided, it's used for Auth creation.
-    Username and password are used otherwise.
+    If `access_token` is provided, it's used for `Auth` creation.
+    Otherwise, username/password are used.
 
     Returns:
-        Auth: auth object
+        Auth: `auth object`
 
     Raises:
-        ConfigurationError: Invalid combination of credentials provided
+        `ConfigurationError`: Invalid combination of credentials provided
 
     """
     if not access_token:
         if not username or not password:
             raise ConfigurationError(
                 "Neither username/password nor access_token are provided. Provide one"
-                " to authenticate"
+                " to authenticate."
             )
         return UsernamePassword(username, password, use_token_cache)
     if username or password:
         raise ConfigurationError(
-            "Either username/password and access_token are provided. Provide only one"
-            " to authenticate"
+            "Username/password and access_token are both provided. Provide only one"
+            " to authenticate."
         )
     return Token(access_token)
 
@@ -172,24 +173,24 @@ def async_connect_factory(connection_class: Type) -> Callable:
         """Connect to Firebolt database.
 
         Args:
-            database (str): Name of the database to connect
-            username (Optional[str]): User name to use for authentication (Deprecated)
-            password (Optional[str]): Password to use for authentication (Deprecated)
-            access_token (Optional[str]): Authentication token to use insead of
+            `database` (str): Name of the database to connect
+            `username` (Optional[str]): User name to use for authentication (Deprecated)
+            `password` (Optional[str]): Password to use for authentication (Deprecated)
+            `access_token` (Optional[str]): Authentication token to use instead of
                                           credentials (Deprecated)
-            auth (Auth)L Authentication object
-            engine_name (Optional[str]): The name of the engine to connect to
-            engine_url (Optional[str]): The engine endpoint to use
-            account_name (Optional[str]): For customers with multiple accounts;
-                                          if None uses default.
-            api_endpoint (str): Firebolt API endpoint. Used for authentication.
-            use_token_cache (bool): Cached authentication token in filesystem.
+            `auth` (Auth)L Authentication object.
+            `engine_name` (Optional[str]): Name of the engine to connect to
+            `engine_url` (Optional[str]): The engine endpoint to use
+            `account_name` (Optional[str]): For customers with multiple accounts;
+                                          if none, default is used
+            `api_endpoint` (str): Firebolt API endpoint. Used for authentication
+            `use_token_cache` (bool): Cached authentication token in filesystem
                                     Default: True
-            additional_parameters (Optional[Dict]): Dictionary of less widely-used
-                                    arguments for connection.
+            `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
+                                    arguments for connection
 
         Note:
-            Providing both `engine_name` and `engine_url` would result in an error.
+            Providing both `engine_name` and `engine_url` will result in an error
 
         """
         # These parameters are optional in function signature
@@ -251,11 +252,12 @@ def async_connect_factory(connection_class: Type) -> Callable:
 
 class OverriddenHttpBackend(AutoBackend):
     """
-    This class is a short-term solution for TCP keep-alive issue:
+    `OverriddenHttpBackend` is a short-term solution for the TCP
+    connection idle timeout issue described in the following article:
     https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#connection-idle-timeout
-    Since httpx creates a connection right before executing a request
-    backend has to be overridden in order to set the socket KEEPALIVE
-    and KEEPIDLE settings.
+    Since httpx creates a connection right before executing a request, the
+    backend must be overridden to set the socket to `KEEPALIVE`
+    and `KEEPIDLE` settings.
     """
 
     async def connect_tcp(
@@ -330,7 +332,7 @@ class BaseConnection:
         """
 
         if self.closed:
-            raise ConnectionClosedError("Unable to create cursor: connection closed")
+            raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
         c = self.cursor_class(self._client, self, **kwargs)
         self._cursors.append(c)
@@ -354,7 +356,7 @@ class BaseConnection:
 
     @property
     def closed(self) -> bool:
-        """True if connection is closed, False otherwise."""
+        """`True if connection is closed; False otherwise."""
         return self._is_closed
 
     def _remove_cursor(self, cursor: Cursor) -> None:
@@ -365,28 +367,28 @@ class BaseConnection:
             pass
 
     def commit(self) -> None:
-        """Does nothing since Firebolt doesn't have transactions"""
+        """Does nothing since Firebolt doesn't have transactions."""
 
         if self.closed:
-            raise ConnectionClosedError("Unable to commit: connection closed")
+            raise ConnectionClosedError("Unable to commit: Connection closed.")
 
 
 class Connection(BaseConnection):
     """
-    Firebolt asyncronous database connection class. Implements `PEP 249`_.
+    Firebolt asynchronous database connection class. Implements `PEP 249`_.
 
     Args:
-        engine_url: Firebolt database engine REST API url
-        database: Firebolt database name
-        username: Firebolt account username
-        password: Firebolt account password
-        api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
-        connector_versions: Optional. Tuple of connector name and version or
-            list of tuples of your connector stack. Useful for tracking custom
+        `engine_url`: Firebolt database engine REST API url
+        `database`: Firebolt database name
+        `username`: Firebolt account username
+        `password`: Firebolt account password
+        `api_endpoint`: Optional. Firebolt API endpoint used for authentication
+        `connector_versions`: Optional. Tuple of connector name and version, or
+            a list of tuples of your connector stack. Useful for tracking custom
             connector usage.
 
     Note:
-        Firebolt currenly doesn't support transactions
+        Firebolt does not support transactions,
         so commit and rollback methods are not implemented.
 
     .. _PEP 249:
@@ -406,7 +408,7 @@ class Connection(BaseConnection):
     # Context manager support
     async def __aenter__(self) -> Connection:
         if self.closed:
-            raise ConnectionClosedError("Connection is already closed")
+            raise ConnectionClosedError("Connection is already closed.")
         return self
 
     async def __aexit__(

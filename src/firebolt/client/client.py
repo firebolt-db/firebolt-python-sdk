@@ -83,10 +83,10 @@ class Client(FireboltClientMixin, HttpxClient):
 
     @cached_property
     def account_id(self) -> str:
-        """User account id.
+        """User account ID.
 
-        If account_name was provided during Client construction, returns it's id.
-        Gets default account otherwise
+        If account_name was provided during Client construction, returns its ID;
+        gets default account otherwise.
 
         Returns:
             str: Account ID
@@ -118,17 +118,17 @@ class Client(FireboltClientMixin, HttpxClient):
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     """An HTTP client, based on httpx.AsyncClient.
 
-    Asyncronously handles authentication for Firebolt database.
-    Authentication can be passed through auth keyword as a tuple or as a
-    FireboltAuth instance
+    Asynchronously handles authentication for Firebolt database.
+    Authentication can be passed through auth keyword as a tuple, or as a
+    FireboltAuth instance.
     """
 
     @async_cached_property
     async def account_id(self) -> str:
         """User account id.
 
-        If account_name was provided during AsyncClient construction, returns it's id.
-        Gets default account otherwise
+        If account_name was provided during AsyncClient construction, returns its ID;
+        gets default account otherwise.
 
         Returns:
             str: Account ID

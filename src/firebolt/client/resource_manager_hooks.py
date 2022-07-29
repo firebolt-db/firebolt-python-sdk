@@ -39,8 +39,8 @@ def log_response(response: Response) -> None:
 def raise_on_4xx_5xx(response: Response) -> None:
     """Raise an error on HTTP response with error return code.
 
-    Hook for an HTTP client
-    If an error is message is found raise as an ApiError
+    Hook for an HTTP client.
+    If an error message is found, raise as an ApiError.
 
     Args:
         response (Response): Response to check for error code
