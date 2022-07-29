@@ -2,33 +2,33 @@ import json
 import typing
 
 import httpx
-import pytest
 from httpx import Response
+from pytest import fixture
 
 from firebolt.common.settings import Settings
 
 
-@pytest.fixture
+@fixture
 def test_token(access_token: str) -> str:
     return access_token
 
 
-@pytest.fixture
+@fixture
 def test_token2() -> str:
     return "test_token2"
 
 
-@pytest.fixture
+@fixture
 def test_username(settings: Settings) -> str:
     return settings.user
 
 
-@pytest.fixture
+@fixture
 def test_password(settings: Settings) -> str:
     return settings.password.get_secret_value()
 
 
-@pytest.fixture
+@fixture
 def check_credentials_callback(
     test_username: str, test_password: str, test_token: str
 ) -> typing.Callable:

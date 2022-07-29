@@ -2,6 +2,7 @@ from logging import getLogger
 from os import environ
 
 from pytest import fixture
+from pytest_asyncio import fixture as async_fixture
 
 from firebolt.service.manager import Settings
 
@@ -24,7 +25,7 @@ def must_env(var_name: str) -> str:
     return environ[var_name]
 
 
-@fixture(scope="session")
+@async_fixture(scope="session")
 def rm_settings(api_endpoint, username, password) -> Settings:
     return Settings(
         server=api_endpoint,
