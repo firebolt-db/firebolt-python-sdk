@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 async def is_db_available(connection: Connection, database_name: str) -> bool:
-    """Verify if the database exists"""
+    """Verify if the database exists."""
     resp = await _filter_request(
         connection, DATABASES_URL, {"filter.name_contains": database_name}
     )
@@ -19,7 +19,7 @@ async def is_db_available(connection: Connection, database_name: str) -> bool:
 
 
 async def is_engine_running(connection: Connection, engine_url: str) -> bool:
-    """Verify if the engine is running"""
+    """Verify if the engine is running."""
     # Url is not always guaranteed to be of this structure
     # but for the sake of error check this is sufficient
     engine_name = URL(engine_url).host.split(".")[0]

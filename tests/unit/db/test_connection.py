@@ -59,7 +59,7 @@ def test_cursor_initialized(
     query_url: str,
     python_query_data: List[List[ColType]],
 ) -> None:
-    """Connection initialised its cursors properly."""
+    """Connection initialized its cursors properly."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 

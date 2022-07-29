@@ -95,7 +95,7 @@ class TokenSecureStorage:
         """Get decrypted token.
 
         If token is not found, cannot be decrypted with username and password,
-        or is expired - None will be returned
+        or is expired - None will be returned.
 
         Returns:
             Optional[str]: Decrypted token or None
@@ -114,7 +114,7 @@ class TokenSecureStorage:
         """Encrypt and store token in file system.
 
         Expiration timestamp is also stored with token in order to later
-        be ableto check if it's expired
+        be able to check if it's expired.
 
         Args:
             token (str): Token to store
@@ -131,7 +131,7 @@ class TokenSecureStorage:
 class FernetEncrypter:
     """PBDKF2HMAC based encrypter.
 
-    Username and password combination is used as a key
+    Username and password combination is used as a key.
 
     Args:
         salt (str): Salt value for encryption

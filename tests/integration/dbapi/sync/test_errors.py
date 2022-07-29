@@ -15,7 +15,7 @@ from firebolt.utils.exception import (
 def test_invalid_credentials(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
-    """Connection properly reacts to invalid credentials error"""
+    """Connection properly reacts to invalid credentials error."""
     with connect(
         engine_url=engine_url,
         database=database_name,
@@ -59,7 +59,7 @@ def test_invalid_account(
 def test_engine_url_not_exists(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
-    """Connection properly reacts to invalid engine url error"""
+    """Connection properly reacts to invalid engine url error."""
     with connect(
         engine_url=engine_url + "_",
         database=database_name,
@@ -78,7 +78,7 @@ def test_engine_name_not_exists(
     password: str,
     api_endpoint: str,
 ) -> None:
-    """Connection properly reacts to invalid engine name error"""
+    """Connection properly reacts to invalid engine name error."""
     with raises(FireboltEngineError):
         with connect(
             engine_name=engine_name + "_________",
@@ -97,7 +97,7 @@ def test_engine_stopped(
     password: str,
     api_endpoint: str,
 ) -> None:
-    """Connection properly reacts to engine not running error"""
+    """Connection properly reacts to engine not running error."""
     with raises(EngineNotRunningError):
         with connect(
             engine_url=stopped_engine_url,

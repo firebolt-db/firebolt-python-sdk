@@ -7,23 +7,23 @@ class FireboltEngineError(FireboltError):
 
 
 class EngineNotRunningError(FireboltEngineError):
-    """Engine, that's being queried, is not running."""
+    """Engine that's being queried is not running."""
 
 
 class NoAttachedDatabaseError(FireboltEngineError):
-    """Engine, that's being accessed, is not running.
+    """Engine that's being accessed is not running.
 
     Args:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
 
     Attributes:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
     """
 
     def __init__(self, method_name: str):
         super().__init__(
             f"Unable to call {method_name}: "
-            "Engine must to be attached to a database first."
+            "Engine must be attached to a database first."
         )
         self.method_name = method_name
 
@@ -40,10 +40,10 @@ class AccountNotFoundError(FireboltError):
     """Account with provided name doesn't exist.
 
     Args:
-        account_name (str): Name of account, that wasn't found
+        account_name (str): Name of account that wasn't found
 
     Attributes:
-        account_name (str): Name of account, that wasn't found
+        account_name (str): Name of account that wasn't found
     """
 
     def __init__(self, account_name: str):
@@ -52,13 +52,13 @@ class AccountNotFoundError(FireboltError):
 
 
 class AttachedEngineInUseError(FireboltDatabaseError):
-    """Engine is unavailable because it's starting/stopping.
+    """Engine unavailable because it's starting/stopping.
 
     Args:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
 
     Attributes:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
     """
 
     def __init__(self, method_name: str):
@@ -85,10 +85,10 @@ class CursorClosedError(CursorError):
     """Cursor operations are unavailable since it's closed.
 
     Args:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
 
     Attributes:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
     """
 
     def __init__(self, method_name: str):
@@ -100,10 +100,10 @@ class QueryNotRunError(CursorError):
     """Some cursor methods are unavailable before a query is run.
 
     Args:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
 
     Attributes:
-        method_name (str): Name of the method, which caused issue
+        method_name (str): Method that caused the error
     """
 
     def __init__(self, method_name: str):
@@ -117,11 +117,11 @@ class AuthenticationError(FireboltError):
     Stores error cause and authentication endpoint.
 
     Args:
-        api_endpoint (str): Environment api endpoint, used for authentication
+        api_endpoint (str): Environment api endpoint used for authentication
         cause (str): Reason for authentication failure
 
     Attributes:
-        api_endpoint (str): Environment api endpoint, used for authentication
+        api_endpoint (str): Environment api endpoint used for authentication
         cause (str): Reason for authentication failure
     """
 
@@ -172,7 +172,7 @@ class DatabaseError(Error):
 class DataError(DatabaseError):
     """Data processing error.
 
-    Exception raised for errors that are due to problems with the processed data
+    Exception raised for errors that are due to problems with the processed data,
     like division by zero, numeric value out of range, etc.
     """
 
@@ -181,7 +181,7 @@ class OperationalError(DatabaseError):
     """Database operating error.
 
     Exception raised for errors that are related to the database's operation
-    and not necessarily under the control of the programmer, e.g. an unexpected
+    and not necessarily under the control of the programmer, e.g., an unexpected
     disconnect occurs, the data source name is not found, a transaction could not
     be processed, a memory allocation error occurred during processing, etc.
     """
@@ -191,7 +191,7 @@ class IntegrityError(DatabaseError):
     """Database data integrity error.
 
     Exception raised when the relational integrity of the database is affected,
-    e.g. a foreign key check fails.
+    e.g., a foreign key check fails.
     """
 
 
@@ -199,14 +199,14 @@ class InternalError(DatabaseError):
     """Database internal error.
 
     Exception raised when the database encounters an internal error,
-    e.g. the cursor is not valid anymore, the transaction is out of sync, etc.
+    e.g., the cursor is not valid anymore, the transaction is out of sync, etc.
     """
 
 
 class ProgrammingError(DatabaseError):
     """Database programming error.
 
-    Exception raised for programming errors, e.g. table not found or already exists,
+    Exception raised for programming errors, e.g., table not found or already exists,
     syntax error in the SQL statement, wrong number of parameters specified, etc.
     """
 
@@ -215,7 +215,7 @@ class NotSupportedError(DatabaseError):
     """Operation not supported.
 
     Exception raised in case a method or database API was used which is not supported
-    by the database, e.g. requesting a .rollback() on a connection that
+    by the database, e.g., requesting a .rollback() on a connection that
     does not support transaction or has transactions turned off.
     """
 

@@ -7,7 +7,7 @@ from firebolt.client.auth import Auth
 logger = logging.getLogger(__name__)
 
 AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly in Settings is deprecated.
- Please consider passing Auth object instead.
+ Use Auth object instead.
  Examples:
   >>> from firebolt.client.auth import UsernamePassword
   >>> ...
@@ -24,11 +24,11 @@ class Settings(BaseSettings):
     Attributes:
         user (Optional[str]): User name
         password (Optional[str]): User password
-        access_token (Optional[str]): Access token to use for authentication.
+        access_token (Optional[str]): Access token to use for authentication
             Mutually exclusive with user and password
-        account_name (Optional[str]): Account name.
+        account_name (Optional[str]): Account name
             Default user account is used if none provided
-        server (Optional[str]): Environment api endpoint (Advanced).
+        server (Optional[str]): Environment api endpoint (Advanced)
             Default api endpoint is used if none provided
         default_region (str): Default region for provisioning
     """
@@ -71,7 +71,7 @@ class Settings(BaseSettings):
         )
         if sum(params_present) == 0:
             raise ValueError(
-                "Provide at least one of auth, user/password or access_token"
+                "Provide at least one of auth, user/password or access_token."
             )
         if sum(params_present) > 1:
             raise ValueError("Provide only one of auth, user/password or access_token")

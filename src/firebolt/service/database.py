@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class DatabaseService(BaseService):
     def get(self, id_: str) -> Database:
-        """Get a Database from Firebolt by its id."""
+        """Get a Database from Firebolt by its ID."""
 
         response = self.client.get(
             url=ACCOUNT_DATABASE_URL.format(account_id=self.account_id, database_id=id_)
@@ -27,13 +27,13 @@ class DatabaseService(BaseService):
         )
 
     def get_by_name(self, name: str) -> Database:
-        """Get a Database from Firebolt by its name."""
+        """Get a database from Firebolt by its name."""
 
         database_id = self.get_id_by_name(name=name)
         return self.get(id_=database_id)
 
     def get_id_by_name(self, name: str) -> str:
-        """Get a Database id from Firebolt by its name."""
+        """Get a database ID from Firebolt by its name."""
 
         response = self.client.get(
             url=ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=self.account_id),
@@ -53,15 +53,15 @@ class DatabaseService(BaseService):
         Get a list of databases on Firebolt.
 
         Args:
-            name_contains: Filter for databases with a name containing this substring.
-            attached_engine_name_eq: Filter for databases by an exact engine name.
+            name_contains: Filter for databases with a name containing this substring
+            attached_engine_name_eq: Filter for databases by an exact engine name
             attached_engine_name_contains: Filter for databases by engines with a
-                name containing this substring.
+                name containing this substring
             order_by: Method by which to order the results.
-            See :py:class:`firebolt.service.types.DatabaseOrder`.
+            See :py:class:`firebolt.service.types.DatabaseOrder`
 
         Returns:
-            A list of databases matching the filters.
+            A list of databases matching the filters
         """
 
         if isinstance(order_by, str):
@@ -92,15 +92,15 @@ class DatabaseService(BaseService):
         Create a new Database on Firebolt.
 
         Args:
-            name: Name of the database.
-            region: Region name in which to create the database.
+            name: Name of the database
+            region: Region name in which to create the database
 
         Returns:
-            The newly created Database.
+            The newly created database
         """
 
         class _DatabaseCreateRequest(FireboltBaseModel):
-            """Helper model for sending Database creation requests."""
+            """Helper model for sending database creation requests."""
 
             account_id: str
             database: Database

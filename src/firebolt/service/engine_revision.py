@@ -22,7 +22,7 @@ class EngineRevisionService(BaseService):
         Fetch an EngineRevision from Firebolt by its key.
 
         Args:
-            key: Key of the desired EngineRevision.
+            key: Key of the desired EngineRevision
 
         Returns:
             The requested EngineRevision

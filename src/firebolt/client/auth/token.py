@@ -7,10 +7,10 @@ from firebolt.utils.exception import AuthorizationError
 
 
 class Token(Auth):
-    """Token authentication class for Firebolt database.
+    """Token authentication class for Firebolt Database.
 
     Uses provided token for authentication. Doesn't cache token and doesn't
-    refresh it on expiration
+    refresh it on expiration.
 
     Args:
         token (str): Authorization token

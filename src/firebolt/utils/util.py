@@ -51,13 +51,13 @@ TMix = TypeVar("TMix")
 def mixin_for(baseclass: Type[TMix]) -> Type[TMix]:
     """Define mixin with baseclass typehint.
 
-    Should be used as a mixin base class to fix typehints
+    Should be used as a mixin base class to fix typehints.
 
     Args:
         baseclass (Type[TMix]): Class which mixin will be made for
 
     Returns:
-        Type[TMix]: Mixin type to inherin from
+        Type[TMix]: Mixin type to inherit from
 
     Examples:
         ```
@@ -85,15 +85,15 @@ def fix_url_schema(url: str) -> str:
 
 
 class AsyncJobThread:
-    """Thread runner that allows running async tasks syncronously in a separate thread.
+    """Thread runner that allows running async tasks synchronously in a separate thread.
 
     Caches loop to be reused in all threads.
-    It allows running async functions syncronously inside a running event loop.
+    It allows running async functions synchronously inside a running event loop.
     Since nesting loops is not allowed, we create a separate thread for a new event loop
 
     Attributes:
         result (Any): Value, returned by coroutine execution
-        exception (Optional[BaseException]): If any, exception that occured
+        exception (Optional[BaseException]): If any, exception that occurred
             during coroutine execution
     """
 
@@ -106,7 +106,7 @@ class AsyncJobThread:
         """Initialize a loop once to use for later execution.
 
         Tries to get a running loop.
-        Creates a new loop if no active one and sets it as active.
+        Creates a new loop if no active one, and sets it as active.
         """
         if not self._loop:
             try:
@@ -119,8 +119,8 @@ class AsyncJobThread:
     def _run(self, coro: Coroutine) -> None:
         """Run coroutine in an event loop.
 
-        Execution return value is stored into ``result`` field
-        If an exception occures, it will be caught and stored into ``exception`` field
+        Execution return value is stored into ``result`` field.
+        If an exception occurs, it will be caught and stored into ``exception`` field.
 
         Args:
             coro (Coroutine): Coroutine to execute
@@ -161,7 +161,7 @@ def async_to_sync(f: Callable, async_job_thread: AsyncJobThread = None) -> Calla
             (Default value = None)
 
     Returns:
-        Callable: regular function, which can be executed syncronously
+        Callable: regular function, which can be executed synchronously
     """
 
     @wraps(f)

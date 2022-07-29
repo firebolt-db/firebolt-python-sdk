@@ -55,7 +55,7 @@ async def test_select(
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
 ) -> None:
-    """Select handles all data types properly"""
+    """Select handles all data types properly."""
     with connection.cursor() as c:
         assert (await c.execute("set firebolt_use_decimal = 1")) == -1
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
@@ -88,7 +88,7 @@ async def test_select(
 async def test_long_query(
     connection: Connection,
 ) -> None:
-    """AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly"""
+    """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
     with connection.cursor() as c:
         await c.execute(
             "SET advanced_mode = 1; SET use_standard_sql = 0;"
@@ -107,14 +107,14 @@ async def test_drop_create(
     """Create and drop table/index queries are handled properly."""
 
     async def test_query(c: Cursor, query: str) -> None:
-        assert await c.execute(query) == 1, "Invalid row count returned."
-        assert c.rowcount == 1, "Invalid rowcount value."
+        assert await c.execute(query) == 1, "Invalid row count returned"
+        assert c.rowcount == 1, "Invalid rowcount value"
         assert_deep_eq(
             c.description,
             create_drop_description,
-            "Invalid create table query description.",
+            "Invalid create table query description",
         )
-        assert len(await c.fetchall()) == 1, "Invalid data returned."
+        assert len(await c.fetchall()) == 1, "Invalid data returned"
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
@@ -173,9 +173,9 @@ async def test_insert(connection: Connection) -> None:
     """Insert and delete queries are handled properly."""
 
     async def test_empty_query(c: Cursor, query: str) -> None:
-        assert await c.execute(query) == -1, "Invalid row count returned."
-        assert c.rowcount == -1, "Invalid rowcount value."
-        assert c.description is None, "Invalid description."
+        assert await c.execute(query) == -1, "Invalid row count returned"
+        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.description is None, "Invalid description"
         with raises(DataError):
             await c.fetchone()
 
@@ -203,7 +203,7 @@ async def test_insert(connection: Connection) -> None:
                 "SELECT * FROM test_insert_async_tb ORDER BY test_insert_async_tb.id"
             )
             == 1
-        ), "Invalid data length in table after insert."
+        ), "Invalid data length in table after insert"
 
         assert_deep_eq(
             await c.fetchall(),
@@ -218,13 +218,13 @@ async def test_insert(connection: Connection) -> None:
                     [1, 2, 3],
                 ],
             ],
-            "Invalid data in table after insert.",
+            "Invalid data in table after insert",
         )
 
 
 @mark.asyncio
 async def test_parameterized_query(connection: Connection) -> None:
-    """Query parameters are handled properly"""
+    """Query parameters are handled properly."""
 
     async def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
         assert await c.execute(query, params) == -1, "Invalid row count returned"

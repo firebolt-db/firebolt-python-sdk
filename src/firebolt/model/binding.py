@@ -15,7 +15,7 @@ class BindingKey(BaseModel):
 
 
 class Binding(FireboltBaseModel):
-    """A Binding between an Engine and a Database"""
+    """A binding between an engine and a database."""
 
     binding_key: BindingKey = Field(alias="id")
     is_default_engine: bool = Field(alias="engine_is_default")
