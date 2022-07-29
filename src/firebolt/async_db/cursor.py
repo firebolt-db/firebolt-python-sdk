@@ -352,9 +352,10 @@ class BaseCursor:
     async def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
         if parameter.name == "async_execution":
-            logger.info(
-                "As async_execution was specified using a SET parameter, "
-                "the following query will still be executed synchronously."
+            raise AsyncExecutionUnavailableError(
+                "It is not possible to set async_execution using a SET command. "
+                "Instead, pass it as an argument to the execute() or "
+                "executemany() function."
             )
         resp = await self._api_request("select 1", {parameter.name: parameter.value})
         # Handle invalid set parameter
