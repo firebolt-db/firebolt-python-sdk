@@ -31,7 +31,7 @@ async def test_refresh_token(connection: Connection) -> None:
 
 @mark.asyncio
 async def test_credentials_invalidation(connection: Connection) -> None:
-    """Auth raises Authentication Error on credentials invalidation"""
+    """Auth raises authentication error on credentials invalidation"""
     with connection.cursor() as c:
         # Works fine
         await c.execute("show tables")

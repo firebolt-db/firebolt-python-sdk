@@ -50,15 +50,15 @@ CLIENT_MAP = [
         "",
     ),
     ("FireboltCLI", "create_connection", Path("firebolt_cli/utils.py"), "firebolt_cli"),
-]
-
-DRIVER_MAP = [
     (
         "DBT",
         "open",
         Path("dbt/adapters/firebolt/connections.py"),
         "dbt.adapters.firebolt",
     ),
+]
+
+DRIVER_MAP = [
     ("SQLAlchemy", "connect", Path("sqlalchemy/engine/default.py"), "firebolt_db"),
 ]
 
