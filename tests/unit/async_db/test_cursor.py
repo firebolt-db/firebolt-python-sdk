@@ -396,6 +396,7 @@ async def test_cursor_async_execute_error(
             "It is not possible to execute multi-statement queries asynchronously."
         ), f"Multi-statement query was allowed for {message}."
 
+        # Error out if async_execution is set via SET statement.
         with raises(AsyncExecutionUnavailableError) as excinfo:
             await cursor.execute("set async_execution=1")
 
