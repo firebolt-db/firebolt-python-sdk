@@ -24,7 +24,7 @@ def test_rm_credentials(
     provider_url: str,
     access_token: str,
 ) -> None:
-    """Creadentials, that are passed to rm are processed properly."""
+    """Credentials, that are passed to rm are processed properly."""
     url = "https://url"
 
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
@@ -76,7 +76,7 @@ def test_rm_token_cache(
     provider_url: str,
     access_token: str,
 ) -> None:
-    """Creadentials, that are passed to rm are processed properly."""
+    """Credentials, that are passed to rm are processed properly."""
     url = "https://url"
 
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)

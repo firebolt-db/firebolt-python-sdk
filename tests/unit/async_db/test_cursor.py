@@ -9,6 +9,7 @@ from firebolt.async_db import Cursor
 from firebolt.async_db._types import Column
 from firebolt.async_db.cursor import ColType, CursorState
 from firebolt.utils.exception import (
+    AsyncExecutionUnavailableError,
     CursorClosedError,
     DataError,
     EngineNotRunningError,
@@ -28,7 +29,7 @@ async def test_cursor_state(
     query_url: str,
     cursor: Cursor,
 ):
-    """Cursor state changes depending on the operations performed with it."""
+    """Cursor state changes depend on the operations performed with it."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -56,7 +57,7 @@ async def test_cursor_state(
 
 @mark.asyncio
 async def test_closed_cursor(cursor: Cursor):
-    """Most of cursor methods are unavailable for closed cursor."""
+    """Most cursor methods are unavailable for closed cursor."""
     fields = ("description", "rowcount", "statistics")
     async_methods = (
         ("execute", (cursor,)),
@@ -103,7 +104,7 @@ async def test_cursor_no_query(
     query_url: str,
     cursor: Cursor,
 ):
-    """Some of cursor methods are unavailable until a query is run."""
+    """Some cursor methods are unavailable until a query is run."""
     async_methods = (
         "fetchone",
         "fetchmany",
@@ -156,7 +157,6 @@ async def test_cursor_execute(
     python_query_data: List[List[ColType]],
 ):
     """Cursor is able to execute query, all fields are populated properly."""
-
     for query, message in (
         (
             lambda: cursor.execute("select * from t"),
@@ -211,7 +211,6 @@ async def test_cursor_server_side_async_execute(
     auth_url: str,
     server_side_async_id_callback: Callable,
     server_side_async_id: Callable,
-    insert_query_callback: Callable,
     query_with_params_url: str,
     cursor: Cursor,
 ):
@@ -219,7 +218,6 @@ async def test_cursor_server_side_async_execute(
     Cursor is able to execute query server-side asynchronously and
     query_id is returned.
     """
-
     for query, message in (
         (
             lambda: cursor.execute("select * from t", async_execution=True),
@@ -343,6 +341,66 @@ async def test_cursor_execute_error(
 
 
 @mark.asyncio
+async def test_cursor_async_execute_error(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_with_params_url: str,
+    cursor: Cursor,
+):
+    """
+    Cursor handles all types of errors properly using server-side
+    async queries.
+    """
+    for query, message in (
+        (
+            lambda sql: cursor.execute(sql, async_execution=True),
+            "server-side asynchronous execute()",
+        ),
+        (
+            lambda sql: cursor.executemany(sql, [], async_execution=True),
+            "server-side asynchronous executemany()",
+        ),
+    ):
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(query_callback, url=query_with_params_url)
+        with raises(OperationalError) as excinfo:
+            await query("sql")
+
+        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == (
+            "Invalid response to asynchronous query: missing query_id."
+        )
+
+        # Multi-statement queries are not possible with async_execution error.
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        with raises(AsyncExecutionUnavailableError) as excinfo:
+            await query("select * from t; select * from s")
+
+        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == (
+            "It is not possible to execute multi-statement queries asynchronously."
+        ), f"Multi-statement query was allowed for {message}."
+
+        # Error out when async_execution and use_standard_sql are set.
+        await cursor.execute("set use_standard_sql=1")
+        with raises(AsyncExecutionUnavailableError) as excinfo:
+            await query("select * from s")
+
+        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == (
+            "It is not possible to execute queries asynchronously if "
+            "use_standard_sql is in use."
+        ), f"use_standard_sql=1 was allowed for server-side asynchronous queries on {message}."
+
+        # Have to reauth or next execute fails. Not sure why.
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        await cursor.execute("set use_standard_sql=0")
+        httpx_mock.reset(True)
+
+
+@mark.asyncio
 async def test_cursor_fetchone(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -352,7 +410,7 @@ async def test_cursor_fetchone(
     query_url: str,
     cursor: Cursor,
 ):
-    """cursor fetchone fetches single row in correct order, if no rows returns None."""
+    """cursor fetchone fetches single row in correct order. If no rows, returns None."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -429,7 +487,7 @@ async def test_cursor_fetchmany(
 
     assert (
         len(await cursor.fetchmany()) == 0
-    ), "fetchmany should return empty result set when no rows left to fetch"
+    ), "fetchmany should return empty result set when no rows remain to fetch"
 
     httpx_mock.add_callback(insert_query_callback, url=query_url)
     await cursor.execute("sql")
@@ -447,7 +505,7 @@ async def test_cursor_fetchall(
     query_url: str,
     cursor: Cursor,
 ):
-    """cursor fetchall fetches all rows that left after last query."""
+    """cursor fetchall fetches all rows remaining after last query."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -464,7 +522,7 @@ async def test_cursor_fetchall(
 
     assert (
         len(await cursor.fetchall()) == 0
-    ), "fetchmany should return empty result set when no rows left to fetch"
+    ), "fetchmany should return empty result set when no rows remain to fetch"
 
     httpx_mock.add_callback(insert_query_callback, url=query_url)
     await cursor.execute("sql")
@@ -484,7 +542,7 @@ async def test_cursor_multi_statement(
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
-    """executemany with multiple parameter sets is not supported"""
+    """executemany with multiple parameter sets is not supported."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(insert_query_callback, url=query_url)
@@ -540,14 +598,11 @@ async def test_cursor_set_statements(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
-    query_callback: Callable,
     select_one_query_callback: Callable,
     query_url: str,
     cursor: Cursor,
-    python_query_description: List[Column],
-    python_query_data: List[List[ColType]],
 ):
-    """cursor correctly parses and processes set statements"""
+    """cursor correctly parses and processes set statements."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&a=b")
 
@@ -619,7 +674,7 @@ async def test_cursor_set_parameters_sent(
     cursor: Cursor,
     set_params: Dict,
 ):
-    """Cursor passes provided set parameters to engine"""
+    """Cursor passes provided set parameters to engine."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     params = ""
@@ -643,7 +698,7 @@ async def test_cursor_skip_parse(
     query_callback: Callable,
     cursor: Cursor,
 ):
-    """Cursor doesn't process a query if skip_parsing is provided"""
+    """Cursor doesn't process a query if skip_parsing is provided."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 

@@ -304,7 +304,7 @@ def test_cursor_fetchone(
     query_url: str,
     cursor: Cursor,
 ):
-    """cursor fetchone fetches single row in correct order, if no rows returns None."""
+    """cursor fetchone fetches single row in correct order; if no rows returns None."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -433,7 +433,7 @@ def test_cursor_multi_statement(
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
-    """executemany with multiple parameter sets is not supported"""
+    """executemany with multiple parameter sets is not supported."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(insert_query_callback, url=query_url)
@@ -483,7 +483,7 @@ def test_cursor_set_statements(
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
-    """cursor correctly parses and processes set statements"""
+    """cursor correctly parses and processes set statements."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&a=b")
 
@@ -554,7 +554,7 @@ def test_cursor_set_parameters_sent(
     cursor: Cursor,
     set_params: Dict,
 ):
-    """Cursor passes provided set parameters to engine"""
+    """Cursor passes provided set parameters to engine."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     params = ""
@@ -577,7 +577,7 @@ def test_cursor_skip_parse(
     query_callback: Callable,
     cursor: Cursor,
 ):
-    """Cursor doesn't process a query if skip_parsing is provided"""
+    """Cursor doesn't process a query if skip_parsing is provided."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 

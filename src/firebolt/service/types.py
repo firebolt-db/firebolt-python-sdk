@@ -36,9 +36,9 @@ class EngineStatus(Enum):
     """
 
     ENGINE_STATUS_UNSPECIFIED = "ENGINE_STATUS_UNSPECIFIED"
-    """ Logical record is created, however underlying infrastructure
+    """ Logical record is created, however, underlying infrastructure
     is not initialized.
-    In other words this means that engine is stopped."""
+    In other words, this means that engine is stopped."""
 
     ENGINE_STATUS_CREATED = "ENGINE_STATUS_CREATED"
     """Engine status was created."""
@@ -62,43 +62,43 @@ class EngineStatus(Enum):
 
     ENGINE_STATUS_RUNNING_REVISION_STARTING = "ENGINE_STATUS_RUNNING_REVISION_STARTING"
     """ Engine is initialized,
-    there are no running engine revision but it's starting."""
+    there are no running engine revisions, but it's starting."""
 
     ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED = (
         "ENGINE_STATUS_RUNNING_REVISION_STARTUP_FAILED"
     )
-    """ Engine is initialized,
-    initial revision is failed to provision or start."""
+    """ Engine is initialized;
+    initial revision failed to provision or start."""
 
     ENGINE_STATUS_RUNNING_REVISION_SERVING = "ENGINE_STATUS_RUNNING_REVISION_SERVING"
     """ Engine is ready (serves an engine revision). """
 
     ENGINE_STATUS_RUNNING_REVISION_CHANGING = "ENGINE_STATUS_RUNNING_REVISION_CHANGING"
-    """ Engine is ready (serves an engine revision),
+    """ Engine is ready (serves an engine revision);
      zero-downtime replacement revision is starting."""
 
     ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED = (
         "ENGINE_STATUS_RUNNING_REVISION_CHANGE_FAILED"
     )
-    """ Engine is ready (serves an engine revision),
+    """ Engine is ready (serves an engine revision);
      replacement revision failed to provision or start."""
 
     ENGINE_STATUS_RUNNING_REVISION_RESTARTING = (
         "ENGINE_STATUS_RUNNING_REVISION_RESTARTING"
     )
-    """ Engine is initialized,
+    """ Engine is initialized;
     replacement of the revision with a downtime is in progress."""
 
     ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED = (
         "ENGINE_STATUS_RUNNING_REVISION_RESTART_FAILED"
     )
-    """ Engine is initialized,
+    """ Engine is initialized;
     replacement revision failed to provision or start."""
 
     ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING = (
         "ENGINE_STATUS_RUNNING_REVISIONS_TERMINATING"
     )
-    """ Engine is initialized,
+    """ Engine is initialized;
     all child revisions are being terminated."""
 
     # Engine termination request was sent.
@@ -132,18 +132,18 @@ class EngineStatusSummary(Enum):
     """ Fully stopped."""
 
     ENGINE_STATUS_SUMMARY_STARTING = "ENGINE_STATUS_SUMMARY_STARTING"
-    """ Provisioning process is in progress.
-     We are creating cloud infra for this engine."""
+    """ Provisioning process is in progress;
+     creating cloud infra for this engine."""
 
     ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING = (
         "ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING"
     )
-    """ Provisioning process is complete.
-     We are now waiting for PackDB cluster to initialize and start."""
+    """ Provisioning process is complete;
+     waiting for PackDB cluster to initialize and start."""
 
     ENGINE_STATUS_SUMMARY_RUNNING = "ENGINE_STATUS_SUMMARY_RUNNING"
-    """ Fully started.
-     Engine is ready to serve requests."""
+    """ Fully started;
+     engine is ready to serve requests."""
 
     ENGINE_STATUS_SUMMARY_UPGRADING = "ENGINE_STATUS_SUMMARY_UPGRADING"
     """ Version of the PackDB is changing.
@@ -158,7 +158,7 @@ class EngineStatusSummary(Enum):
         "ENGINE_STATUS_SUMMARY_RESTARTING_INITIALIZING"
     )
     """ Hard restart (full stop/start cycle) is in progress.
-     Underlying infrastructure is ready, waiting for
+     Underlying infrastructure is ready. Waiting for
      PackDB cluster to initialize and start.
      This status is logically the same as ENGINE_STATUS_SUMMARY_STARTING_INITIALIZING,
      but used during restart cycle."""

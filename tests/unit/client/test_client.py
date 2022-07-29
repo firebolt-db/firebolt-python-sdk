@@ -20,7 +20,7 @@ def test_client_retry(
 ):
     """
     Client retries with new auth token
-    if first attempt fails with Unauthorized error
+    if first attempt fails with unauthorized error.
     """
     client = Client(auth=UsernamePassword(test_username, test_password))
 
