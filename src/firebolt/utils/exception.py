@@ -222,3 +222,14 @@ class NotSupportedError(DatabaseError):
 
 class ConfigurationError(InterfaceError):
     """Invalid configuration error."""
+
+
+class AsyncExecutionUnavailableError(ProgrammingError):
+    """
+    If `use_standard_sql` is specified the query status endpoint returns a JSON
+    object with empty values instead of a proper status object. In that case,
+    it is not possible to retrieve the results of an asynchronous query.
+    """
+
+    def __init__(self, error_message):  # type: ignore
+        super().__init__(error_message)

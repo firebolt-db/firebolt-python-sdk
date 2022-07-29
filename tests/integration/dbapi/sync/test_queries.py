@@ -388,3 +388,10 @@ def test_anyio_backend_import_issue(
     [t.start() for t in threads]
     [t.join() for t in threads]
     assert len(exceptions) == 0, exceptions
+
+
+def test_ss_async_query(connection: Connection) -> None:
+    """Make an sql query and receive an id back."""
+    with connection.cursor() as c:
+        query_id = c.execute("DROP TABLE IF EXISTS test_tb", [], async_execution=True)
+    assert type(query_id) is str
