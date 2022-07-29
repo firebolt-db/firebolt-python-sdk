@@ -60,7 +60,7 @@ def test_select(
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
 ) -> None:
-    """Select handles all data types properly"""
+    """Select handles all data types properly."""
     with connection.cursor() as c:
         assert c.execute("set firebolt_use_decimal = 1") == -1
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
@@ -90,7 +90,7 @@ def test_select(
 def test_long_query(
     connection: Connection,
 ) -> None:
-    """AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly"""
+    """AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly."""
     with connection.cursor() as c:
         c.execute(
             "SET advanced_mode = 1; SET use_standard_sql = 0;"
@@ -218,7 +218,7 @@ def test_insert(connection: Connection) -> None:
 
 
 def test_parameterized_query(connection: Connection) -> None:
-    """Query parameters are handled properly"""
+    """Query parameters are handled properly."""
 
     def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
         assert c.execute(query, params) == -1, "Invalid row count returned"
