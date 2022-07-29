@@ -345,8 +345,9 @@ async def test_cursor_async_execute_error(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
-    query_callback: Callable,
     query_with_params_url: str,
+    server_side_async_missing_id_callback: Callable,
+    insert_query_callback: str,
     cursor: Cursor,
 ):
     """
@@ -363,10 +364,22 @@ async def test_cursor_async_execute_error(
             "server-side asynchronous executemany()",
         ),
     ):
+        # Empty server-side asynchronous execution return.
         httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(query_callback, url=query_with_params_url)
+        httpx_mock.add_callback(insert_query_callback, url=query_with_params_url)
         with raises(OperationalError) as excinfo:
-            await query("sql")
+            await query("select * from t")
+
+        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == ("No response to asynchronous query.")
+
+        # Missing query_id from server-side asynchronous execution.
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(
+            server_side_async_missing_id_callback, url=query_with_params_url
+        )
+        with raises(OperationalError) as excinfo:
+            await query("select * from t")
 
         assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == (
@@ -382,6 +395,19 @@ async def test_cursor_async_execute_error(
         assert str(excinfo.value) == (
             "It is not possible to execute multi-statement queries asynchronously."
         ), f"Multi-statement query was allowed for {message}."
+
+        with raises(AsyncExecutionUnavailableError) as excinfo:
+            await cursor.execute("set async_execution=1")
+
+        assert cursor._state == CursorState.ERROR
+        assert str(excinfo.value) == (
+            "It is not possible to set async_execution using a SET command. "
+            "Instead, pass it as an argument to the execute() or "
+            "executemany() function."
+        ), (
+            "SET use_standard_sql=1 was allowed for server-side asynchronous "
+            f"queries on {message}."
+        )
 
         # Error out when async_execution and use_standard_sql are set.
         await cursor.execute("set use_standard_sql=1")
