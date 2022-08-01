@@ -7,7 +7,7 @@
 **Firebolt-python-sdk**
 ########################
 
-The Firebolt Python SDK enables connecting to Firebolt, managing Firebolt resources and executing queries using a library of Python classes and functions. 
+The Firebolt Python SDK enables connecting to Firebolt, managing Firebolt resources and executing queries using a library of Python classes and functions.
 
 ========================
 Prerequisites
@@ -21,15 +21,15 @@ Prerequisites
 Installation
 ========================
 
-Use pip to install the Firebolt Python SDK from the command line as shown in the example below: 
+Use pip to install the Firebolt Python SDK from the command line as shown in the example below:
 
-``$ pip install firebolt-sdk`` 
+``$ pip install firebolt-sdk``
 
 
-Optional features 
+Optional features
 ^^^^^^^^^^^^^^^^^^^
 
-By default, the Firebolt Python SDK uses the ``datetime`` module to parse date and datetime values. For large operations involving date and datetime values, the Python SDK can achieve faster results by using the `ciso8601 <https://pypi.org/project/ciso8601/>`_ package, however this can cause installation issues in some cases.  
+By default, the Firebolt Python SDK uses the ``datetime`` module to parse date and datetime values. For large operations involving date and datetime values, the Python SDK can achieve faster results by using the `ciso8601 <https://pypi.org/project/ciso8601/>`_ package, however this can cause installation issues in some cases.
 
 To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install "firebolt-sdk[ciso8601]"``.
 
@@ -43,14 +43,14 @@ For information about changes in the latest version of the Firebolt Python SDK, 
 Contributing
 ^^^^^^^^^^^^^^
 
-For procedures and requirements for contributing to this SDK, see the `contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_ page on Github. 
+For procedures and requirements for contributing to this SDK, see the `contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_ page on Github.
 
 License
 ^^^^^^^^
 
 The Firebolt DB API is licensed under the `Apache License Version 2.0 <https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE>`_ software license.
 
-.. note:: 
+.. note::
 
    This project is under active development.
 
@@ -74,10 +74,10 @@ Reference documentation
 .. toctree::
    :maxdepth: 1
 
-   Async_db <firebolt.async_db>
+   Async DB <firebolt.async_db>
    Client <firebolt.client>
    Common <firebolt.common>
-   Db <firebolt.db>
+   DB <firebolt.db>
    Model <firebolt.model>
    Service <firebolt.service>
 
