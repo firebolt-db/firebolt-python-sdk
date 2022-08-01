@@ -281,11 +281,11 @@ class BaseCursor:
         self._next_set_idx = 0
         self._query_id = ""
 
-    def _query_id_from_response_async(self, response: Response) -> str:
+    def _query_id_from_response(self, response: Response) -> str:
         if response.headers.get("content-length", "") == "0":
             raise OperationalError("No response to asynchronous query.")
         query_data = response.json()
-        if "query_id" not in query_data:
+        if "query_id" not in query_data or query_data["query_id"] == "":
             raise OperationalError(
                 "Invalid response to asynchronous query: missing query_id."
             )
@@ -336,17 +336,18 @@ class BaseCursor:
 
     async def _api_request(
         self,
-        query: str,
-        set_parameters: Optional[dict] = None,
+        query: Optional[str] = "",
+        parameters: Optional[dict] = None,
+        url: Optional[str] = "",
     ) -> Response:
         return await self._client.request(
-            url="/",
+            url=f"/{url}",
             method="POST",
             params={
                 "database": self.connection.database,
                 "output_format": JSON_OUTPUT_FORMAT,
                 **self._set_parameters,
-                **(set_parameters or dict()),
+                **(parameters or dict()),
             },
             content=query,
         )
@@ -393,11 +394,11 @@ class BaseCursor:
                 )
             if parameters and skip_parsing:
                 logger.warning(
-                    "Query formatting parameters are provided with skip_parsing."
-                    " They will be ignored."
+                    "Query formatting parameters are provided but skip_parsing"
+                    " is specified. They will be ignored."
                 )
 
-            # Allow users to manually skip parsing for performance improvement
+            # Allow users to manually skip parsing for performance improvement.
             queries: List[Union[SetParameter, str]] = (
                 [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
             )
@@ -409,7 +410,7 @@ class BaseCursor:
             for query in queries:
 
                 start_time = time.time()
-                # our CREATE EXTERNAL TABLE queries currently require credentials,
+                # Our CREATE EXTERNAL TABLE queries currently require credentials,
                 # so we will skip logging those queries.
                 # https://docs.firebolt.io/sql-reference/commands/ddl-commands#create-external-table
                 if isinstance(query, SetParameter) or not re.search(
@@ -429,7 +430,7 @@ class BaseCursor:
                 elif async_execution:
                     resp = await self._async_execution_api_request(query)
                     await self._raise_if_error(resp)
-                    self._query_id = self._query_id_from_response_async(resp)
+                    self._query_id = self._query_id_from_response(resp)
                 else:
                     resp = await self._api_request(query)
                     await self._raise_if_error(resp)
@@ -439,7 +440,7 @@ class BaseCursor:
 
                 logger.info(
                     f"Query fetched {self.rowcount} rows in"
-                    f" {time.time() - start_time} seconds"
+                    f" {time.time() - start_time} seconds."
                 )
 
             self._state = CursorState.DONE
@@ -485,7 +486,7 @@ class BaseCursor:
         """
         params_list = [parameters] if parameters else []
         await self._do_execute(query, params_list, skip_parsing, async_execution)
-        return self.query_id if async_execution else self.rowcount
+        return self._query_id if async_execution else self.rowcount
 
     @check_not_closed
     async def executemany(
@@ -592,6 +593,19 @@ class BaseCursor:
     def setoutputsize(self, size: int, column: Optional[int] = None) -> None:
         """Set a column buffer size for fetches of large columns (does nothing)."""
 
+    @check_not_closed
+    async def cancel(self, query_id: str) -> None:
+        """Cancel a server-side async query."""
+        print("here")
+        resp = await self._api_request(parameters={"query_id": query_id}, url="/cancel")
+        # print(resp)
+        if resp.json():
+            print("resp:", resp.json())
+        else:
+            print("aaaaacccckk!!!")
+        print("afterhere")
+        return None
+
     # Context manager support
     @check_not_closed
     def __enter__(self) -> BaseCursor:
@@ -624,6 +638,13 @@ class Cursor(BaseCursor):
         self._async_query_lock = RWLock()
         super().__init__(*args, **kwargs)
 
+    @wraps(BaseCursor.cancel)
+    async def cancel(self, query_id: str) -> None:
+        print("cursor.cancel")
+
+        async with self._async_query_lock.reader:
+            await super().cancel(query_id)
+
     @wraps(BaseCursor.execute)
     async def execute(
         self,
@@ -644,12 +665,12 @@ class Cursor(BaseCursor):
         parameters_seq: Sequence[Sequence[ParameterType]],
         async_execution: Optional[bool] = False,
     ) -> int:
+        """
+        Prepare and execute a database query against all parameter
+        sequences provided.
+        """
         async with self._async_query_lock.writer:
             return await super().executemany(query, parameters_seq, async_execution)
-        """
-            Prepare and execute a database query against all parameter
-            sequences provided.
-        """
 
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
@@ -660,15 +681,17 @@ class Cursor(BaseCursor):
     @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
+            """
+            Fetch the next set of rows of a query result;
+              size is cursor.arraysize by default.
+            """
             return super().fetchmany(size)
-        """Fetch the next set of rows of a query result;
-          size is cursor.arraysize by default."""
 
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
+            """Fetch all remaining rows of a query result."""
             return super().fetchall()
-        """Fetch all remaining rows of a query result."""
 
     @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:
