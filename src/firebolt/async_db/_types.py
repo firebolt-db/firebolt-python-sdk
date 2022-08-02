@@ -204,7 +204,7 @@ class _InternalType(Enum):
         return types[self]
 
 
-def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:
+def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:  # noqa: C901
     """Parse typename provided by query metadata into Python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
@@ -383,10 +383,10 @@ def split_format_sql(
     if parameters:
         if len(statements) > 1:
             raise NotSupportedError(
-                "formatting multistatement queries is not supported"
+                "Formatting multi-statement queries is not supported."
             )
         if statement_to_set(statements[0]):
-            raise NotSupportedError("formatting set statements is not supported")
+            raise NotSupportedError("Formatting set statements is not supported.")
         return [format_statement(statements[0], paramset) for paramset in parameters]
 
     # Try parsing each statement as a SET, otherwise return as a plain sql string
