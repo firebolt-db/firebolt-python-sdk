@@ -4,25 +4,25 @@ Model
 
 The model package contains various classes and functions for managing Firebolt engines and databases.
 
-Model.database
+Database
 ------------------------------
 
 .. automodule:: firebolt.model.database
    :members:
-   :exclude-members: DatabaseKey
+   :exclude-members: DatabaseKey, FieldMask
    :undoc-members:
    :show-inheritance:
 
-Model.engine
+Engine
 ----------------------------
 
 .. automodule:: firebolt.model.engine
    :members:
-   :exclude-members: EngineKey
+   :exclude-members: EngineKey, FieldMask, check_attached_to_database, wait
    :undoc-members:
    :show-inheritance:
 
-Model.engine\_revision
+Engine revision
 --------------------------------------
 
 .. automodule:: firebolt.model.engine_revision
@@ -31,7 +31,7 @@ Model.engine\_revision
    :undoc-members:
    :show-inheritance:
 
-Model.instance\_type
+Instance type
 ------------------------------------
 
 .. automodule:: firebolt.model.instance_type
@@ -40,7 +40,7 @@ Model.instance\_type
    :undoc-members:
    :show-inheritance:
 
-Model.provider
+Provider
 ------------------------------
 
 .. automodule:: firebolt.model.provider
@@ -48,7 +48,7 @@ Model.provider
    :undoc-members:
    :show-inheritance:
 
-Model.region
+Region
 ----------------------------
 
 .. automodule:: firebolt.model.region
@@ -56,5 +56,3 @@ Model.region
    :exclude-members: RegionKey
    :undoc-members:
    :show-inheritance:
-
-

@@ -486,7 +486,7 @@ class BaseCursor:
         """
         params_list = [parameters] if parameters else []
         await self._do_execute(query, params_list, skip_parsing, async_execution)
-        return self._query_id if async_execution else self.rowcount
+        return self.query_id if async_execution else self.rowcount
 
     @check_not_closed
     async def executemany(
