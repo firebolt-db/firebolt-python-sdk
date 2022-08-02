@@ -7,7 +7,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
 from firebolt.async_db._types import Column
-from firebolt.async_db.cursor import ColType, CursorState
+from firebolt.async_db.cursor import ColType, CursorState, QueryStatus
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     CursorClosedError,
@@ -280,7 +280,7 @@ async def test_cursor_server_side_async_cancel_error(
     query_with_params_url: str,
     cursor: Cursor,
 ):
-    """ """
+    """Error should occur on BAD_REQUEST."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
         server_side_async_cancel_callback_error, url=query_with_params_url
@@ -293,6 +293,55 @@ async def test_cursor_server_side_async_cancel_error(
             str(excinfo.value)
             == f"Asynchronous query {server_side_async_id} was not cancelled."
         ), f"Invalid cancellation error message."
+
+
+@mark.asyncio
+async def test_cursor_server_side_async_get_status(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    server_side_async_get_status_callback: Callable,
+    server_side_async_id: Callable,
+    query_with_params_url: str,
+    cursor: Cursor,
+):
+    """
+    Cursor is able to execute query server-side asynchronously and
+    query_id is returned.
+    """
+
+    # Query with json output
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(
+        server_side_async_get_status_callback, url=query_with_params_url
+    )
+    status = await cursor.get_status(server_side_async_id)
+    assert status == QueryStatus.ENDED_SUCCESSFULLY
+
+
+@mark.asyncio
+async def test_cursor_server_side_async_get_status_error(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    server_side_async_get_status_error: Callable,
+    server_side_async_id: Callable,
+    query_with_params_url: str,
+    cursor: Cursor,
+):
+    """ """
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(
+        server_side_async_get_status_error, url=query_with_params_url
+    )
+    with raises(OperationalError) as excinfo:
+        await cursor.get_status(server_side_async_id)
+
+        assert cursor._state == CursorState.ERROR
+        assert (
+            str(excinfo.value)
+            == f"Asynchronous query {server_side_async_id} status check failed."
+        ), f"Invalid get_status error message."
 
 
 @mark.asyncio
