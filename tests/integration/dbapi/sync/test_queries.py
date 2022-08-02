@@ -390,10 +390,16 @@ def test_anyio_backend_import_issue(
     assert len(exceptions) == 0, exceptions
 
 
-def test_ss_async_query(connection: Connection) -> None:
+def test_ss_async_execution_query(connection: Connection) -> None:
     """Make an sql query and receive an id back."""
     with connection.cursor() as c:
-        query_id = cursor.execute(
-            "DROP TABLE IF EXISTS test_tb", [], async_execution=True
-        )
+        query_id = c.execute("DROP TABLE IF EXISTS test_tb", [], async_execution=True)
     assert type(query_id) is str and query_id
+
+
+def test_ss_async_execution_cancel(connection: Connection) -> None:
+    """Test cancel."""
+    with connection.cursor() as c:
+        query_id = c.execute("DROP TABLE IF EXISTS test_tb", [], async_execution=True)
+        c.cancel(query_id)
+    assert True

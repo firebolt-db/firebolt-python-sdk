@@ -596,15 +596,7 @@ class BaseCursor:
     @check_not_closed
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
-        print("here")
-        resp = await self._api_request(parameters={"query_id": query_id}, url="/cancel")
-        # print(resp)
-        if resp.json():
-            print("resp:", resp.json())
-        else:
-            print("aaaaacccckk!!!")
-        print("afterhere")
-        return None
+        await self._api_request(parameters={"query_id": query_id}, url="cancel")
 
     # Context manager support
     @check_not_closed
@@ -640,9 +632,7 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.cancel)
     async def cancel(self, query_id: str) -> None:
-        print("cursor.cancel")
-
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.writer:
             await super().cancel(query_id)
 
     @wraps(BaseCursor.execute)
