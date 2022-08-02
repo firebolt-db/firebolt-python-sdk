@@ -49,6 +49,14 @@ StackItem = namedtuple("StackItem", "function filename")
         "dbt.adapters.firebolt": MagicMock(__version__="0.1.4"),
     },
 )
+@patch.dict(
+    "firebolt.utils.usage_tracker.modules",
+    {"redash": MagicMock(__version__="0.2.2")},
+)
+@patch.dict(
+    "firebolt.utils.usage_tracker.modules",
+    {"prefect": MagicMock(__version__="0.2.3")},
+)
 @mark.parametrize(
     "stack,map,expected",
     [
@@ -113,6 +121,21 @@ StackItem = namedtuple("StackItem", "function filename")
             [StackItem("open", "dbt/adapters/firebolt/connections.py")],
             DRIVER_MAP,
             {},
+        ),
+        (
+            [StackItem("dummy", "root/superset/models/core.py")],
+            CLIENT_MAP,
+            {"Superset": ""},
+        ),
+        (
+            [StackItem("run_query", "my_redash/redash/query_runner/firebolt.py")],
+            CLIENT_MAP,
+            {"Redash": "0.2.2"},
+        ),
+        (
+            [StackItem("run", "root/prefect/tasks/firebolt/firebolt.py")],
+            CLIENT_MAP,
+            {"Prefect": "0.2.3"},
         ),
     ],
 )
