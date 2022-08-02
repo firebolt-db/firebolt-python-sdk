@@ -5,7 +5,6 @@ import re
 import time
 from enum import Enum
 from functools import wraps
-from inspect import cleandoc
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -36,6 +35,7 @@ from firebolt.async_db._types import (
 from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.client import AsyncClient
 from firebolt.utils.exception import (
+    AsyncExecutionUnavailableError,
     CursorClosedError,
     DataError,
     EngineNotRunningError,
@@ -88,12 +88,10 @@ def check_not_closed(func: Callable) -> Callable:
 
 
 def check_query_executed(func: Callable) -> Callable:
-    cleandoc(
-        """
-        (Decorator) ensure that some query has been executed before
-        calling cursor method.
-        """
-    )
+    """
+    (Decorator) ensure that some query has been executed before
+    calling cursor method.
+    """
 
     @wraps(func)
     def inner(self: Cursor, *args: Any, **kwargs: Any) -> Any:
@@ -119,6 +117,7 @@ class BaseCursor:
         "_row_sets",
         "_next_set_idx",
         "_set_parameters",
+        "_query_id",
     )
 
     default_arraysize = 1
@@ -143,6 +142,7 @@ class BaseCursor:
         self._rowcount = -1
         self._idx = 0
         self._next_set_idx = 0
+        self._query_id = ""
         self._reset()
 
     def __del__(self) -> None:
@@ -177,6 +177,12 @@ class BaseCursor:
         """The number of rows produced by last query."""
         return self._rowcount
 
+    @property  # type: ignore
+    @check_not_closed
+    def query_id(self) -> str:
+        """The query id of a query executed asynchronously."""
+        return self._query_id
+
     @property
     def arraysize(self) -> int:
         """Default number of rows returned by fetchmany."""
@@ -194,12 +200,10 @@ class BaseCursor:
     @property
     def closed(self) -> bool:
         """True if connection is closed, False otherwise."""
-
         return self._state == CursorState.CLOSED
 
     def close(self) -> None:
         """Terminate an ongoing query (if any) and mark connection as closed."""
-
         self._state = CursorState.CLOSED
         # remove typecheck skip  after connection is implemented
         self.connection._remove_cursor(self)  # type: ignore
@@ -267,6 +271,17 @@ class BaseCursor:
         self._idx = 0
         self._row_sets = []
         self._next_set_idx = 0
+        self._query_id = ""
+
+    def _query_id_from_response_async(self, response: Response) -> str:
+        if response.headers.get("content-length", "") == "0":
+            raise OperationalError("No response to asynchronous query.")
+        query_data = response.json()
+        if "query_id" not in query_data:
+            raise OperationalError(
+                "Invalid response to asynchronous query: missing query_id."
+            )
+        return query_data["query_id"]
 
     def _row_set_from_response(
         self, response: Response
@@ -276,12 +291,11 @@ class BaseCursor:
         Optional[Statistics],
         Optional[List[List[RawColType]]],
     ]:
-        """Fetch information about executed query from http response"""
+        """Fetch information about executed query from http response."""
 
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
             return (-1, None, None, None)
-
         try:
             # Skip parsing floats to properly parse them later
             query_data = response.json(parse_float=str)
@@ -313,7 +327,9 @@ class BaseCursor:
             self._pop_next_set()
 
     async def _api_request(
-        self, query: str, set_parameters: Optional[dict]
+        self,
+        query: str,
+        set_parameters: Optional[dict] = None,
     ) -> Response:
         return await self._client.request(
             url="/",
@@ -327,21 +343,46 @@ class BaseCursor:
             content=query,
         )
 
+    async def _async_execution_api_request(self, query: str) -> Response:
+        """Do query request using SET async_execution=1."""
+        return await self._api_request(
+            query, {"async_execution": 1, "advanced_mode": 1}
+        )
+
+    async def _validate_set_parameter(self, parameter: SetParameter) -> None:
+        """Validate parameter by executing simple query with it."""
+        if parameter.name == "async_execution":
+            raise AsyncExecutionUnavailableError(
+                "It is not possible to set async_execution using a SET command. "
+                "Instead, pass it as an argument to the execute() or "
+                "executemany() function."
+            )
+        resp = await self._api_request("select 1", {parameter.name: parameter.value})
+        # Handle invalid set parameter
+        if resp.status_code == codes.BAD_REQUEST:
+            raise OperationalError(resp.text)
+        await self._raise_if_error(resp)
+
+        # set parameter passed validation
+        self._set_parameters[parameter.name] = parameter.value
+
     async def _do_execute(
         self,
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
-        set_parameters: Optional[Dict] = None,
         skip_parsing: bool = False,
+        async_execution: Optional[bool] = False,
     ) -> None:
         self._reset()
-        if set_parameters is not None:
-            logger.warning(
-                "Passing set parameters as an argument is deprecated. Please run "
-                "a query 'SET <param> = <value>'."
-            )
         try:
-
+            if (
+                async_execution
+                and self._set_parameters.get("use_standard_sql", "0") == "1"
+            ):
+                raise AsyncExecutionUnavailableError(
+                    "It is not possible to execute queries asynchronously if "
+                    "use_standard_sql is in use."
+                )
             if parameters and skip_parsing:
                 logger.warning(
                     "Query formatting parameters are provided with skip_parsing."
@@ -352,7 +393,11 @@ class BaseCursor:
             queries: List[Union[SetParameter, str]] = (
                 [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
             )
-
+            if len(queries) > 1 and async_execution:
+                raise AsyncExecutionUnavailableError(
+                    "It is not possible to execute multi-statement "
+                    "queries asynchronously."
+                )
             for query in queries:
 
                 start_time = time.time()
@@ -372,19 +417,13 @@ class BaseCursor:
                     Optional[List[List[RawColType]]],
                 ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
-                    # Validate parameter by executing simple query with it
-                    resp = await self._api_request(
-                        "select 1", {query.name: query.value}
-                    )
-                    # Handle invalid set parameter
-                    if resp.status_code == codes.BAD_REQUEST:
-                        raise OperationalError(resp.text)
+                    await self._validate_set_parameter(query)
+                elif async_execution:
+                    resp = await self._async_execution_api_request(query)
                     await self._raise_if_error(resp)
-
-                    # set parameter passed validation
-                    self._set_parameters[query.name] = query.value
+                    self._query_id = self._query_id_from_response_async(resp)
                 else:
-                    resp = await self._api_request(query, set_parameters)
+                    resp = await self._api_request(query)
                     await self._raise_if_error(resp)
                     row_set = self._row_set_from_response(resp)
 
@@ -406,9 +445,9 @@ class BaseCursor:
         self,
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
-        set_parameters: Optional[Dict] = None,
         skip_parsing: bool = False,
-    ) -> int:
+        async_execution: Optional[bool] = False,
+    ) -> Union[int, str]:
         """Prepare and execute a database query.
 
         Supported features:
@@ -427,24 +466,26 @@ class BaseCursor:
             query (str): SQL query to execute
             parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
                 parameters. Used to replace '?' placeholders inside a query with
-                actual values.
-            set_parameters (Optional[Dict]): List of set parameters to execute
-                a query with. DEPRECATED: Use SET SQL statements instead.
+                actual values
             skip_parsing (bool): Flag to disable query parsing. This will
-                disable parameterized, multi-statement, and SET queries,
-                while improving performance.
+                disable parameterized, multi-statement and SET queries,
+                while improving performance
+            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
             int: Query row count.
         """
         params_list = [parameters] if parameters else []
-        await self._do_execute(query, params_list, set_parameters, skip_parsing)
-        return self.rowcount
+        await self._do_execute(query, params_list, skip_parsing, async_execution)
+        return self.query_id if async_execution else self.rowcount
 
     @check_not_closed
     async def executemany(
-        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
-    ) -> int:
+        self,
+        query: str,
+        parameters_seq: Sequence[Sequence[ParameterType]],
+        async_execution: Optional[bool] = False,
+    ) -> Union[int, str]:
         """Prepare and execute a database query.
 
         Supports providing multiple substitution parameter sets, executing them
@@ -468,12 +509,17 @@ class BaseCursor:
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
+            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
-            int: Query row count
+            int|str: Query row count for synchronous execution of queries,
+            query ID string for asynchronous execution.
         """
-        await self._do_execute(query, parameters_seq)
-        return self.rowcount
+        await self._do_execute(query, parameters_seq, async_execution=async_execution)
+        if async_execution:
+            return self.query_id
+        else:
+            return self.rowcount
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
         """Parse a single data row based on query column types."""
@@ -483,12 +529,10 @@ class BaseCursor:
         ]
 
     def _get_next_range(self, size: int) -> Tuple[int, int]:
-        cleandoc(
-            """
-            Return range of next rows of size (if possible),
-            and update _idx to point to the end of this range.
-            """
-        )
+        """
+        Return range of next rows of size (if possible),
+        and update _idx to point to the end of this range
+        """
 
         if self._rows is None:
             # No elements to take
@@ -577,20 +621,23 @@ class Cursor(BaseCursor):
         self,
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
-        set_parameters: Optional[Dict] = None,
         skip_parsing: bool = False,
-    ) -> int:
+        async_execution: Optional[bool] = False,
+    ) -> Union[int, str]:
         async with self._async_query_lock.writer:
             return await super().execute(
-                query, parameters, set_parameters, skip_parsing
+                query, parameters, skip_parsing, async_execution
             )
 
     @wraps(BaseCursor.executemany)
     async def executemany(
-        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
+        self,
+        query: str,
+        parameters_seq: Sequence[Sequence[ParameterType]],
+        async_execution: Optional[bool] = False,
     ) -> int:
         async with self._async_query_lock.writer:
-            return await super().executemany(query, parameters_seq)
+            return await super().executemany(query, parameters_seq, async_execution)
         """
             Prepare and execute a database query against all parameter
             sequences provided.

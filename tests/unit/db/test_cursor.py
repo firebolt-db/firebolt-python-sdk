@@ -1,4 +1,3 @@
-from inspect import cleandoc
 from typing import Callable, Dict, List
 from unittest.mock import patch
 
@@ -147,35 +146,95 @@ def test_cursor_execute(
 ):
     """Cursor is able to execute query, all fields are populated properly."""
 
-    for query in (
-        lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", []),
+    for query, message in (
+        (
+            lambda: cursor.execute("select * from t"),
+            "server-side synchronous execute()",
+        ),
+        (
+            lambda: cursor.executemany("select * from t", []),
+            "server-side synchronous executemany()",
+        ),
     ):
         # Query with json output
         httpx_mock.add_callback(auth_callback, url=auth_url)
         httpx_mock.add_callback(query_callback, url=query_url)
-        assert query() == len(python_query_data), "Invalid row count returned"
-        assert cursor.rowcount == len(python_query_data), "Invalid rowcount value"
+        assert query() == len(
+            python_query_data
+        ), f"Invalid row count returned for {message}."
+        assert cursor.rowcount == len(
+            python_query_data
+        ), f"Invalid rowcount value for {message}."
         for i, (desc, exp) in enumerate(
             zip(cursor.description, python_query_description)
         ):
-            assert desc == exp, f"Invalid column description at position {i}"
+            assert (
+                desc == exp
+            ), f"Invalid column description at position {i} for {message}."
 
         for i in range(cursor.rowcount):
             assert (
                 cursor.fetchone() == python_query_data[i]
-            ), f"Invalid data row at position {i}"
+            ), f"Invalid data row at position {i} for {message}."
 
-        assert cursor.fetchone() is None, "Non-empty fetchone after all data received"
+        assert (
+            cursor.fetchone() is None
+        ), f"Non-empty fetchone after all data received for {message}."
 
         httpx_mock.reset(True)
 
         # Query with empty output
         httpx_mock.add_callback(auth_callback, url=auth_url)
         httpx_mock.add_callback(insert_query_callback, url=query_url)
-        assert query() == -1, "Invalid row count for insert query"
-        assert cursor.rowcount == -1, "Invalid rowcount value for insert query"
-        assert cursor.description is None, "Invalid description for insert query"
+        assert query() == -1, f"Invalid row count for insert using {message}."
+        assert (
+            cursor.rowcount == -1
+        ), f"Invalid rowcount value for insert using {message}."
+        assert (
+            cursor.description is None
+        ), f"Invalid description for insert using {message}."
+
+
+def test_cursor_server_side_async_execute(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    server_side_async_id_callback: Callable,
+    server_side_async_id: Callable,
+    insert_query_callback: Callable,
+    query_with_params_url: str,
+    cursor: Cursor,
+):
+    """
+    Cursor is able to execute query server-side asynchronously and
+    query_id is returned.
+    """
+    for query, message in (
+        (
+            lambda: cursor.execute("select * from t", async_execution=True),
+            "server-side asynchronous execute()",
+        ),
+        (
+            lambda: cursor.executemany("select * from t", [], async_execution=True),
+            "server-side asynchronous executemany()",
+        ),
+    ):
+
+        # Query with json output
+        httpx_mock.add_callback(auth_callback, url=auth_url)
+        httpx_mock.add_callback(
+            server_side_async_id_callback, url=query_with_params_url
+        )
+
+        assert (
+            query() == server_side_async_id
+        ), f"Invalid query id returned for {message}."
+        assert (
+            cursor.rowcount == -1
+        ), f"Invalid rowcount value for insert using {message}."
+        assert (
+            cursor.description is None
+        ), f"Invalid description for insert using {message}."
 
 
 def test_cursor_execute_error(
@@ -186,9 +245,15 @@ def test_cursor_execute_error(
     cursor: Cursor,
 ):
     """Cursor handles all types of errors properly."""
-    for query in (
-        lambda: cursor.execute("select *"),
-        lambda: cursor.executemany("select *", []),
+    for query, message in (
+        (
+            lambda: cursor.execute("select * from t"),
+            "server-side synchronous execute()",
+        ),
+        (
+            lambda: cursor.executemany("select * from t", []),
+            "server-side synchronous executemany()",
+        ),
     ):
         httpx_mock.add_callback(auth_callback, url=auth_url)
 
@@ -201,7 +266,9 @@ def test_cursor_execute_error(
             query()
 
         assert cursor._state == CursorState.ERROR
-        assert str(excinfo.value) == "httpx error", "Invalid query error message"
+        assert (
+            str(excinfo.value) == "httpx error"
+        ), f"Invalid query error message for {message}."
 
         # HTTP error
         httpx_mock.add_response(status_code=codes.BAD_REQUEST, url=query_url)
@@ -210,7 +277,7 @@ def test_cursor_execute_error(
 
         errmsg = str(excinfo.value)
         assert cursor._state == CursorState.ERROR
-        assert "Bad Request" in errmsg, "Invalid query error message"
+        assert "Bad Request" in errmsg, f"Invalid query error message for {message}."
 
         # Database query error
         httpx_mock.add_response(
@@ -224,7 +291,7 @@ def test_cursor_execute_error(
         assert cursor._state == CursorState.ERROR
         assert (
             str(excinfo.value) == "Error executing query:\nQuery error message"
-        ), "Invalid authentication error message"
+        ), f"Invalid authentication error message for {message}."
         httpx_mock.reset(True)
 
 
@@ -269,12 +336,10 @@ def test_cursor_fetchmany(
     query_url: str,
     cursor: Cursor,
 ):
-    cleandoc(
-        """
-        Cursor's fetchmany fetches the provided amount of rows, or arraysize by
-        default. If not enough rows left, returns less, or None if there are no rows.
-        """
-    )
+    """
+    Cursor's fetchmany fetches the provided amount of rows, or arraysize by
+    default. If not enough rows left, returns less or None if there are no rows.
+    """
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
@@ -355,23 +420,6 @@ def test_cursor_fetchall(
     cursor.execute("sql")
     with raises(DataError):
         cursor.fetchall()
-
-
-# This tests a temporary functionality, needs to be removed when the
-# functionality is removed
-def test_set_parameters(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_with_params_url: str,
-    query_with_params_callback: Callable,
-    cursor: Cursor,
-    set_params: Dict,
-):
-    """Cursor passes provided set parameters to engine."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_with_params_callback, url=query_with_params_url)
-    cursor.execute("select 1", set_parameters=set_params)
 
 
 def test_cursor_multi_statement(
