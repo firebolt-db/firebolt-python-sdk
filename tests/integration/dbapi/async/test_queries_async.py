@@ -367,5 +367,5 @@ async def test_ss_async_execution_cancel(connection: Connection) -> None:
         query_id = await c.execute(
             "DROP TABLE IF EXISTS test_tb", [], async_execution=True
         )
-        await c.cancel("aaa")
-    assert resp.status_code == 200
+        await c.cancel(query_id)
+    assert resp.status_code == codes.OK
