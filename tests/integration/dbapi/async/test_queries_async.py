@@ -1,11 +1,6 @@
-from datetime import date, datetime
-from decimal import Decimal
-from typing import Any, List
+from pytest import mark
 
-from pytest import mark, raises
-
-from firebolt.async_db import Connection, Cursor, DataError, OperationalError
-from firebolt.async_db._types import ColType, Column
+from firebolt.async_db import Connection
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -353,3 +348,24 @@ async def test_set_invalid_parameter(connection: Connection):
             await c.execute("set some_invalid_parameter = 1")
 
         assert len(c._set_parameters) == 0
+
+
+@mark.asyncio
+async def test_ss_async_execution_query(connection: Connection) -> None:
+    """Make an sql query and receive an id back."""
+    with connection.cursor() as c:
+        query_id = await c.execute(
+            "DROP TABLE IF EXISTS test_tb", [], async_execution=True
+        )
+    assert type(query_id) is str and query_id
+
+
+@mark.asyncio
+async def test_ss_async_execution_cancel(connection: Connection) -> None:
+    """Test cancel."""
+    with connection.cursor() as c:
+        query_id = await c.execute(
+            "DROP TABLE IF EXISTS test_tb", [], async_execution=True
+        )
+        await c.cancel("aaa")
+    assert resp.status_code == 200

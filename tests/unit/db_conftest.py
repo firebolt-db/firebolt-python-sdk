@@ -126,17 +126,45 @@ def server_side_async_missing_id_callback(server_side_async_id) -> Response:
 
 
 @fixture
-def server_side_async_id_callback(server_side_async_id) -> Response:
+def server_side_async_id() -> str:
+    return "1a3f53d"
+
+
+@fixture
+def server_side_async_cancel_callback(server_side_async_id) -> Response:
     def do_query(request: Request, **kwargs) -> Response:
-        query_response = {"query_id": server_side_async_id}
+        query_response = {
+            "meta": [
+                {"name": "host", "type": "String"},
+                {"name": "port", "type": "UInt16"},
+                {"name": "status", "type": "Int64"},
+                {"name": "error", "type": "String"},
+                {"name": "num_hosts_remaining", "type": "UInt64"},
+                {"name": "num_hosts_active", "type": "UInt64"},
+            ],
+            "data": [["node1.node.consul", 9000, 0, "", 0, 0]],
+            "rows": 1,
+            "statistics": {
+                "elapsed": 0.116907717,
+                "rows_read": 1,
+                "bytes_read": 61,
+                "time_before_execution": 0.012180623,
+                "time_to_execute": 0.104614307,
+                "scanned_bytes_cache": 0,
+                "scanned_bytes_storage": 0,
+            },
+        }
         return Response(status_code=codes.OK, json=query_response)
 
     return do_query
 
 
 @fixture
-def server_side_async_id() -> str:
-    return "1a3f53d"
+def server_side_async_cancel_callback_error(server_side_async_id) -> Response:
+    def do_query(request: Request, **kwargs) -> Response:
+        return Response(status_code=codes.BAD_REQUEST, json={})
+
+    return do_query
 
 
 @fixture

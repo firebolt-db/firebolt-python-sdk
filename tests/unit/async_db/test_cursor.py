@@ -102,6 +102,7 @@ async def test_cursor_no_query(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
+    server_side_async_id: str,
     cursor: Cursor,
 ):
     """Some cursor methods are unavailable until a query is run."""
@@ -138,7 +139,6 @@ async def test_cursor_no_query(
     cursor.setinputsizes([0])
     cursor._reset()
     cursor.setoutputsize(0)
-
     # Context manager is also available
     with cursor:
         pass
@@ -245,6 +245,54 @@ async def test_cursor_server_side_async_execute(
         assert (
             cursor.description is None
         ), f"Invalid description for insert using {message}."
+
+
+@mark.asyncio
+async def test_cursor_server_side_async_cancel(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    server_side_async_cancel_callback: Callable,
+    server_side_async_id: Callable,
+    query_with_params_url: str,
+    cursor: Cursor,
+):
+    """
+    Cursor is able to execute query server-side asynchronously and
+    query_id is returned.
+    """
+
+    # Query with json output
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(
+        server_side_async_cancel_callback, url=query_with_params_url
+    )
+    await cursor.cancel(server_side_async_id)
+
+
+@mark.asyncio
+async def test_cursor_server_side_async_cancel_error(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    server_side_async_cancel_callback_error: Callable,
+    server_side_async_id: Callable,
+    query_with_params_url: str,
+    cursor: Cursor,
+):
+    """ """
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(
+        server_side_async_cancel_callback_error, url=query_with_params_url
+    )
+    with raises(OperationalError) as excinfo:
+        await cursor.cancel(server_side_async_id)
+
+        assert cursor._state == CursorState.ERROR
+        assert (
+            str(excinfo.value)
+            == f"Asynchronous query {server_side_async_id} was not cancelled."
+        ), f"Invalid cancellation error message."
 
 
 @mark.asyncio

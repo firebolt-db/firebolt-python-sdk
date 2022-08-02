@@ -596,7 +596,17 @@ class BaseCursor:
     @check_not_closed
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
-        await self._api_request(parameters={"query_id": query_id}, url="cancel")
+        try:
+            resp = await self._api_request(
+                parameters={"query_id": query_id}, url="cancel"
+            )
+            if resp.status_code == codes.BAD_REQUEST:
+                raise OperationalError(
+                    f"Asynchronous query {query_id} was not cancelled."
+                )
+        except Exception:
+            self._state = CursorState.ERROR
+            raise
 
     # Context manager support
     @check_not_closed
@@ -629,11 +639,6 @@ class Cursor(BaseCursor):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._async_query_lock = RWLock()
         super().__init__(*args, **kwargs)
-
-    @wraps(BaseCursor.cancel)
-    async def cancel(self, query_id: str) -> None:
-        async with self._async_query_lock.writer:
-            await super().cancel(query_id)
 
     @wraps(BaseCursor.execute)
     async def execute(
