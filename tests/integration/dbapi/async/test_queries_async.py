@@ -1,6 +1,11 @@
-from pytest import mark
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Any, List
 
-from firebolt.async_db import Connection
+from pytest import mark, raises
+
+from firebolt.async_db import Connection, Cursor, DataError, OperationalError
+from firebolt.async_db._types import ColType, Column
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -367,5 +372,5 @@ async def test_ss_async_execution_cancel(connection: Connection) -> None:
         query_id = await c.execute(
             "DROP TABLE IF EXISTS test_tb", [], async_execution=True
         )
+        # If cancel() doesn't error out, it finished successfully.
         await c.cancel(query_id)
-    assert resp.status_code == codes.OK

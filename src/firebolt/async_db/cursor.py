@@ -670,15 +670,15 @@ class Cursor(BaseCursor):
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
         async with self._async_query_lock.reader:
+            """Fetch the next row of a query result set."""
             return super().fetchone()
-        """Fetch the next row of a query result set."""
 
     @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
             """
             Fetch the next set of rows of a query result;
-              size is cursor.arraysize by default.
+            size is cursor.arraysize by default.
             """
             return super().fetchmany(size)
 
