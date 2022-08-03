@@ -384,6 +384,7 @@ async def test_ss_async_execution_get_status(connection: Connection) -> None:
         # get_status() will return NOT_AVAILABLE until it succeeds or fails.
         status = await c.get_status(query_id)
         while status == QueryStatus.NOT_AVAILABLE:
+            # Saw no reason not to take a break between API requests.
             sleep(1)
             status = await c.get_status(query_id)
         assert status in [
