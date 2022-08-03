@@ -23,6 +23,7 @@ class ConnectorVersions(BaseModel):
 logger = logging.getLogger(__name__)
 
 
+# Name, Function, Path, module
 CLIENT_MAP = [
     (
         "Airflow",
@@ -55,6 +56,24 @@ CLIENT_MAP = [
         "open",
         Path("dbt/adapters/firebolt/connections.py"),
         "dbt.adapters.firebolt",
+    ),
+    (
+        "Superset",
+        "",  # connection is created in multiple places
+        Path("superset/models/core.py"),
+        "",
+    ),
+    (
+        "Redash",
+        "run_query",
+        Path("redash/query_runner/firebolt.py"),
+        "redash",
+    ),
+    (
+        "Prefect",
+        "run",
+        Path("prefect/tasks/firebolt/firebolt.py"),
+        "prefect",
     ),
 ]
 
@@ -110,7 +129,9 @@ def detect_connectors(
     for f in stack:
         try:
             for name, func, path, version_path in connector_map:
-                if f.function == func and _os_compare(Path(f.filename), path):
+                if (not func or f.function == func) and _os_compare(
+                    Path(f.filename), path
+                ):
                     if version_path:
                         m = import_module(version_path)
                         connectors[name] = m.__version__  # type: ignore
