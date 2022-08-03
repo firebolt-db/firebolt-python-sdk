@@ -184,9 +184,27 @@ def server_side_async_get_status_callback(server_side_async_id) -> Response:
 
 
 @fixture
+def server_side_async_get_status_not_yet_availabe_callback(
+    server_side_async_id,
+) -> Response:
+    def do_query(request: Request, **kwargs) -> Response:
+        query_response = {
+            "engine_name": "",
+            "query_id": "",
+            "status": "",
+            "query_start_time": "",
+            "query_duration_ms": "",
+            "original_query": "",
+        }
+        return Response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
 def server_side_async_get_status_error(server_side_async_id) -> Response:
     def do_query(request: Request, **kwargs) -> Response:
-        return Response(status_code=codes.OK, json={"status": ""})
+        return Response(status_code=codes.OK, json="")
 
     return do_query
 

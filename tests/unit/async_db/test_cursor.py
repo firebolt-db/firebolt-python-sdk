@@ -296,7 +296,7 @@ async def test_cursor_server_side_async_cancel_error(
 
 
 @mark.asyncio
-async def test_cursor_server_side_async_get_status(
+async def test_cursor_server_side_async_get_status_completed(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
@@ -317,6 +317,31 @@ async def test_cursor_server_side_async_get_status(
     )
     status = await cursor.get_status(server_side_async_id)
     assert status == QueryStatus.ENDED_SUCCESSFULLY
+
+
+@mark.asyncio
+async def test_cursor_server_side_async_get_status_not_yet_available(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    server_side_async_get_status_not_yet_availabe_callback: Callable,
+    server_side_async_id: Callable,
+    query_with_params_url: str,
+    cursor: Cursor,
+):
+    """
+    Cursor is able to execute query server-side asynchronously and
+    query_id is returned.
+    """
+
+    # Query with json output
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(
+        server_side_async_get_status_not_yet_availabe_callback,
+        url=query_with_params_url,
+    )
+    status = await cursor.get_status(server_side_async_id)
+    assert status == QueryStatus.NOT_AVAILABLE
 
 
 @mark.asyncio

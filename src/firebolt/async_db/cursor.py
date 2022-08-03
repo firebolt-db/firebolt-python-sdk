@@ -67,6 +67,7 @@ class QueryStatus(Enum):
     RUNNING = 1
     ENDED_SUCCESSFULLY = 2
     ENDED_UNSUCCESSFULLY = 3
+    NOT_AVAILABLE = 4
 
 
 class Statistics(BaseModel):
@@ -281,16 +282,6 @@ class BaseCursor:
         self._next_set_idx = 0
         self._query_id = ""
 
-    def _value_from_ss_async_response(self, key: str, response: Response) -> str:
-        if response.headers.get("content-length", "") == "0":
-            raise OperationalError("No response to asynchronous query.")
-        resp = response.json()
-        if key not in resp or resp[key] == "":
-            raise OperationalError(
-                f"Invalid response to asynchronous query: missing {key}."
-            )
-        return resp[key]
-
     def _row_set_from_response(
         self, response: Response
     ) -> Tuple[
@@ -375,7 +366,7 @@ class BaseCursor:
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
 
-    async def _do_execute(
+    async def _do_execute(  # noqa: C901
         self,
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
@@ -428,11 +419,16 @@ class BaseCursor:
                 if isinstance(query, SetParameter):
                     await self._validate_set_parameter(query)
                 elif async_execution:
-                    resp = await self._async_execution_api_request(query)
-                    await self._raise_if_error(resp)
-                    self._query_id = self._value_from_ss_async_response(
-                        "query_id", resp
-                    )
+                    response = await self._async_execution_api_request(query)
+                    await self._raise_if_error(response)
+                    if response.headers.get("content-length", "") == "0":
+                        raise OperationalError("No response to asynchronous query.")
+                    resp = response.json()
+                    if "query_id" not in resp or resp["query_id"] == "":
+                        raise OperationalError(
+                            "Invalid response to asynchronous query: missing query_id."
+                        )
+                    self._query_id = resp["query_id"]
                 else:
                     resp = await self._api_request(query)
                     await self._raise_if_error(resp)
@@ -614,19 +610,29 @@ class BaseCursor:
     async def get_status(self, query_id: str) -> QueryStatus:
         """Get status of a server-side async query. Return the state of the query."""
         try:
-            resp = await self._api_request(
+            response = await self._api_request(
                 parameters={"query_id": query_id}, url_suffix="status"
             )
-            if resp.status_code == codes.BAD_REQUEST:
+            # if response.status_code == codes.BAD_REQUEST:
+            #     raise OperationalError(
+            #         f"Asynchronous query {query_id} status check failed."
+            #     )
+            if response.headers.get("content-length", "") == "0":
+                raise OperationalError("No response to asynchronous query.")
+            if response.status_code == codes.BAD_REQUEST:
+                return QueryStatus.NOT_AVAILABLE
+            resp = response.json()
+            if "status" not in resp:
                 raise OperationalError(
-                    f"Asynchronous query {query_id} status check failed."
+                    f"Invalid response to asynchronous query: missing query ID."
                 )
-            print(resp.json())
-            status_code = self._value_from_ss_async_response("status", resp)
         except Exception:
             self._state = CursorState.ERROR
             raise
-        return QueryStatus[status_code]
+        # Remember that query_id might be empty.
+        if resp["status"] == "":
+            return QueryStatus.NOT_AVAILABLE
+        return QueryStatus[resp["status"]]
 
     # Context manager support
     @check_not_closed
