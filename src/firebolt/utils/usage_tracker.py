@@ -23,6 +23,7 @@ class ConnectorVersions(BaseModel):
 logger = logging.getLogger(__name__)
 
 
+# Name, Function, Path, module
 CLIENT_MAP = [
     (
         "Airflow",
