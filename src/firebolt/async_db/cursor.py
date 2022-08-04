@@ -610,19 +610,19 @@ class BaseCursor:
     async def get_status(self, query_id: str) -> QueryStatus:
         """Get status of a server-side async query. Return the state of the query."""
         try:
-            response = await self._api_request(
+            resp = await self._api_request(
                 parameters={"query_id": query_id}, url_suffix="status"
             )
-            # if response.status_code == codes.BAD_REQUEST:
+            # if resp.status_code == codes.BAD_REQUEST:
             #     raise OperationalError(
             #         f"Asynchronous query {query_id} status check failed."
             #     )
-            if response.headers.get("content-length", "") == "0":
+            if resp.headers.get("content-length", "") == "0":
                 raise OperationalError("No response to asynchronous query.")
-            if response.status_code == codes.BAD_REQUEST:
+            if resp.status_code == codes.BAD_REQUEST:
                 return QueryStatus.NOT_AVAILABLE
-            resp = response.json()
-            if "status" not in resp:
+            resp_json = resp.json()
+            if "status" not in resp_json:
                 raise OperationalError(
                     f"Invalid response to asynchronous query: missing query ID."
                 )
@@ -630,9 +630,9 @@ class BaseCursor:
             self._state = CursorState.ERROR
             raise
         # Remember that query_id might be empty.
-        if resp["status"] == "":
+        if resp_json["status"] == "":
             return QueryStatus.NOT_AVAILABLE
-        return QueryStatus[resp["status"]]
+        return QueryStatus[resp_json["status"]]
 
     # Context manager support
     @check_not_closed
