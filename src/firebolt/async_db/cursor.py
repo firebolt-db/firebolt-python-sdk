@@ -644,6 +644,9 @@ class BaseCursor:
     ) -> None:
         self.close()
 
+    # @check_not_closed
+    # def fetch_async_query_result(query_id: str):
+
 
 class Cursor(BaseCursor):
     """
