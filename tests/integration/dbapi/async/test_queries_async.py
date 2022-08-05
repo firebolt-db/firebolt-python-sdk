@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from time import sleep
+from time import sleep, time
 from typing import Any, List
 
 from pytest import mark, raises
@@ -382,10 +382,15 @@ async def test_ss_async_execution_cancel(connection: Connection) -> None:
 async def test_ss_async_execution_get_status(connection: Connection) -> None:
     """Test get_status."""
     with connection.cursor() as c:
+        rowcount = await c.execute(
+            "CREATE DIMENSION TABLE IF NOT EXISTS test (id int, name string)"
+        )
         query_id = await c.execute(
-            "DROP TABLE IF EXISTS test_tb", [], async_execution=True
+            """INSERT INTO test ("id", "name") VALUES (1, 'hello')""",
+            async_execution=True,
         )
         # get_status() will return NOT_AVAILABLE until it succeeds or fails.
+        start = time()
         status = await c.get_status(query_id)
         while status == QueryStatus.NOT_AVAILABLE:
             # I added a sleep here because I was using print statements to figure
@@ -393,6 +398,7 @@ async def test_ss_async_execution_get_status(connection: Connection) -> None:
             # output.
             sleep(1)
             status = await c.get_status(query_id)
+            print(time() - start, "seconds")
         assert status in [
             QueryStatus.RUNNING,
             QueryStatus.ENDED_SUCCESSFULLY,
