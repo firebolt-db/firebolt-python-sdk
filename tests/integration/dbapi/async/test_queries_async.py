@@ -1,15 +1,12 @@
 from datetime import date, datetime
 from decimal import Decimal
-
-# from time import sleep, time
 from typing import Any, List
 
 from pytest import mark, raises
 
 from firebolt.async_db import Connection, Cursor, DataError, OperationalError
 from firebolt.async_db._types import ColType, Column
-
-# from firebolt.async_db.cursor import QueryStatus
+from firebolt.async_db.cursor import QueryStatus
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -380,29 +377,49 @@ async def test_ss_async_execution_cancel(connection: Connection) -> None:
         await c.cancel(query_id)
 
 
-# @mark.asyncio
-# async def test_ss_async_execution_get_status(connection: Connection) -> None:
-#     """Test get_status."""
-#     with connection.cursor() as c:
-#         rowcount = await c.execute(
-#             "CREATE DIMENSION TABLE IF NOT EXISTS test (id int, name string)"
-#         )
-#         query_id = await c.execute(
-#             """INSERT INTO test ("id", "name") VALUES (1, 'hello')""",
-#             async_execution=True,
-#         )
-#         # get_status() will return NOT_AVAILABLE until it succeeds or fails.
-#         start = time()
-#         status = await c.get_status(query_id)
-#         while status == QueryStatus.NOT_AVAILABLE:
-#             # I added a sleep here because I was using print statements to figure
-#             # out what was failing and the terminal was getting spammed with
-#             # output.
-#             sleep(1)
-#             status = await c.get_status(query_id)
-#             print(time() - start, "seconds")
-#         assert status in [
-#             QueryStatus.RUNNING,
-#             QueryStatus.ENDED_SUCCESSFULLY,
-#             QueryStatus.ENDED_UNSUCCESSFULLY,
-#         ]
+@mark.asyncio
+async def status_loop(query_id, cursor, final_status) -> None:
+    # start = time()
+    status = await cursor.get_status(query_id)
+    # get_status() will return NOT_AVAILABLE until it succeeds or fails.
+    while status == QueryStatus.NOT_AVAILABLE:
+        # This only checks to see if a correct response is returned
+        status = await cursor.get_status(query_id)
+    assert status == final_status
+
+
+@mark.asyncio
+async def test_ss_async_execution_get_status(connection: Connection) -> None:
+    """
+    Test get_status(). Test for three ending conditions: PARSE_ERROR,
+    STARTED_EXECUTION, ENDED_EXECUTION.
+    """
+    with connection.cursor() as c:
+        try:
+            await c.execute(
+                "CREATE DIMENSION TABLE IF NOT EXISTS test (id int, name string)"
+            )
+            # First, check for PARSE_ERROR.
+            query_id = await c.execute(
+                """INSERT INTO test ('1', 'a')""",
+                async_execution=True,
+            )
+            await status_loop(query_id, c, QueryStatus.PARSE_ERROR)
+            # Now, a long query so we can check for STARTED_EXECUTION
+            query_id = await c.execute(
+                long_query,
+                async_execution=True,
+            )
+            await status_loop(query_id, c, QueryStatus.STARTED_EXECUTION)
+            # Now, ENDED_SUCCESSFULLY
+            query_id = await c.execute(
+                "SELECT 1",
+                async_execution=True,
+            )
+            await status_loop(query_id, c, QueryStatus.ENDED_SUCCESSFULLY)
+        finally:
+            await c.execute("DROP TABLE IF EXISTS test")
+
+
+long_query = """INSERT INTO "test" VALUES (0, '1'), (1, '2'), (2, '3'), (3, '4'),
+                (4, '5'), (5, '6'), (6, '7'), (7, '8'), (8, '9'), (9, '10')"""

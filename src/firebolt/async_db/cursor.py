@@ -62,12 +62,16 @@ class CursorState(Enum):
 
 
 class QueryStatus(Enum):
-    """Class for query responses on server-side async queries."""
+    """Enumeration of query responses on server-side async queries."""
 
     RUNNING = 1
     ENDED_SUCCESSFULLY = 2
     ENDED_UNSUCCESSFULLY = 3
     NOT_AVAILABLE = 4
+    STARTED_EXECUTION = 5
+    PARSE_ERROR = 6
+    CANCELED_EXECUTION = 7
+    EXECUTION_ERROR = 8
 
 
 class Statistics(BaseModel):
@@ -331,12 +335,29 @@ class BaseCursor:
         parameters: Optional[dict] = None,
         url_suffix: Optional[str] = "",
     ) -> Response:
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            url_suffix (str): endpoint suffix, for example "cancel" or "status"
+        """
+        if not parameters:
+            parameters = {"output_format": JSON_OUTPUT_FORMAT}
+        elif "output_format" not in parameters:
+            parameters["output_format"] = JSON_OUTPUT_FORMAT
+        elif not parameters["output_format"]:  # if "output_format" is empty string
+            del parameters["output_format"]
         return await self._client.request(
             url=f"/{url_suffix}",
             method="POST",
             params={
                 "database": self.connection.database,
-                "output_format": JSON_OUTPUT_FORMAT,
                 **self._set_parameters,
                 **(parameters or dict()),
             },
@@ -611,20 +632,20 @@ class BaseCursor:
         """Get status of a server-side async query. Return the state of the query."""
         try:
             resp = await self._api_request(
-                parameters={"query_id": query_id}, url_suffix="status"
+                # output_format must be empty for status to work correctly.
+                parameters={"query_id": query_id, "output_format": ""},
+                url_suffix="status",
             )
-            # if resp.status_code == codes.BAD_REQUEST:
-            #     raise OperationalError(
-            #         f"Asynchronous query {query_id} status check failed."
-            #     )
+            if resp.status_code == codes.BAD_REQUEST:
+                raise OperationalError(
+                    f"Asynchronous query {query_id} status check failed."
+                )
             if resp.headers.get("content-length", "") == "0":
                 raise OperationalError("No response to asynchronous query.")
-            if resp.status_code == codes.BAD_REQUEST:
-                return QueryStatus.NOT_AVAILABLE
             resp_json = resp.json()
             if "status" not in resp_json:
                 raise OperationalError(
-                    f"Invalid response to asynchronous query: missing query ID."
+                    f"Invalid response to asynchronous query: missing status."
                 )
         except Exception:
             self._state = CursorState.ERROR
