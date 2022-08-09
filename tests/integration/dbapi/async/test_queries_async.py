@@ -360,9 +360,7 @@ async def test_set_invalid_parameter(connection: Connection):
 async def test_ss_async_execution_query(connection: Connection) -> None:
     """Make an sql query and receive an id back."""
     with connection.cursor() as c:
-        query_id = await c.execute(
-            "DROP TABLE IF EXISTS test_tb", [], async_execution=True
-        )
+        query_id = await c.execute("SELECT 1", [], async_execution=True)
     assert type(query_id) is str and query_id
 
 
@@ -370,19 +368,27 @@ async def test_ss_async_execution_query(connection: Connection) -> None:
 async def test_ss_async_execution_cancel(connection: Connection) -> None:
     """Test cancel."""
     with connection.cursor() as c:
+        # try:
+        # await c.execute(
+        #     "CREATE DIMENSION TABLE IF NOT EXISTS test (id int, name string)"
+        # )
         query_id = await c.execute(
-            "DROP TABLE IF EXISTS test_tb", [], async_execution=True
+            "SELECT sleepEachRow(1) from numbers(5)",
+            async_execution=True,
         )
-        # If cancel() doesn't error out, it finished successfully.
+        # Cancel, then check that status is cancelled.
         await c.cancel(query_id)
+        await status_loop(query_id, c, QueryStatus.CANCELED_EXECUTION)
+    # finally:
+    # await c.execute("DROP TABLE IF EXISTS test")
 
 
 @mark.asyncio
 async def status_loop(query_id, cursor, final_status) -> None:
     # start = time()
     status = await cursor.get_status(query_id)
-    # get_status() will return NOT_AVAILABLE until it succeeds or fails.
-    while status == QueryStatus.NOT_AVAILABLE:
+    # get_status() will return NOT_READY until it succeeds or fails.
+    while status == QueryStatus.NOT_READY:
         # This only checks to see if a correct response is returned
         status = await cursor.get_status(query_id)
     assert status == final_status
@@ -407,7 +413,7 @@ async def test_ss_async_execution_get_status(connection: Connection) -> None:
             await status_loop(query_id, c, QueryStatus.PARSE_ERROR)
             # Now, a long query so we can check for STARTED_EXECUTION
             query_id = await c.execute(
-                long_query,
+                "SELECT sleepEachRow(1) from numbers(5)",
                 async_execution=True,
             )
             await status_loop(query_id, c, QueryStatus.STARTED_EXECUTION)
@@ -419,7 +425,3 @@ async def test_ss_async_execution_get_status(connection: Connection) -> None:
             await status_loop(query_id, c, QueryStatus.ENDED_SUCCESSFULLY)
         finally:
             await c.execute("DROP TABLE IF EXISTS test")
-
-
-long_query = """INSERT INTO "test" VALUES (0, '1'), (1, '2'), (2, '3'), (3, '4'),
-                (4, '5'), (5, '6'), (6, '7'), (7, '8'), (8, '9'), (9, '10')"""

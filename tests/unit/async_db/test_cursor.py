@@ -341,7 +341,7 @@ async def test_cursor_server_side_async_get_status_not_yet_available(
         url=query_with_params_url,
     )
     status = await cursor.get_status(server_side_async_id)
-    assert status == QueryStatus.NOT_AVAILABLE
+    assert status == QueryStatus.NOT_READY
 
 
 @mark.asyncio

@@ -67,7 +67,7 @@ class QueryStatus(Enum):
     RUNNING = 1
     ENDED_SUCCESSFULLY = 2
     ENDED_UNSUCCESSFULLY = 3
-    NOT_AVAILABLE = 4
+    NOT_READY = 4
     STARTED_EXECUTION = 5
     PARSE_ERROR = 6
     CANCELED_EXECUTION = 7
@@ -333,7 +333,7 @@ class BaseCursor:
         self,
         query: Optional[str] = "",
         parameters: Optional[dict] = None,
-        url_suffix: Optional[str] = "",
+        path: Optional[str] = "",
     ) -> Response:
         """
         Query API, return Response object.
@@ -345,16 +345,19 @@ class BaseCursor:
                 actual values. Note: In order to "output_format" dict value, it
                     must be an empty string. If no value not specified,
                     JSON_OUTPUT_FORMAT will be used.
-            url_suffix (str): endpoint suffix, for example "cancel" or "status"
+            path (str): endpoint suffix, for example "cancel" or "status"
         """
         if not parameters:
             parameters = {"output_format": JSON_OUTPUT_FORMAT}
         elif "output_format" not in parameters:
             parameters["output_format"] = JSON_OUTPUT_FORMAT
-        elif not parameters["output_format"]:  # if "output_format" is empty string
+        elif not parameters["output_format"]:
+            # In the case that output_format should be missing, send in "".
+            # In that case, it output_format must be removed or the API endpoint
+            # string will be malformed.
             del parameters["output_format"]
         return await self._client.request(
-            url=f"/{url_suffix}",
+            url=f"/{path}",
             method="POST",
             params={
                 "database": self.connection.database,
@@ -362,12 +365,6 @@ class BaseCursor:
                 **(parameters or dict()),
             },
             content=query,
-        )
-
-    async def _async_execution_api_request(self, query: str) -> Response:
-        """Do query request using SET async_execution=1."""
-        return await self._api_request(
-            query, {"async_execution": 1, "advanced_mode": 1}
         )
 
     async def _validate_set_parameter(self, parameter: SetParameter) -> None:
@@ -440,7 +437,9 @@ class BaseCursor:
                 if isinstance(query, SetParameter):
                     await self._validate_set_parameter(query)
                 elif async_execution:
-                    response = await self._async_execution_api_request(query)
+                    response = await self._api_request(
+                        query, {"async_execution": 1, "advanced_mode": 1}
+                    )
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":
                         raise OperationalError("No response to asynchronous query.")
@@ -615,17 +614,7 @@ class BaseCursor:
     @check_not_closed
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
-        try:
-            resp = await self._api_request(
-                parameters={"query_id": query_id}, url_suffix="cancel"
-            )
-            if resp.status_code == codes.BAD_REQUEST:
-                raise OperationalError(
-                    f"Asynchronous query {query_id} was not cancelled."
-                )
-        except Exception:
-            self._state = CursorState.ERROR
-            raise
+        await self._api_request(parameters={"query_id": query_id}, path="cancel")
 
     @check_not_closed
     async def get_status(self, query_id: str) -> QueryStatus:
@@ -634,14 +623,12 @@ class BaseCursor:
             resp = await self._api_request(
                 # output_format must be empty for status to work correctly.
                 parameters={"query_id": query_id, "output_format": ""},
-                url_suffix="status",
+                path="status",
             )
             if resp.status_code == codes.BAD_REQUEST:
                 raise OperationalError(
                     f"Asynchronous query {query_id} status check failed."
                 )
-            if resp.headers.get("content-length", "") == "0":
-                raise OperationalError("No response to asynchronous query.")
             resp_json = resp.json()
             if "status" not in resp_json:
                 raise OperationalError(
@@ -652,7 +639,8 @@ class BaseCursor:
             raise
         # Remember that query_id might be empty.
         if resp_json["status"] == "":
-            return QueryStatus.NOT_AVAILABLE
+            return QueryStatus.NOT_READY
+        print(resp_json)
         return QueryStatus[resp_json["status"]]
 
     # Context manager support
@@ -664,9 +652,6 @@ class BaseCursor:
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
         self.close()
-
-    # @check_not_closed
-    # def fetch_async_query_result(query_id: str):
 
 
 class Cursor(BaseCursor):
