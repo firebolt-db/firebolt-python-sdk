@@ -384,7 +384,32 @@ class BaseCursor:
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
 
-    async def _do_execute(  # noqa: C901
+    def _find_async_problems(
+        self,
+        parameters: Sequence[Sequence[ParameterType]],
+        queries: List[Union[SetParameter, str]],
+        skip_parsing: bool = False,
+        async_execution: Optional[bool] = False,
+    ) -> None:
+        if async_execution and self._set_parameters.get("use_standard_sql", "0") == "1":
+            raise AsyncExecutionUnavailableError(
+                "It is not possible to execute queries asynchronously if "
+                "use_standard_sql is in use."
+            )
+        if parameters and skip_parsing:
+            logger.warning(
+                "Query formatting parameters are provided but skip_parsing"
+                " is specified. They will be ignored."
+            )
+
+        # Allow users to manually skip parsing for performance improvement.
+        if len(queries) > 1 and async_execution:
+            raise AsyncExecutionUnavailableError(
+                "It is not possible to execute multi-statement "
+                "queries asynchronously."
+            )
+
+    async def _do_execute(
         self,
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
@@ -392,30 +417,16 @@ class BaseCursor:
         async_execution: Optional[bool] = False,
     ) -> None:
         self._reset()
+        queries: List[Union[SetParameter, str]] = (
+            [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
+        )
+        self._find_async_problems(
+            parameters,
+            queries,
+            skip_parsing,
+            async_execution,
+        )
         try:
-            if (
-                async_execution
-                and self._set_parameters.get("use_standard_sql", "0") == "1"
-            ):
-                raise AsyncExecutionUnavailableError(
-                    "It is not possible to execute queries asynchronously if "
-                    "use_standard_sql is in use."
-                )
-            if parameters and skip_parsing:
-                logger.warning(
-                    "Query formatting parameters are provided but skip_parsing"
-                    " is specified. They will be ignored."
-                )
-
-            # Allow users to manually skip parsing for performance improvement.
-            queries: List[Union[SetParameter, str]] = (
-                [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
-            )
-            if len(queries) > 1 and async_execution:
-                raise AsyncExecutionUnavailableError(
-                    "It is not possible to execute multi-statement "
-                    "queries asynchronously."
-                )
             for query in queries:
 
                 start_time = time.time()
