@@ -413,8 +413,7 @@ async def test_ss_async_execution_get_status(connection: Connection) -> None:
             await status_loop(query_id, c, QueryStatus.PARSE_ERROR)
             # Now, a long query so we can check for STARTED_EXECUTION
             query_id = await c.execute(
-                "SET use_standard_sql=0; "
-                "INSERT INTO test SELECT sleepEachRow(1) FROM numbers(10)",
+                "SELECT sleepEachRow(1) FROM numbers(10)",
                 async_execution=True,
             )
             await status_loop(query_id, c, QueryStatus.STARTED_EXECUTION)
