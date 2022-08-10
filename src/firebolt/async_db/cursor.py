@@ -420,13 +420,13 @@ class BaseCursor:
         queries: List[Union[SetParameter, str]] = (
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
-        self._validate_ss_async_settings(
-            parameters,
-            queries,
-            skip_parsing,
-            async_execution,
-        )
         try:
+            self._validate_ss_async_settings(
+                parameters,
+                queries,
+                skip_parsing,
+                async_execution,
+            )
             for query in queries:
 
                 start_time = time.time()
