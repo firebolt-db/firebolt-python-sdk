@@ -384,7 +384,7 @@ class BaseCursor:
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
 
-    def _find_async_problems(
+    def _validate_ss_async_settings(
         self,
         parameters: Sequence[Sequence[ParameterType]],
         queries: List[Union[SetParameter, str]],
@@ -398,8 +398,8 @@ class BaseCursor:
             )
         if parameters and skip_parsing:
             logger.warning(
-                "Query formatting parameters are provided but skip_parsing"
-                " is specified. They will be ignored."
+                "Query formatting parameters are provided but skip_parsing "
+                "is specified. They will be ignored."
             )
 
         # Allow users to manually skip parsing for performance improvement.
@@ -420,7 +420,7 @@ class BaseCursor:
         queries: List[Union[SetParameter, str]] = (
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
-        self._find_async_problems(
+        self._validate_ss_async_settings(
             parameters,
             queries,
             skip_parsing,

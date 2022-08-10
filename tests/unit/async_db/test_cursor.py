@@ -258,7 +258,7 @@ async def test_cursor_server_side_async_cancel(
     cursor: Cursor,
 ):
     """
-    Cursor is able to execute query server-side asynchronously and
+    Cursor is able to cancel query server-side asynchronously and
     query_id is returned.
     """
 
@@ -268,31 +268,6 @@ async def test_cursor_server_side_async_cancel(
         server_side_async_cancel_callback, url=query_with_params_url
     )
     await cursor.cancel(server_side_async_id)
-
-
-@mark.asyncio
-async def test_cursor_server_side_async_cancel_error(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    server_side_async_cancel_callback_error: Callable,
-    server_side_async_id: Callable,
-    query_with_params_url: str,
-    cursor: Cursor,
-):
-    """Error should occur on BAD_REQUEST."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(
-        server_side_async_cancel_callback_error, url=query_with_params_url
-    )
-    with raises(OperationalError) as excinfo:
-        await cursor.cancel(server_side_async_id)
-
-        assert cursor._state == CursorState.ERROR
-        assert (
-            str(excinfo.value)
-            == f"Asynchronous query {server_side_async_id} was not cancelled."
-        ), f"Invalid cancellation error message."
 
 
 @mark.asyncio

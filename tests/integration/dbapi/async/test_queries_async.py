@@ -351,7 +351,7 @@ async def test_set_invalid_parameter(connection: Connection):
     with connection.cursor() as c:
         assert len(c._set_parameters) == 0
         with raises(OperationalError):
-            await c.execute("set some_invalid_parameter = 1")
+            await c.execute("SET some_invalid_parameter = 1")
 
         assert len(c._set_parameters) == 0
 
@@ -413,7 +413,8 @@ async def test_ss_async_execution_get_status(connection: Connection) -> None:
             await status_loop(query_id, c, QueryStatus.PARSE_ERROR)
             # Now, a long query so we can check for STARTED_EXECUTION
             query_id = await c.execute(
-                "SELECT sleepEachRow(1) from numbers(5)",
+                "SET use_standard_sql=0; "
+                "INSERT INTO test SELECT sleepEachRow(1) FROM numbers(10)",
                 async_execution=True,
             )
             await status_loop(query_id, c, QueryStatus.STARTED_EXECUTION)
