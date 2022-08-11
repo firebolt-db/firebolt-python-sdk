@@ -351,10 +351,9 @@ class BaseCursor:
             parameters = {"output_format": JSON_OUTPUT_FORMAT}
         elif "output_format" not in parameters:
             parameters["output_format"] = JSON_OUTPUT_FORMAT
-        elif not parameters["output_format"]:
-            # In the case that output_format should be missing, send in "".
-            # In that case, it output_format must be removed or the API endpoint
-            # string will be malformed.
+        elif parameters["output_format"] == "":
+            # In the case that output_format should be missing, send in "";
+            # we remove it here so the API endpoint string won't be malformed.
             del parameters["output_format"]
         return await self._client.request(
             url=f"/{path}",
@@ -375,7 +374,9 @@ class BaseCursor:
                 "Instead, pass it as an argument to the execute() or "
                 "executemany() function."
             )
-        resp = await self._api_request("select 1", {parameter.name: parameter.value})
+        resp = await self._api_request(
+            "select 1", {parameter.name: parameter.value, "output_format": ""}
+        )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
             raise OperationalError(resp.text)
@@ -625,7 +626,9 @@ class BaseCursor:
     @check_not_closed
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
-        await self._api_request(parameters={"query_id": query_id}, path="cancel")
+        await self._api_request(
+            parameters={"query_id": query_id, "output_format": ""}, path="cancel"
+        )
 
     @check_not_closed
     async def get_status(self, query_id: str) -> QueryStatus:
@@ -651,7 +654,6 @@ class BaseCursor:
         # Remember that query_id might be empty.
         if resp_json["status"] == "":
             return QueryStatus.NOT_READY
-        print(resp_json)
         return QueryStatus[resp_json["status"]]
 
     # Context manager support
