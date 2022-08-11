@@ -723,12 +723,12 @@ async def test_cursor_set_statements(
     auth_callback: Callable,
     auth_url: str,
     select_one_query_callback: Callable,
-    query_url: str,
+    set_query_url: str,
     cursor: Cursor,
 ):
     """cursor correctly parses and processes set statements."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&a=b")
+    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
 
     assert len(cursor._set_parameters) == 0
 
@@ -748,7 +748,7 @@ async def test_cursor_set_statements(
 
     assert len(cursor._set_parameters) == 0
 
-    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&param1=1")
+    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&param1=1")
 
     rc = await cursor.execute("set param1=1")
     assert rc == -1, "Invalid row count returned"
@@ -763,7 +763,7 @@ async def test_cursor_set_statements(
     )
 
     httpx_mock.add_callback(
-        select_one_query_callback, url=f"{query_url}&param1=1&param2=0"
+        select_one_query_callback, url=f"{set_query_url}&param1=1&param2=0"
     )
 
     rc = await cursor.execute("set param2=0")
@@ -792,6 +792,7 @@ async def test_cursor_set_parameters_sent(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    set_query_url: str,
     query_url: str,
     query_with_params_callback: Callable,
     select_one_query_callback: Callable,
@@ -806,7 +807,9 @@ async def test_cursor_set_parameters_sent(
     for p, v in set_params.items():
         v = encode_param(v)
         params += f"&{p}={v}"
-        httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}{params}")
+        httpx_mock.add_callback(
+            select_one_query_callback, url=f"{set_query_url}{params}"
+        )
         await cursor.execute(f"set {p} = {v}")
 
     httpx_mock.add_callback(query_with_params_callback, url=f"{query_url}{params}")

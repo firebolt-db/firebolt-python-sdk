@@ -478,14 +478,14 @@ def test_cursor_set_statements(
     auth_url: str,
     query_callback: Callable,
     select_one_query_callback: Callable,
-    query_url: str,
+    set_query_url: str,
     cursor: Cursor,
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
     """cursor correctly parses and processes set statements."""
     httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&a=b")
+    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
 
     assert len(cursor._set_parameters) == 0
 
@@ -505,7 +505,7 @@ def test_cursor_set_statements(
 
     assert len(cursor._set_parameters) == 0
 
-    httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}&param1=1")
+    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&param1=1")
 
     rc = cursor.execute("set param1=1")
     assert rc == -1, "Invalid row count returned"
@@ -520,7 +520,7 @@ def test_cursor_set_statements(
     )
 
     httpx_mock.add_callback(
-        select_one_query_callback, url=f"{query_url}&param1=1&param2=0"
+        select_one_query_callback, url=f"{set_query_url}&param1=1&param2=0"
     )
 
     rc = cursor.execute("set param2=0")
@@ -548,6 +548,7 @@ def test_cursor_set_parameters_sent(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    set_query_url: str,
     query_url: str,
     query_with_params_callback: Callable,
     select_one_query_callback: Callable,
@@ -562,7 +563,9 @@ def test_cursor_set_parameters_sent(
     for p, v in set_params.items():
         v = encode_param(v)
         params += f"&{p}={v}"
-        httpx_mock.add_callback(select_one_query_callback, url=f"{query_url}{params}")
+        httpx_mock.add_callback(
+            select_one_query_callback, url=f"{set_query_url}{params}"
+        )
         cursor.execute(f"set {p} = {v}")
 
     httpx_mock.add_callback(query_with_params_callback, url=f"{query_url}{params}")

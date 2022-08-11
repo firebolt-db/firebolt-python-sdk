@@ -347,6 +347,7 @@ class BaseCursor:
                     JSON_OUTPUT_FORMAT will be used.
             path (str): endpoint suffix, for example "cancel" or "status"
         """
+        print("parameters:", parameters)
         if not parameters:
             parameters = {"output_format": JSON_OUTPUT_FORMAT}
         elif "output_format" not in parameters:
@@ -355,6 +356,8 @@ class BaseCursor:
             # In the case that output_format should be missing, send in "";
             # we remove it here so the API endpoint string won't be malformed.
             del parameters["output_format"]
+        print("query:", query)
+        print("parameters:", parameters)
         return await self._client.request(
             url=f"/{path}",
             method="POST",

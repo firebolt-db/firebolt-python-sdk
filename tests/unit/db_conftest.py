@@ -334,6 +334,11 @@ def query_url(settings: Settings, db_name: str) -> str:
 
 
 @fixture
+def set_query_url(settings: Settings, db_name: str) -> str:
+    return URL(f"https://{settings.server}/?database={db_name}")
+
+
+@fixture
 def query_with_params_url(query_url: str, set_params: str) -> str:
     params_encoded = "&".join([f"{k}={encode_param(v)}" for k, v in set_params.items()])
     query_url = f"{query_url}&{params_encoded}"
