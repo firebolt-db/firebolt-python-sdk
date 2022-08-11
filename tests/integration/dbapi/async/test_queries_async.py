@@ -377,7 +377,7 @@ async def test_ss_async_execution_cancel(connection: Connection) -> None:
             # Cancel, then check that status is cancelled.
             await c.cancel(query_id)
             # Now sleep, so I know I'm going from STARTED_EXECUTION to CANCELED_EXECUTION
-            # and not from NOT_READY to STARTED_EXECUTION
+            # and not from NOT_READY to STARTED_EXECUTION.
             sleep(5)
             await status_loop(
                 query_id,
@@ -399,7 +399,7 @@ async def status_loop(
     # start = time()
     status = await cursor.get_status(query_id)
     # get_status() will return NOT_READY until it succeeds or fails.
-    while status == start_status:
+    while status == start_status or status == QueryStatus.NOT_READY:
         # This only checks to see if a correct response is returned
         status = await cursor.get_status(query_id)
     assert status == final_status

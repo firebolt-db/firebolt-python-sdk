@@ -86,7 +86,7 @@ def test_long_query(
     with connection.cursor() as c:
         c.execute(
             "SET advanced_mode = 1; SET use_standard_sql = 0;"
-            "SELECT sleepEachRow(1) from numbers(360)",
+            "SELECT sleepEachRow(1) FROM numbers(360)",
         )
         c.nextset()
         c.nextset()
