@@ -438,7 +438,7 @@ async def test_cursor_execute_error(
 
 
 @mark.asyncio
-async def test_cursor_async_execute_error(
+async def test_cursor_server_side_async_execute_errors(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
@@ -465,7 +465,7 @@ async def test_cursor_async_execute_error(
         httpx_mock.add_callback(auth_callback, url=auth_url)
         httpx_mock.add_callback(insert_query_callback, url=query_with_params_url)
         with raises(OperationalError) as excinfo:
-            await query("select * from t")
+            await query("SELECT * FROM t")
 
         assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == ("No response to asynchronous query.")
@@ -476,7 +476,7 @@ async def test_cursor_async_execute_error(
             server_side_async_missing_id_callback, url=query_with_params_url
         )
         with raises(OperationalError) as excinfo:
-            await query("select * from t")
+            await query("SELECT * FROM t")
 
         assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == (
@@ -486,7 +486,7 @@ async def test_cursor_async_execute_error(
         # Multi-statement queries are not possible with async_execution error.
         httpx_mock.add_callback(auth_callback, url=auth_url)
         with raises(AsyncExecutionUnavailableError) as excinfo:
-            await query("select * from t; select * from s")
+            await query("SELECT * FROM t; SELECT * FROM s")
 
         assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == (
@@ -495,32 +495,30 @@ async def test_cursor_async_execute_error(
 
         # Error out if async_execution is set via SET statement.
         with raises(AsyncExecutionUnavailableError) as excinfo:
-            await cursor.execute("set async_execution=1")
+            await cursor.execute("SET async_execution=1")
 
         assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == (
             "It is not possible to set async_execution using a SET command. "
             "Instead, pass it as an argument to the execute() or "
             "executemany() function."
-        ), (
-            "SET use_standard_sql=1 was allowed for server-side asynchronous "
-            f"queries on {message}."
-        )
+        ), f"async_execution was allowed via a SET parameter on {message}."
 
-        # Error out when async_execution and use_standard_sql are set.
-        await cursor.execute("set use_standard_sql=1")
+        # Error out when doing async_execution and use_standard_sql are off.
         with raises(AsyncExecutionUnavailableError) as excinfo:
-            await query("select * from s")
+            await cursor.execute(
+                "SET use_standard_sql=0; SELECT * FROM t", async_execution=True
+            )
 
         assert cursor._state == CursorState.ERROR
         assert str(excinfo.value) == (
             "It is not possible to execute queries asynchronously if "
-            "use_standard_sql is in use."
-        ), f"use_standard_sql=1 was allowed for server-side asynchronous queries on {message}."
+            "use_standard_sql=0."
+        ), f"use_standard_sql=0 was allowed for server-side asynchronous queries on {message}."
 
         # Have to reauth or next execute fails. Not sure why.
         httpx_mock.add_callback(auth_callback, url=auth_url)
-        await cursor.execute("set use_standard_sql=0")
+        await cursor.execute("set use_standard_sql=1")
         httpx_mock.reset(True)
 
 

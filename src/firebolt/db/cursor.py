@@ -106,9 +106,9 @@ class Cursor(AsyncBaseCursor):
     @wraps(AsyncBaseCursor.get_status)
     def get_status(self, query_id: str) -> QueryStatus:
         with self._query_lock.gen_rlock():
-            return super().get_status(query_id)
+            return async_to_sync(super().get_status, self._async_job_thread)(query_id)
 
     @wraps(AsyncBaseCursor.cancel)
     def cancel(self, query_id: str) -> None:
         with self._query_lock.gen_rlock():
-            return super().cancel(query_id)
+            return async_to_sync(super().cancel, self._async_job_thread)(query_id)

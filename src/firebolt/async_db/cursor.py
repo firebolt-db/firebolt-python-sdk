@@ -332,8 +332,9 @@ class BaseCursor:
     async def _api_request(
         self,
         query: Optional[str] = "",
-        parameters: Optional[dict] = None,
+        parameters: Optional[dict] = {},
         path: Optional[str] = "",
+        use_set_parameters: Optional[bool] = True,
     ) -> Response:
         """
         Query API, return Response object.
@@ -355,13 +356,14 @@ class BaseCursor:
             # In the case that output_format should be missing, send in "";
             # we remove it here so the API endpoint string won't be malformed.
             del parameters["output_format"]
+        if use_set_parameters:
+            parameters = {**self._set_parameters, **parameters}
         return await self._client.request(
             url=f"/{path}",
             method="POST",
             params={
                 "database": self.connection.database,
-                **self._set_parameters,
-                **(parameters or dict()),
+                **parameters,
             },
             content=query,
         )
@@ -392,10 +394,10 @@ class BaseCursor:
         skip_parsing: bool = False,
         async_execution: Optional[bool] = False,
     ) -> None:
-        if async_execution and self._set_parameters.get("use_standard_sql", "0") == "1":
+        if async_execution and self._set_parameters.get("use_standard_sql", "1") == "0":
             raise AsyncExecutionUnavailableError(
                 "It is not possible to execute queries asynchronously if "
-                "use_standard_sql is in use."
+                "use_standard_sql=0."
             )
         if parameters and skip_parsing:
             logger.warning(
@@ -426,12 +428,6 @@ class BaseCursor:
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
         try:
-            self._validate_ss_async_settings(
-                parameters,
-                queries,
-                skip_parsing,
-                async_execution,
-            )
             for query in queries:
 
                 start_time = time.time()
@@ -453,6 +449,12 @@ class BaseCursor:
                 if isinstance(query, SetParameter):
                     await self._validate_set_parameter(query)
                 elif async_execution:
+                    self._validate_ss_async_settings(
+                        parameters,
+                        queries,
+                        skip_parsing,
+                        async_execution,
+                    )
                     response = await self._api_request(
                         query, {"async_execution": 1, "advanced_mode": 1}
                     )
@@ -631,7 +633,9 @@ class BaseCursor:
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
         await self._api_request(
-            parameters={"query_id": query_id, "output_format": ""}, path="cancel"
+            parameters={"query_id": query_id, "output_format": ""},
+            path="cancel",
+            use_set_parameters=False,
         )
 
     @check_not_closed
@@ -640,8 +644,10 @@ class BaseCursor:
         try:
             resp = await self._api_request(
                 # output_format must be empty for status to work correctly.
+                # And set parameters will cause 400 errors.
                 parameters={"query_id": query_id, "output_format": ""},
                 path="status",
+                use_set_parameters=False,
             )
             if resp.status_code == codes.BAD_REQUEST:
                 raise OperationalError(
