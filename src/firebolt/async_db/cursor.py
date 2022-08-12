@@ -404,7 +404,11 @@ class BaseCursor:
             )
 
         # Allow users to manually skip parsing for performance improvement.
-        if len(queries) > 1 and async_execution:
+        non_set_queries = 0
+        for query in queries:
+            if type(query) is not SetParameter:
+                non_set_queries += 1
+        if non_set_queries > 1 and async_execution:
             raise AsyncExecutionUnavailableError(
                 "It is not possible to execute multi-statement "
                 "queries asynchronously."
@@ -641,7 +645,8 @@ class BaseCursor:
             )
             if resp.status_code == codes.BAD_REQUEST:
                 raise OperationalError(
-                    f"Asynchronous query {query_id} status check failed."
+                    f"Asynchronous query {query_id} status check failed: "
+                    f"{resp.status_code}."
                 )
             resp_json = resp.json()
             if "status" not in resp_json:
