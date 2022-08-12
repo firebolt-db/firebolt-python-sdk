@@ -1,6 +1,5 @@
 from datetime import date, datetime
 from decimal import Decimal
-from time import sleep
 from typing import Any, List
 
 from pytest import mark, raises
@@ -9,6 +8,9 @@ from firebolt.async_db import Connection, Cursor, DataError, OperationalError
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
 
+VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
+LONG_QUERY = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
     if type(got) == list and type(expected) == list:
@@ -16,6 +18,22 @@ def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
     assert (
         type(got) == type(expected) and got == expected
     ), f"{msg}: {got}(got) != {expected}(expected)"
+
+
+@mark.asyncio
+async def status_loop(
+    query_id: str,
+    cursor: Cursor,
+    start_status: QueryStatus = QueryStatus.NOT_READY,
+    final_status: QueryStatus = QueryStatus.ENDED_SUCCESSFULLY,
+) -> None:
+    status = await cursor.get_status(query_id)
+    # get_status() will return NOT_READY until it succeeds or fails.
+    while status == start_status or status == QueryStatus.NOT_READY:
+        print(status)
+        # This only checks to see if a correct response is returned
+        status = await cursor.get_status(query_id)
+    assert status == final_status
 
 
 @mark.asyncio
@@ -368,41 +386,30 @@ async def test_ss_async_execution_query(connection: Connection) -> None:
 @mark.asyncio
 async def test_ss_async_execution_cancel(connection: Connection) -> None:
     """Test cancel."""
+    print("executed long query")
+
     with connection.cursor() as c:
         try:
-            await c.execute(
-                "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
+            # await c.execute(
+            #     "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
+            # )
+            query_id = await c.execute(
+                "SET advanced_mode=1;"
+                "SET use_standard_sql=0;"
+                "SELECT sleepEachRow(1) from numbers(10)",
+                async_execution=True,
             )
-            query_id = await c.execute(long_query, async_execution=True)
             # Cancel, then check that status is cancelled.
+            print("executed long query")
             await c.cancel(query_id)
-            # Now sleep, so I know I'm going from STARTED_EXECUTION to CANCELED_EXECUTION
-            # and not from NOT_READY to STARTED_EXECUTION.
-            sleep(5)
             await status_loop(
                 query_id,
                 c,
-                QueryStatus.CANCELED_EXECUTION,
                 QueryStatus.STARTED_EXECUTION,
+                QueryStatus.CANCELED_EXECUTION,
             )
         finally:
             await c.execute("DROP TABLE IF EXISTS test_tbl")
-
-
-@mark.asyncio
-async def status_loop(
-    query_id: str,
-    cursor: Cursor,
-    final_status: QueryStatus,
-    start_status: QueryStatus = QueryStatus.NOT_READY,
-) -> None:
-    # start = time()
-    status = await cursor.get_status(query_id)
-    # get_status() will return NOT_READY until it succeeds or fails.
-    while status == start_status or status == QueryStatus.NOT_READY:
-        # This only checks to see if a correct response is returned
-        status = await cursor.get_status(query_id)
-    assert status == final_status
 
 
 @mark.asyncio
@@ -421,20 +428,17 @@ async def test_ss_async_execution_get_status(connection: Connection) -> None:
                 """INSERT INTO test_tbl ('1', 'a')""",
                 async_execution=True,
             )
-            await status_loop(query_id, c, QueryStatus.PARSE_ERROR)
-            # Now, a long query so we can check for STARTED_EXECUTION
-            query_id = await c.execute(long_query, async_execution=True)
-            await status_loop(query_id, c, QueryStatus.STARTED_EXECUTION)
-            # Now, ENDED_SUCCESSFULLY
+            await status_loop(query_id, c, final_status=QueryStatus.PARSE_ERROR)
+            # Now, a long query so we can check for STARTED_EXECUTION.
+            query_id = await c.execute(
+                "SELECT sleepEachRow(1) from numbers(10)", async_execution=True
+            )
+            await status_loop(query_id, c, final_status=QueryStatus.STARTED_EXECUTION)
+            # Now a check for ENDED_SUCCESSFULLY status of last query.
             await status_loop(
                 query_id,
                 c,
-                QueryStatus.ENDED_SUCCESSFULLY,
-                QueryStatus.STARTED_EXECUTION,
+                final_status=QueryStatus.ENDED_SUCCESSFULLY,
             )
         finally:
             await c.execute("DROP TABLE IF EXISTS test_tbl")
-
-
-vals_to_insert = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
-long_query = f"INSERT INTO test_tbl VALUES {vals_to_insert}"
