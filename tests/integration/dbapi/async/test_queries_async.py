@@ -424,7 +424,6 @@ async def test_set_invalid_parameter(connection: Connection):
         assert len(c._set_parameters) == 0
 
 
-@mark.asyncio
 async def test_server_side_async_execution_query(connection: Connection) -> None:
     """Make an sql query and receive an id back."""
     with connection.cursor() as c:
@@ -434,7 +433,6 @@ async def test_server_side_async_execution_query(connection: Connection) -> None
     ), "Invalid query id was returned from server-side async query."
 
 
-@mark.asyncio
 async def test_server_side_async_execution_cancel(connection: Connection) -> None:
     """Test cancel."""
     with connection.cursor() as c:
@@ -458,7 +456,6 @@ async def test_server_side_async_execution_cancel(connection: Connection) -> Non
             await c.execute("DROP TABLE IF EXISTS test_tbl")
 
 
-@mark.asyncio
 async def test_server_side_async_execution_get_status(connection: Connection) -> None:
     """
     Test get_status(). Test for three ending conditions: PARSE_ERROR,

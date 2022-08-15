@@ -696,7 +696,6 @@ async def test_cursor_skip_parse(
         split_format_sql_mock.assert_not_called()
 
 
-@mark.asyncio
 async def test_cursor_server_side_async_execute(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -739,7 +738,6 @@ async def test_cursor_server_side_async_execute(
         ), f"Invalid description for insert using {message}."
 
 
-@mark.asyncio
 async def test_cursor_server_side_async_cancel(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -762,7 +760,6 @@ async def test_cursor_server_side_async_cancel(
     await cursor.cancel(server_side_async_id)
 
 
-@mark.asyncio
 async def test_cursor_server_side_async_get_status_completed(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -786,7 +783,6 @@ async def test_cursor_server_side_async_get_status_completed(
     assert status == QueryStatus.ENDED_SUCCESSFULLY
 
 
-@mark.asyncio
 async def test_cursor_server_side_async_get_status_not_yet_available(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -811,7 +807,6 @@ async def test_cursor_server_side_async_get_status_not_yet_available(
     assert status == QueryStatus.NOT_READY
 
 
-@mark.asyncio
 async def test_cursor_server_side_async_get_status_error(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
