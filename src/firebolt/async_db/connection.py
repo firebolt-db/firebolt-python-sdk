@@ -63,15 +63,19 @@ async def _resolve_engine_url(
                 url=ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id),
                 params={"engine_name": engine_name},
             )
-            response.raise_for_status(ACCOUNT_ENGINE_BY_NAME_URL)
+            response.raise_for_status()
+        except RequestError:
+            raise InterfaceError(
+                "Request error: Unable to retrieve engine endpoint "
+                f"{ACCOUNT_ENGINE_BY_NAME_URL}."
+            )
             engine_id = response.json()["engine_id"]["engine_id"]
             response = await client.get(
                 url=ACCOUNT_ENGINE_URL.format(
                     account_id=account_id, engine_id=engine_id
                 ),
             )
-            response.raise_for_status(ACCOUNT_ENGINE_URL)
-            return response.json()["engine"]["endpoint"]
+            response.raise_for_status()
         except HTTPStatusError as e:
             # Engine error would be 404.
             if e.response.status_code != 404:
@@ -91,14 +95,16 @@ async def _resolve_engine_url(
             raise InterfaceError(
                 f"JSON decode error: Unable to retrieve engine endpoint {e}."
             )
-        except RequestError as e:
+        except RequestError:
             raise InterfaceError(
-                f"Request error: Unable to retrieve engine endpoint {e}."
+                "Request error: Unable to retrieve engine endpoint "
+                f"{ACCOUNT_ENGINE_URL}."
             )
         except RuntimeError as e:
             raise InterfaceError(
                 f"Runtime error: Unable to retrieve engine endpoint {e}."
             )
+        return response.json()["engine"]["endpoint"]
 
 
 async def _get_database_default_engine_url(
