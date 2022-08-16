@@ -2,7 +2,7 @@ from re import Pattern
 from typing import Callable
 
 from httpx import codes
-from pytest import mark, raises
+from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.client import DEFAULT_API_URL, AsyncClient
@@ -12,7 +12,6 @@ from firebolt.utils.urls import AUTH_URL
 from firebolt.utils.util import fix_url_schema
 
 
-@mark.asyncio
 async def test_client_retry(
     httpx_mock: HTTPXMock,
     test_username: str,
@@ -54,7 +53,6 @@ async def test_client_retry(
         ).status_code == codes.OK, "request failed with firebolt client"
 
 
-@mark.asyncio
 async def test_client_different_auths(
     httpx_mock: HTTPXMock,
     check_credentials_callback: Callable,
@@ -99,7 +97,6 @@ async def test_client_different_auths(
     ), "invalid auth validation error message"
 
 
-@mark.asyncio
 async def test_client_account_id(
     httpx_mock: HTTPXMock,
     test_username: str,

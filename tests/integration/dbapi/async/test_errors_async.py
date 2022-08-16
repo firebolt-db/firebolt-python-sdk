@@ -1,5 +1,5 @@
 from httpx import ConnectError
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.async_db import Connection, connect
 from firebolt.utils.exception import (
@@ -12,7 +12,6 @@ from firebolt.utils.exception import (
 )
 
 
-@mark.asyncio
 async def test_invalid_credentials(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
@@ -32,7 +31,6 @@ async def test_invalid_credentials(
         ), "Invalid authentication error message."
 
 
-@mark.asyncio
 async def test_invalid_account(
     database_name: str,
     engine_name: str,
@@ -58,7 +56,6 @@ async def test_invalid_account(
         ), "Invalid account error message."
 
 
-@mark.asyncio
 async def test_engine_url_not_exists(
     engine_url: str,
     database_name: str,
@@ -80,7 +77,6 @@ async def test_engine_url_not_exists(
             await connection.cursor().execute("show tables")
 
 
-@mark.asyncio
 async def test_engine_name_not_exists(
     engine_name: str,
     database_name: str,
@@ -102,7 +98,6 @@ async def test_engine_name_not_exists(
             await connection.cursor().execute("show tables")
 
 
-@mark.asyncio
 async def test_engine_stopped(
     stopped_engine_url: str,
     database_name: str,
@@ -124,7 +119,6 @@ async def test_engine_stopped(
             await connection.cursor().execute("show tables")
 
 
-@mark.asyncio
 async def test_database_not_exists(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
@@ -145,7 +139,6 @@ async def test_database_not_exists(
         ), "Invalid database name error message."
 
 
-@mark.asyncio
 async def test_sql_error(connection: Connection) -> None:
     """Connection properly reacts to SQL execution error."""
     with connection.cursor() as c:
