@@ -67,7 +67,6 @@ def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
     ), f"{msg}: {got}(got) != {expected}(expected)"
 
 
-@mark.asyncio
 async def status_loop(
     query_id: str,
     query: str,
@@ -85,7 +84,6 @@ async def status_loop(
     ), f"Failed {query}. Got {status} rather than {final_status}."
 
 
-@mark.asyncio
 async def test_connect_engine_name(
     connection_engine_name: Connection,
     all_types_query: str,
@@ -101,7 +99,6 @@ async def test_connect_engine_name(
     )
 
 
-@mark.asyncio
 async def test_connect_no_engine(
     connection_no_engine: Connection,
     all_types_query: str,
@@ -117,7 +114,6 @@ async def test_connect_no_engine(
     )
 
 
-@mark.asyncio
 async def test_select(
     connection: Connection,
     all_types_query: str,
@@ -152,7 +148,6 @@ async def test_select(
         )
 
 
-@mark.asyncio
 @mark.timeout(timeout=400)
 async def test_long_query(
     connection: Connection,
@@ -169,7 +164,6 @@ async def test_long_query(
         assert len(data) == 360, "Invalid data size returned by fetchall"
 
 
-@mark.asyncio
 async def test_drop_create(
     connection: Connection, create_drop_description: List[Column]
 ) -> None:
@@ -237,7 +231,6 @@ async def test_drop_create(
         await test_query(c, "DROP TABLE IF EXISTS test_drop_create_async_dim")
 
 
-@mark.asyncio
 async def test_insert(connection: Connection) -> None:
     """Insert and delete queries are handled properly."""
 
@@ -291,7 +284,6 @@ async def test_insert(connection: Connection) -> None:
         )
 
 
-@mark.asyncio
 async def test_parameterized_query(connection: Connection) -> None:
     """Query parameters are handled properly."""
 
@@ -353,7 +345,6 @@ async def test_parameterized_query(connection: Connection) -> None:
         )
 
 
-@mark.asyncio
 async def test_multi_statement_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
@@ -414,7 +405,6 @@ async def test_multi_statement_query(connection: Connection) -> None:
         assert await c.nextset() is None
 
 
-@mark.asyncio
 async def test_set_invalid_parameter(connection: Connection):
     with connection.cursor() as c:
         assert len(c._set_parameters) == 0

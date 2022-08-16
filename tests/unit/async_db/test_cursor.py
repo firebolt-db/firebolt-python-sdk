@@ -2,7 +2,7 @@ from typing import Callable, Dict, List
 from unittest.mock import patch
 
 from httpx import HTTPStatusError, StreamError, codes
-from pytest import mark, raises
+from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
@@ -20,7 +20,6 @@ from firebolt.utils.exception import (
 from tests.unit.db_conftest import encode_param
 
 
-@mark.asyncio
 async def test_cursor_state(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -55,7 +54,6 @@ async def test_cursor_state(
     assert cursor._state == CursorState.CLOSED
 
 
-@mark.asyncio
 async def test_closed_cursor(cursor: Cursor):
     """Most cursor methods are unavailable for closed cursor."""
     fields = ("description", "rowcount", "statistics")
@@ -95,7 +93,6 @@ async def test_closed_cursor(cursor: Cursor):
     cursor.close()
 
 
-@mark.asyncio
 async def test_cursor_no_query(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -144,7 +141,6 @@ async def test_cursor_no_query(
         pass
 
 
-@mark.asyncio
 async def test_cursor_execute(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -204,7 +200,6 @@ async def test_cursor_execute(
         ), f"Invalid description for insert using {message}."
 
 
-@mark.asyncio
 async def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -297,7 +292,6 @@ async def test_cursor_execute_error(
         httpx_mock.reset(True)
 
 
-@mark.asyncio
 async def test_cursor_server_side_async_execute_errors(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -382,7 +376,6 @@ async def test_cursor_server_side_async_execute_errors(
         httpx_mock.reset(True)
 
 
-@mark.asyncio
 async def test_cursor_fetchone(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -415,7 +408,6 @@ async def test_cursor_fetchone(
         await cursor.fetchone()
 
 
-@mark.asyncio
 async def test_cursor_fetchmany(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -477,7 +469,6 @@ async def test_cursor_fetchmany(
         await cursor.fetchmany()
 
 
-@mark.asyncio
 async def test_cursor_fetchall(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -512,7 +503,6 @@ async def test_cursor_fetchall(
         await cursor.fetchall()
 
 
-@mark.asyncio
 async def test_cursor_multi_statement(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -575,7 +565,6 @@ async def test_cursor_multi_statement(
     assert await cursor.nextset() is None
 
 
-@mark.asyncio
 async def test_cursor_set_statements(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -645,7 +634,6 @@ async def test_cursor_set_statements(
     assert len(cursor._set_parameters) == 0
 
 
-@mark.asyncio
 async def test_cursor_set_parameters_sent(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -674,7 +662,6 @@ async def test_cursor_set_parameters_sent(
     await cursor.execute("select 1")
 
 
-@mark.asyncio
 async def test_cursor_skip_parse(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
