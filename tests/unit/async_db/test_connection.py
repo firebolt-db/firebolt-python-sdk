@@ -21,7 +21,6 @@ from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import ACCOUNT_ENGINE_BY_NAME_URL
 
 
-@mark.asyncio
 async def test_closed_connection(connection: Connection) -> None:
     """Connection methods are unavailable for closed connection."""
     await connection.aclose()
@@ -36,7 +35,6 @@ async def test_closed_connection(connection: Connection) -> None:
     await connection.aclose()
 
 
-@mark.asyncio
 async def test_cursors_closed_on_close(connection: Connection) -> None:
     """Connection closes all its cursors on close."""
     c1, c2 = connection.cursor(), connection.cursor()
@@ -52,7 +50,6 @@ async def test_cursors_closed_on_close(connection: Connection) -> None:
     await connection.aclose()
 
 
-@mark.asyncio
 async def test_cursor_initialized(
     settings: Settings,
     db_name: str,
@@ -93,14 +90,12 @@ async def test_cursor_initialized(
             ), "Cursor wasn't removed from connection after close."
 
 
-@mark.asyncio
 async def test_connect_empty_parameters():
     with raises(ConfigurationError):
         async with await connect(engine_url="engine_url"):
             pass
 
 
-@mark.asyncio
 async def test_connect_access_token(
     settings: Settings,
     db_name: str,
@@ -139,7 +134,6 @@ async def test_connect_access_token(
             pass
 
 
-@mark.asyncio
 async def test_connect_engine_name(
     settings: Settings,
     db_name: str,
@@ -215,7 +209,6 @@ async def test_connect_engine_name(
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
 
-@mark.asyncio
 async def test_connect_default_engine(
     settings: Settings,
     db_name: str,
@@ -258,7 +251,6 @@ async def test_connect_default_engine(
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
 
-@mark.asyncio
 async def test_connection_commit(connection: Connection):
     # nothing happens
     connection.commit()
@@ -268,7 +260,6 @@ async def test_connection_commit(connection: Connection):
         connection.commit()
 
 
-@mark.asyncio
 @mark.nofakefs
 async def test_connection_token_caching(
     settings: Settings,
@@ -324,7 +315,6 @@ async def test_connection_token_caching(
         ), "Token is cached even though caching is disabled"
 
 
-@mark.asyncio
 async def test_connect_with_auth(
     httpx_mock: HTTPXMock,
     settings: Settings,
@@ -356,7 +346,6 @@ async def test_connect_with_auth(
             await connection.cursor().execute("select*")
 
 
-@mark.asyncio
 async def test_connect_account_name(
     httpx_mock: HTTPXMock,
     auth: Auth,
@@ -390,7 +379,6 @@ async def test_connect_account_name(
         pass
 
 
-@mark.asyncio
 async def test_connect_with_user_agent(
     httpx_mock: HTTPXMock,
     settings: Settings,
@@ -422,7 +410,6 @@ async def test_connect_with_user_agent(
         ut.assert_called_once_with([("DriverA", "1.1")], [("MyConnector", "1.0")])
 
 
-@mark.asyncio
 async def test_connect_no_user_agent(
     httpx_mock: HTTPXMock,
     settings: Settings,

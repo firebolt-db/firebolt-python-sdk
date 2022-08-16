@@ -1,7 +1,7 @@
 from asyncio import run
 from threading import Thread
 
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.utils.util import async_to_sync
 
@@ -52,7 +52,6 @@ def test_async_to_sync_after_run():
         async_to_sync(task)()
 
 
-@mark.asyncio
 async def test_nested_loops() -> None:
     """async_to_sync works correctly inside a running loop."""
 

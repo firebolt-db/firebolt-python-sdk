@@ -11,7 +11,6 @@ from firebolt.utils.token_storage import TokenSecureStorage
 from tests.unit.util import async_execute_generator_requests
 
 
-@mark.asyncio
 async def test_auth_refresh_on_expiration(
     httpx_mock: HTTPXMock, test_token: str, test_token2: str
 ) -> None:
@@ -41,7 +40,6 @@ async def test_auth_refresh_on_expiration(
     assert auth.token == test_token2, "expired access token was not updated"
 
 
-@mark.asyncio
 async def test_auth_uses_same_token_if_valid(
     httpx_mock: HTTPXMock, test_token: str, test_token2: str
 ) -> None:
@@ -74,7 +72,6 @@ async def test_auth_uses_same_token_if_valid(
     assert auth.token == test_token, "shoud not update token until it expires"
 
 
-@mark.asyncio
 async def test_auth_adds_header(test_token: str) -> None:
     """Auth adds required authentication headers to httpx.Request."""
     auth = Auth(use_token_cache=False)
@@ -89,7 +86,6 @@ async def test_auth_adds_header(test_token: str) -> None:
     ), "missing authorization header"
 
 
-@mark.asyncio
 @mark.nofakefs
 async def test_auth_token_storage(
     httpx_mock: HTTPXMock,
