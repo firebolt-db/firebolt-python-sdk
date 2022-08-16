@@ -75,13 +75,28 @@ async def _resolve_engine_url(
         except HTTPStatusError as e:
             # Engine error would be 404.
             if e.response.status_code != 404:
-                raise InterfaceError(f"Unable to retrieve engine endpoint: {e}.")
+                error = f": {e}" if e else "."
+                raise InterfaceError(
+                    f"Response error {e.response.status_code}: Unable to retrieve "
+                    f"engine endpoint{error}"
+                )
+            else:
+                error = f": {e}" if e else "."
+                raise InterfaceError(
+                    f"Response error 404: Unable to retrieve engine endpoint{error}"
+                )
             # Once this is point is reached we've already authenticated with
             # the backend so it's safe to assume the cause of the error is
             # missing engine.
             raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist.")
-        except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
-            raise InterfaceError(f"Unable to retrieve engine endpoint: {e}.")
+        except JSONDecodeError:
+            raise InterfaceError(
+                f"JSON decode error: Unable to retrieve engine endpoint."
+            )
+        except RequestError:
+            raise InterfaceError(f"Request error: Unable to retrieve engine endpoint.")
+        except RuntimeError:
+            raise InterfaceError(f"Runtime error: Unable to retrieve engine endpoint.")
 
 
 async def _get_database_default_engine_url(
