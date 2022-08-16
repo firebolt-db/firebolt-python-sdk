@@ -57,6 +57,9 @@ async def _resolve_engine_url(
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as client:
+        # There are two try blocks because we're making two separate API calls
+        # and I wanted to be able to output which call was failing.
+        # The second relies on the first, so that's where the return lives.
         try:
             account_id = await client.account_id
             response = await client.get(
