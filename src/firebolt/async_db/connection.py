@@ -83,7 +83,8 @@ async def _resolve_engine_url(
             raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist.")
         except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
             raise InterfaceError(
-                f"Error {e.__class__.__name__}: Unable to retrieve engine endpoint."
+                f"Error {e.__class__.__name__}: Unable to retrieve engine "
+                f"endpoint {url}."
             )
 
 
