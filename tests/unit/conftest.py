@@ -28,6 +28,7 @@ from firebolt.utils.exception import (
 from firebolt.utils.urls import (
     ACCOUNT_BY_NAME_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
+    ACCOUNT_ENGINE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
     ACCOUNT_URL,
@@ -201,21 +202,67 @@ def engine_id() -> str:
 
 
 @fixture
-def get_engine_url(settings: Settings, account_id: str, engine_id: str) -> str:
+def engine_endpoint() -> str:
+    return "engine_endpoint"
+
+
+@fixture
+def get_engine_id_url(settings: Settings, account_id: str, engine_id: str) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
 @fixture
-def get_engine_callback(
-    get_engine_url: str, engine_id: str, settings: Settings
+def get_engine_url_url(settings: Settings, account_id: str, engine_id: str) -> str:
+    return f"https://{settings.server}" + ACCOUNT_ENGINE_BY_NAME_URL.format(
+        account_id=account_id, engine_id=engine_id
+    )
+
+
+@fixture
+def get_engine_id_callback(
+    get_engine_id_url: str, engine_id: str, settings: Settings
 ) -> Callable:
     def do_mock(
         request: Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == get_engine_url
+        assert request.url == get_engine_id_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json={
+                "engine_id": {
+                    "engine_id": "engine_id",
+                    "name": "name",
+                    "compute_region_id": {
+                        "provider_id": "provider",
+                        "region_id": "region",
+                    },
+                    "settings": {
+                        "preset": "",
+                        "auto_stop_delay_duration": "1s",
+                        "minimum_logging_level": "",
+                        "is_read_only": False,
+                        "warm_up": "",
+                    },
+                    "endpoint": f"https://{settings.server}",
+                }
+            },
+        )
+
+    return do_mock
+
+
+@fixture
+def get_engine_url_callback(
+    get_engine_id_url: str, engine_id: str, settings: Settings
+) -> Callable:
+    def do_mock(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == get_engine_id_url
         return Response(
             status_code=httpx.codes.OK,
             json={

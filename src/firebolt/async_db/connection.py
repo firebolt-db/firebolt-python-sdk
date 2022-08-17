@@ -57,58 +57,35 @@ async def _resolve_engine_url(
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as client:
-        # There are two try blocks because we're making two separate API calls
-        # and I wanted to be able to output which call was failing.
-        # The second relies on the first, so that's where the return lives.
+        response = None
+        url = None
         try:
             account_id = await client.account_id
+            url = ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id)
             response = await client.get(
-                url=ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id),
+                url=url,
                 params={"engine_name": engine_name},
             )
             response.raise_for_status()
-        except RequestError:
-            raise InterfaceError(
-                "Request error: Unable to retrieve engine endpoint "
-                f"{ACCOUNT_ENGINE_BY_NAME_URL}."
-            )
-        try:
             engine_id = response.json()["engine_id"]["engine_id"]
-            response = await client.get(
-                url=ACCOUNT_ENGINE_URL.format(
-                    account_id=account_id, engine_id=engine_id
-                ),
-            )
+            url = ACCOUNT_ENGINE_URL.format(account_id=account_id, engine_id=engine_id)
+            response = await client.get(url=url)
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
-
         except HTTPStatusError as e:
             # Engine error would be 404.
             if e.response.status_code != 404:
                 raise InterfaceError(
-                    f"Response error {e.response.status_code}: Unable to retrieve "
-                    f"engine endpoint {e}."
-                )
-            else:
-                raise InterfaceError(
-                    f"Response error 404: Unable to retrieve engine endpoint {e}."
+                    f"Error {e.__class__.__name__}: "
+                    f"Unable to retrieve engine endpoint: {url}."
                 )
             # Once this is point is reached we've already authenticated with
             # the backend so it's safe to assume the cause of the error is
             # missing engine.
             raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist.")
-        except JSONDecodeError as e:
+        except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
             raise InterfaceError(
-                f"JSON decode error: Unable to retrieve engine endpoint {e}."
-            )
-        except RequestError:
-            raise InterfaceError(
-                "Request error: Unable to retrieve engine endpoint "
-                f"{ACCOUNT_ENGINE_URL}."
-            )
-        except RuntimeError as e:
-            raise InterfaceError(
-                f"Runtime error: Unable to retrieve engine endpoint {e}."
+                f"Error {e.__class__.__name__}: Unable to retrieve engine endpoint."
             )
 
 

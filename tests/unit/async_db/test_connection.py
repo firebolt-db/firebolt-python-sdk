@@ -145,8 +145,11 @@ async def test_connect_engine_name(
     account_id_url: Pattern,
     account_id_callback: Callable,
     engine_id: str,
-    get_engine_url: str,
-    get_engine_callback: Callable,
+    engine_endpoint: str,
+    get_engine_id_url: str,
+    get_engine_url_url: str,
+    get_engine_id_callback: Callable,
+    get_engine_url_callback: Callable,
     python_query_data: List[List[ColType]],
     account_id: str,
 ):
@@ -166,7 +169,8 @@ async def test_connect_engine_name(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(get_engine_callback, url=get_engine_url)
+    httpx_mock.add_callback(get_engine_id_callback, url=get_engine_id_url)
+    httpx_mock.add_callback(get_engine_url_callback, url=get_engine_url_url)
 
     engine_name = settings.server.split(".")[0]
 
@@ -198,6 +202,14 @@ async def test_connect_engine_name(
         json={"engine_id": {"engine_id": engine_id}},
     )
 
+    httpx_mock.add_response(
+        url=f"https://{settings.server}"
+        + ACCOUNT_ENGINE_URL.format(account_id=account_id)
+        + f"?engine_id={engine_id}",
+        status_code=codes.OK,
+        json={"engine": {"endpoint": engine_endpoint}},
+    )
+
     async with await connect(
         engine_name=engine_name,
         database=db_name,
@@ -220,8 +232,6 @@ async def test_connect_default_engine(
     account_id_url: Pattern,
     account_id_callback: Callable,
     engine_id: str,
-    get_engine_url: str,
-    get_engine_callback: Callable,
     database_by_name_url: str,
     database_by_name_callback: Callable,
     database_id: str,
