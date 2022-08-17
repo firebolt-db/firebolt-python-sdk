@@ -57,8 +57,6 @@ async def _resolve_engine_url(
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as client:
-        response = None
-        url = None
         try:
             account_id = await client.account_id
             url = ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id)
