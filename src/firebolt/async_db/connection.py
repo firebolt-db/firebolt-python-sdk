@@ -27,7 +27,7 @@ from firebolt.utils.urls import (
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
-DEFAULT_TIMEOUT_SECONDS: int = 5
+DEFAULT_TIMEOUT_SECONDS: int = 10
 KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
 AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials
