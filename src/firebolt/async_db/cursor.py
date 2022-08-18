@@ -348,14 +348,6 @@ class BaseCursor:
                     JSON_OUTPUT_FORMAT will be used.
             path (str): endpoint suffix, for example "cancel" or "status"
         """
-        if not parameters:
-            parameters = {"output_format": JSON_OUTPUT_FORMAT}
-        elif "output_format" not in parameters:
-            parameters["output_format"] = JSON_OUTPUT_FORMAT
-        elif parameters["output_format"] == "":
-            # In the case that output_format should be missing, send in "";
-            # we remove it here so the API endpoint string won't be malformed.
-            del parameters["output_format"]
         if use_set_parameters:
             parameters = {**self._set_parameters, **parameters}
         return await self._client.request(
@@ -377,7 +369,7 @@ class BaseCursor:
                 "executemany() function."
             )
         resp = await self._api_request(
-            "select 1", {parameter.name: parameter.value, "output_format": ""}
+            "select 1", {parameter.name: parameter.value}
         )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
@@ -456,7 +448,7 @@ class BaseCursor:
                         async_execution,
                     )
                     response = await self._api_request(
-                        query, {"async_execution": 1, "advanced_mode": 1}
+                        query, {"async_execution": 1, "advanced_mode": 1, "output_format": JSON_OUTPUT_FORMAT}
                     )
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":
@@ -468,7 +460,7 @@ class BaseCursor:
                         )
                     self._query_id = resp["query_id"]
                 else:
-                    resp = await self._api_request(query)
+                    resp = await self._api_request(query, {"output_format": JSON_OUTPUT_FORMAT})
                     await self._raise_if_error(resp)
                     row_set = self._row_set_from_response(resp)
 
@@ -633,7 +625,7 @@ class BaseCursor:
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
         await self._api_request(
-            parameters={"query_id": query_id, "output_format": ""},
+            parameters={"query_id": query_id},
             path="cancel",
             use_set_parameters=False,
         )
@@ -645,7 +637,7 @@ class BaseCursor:
             resp = await self._api_request(
                 # output_format must be empty for status to work correctly.
                 # And set parameters will cause 400 errors.
-                parameters={"query_id": query_id, "output_format": ""},
+                parameters={"query_id": query_id},
                 path="status",
                 use_set_parameters=False,
             )
