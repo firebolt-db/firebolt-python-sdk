@@ -1,4 +1,3 @@
-import urllib
 from typing import Optional
 
 from httpx import Timeout
