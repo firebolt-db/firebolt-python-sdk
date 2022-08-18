@@ -6,6 +6,7 @@ from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
 from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common import Settings
 from firebolt.service.provider import get_provider_id
+from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 60 * 2
 
@@ -43,7 +44,7 @@ class ResourceManager:
 
         self.client = Client(
             auth=auth,
-            base_url=f"https://{ self.settings.server}",
+            base_url=fix_url_schema(self.settings.server),
             account_name=self.settings.account_name,
             api_endpoint=self.settings.server,
             timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
