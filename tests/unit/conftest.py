@@ -28,7 +28,7 @@ from firebolt.utils.exception import (
 from firebolt.utils.urls import (
     ACCOUNT_BY_NAME_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
-    ACCOUNT_ENGINE_BY_NAME_URL,
+    ACCOUNT_ENGINE_ID_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
     ACCOUNT_URL,
@@ -215,7 +215,7 @@ def get_engine_id_url(settings: Settings, account_id: str, engine_id: str) -> st
 
 @fixture
 def get_engine_url_url(settings: Settings, account_id: str, engine_id: str) -> str:
-    return f"https://{settings.server}" + ACCOUNT_ENGINE_BY_NAME_URL.format(
+    return f"https://{settings.server}" + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
@@ -256,7 +256,7 @@ def get_engine_id_callback(
 
 @fixture
 def get_engine_url_callback(
-    get_engine_id_url: str, engine_id: str, settings: Settings
+    get_engine_url_url: str, engine_id: str, settings: Settings
 ) -> Callable:
     def do_mock(
         request: Request = None,

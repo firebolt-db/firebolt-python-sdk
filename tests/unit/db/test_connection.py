@@ -18,7 +18,7 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.urls import ACCOUNT_ENGINE_BY_NAME_URL
+from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
 
 
 def test_closed_connection(connection: Connection) -> None:
@@ -171,7 +171,7 @@ def test_connect_engine_name(
     # Mock engine id lookup by name
     httpx_mock.add_response(
         url=f"https://{settings.server}"
-        + ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id)
+        + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
         + f"?engine_name={engine_name}",
         status_code=codes.OK,
         json={"engine_id": {"engine_id": engine_id}},

@@ -11,7 +11,7 @@ from firebolt.service.base import BaseService
 from firebolt.service.types import EngineOrder, EngineType, WarmupMethod
 from firebolt.utils.exception import FireboltError
 from firebolt.utils.urls import (
-    ACCOUNT_ENGINE_BY_NAME_URL,
+    ACCOUNT_ENGINE_ID_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINES_URL,
     ENGINES_BY_IDS_URL,
@@ -51,7 +51,7 @@ class EngineService(BaseService):
         """Get an engine from Firebolt by its name."""
 
         response = self.client.get(
-            url=ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=self.account_id),
+            url=ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=self.account_id),
             params={"engine_name": name},
         )
         engine_id = response.json()["engine_id"]["engine_id"]

@@ -20,7 +20,7 @@ from firebolt.utils.exception import (
     InterfaceError,
 )
 from firebolt.utils.urls import (
-    ACCOUNT_ENGINE_BY_NAME_URL,
+    ACCOUNT_ENGINE_ID_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
 )
@@ -59,7 +59,7 @@ async def _resolve_engine_url(
     ) as client:
         try:
             account_id = await client.account_id
-            url = ACCOUNT_ENGINE_BY_NAME_URL.format(account_id=account_id)
+            url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
             response = await client.get(
                 url=url,
                 params={"engine_name": engine_name},
