@@ -332,7 +332,7 @@ class BaseCursor:
     async def _api_request(
         self,
         query: Optional[str] = "",
-        parameters: Optional[dict] = {},
+        parameters: Optional[dict[str, Any]] = {},
         path: Optional[str] = "",
         use_set_parameters: Optional[bool] = True,
     ) -> Response:
@@ -349,13 +349,13 @@ class BaseCursor:
             path (str): endpoint suffix, for example "cancel" or "status"
         """
         if use_set_parameters:
-            parameters = {**self._set_parameters, **parameters}
+            parameters = {**(self._set_parameters or {}), **(parameters or {})}
         return await self._client.request(
             url=f"/{path}",
             method="POST",
             params={
                 "database": self.connection.database,
-                **parameters,
+                **(parameters or dict()),
             },
             content=query,
         )
@@ -368,9 +368,7 @@ class BaseCursor:
                 "Instead, pass it as an argument to the execute() or "
                 "executemany() function."
             )
-        resp = await self._api_request(
-            "select 1", {parameter.name: parameter.value}
-        )
+        resp = await self._api_request("select 1", {parameter.name: parameter.value})
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
             raise OperationalError(resp.text)
@@ -425,7 +423,7 @@ class BaseCursor:
                 start_time = time.time()
                 # Our CREATE EXTERNAL TABLE queries currently require credentials,
                 # so we will skip logging those queries.
-                # https://docs.firebolt.io/sql-reference/commands/ddl-commands#create-external-table
+                # https://docs.firebolt.io/sql-reference/commands/create-external-table.html
                 if isinstance(query, SetParameter) or not re.search(
                     "aws_key_id|credentials", query, flags=re.IGNORECASE
                 ):
@@ -448,7 +446,12 @@ class BaseCursor:
                         async_execution,
                     )
                     response = await self._api_request(
-                        query, {"async_execution": 1, "advanced_mode": 1, "output_format": JSON_OUTPUT_FORMAT}
+                        query,
+                        {
+                            "async_execution": 1,
+                            "advanced_mode": 1,
+                            "output_format": JSON_OUTPUT_FORMAT,
+                        },
                     )
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":
@@ -460,7 +463,9 @@ class BaseCursor:
                         )
                     self._query_id = resp["query_id"]
                 else:
-                    resp = await self._api_request(query, {"output_format": JSON_OUTPUT_FORMAT})
+                    resp = await self._api_request(
+                        query, {"output_format": JSON_OUTPUT_FORMAT}
+                    )
                     await self._raise_if_error(resp)
                     row_set = self._row_set_from_response(resp)
 

@@ -110,7 +110,7 @@ To get started, follow the steps below:
 Server-side synchronous command and query examples
 ============================
 
-This section includes Python examples of various SQL commands and queries. For running queries in server-side asynchronous mode see :ref:`server-side asynchronous query execution`.
+This section includes Python examples of various SQL commands and queries.
 
 
 Inserting and selecting data
