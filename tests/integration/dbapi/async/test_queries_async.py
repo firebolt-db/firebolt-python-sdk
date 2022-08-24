@@ -6,6 +6,54 @@ from pytest import mark, raises
 
 from firebolt.async_db import Connection, Cursor, DataError, OperationalError
 from firebolt.async_db._types import ColType, Column
+from firebolt.async_db.cursor import QueryStatus
+
+CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS ex_lineitem (
+  l_orderkey              LONG,
+  l_partkey               LONG,
+  l_suppkey               LONG,
+  l_linenumber            INT,
+  l_quantity              LONG,
+  l_extendedprice         LONG,
+  l_discount              LONG,
+  l_tax                   LONG,
+  l_returnflag            TEXT,
+  l_linestatus            TEXT,
+  l_shipdate              TEXT,
+  l_commitdate            TEXT,
+  l_receiptdate           TEXT,
+  l_shipinstruct          TEXT,
+  l_shipmode              TEXT,
+  l_comment               TEXT
+)
+URL = 's3://firebolt-publishing-public/samples/tpc-h/parquet/lineitem/'
+OBJECT_PATTERN = '*.parquet'
+TYPE = (PARQUET);"""
+
+CREATE_FACT_TABLE = """CREATE FACT TABLE IF NOT EXISTS lineitem (
+-- In this example, these fact table columns
+-- map directly to the external table columns.
+  l_orderkey              LONG,
+  l_partkey               LONG,
+  l_suppkey               LONG,
+  l_linenumber            INT,
+  l_quantity              LONG,
+  l_extendedprice         LONG,
+  l_discount              LONG,
+  l_tax                   LONG,
+  l_returnflag            TEXT,
+  l_linestatus            TEXT,
+  l_shipdate              TEXT,
+  l_commitdate            TEXT,
+  l_receiptdate           TEXT,
+  l_shipinstruct          TEXT,
+  l_shipmode              TEXT,
+  l_comment               TEXT
+)
+PRIMARY INDEX
+  l_orderkey,
+  l_linenumber;
+"""
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -14,6 +62,23 @@ def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
     assert (
         type(got) == type(expected) and got == expected
     ), f"{msg}: {got}(got) != {expected}(expected)"
+
+
+async def status_loop(
+    query_id: str,
+    query: str,
+    cursor: Cursor,
+    start_status: QueryStatus = QueryStatus.NOT_READY,
+    final_status: QueryStatus = QueryStatus.ENDED_SUCCESSFULLY,
+) -> None:
+    status = await cursor.get_status(query_id)
+    # get_status() will return NOT_READY until it succeeds or fails.
+    while status == start_status or status == QueryStatus.NOT_READY:
+        # This only checks to see if a correct response is returned
+        status = await cursor.get_status(query_id)
+    assert (
+        status == final_status
+    ), f"Failed {query}. Got {status} rather than {final_status}."
 
 
 async def test_connect_engine_name(
@@ -341,6 +406,73 @@ async def test_set_invalid_parameter(connection: Connection):
     with connection.cursor() as c:
         assert len(c._set_parameters) == 0
         with raises(OperationalError):
-            await c.execute("set some_invalid_parameter = 1")
+            await c.execute("SET some_invalid_parameter = 1")
 
         assert len(c._set_parameters) == 0
+
+
+async def test_server_side_async_execution_query(connection: Connection) -> None:
+    """Make an sql query and receive an id back."""
+    with connection.cursor() as c:
+        query_id = await c.execute("SELECT 1", [], async_execution=True)
+    assert (
+        type(query_id) is str and query_id
+    ), "Invalid query id was returned from server-side async query."
+
+
+async def test_server_side_async_execution_cancel(connection: Connection) -> None:
+    """Test cancel."""
+    with connection.cursor() as c:
+        try:
+            await c.execute(CREATE_TEST_TABLE)
+            query_id = await c.execute(
+                LONG_INSERT,
+                async_execution=True,
+            )
+            # Cancel, then check that status is cancelled.
+            await c.cancel(query_id)
+            await status_loop(
+                query_id,
+                "cancel",
+                c,
+                final_status=QueryStatus.CANCELED_EXECUTION,
+            )
+        finally:
+            await c.execute(DROP_TEST_TABLE)
+
+
+async def test_server_side_async_execution_get_status(connection: Connection) -> None:
+    """
+    Test get_status(). Test for three ending conditions: PARSE_ERROR,
+    STARTED_EXECUTION, ENDED_EXECUTION.
+    """
+    with connection.cursor() as c:
+        try:
+            await c.execute(CREATE_TEST_TABLE)
+            # A long insert so we can check for STARTED_EXECUTION.
+            query_id = await c.execute(
+                LONG_INSERT,
+                async_execution=True,
+            )
+            await status_loop(
+                query_id, "get status", c, final_status=QueryStatus.STARTED_EXECUTION
+            )
+            # Now a check for ENDED_SUCCESSFULLY status of last query.
+            await status_loop(
+                query_id,
+                "get status",
+                c,
+                start_status=QueryStatus.STARTED_EXECUTION,
+                final_status=QueryStatus.ENDED_SUCCESSFULLY,
+            )
+            # Now, check for PARSE_ERROR. '1' will fail, as id is int.
+            query_id = await c.execute(
+                """INSERT INTO test_tbl ('1', 'a')""",
+                async_execution=True,
+            )
+            await status_loop(
+                query_id, "get status", c, final_status=QueryStatus.PARSE_ERROR
+            )
+
+        finally:
+            await c.execute(DROP_TEST_TABLE)
