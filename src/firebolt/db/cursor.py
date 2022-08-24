@@ -10,6 +10,7 @@ from firebolt.async_db._types import ColType
 from firebolt.async_db.cursor import BaseCursor as AsyncBaseCursor
 from firebolt.async_db.cursor import (
     ParameterType,
+    QueryStatus,
     check_not_closed,
     check_query_executed,
 )
@@ -101,3 +102,13 @@ class Cursor(AsyncBaseCursor):
             if row is None:
                 return
             yield row
+
+    @wraps(AsyncBaseCursor.get_status)
+    def get_status(self, query_id: str) -> QueryStatus:
+        with self._query_lock.gen_rlock():
+            return async_to_sync(super().get_status, self._async_job_thread)(query_id)
+
+    @wraps(AsyncBaseCursor.cancel)
+    def cancel(self, query_id: str) -> None:
+        with self._query_lock.gen_rlock():
+            return async_to_sync(super().cancel, self._async_job_thread)(query_id)
