@@ -347,6 +347,9 @@ class BaseCursor:
                     must be an empty string. If no value not specified,
                     JSON_OUTPUT_FORMAT will be used.
             path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
         """
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
@@ -377,7 +380,7 @@ class BaseCursor:
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
 
-    def _validate_ss_async_settings(
+    def _validate_server_side_async_settings(
         self,
         parameters: Sequence[Sequence[ParameterType]],
         queries: List[Union[SetParameter, str]],
@@ -394,8 +397,6 @@ class BaseCursor:
                 "Query formatting parameters are provided but skip_parsing "
                 "is specified. They will be ignored."
             )
-
-        # Allow users to manually skip parsing for performance improvement.
         non_set_queries = 0
         for query in queries:
             if type(query) is not SetParameter:
@@ -414,6 +415,7 @@ class BaseCursor:
         async_execution: Optional[bool] = False,
     ) -> None:
         self._reset()
+        # Allow users to manually skip parsing for performance improvement.
         queries: List[Union[SetParameter, str]] = (
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
@@ -439,7 +441,7 @@ class BaseCursor:
                 if isinstance(query, SetParameter):
                     await self._validate_set_parameter(query)
                 elif async_execution:
-                    self._validate_ss_async_settings(
+                    self._validate_server_side_async_settings(
                         parameters,
                         queries,
                         skip_parsing,

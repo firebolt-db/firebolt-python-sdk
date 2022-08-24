@@ -262,7 +262,7 @@ Multiple-statement queries allow you to run a series of SQL statements sequentia
 Server-side asynchronous query execution
 ==========================================
 
-Server-side asynchronous query execution allows you to run a long query in the background while executing other asynchronous or synchronous queries. An additional benefit of server-side async execution that can free up a connection or potentially even spin down an entire service (such as AWS Lambda) while a long-running database job is still underway. Note that it is not possible to retrieve the results of a server-side asynchronous query, so these queries are best used for running DMLs and DDLs. SELECTs should be used only for warming the cache.
+Server-side asynchronous query execution allows you to run a long query in the background while executing other asynchronous or synchronous queries. An additional benefit of server-side async execution that can free up a connection, close a connection while running a query, or potentially even spin down an entire service (such as AWS Lambda) while a long-running database job is still underway. Note that it is not possible to retrieve the results of a server-side asynchronous query, so these queries are best used for running DMLs and DDLs. SELECTs should be used only for warming the cache.
 
 Running DDL commands
 -----------------------------
