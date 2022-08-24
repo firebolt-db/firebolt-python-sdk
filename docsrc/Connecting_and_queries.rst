@@ -108,7 +108,7 @@ To get started, follow the steps below:
 	The ``cursor`` object can be used to send queries and commands to your Firebolt database and engine. See below for examples of functions using the ``cursor`` object.
 
 Server-side synchronous command and query examples
-==================================================
+============================
 
 This section includes Python examples of various SQL commands and queries.
 
@@ -116,7 +116,7 @@ This section includes Python examples of various SQL commands and queries.
 Inserting and selecting data
 -----------------------------
 
-.. _ss_async_basic_execute_example:
+.. _basic_execute_example:
 
 The example below uses ``cursor`` to create a new table called ``test_table``, insert rows into it, and then select the table's contents.
 
@@ -147,7 +147,7 @@ The engine attached to your specified database must be started before executing 
 
 .. note::
 
-	For reference documentation on ``cursor`` functions, see :ref:`db-cursor`
+	For reference documentation on ``cursor`` functions, see :ref:`Db.cursor`
 
 
 Fetching query results
@@ -262,12 +262,12 @@ Multiple-statement queries allow you to run a series of SQL statements sequentia
 Server-side asynchronous query execution
 ==========================================
 
-Server-side asynchronous query execution allows you to run a long query in the background while executing other asynchronous or synchronous queries. An additional benefit of server-side async execution that can free up a connection or potentially even spin down an entire service (such as AWS Lambda) while a long-running database job is still underway. Note that it is not possible to retrieve the results of a server-side asynchronous query, so these queries are best used for running DMLs and DDLs. SELECTs should be used only for warming the cache.
+Server-side asynchronous query execution allows you to run a long query in the background while executing other asynchronous or synchronous queries. An additional benefit of server-side async execution that can free up a connection, close a connection while running a query, or potentially even spin down an entire service (such as AWS Lambda) while a long-running database job is still underway. Note that it is not possible to retrieve the results of a server-side asynchronous query, so these queries are best used for running DMLs and DDLs. SELECTs should be used only for warming the cache.
 
 Running DDL commands
 -----------------------------
 
-.. _ss_sync_basic_execute_example:
+.. _basic_execute_example:
 
 Running queries server-side asynchronously is similar to running server-side asynchronous queries, but the ``execute()`` command receives an extra parameter, ``async_execution=True``. The example below uses ``cursor`` to create a new table called ``test_table``. ``execute(query, async_execution=True)`` will return a query ID, which can subsequently be used to check the query status.
 

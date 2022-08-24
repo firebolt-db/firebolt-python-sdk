@@ -1,23 +1,12 @@
 from datetime import date, datetime
 from decimal import Decimal
-from threading import Thread
 from typing import Any, List
 
 from pytest import mark, raises
 
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
-from firebolt.client.auth import UsernamePassword
-from firebolt.db import (
-    Connection,
-    Cursor,
-    DataError,
-    OperationalError,
-    connect,
-)
-
-VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
-LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+from firebolt.db import Connection, Cursor, DataError, OperationalError
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -425,9 +414,7 @@ def test_server_side_async_execution_cancel(connection: Connection) -> None:
     """Test cancel."""
     with connection.cursor() as c:
         try:
-            c.execute(
-                "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
-            )
+            c.execute(CREATE_TEST_TABLE)
             query_id = c.execute(
                 LONG_INSERT,
                 async_execution=True,
@@ -441,7 +428,7 @@ def test_server_side_async_execution_cancel(connection: Connection) -> None:
                 final_status=QueryStatus.CANCELED_EXECUTION,
             )
         finally:
-            c.execute("DROP TABLE IF EXISTS test_tbl")
+            c.execute(DROP_TEST_TABLE)
 
 
 def test_server_side_async_execution_get_status(connection: Connection) -> None:
@@ -451,9 +438,7 @@ def test_server_side_async_execution_get_status(connection: Connection) -> None:
     """
     with connection.cursor() as c:
         try:
-            c.execute(
-                "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
-            )
+            c.execute(CREATE_TEST_TABLE)
             # A long insert so we can check for STARTED_EXECUTION.
             query_id = c.execute(
                 LONG_INSERT,
@@ -478,4 +463,4 @@ def test_server_side_async_execution_get_status(connection: Connection) -> None:
             status_loop(query_id, "get status", c, final_status=QueryStatus.PARSE_ERROR)
 
         finally:
-            c.execute("DROP TABLE IF EXISTS test_tbl")
+            c.execute(DROP_TEST_TABLE)
