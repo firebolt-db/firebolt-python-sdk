@@ -262,14 +262,28 @@ Multiple-statement queries allow you to run a series of SQL statements sequentia
 Server-side asynchronous query execution
 ==========================================
 
-Server-side asynchronous query execution allows you to run a long query in the background while executing other asynchronous or synchronous queries. An additional benefit of server-side async execution that can free up a connection, close a connection while running a query, or potentially even spin down an entire service (such as AWS Lambda) while a long-running database job is still underway. Note that it is not possible to retrieve the results of a server-side asynchronous query, so these queries are best used for running DMLs and DDLs. SELECTs should be used only for warming the cache.
+In addition to :ref:`asynchronous API calls <Async DB>`, which allow `client-side`
+execution to continue while waiting for API responses, the Python SDK provides `server-side`
+asynchronous query execution. When a query is executed asynchronously the only response
+from the server is a query ID. The status of the query can then be retrieved by polling
+the server at a later point. This frees the connection to do other queries or even be
+closed while the query continues to run. And entire service, such as AWS Lamdba, could
+potentially even be spun down an entire while a long-running database job is still underway.
 
-Running DDL commands
------------------------------
+Note, however, that it is not possible to retrieve the results of a server-side asynchronous
+query, so these queries are best used for running DMLs and DDLs and ``SELECT``s should be used
+only for warming the cache.
+
+Executing asynchronous DDL commands
+------------------------------------
 
 .. _basic_execute_example:
 
-Running queries server-side asynchronously is similar to running server-side synchronous queries, but the ``execute()`` command receives an extra parameter, ``async_execution=True``. The example below uses ``cursor`` to create a new table called ``test_table``. ``execute(query, async_execution=True)`` will return a query ID, which can subsequently be used to check the query status.
+Executing queries server-side asynchronously is similar to executing server-side synchronous
+queries, but the ``execute()`` command receives an extra parameter, ``async_execution=True``.
+The example below uses ``cursor`` to create a new table called ``test_table``.
+``execute(query, async_execution=True)`` will return a query ID, which can subsequently
+be used to check the query status.
 
 ::
 
@@ -283,7 +297,8 @@ Running queries server-side asynchronously is similar to running server-side syn
     )
 
 
-To check the status of a query, send the query ID to ```get_status()``` to receive a QueryStatus enumeration object. Possible statuses are:
+To check the status of a query, send the query ID to ```get_status()``` to receive a
+QueryStatus enumeration object. Possible statuses are:
 
 
     * ``RUNNING``
