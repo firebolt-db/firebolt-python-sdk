@@ -8,6 +8,13 @@ from firebolt.async_db import Connection, Cursor, DataError, OperationalError
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
 
+VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
+LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+CREATE_TEST_TABLE = (
+    "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
+)
+DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl"
+
 CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS ex_lineitem (
   l_orderkey              LONG,
   l_partkey               LONG,
