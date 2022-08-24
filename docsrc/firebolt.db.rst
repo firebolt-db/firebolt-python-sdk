@@ -13,6 +13,8 @@ Connect
    :undoc-members:
    :show-inheritance:
 
+.. _db-connection:
+
 Connection
 -----------------------------
 
@@ -24,6 +26,8 @@ Connection
    :inherited-members:
    :undoc-members:
    :show-inheritance:
+
+.. _db-cursor:
 
 Cursor
 -------------------------

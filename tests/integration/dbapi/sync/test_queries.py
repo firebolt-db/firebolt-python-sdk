@@ -1,12 +1,20 @@
 from datetime import date, datetime
 from decimal import Decimal
+from threading import Thread
 from typing import Any, List
 
 from pytest import mark, raises
 
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
-from firebolt.db import Connection, Cursor, DataError, OperationalError
+from firebolt.client.auth import UsernamePassword
+from firebolt.db import (
+    Connection,
+    Cursor,
+    DataError,
+    OperationalError,
+    connect,
+)
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"

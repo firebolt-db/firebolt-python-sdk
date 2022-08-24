@@ -4,6 +4,7 @@ Async DB
 
 The Async DB package enables connecting to a Firebolt database for `client-side` asynchronous queries. For running queries in `server-side` asynchronous mode see :ref:`server-side asynchronous query execution`.
 
+:: _async-connect
 Connect
 ------------------------------------
 
@@ -11,6 +12,8 @@ Connect
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. _async-connection:
 
 Connection
 ------------------------------------
@@ -25,6 +28,8 @@ Connection
    :undoc-members:
    :show-inheritance:
 
+.. _async-cursor:
+
 Cursor
 --------------------------------
 
@@ -34,12 +39,10 @@ Cursor
    :undoc-members:
    :show-inheritance:
 
-..
+Util
+------------------------------
 
-   Util
-   ------------------------------
-
-   .. automodule:: firebolt.async_db.util
-      :members:
-      :undoc-members:
-      :show-inheritance:
+.. automodule:: firebolt.async_db.util
+   :members:
+   :undoc-members:
+   :show-inheritance:

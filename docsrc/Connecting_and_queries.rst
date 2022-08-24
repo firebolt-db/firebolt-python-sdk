@@ -108,7 +108,7 @@ To get started, follow the steps below:
 	The ``cursor`` object can be used to send queries and commands to your Firebolt database and engine. See below for examples of functions using the ``cursor`` object.
 
 Server-side synchronous command and query examples
-============================
+==================================================
 
 This section includes Python examples of various SQL commands and queries.
 
@@ -116,7 +116,7 @@ This section includes Python examples of various SQL commands and queries.
 Inserting and selecting data
 -----------------------------
 
-.. _basic_execute_example:
+.. _ss_async_basic_execute_example:
 
 The example below uses ``cursor`` to create a new table called ``test_table``, insert rows into it, and then select the table's contents.
 
@@ -147,7 +147,7 @@ The engine attached to your specified database must be started before executing 
 
 .. note::
 
-	For reference documentation on ``cursor`` functions, see :ref:`Db.cursor`
+	For reference documentation on ``cursor`` functions, see :ref:`db-cursor`
 
 
 Fetching query results
@@ -267,7 +267,7 @@ Server-side asynchronous query execution allows you to run a long query in the b
 Running DDL commands
 -----------------------------
 
-.. _basic_execute_example:
+.. _ss_sync_basic_execute_example:
 
 Running queries server-side asynchronously is similar to running server-side asynchronous queries, but the ``execute()`` command receives an extra parameter, ``async_execution=True``. The example below uses ``cursor`` to create a new table called ``test_table``. ``execute(query, async_execution=True)`` will return a query ID, which can subsequently be used to check the query status.
 
