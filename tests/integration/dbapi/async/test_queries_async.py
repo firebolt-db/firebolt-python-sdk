@@ -10,6 +10,10 @@ from firebolt.async_db.cursor import QueryStatus
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+CREATE_TEST_TABLE = (
+    "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
+)
+DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl"
 
 CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS ex_lineitem (
   l_orderkey              LONG,
@@ -427,9 +431,7 @@ async def test_server_side_async_execution_cancel(connection: Connection) -> Non
     """Test cancel."""
     with connection.cursor() as c:
         try:
-            await c.execute(
-                "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
-            )
+            await c.execute(CREATE_TEST_TABLE)
             query_id = await c.execute(
                 LONG_INSERT,
                 async_execution=True,
@@ -443,7 +445,7 @@ async def test_server_side_async_execution_cancel(connection: Connection) -> Non
                 final_status=QueryStatus.CANCELED_EXECUTION,
             )
         finally:
-            await c.execute("DROP TABLE IF EXISTS test_tbl")
+            await c.execute(DROP_TEST_TABLE)
 
 
 async def test_server_side_async_execution_get_status(connection: Connection) -> None:
@@ -453,9 +455,7 @@ async def test_server_side_async_execution_get_status(connection: Connection) ->
     """
     with connection.cursor() as c:
         try:
-            await c.execute(
-                "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
-            )
+            await c.execute(CREATE_TEST_TABLE)
             # A long insert so we can check for STARTED_EXECUTION.
             query_id = await c.execute(
                 LONG_INSERT,
@@ -482,4 +482,4 @@ async def test_server_side_async_execution_get_status(connection: Connection) ->
             )
 
         finally:
-            await c.execute("DROP TABLE IF EXISTS test_tbl")
+            await c.execute(DROP_TEST_TABLE)

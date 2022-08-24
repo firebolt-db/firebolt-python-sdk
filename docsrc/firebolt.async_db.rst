@@ -2,7 +2,9 @@
 Async DB
 ==========================
 
-The Async DB package enables connecting to a Firebolt database for `client-side` asynchronous queries. For running queries in `server-side` asynchronous mode see :ref:`server-side asynchronous query execution`.
+The Async DB package enables asynchronous API calls to a Firebolt database, allowing
+client-side processes to continue to run while waiting for API responses. For executing
+queries asynchronously `server-side` see :ref:`server-side asynchronous query execution`.
 
 :: _async-connect
 Connect
