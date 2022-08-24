@@ -269,7 +269,7 @@ Running DDL commands
 
 .. _basic_execute_example:
 
-Running queries server-side asynchronously is similar to running server-side asynchronous queries, but the ``execute()`` command receives an extra parameter, ``async_execution=True``. The example below uses ``cursor`` to create a new table called ``test_table``. ``execute(query, async_execution=True)`` will return a query ID, which can subsequently be used to check the query status.
+Running queries server-side asynchronously is similar to running server-side synchronous queries, but the ``execute()`` command receives an extra parameter, ``async_execution=True``. The example below uses ``cursor`` to create a new table called ``test_table``. ``execute(query, async_execution=True)`` will return a query ID, which can subsequently be used to check the query status.
 
 ::
 
@@ -296,7 +296,7 @@ To check the status of a query, send the query ID to ```get_status()``` to recei
     * ``EXECUTION_ERROR``
 
 
-Once the status of the table creation is ``ENDED_SUCCESSFULLY`` created, data can be inserted into it:
+Once the status of the table creation is ``ENDED_SUCCESSFULLY``, data can be inserted into it:
 
 ::
 
