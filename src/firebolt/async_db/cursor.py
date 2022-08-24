@@ -348,7 +348,7 @@ class BaseCursor:
                     JSON_OUTPUT_FORMAT will be used.
             path (str): endpoint suffix, for example "cancel" or "status"
             use_set_parameters: Optional[bool]: Some queries will fail if additional
-                set parameters are sent. Setting this to False will cause
+                set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
         """
         if use_set_parameters:
