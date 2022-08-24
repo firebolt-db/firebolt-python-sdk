@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import socket
 from json import JSONDecodeError
-from time import time
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Type
 
@@ -60,20 +59,16 @@ async def _resolve_engine_url(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
     ) as client:
         try:
-            start = time()
             account_id = await client.account_id
             url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
             response = await client.get(
                 url=url,
                 params={"engine_name": engine_name},
             )
-            print(f"Engine id retrieval time:  {time()-start}")
             response.raise_for_status()
-            start = time()
             engine_id = response.json()["engine_id"]["engine_id"]
             url = ACCOUNT_ENGINE_URL.format(account_id=account_id, engine_id=engine_id)
             response = await client.get(url=url)
-            print(f"Engine url retrieval time: {time()-start}")
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
         except HTTPStatusError as e:
@@ -81,7 +76,7 @@ async def _resolve_engine_url(
             if e.response.status_code != 404:
                 raise InterfaceError(
                     f"Error {e.__class__.__name__}: Unable to retrieve engine "
-                    f"endpoint. \nTimeout: {time()-start} seconds."
+                    f"endpoint {url}."
                 )
             # Once this is point is reached we've already authenticated with
             # the backend so it's safe to assume the cause of the error is
@@ -89,8 +84,8 @@ async def _resolve_engine_url(
             raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist.")
         except (JSONDecodeError, RequestError, RuntimeError, HTTPStatusError) as e:
             raise InterfaceError(
-                f"Error {e.__class__.__name__}: Unable to retrieve engine endpoint. "
-                f"\nTimeout: {time()-start} seconds."
+                f"Error {e.__class__.__name__}: "
+                f"Unable to retrieve engine endpoint {url}."
             )
 
 
