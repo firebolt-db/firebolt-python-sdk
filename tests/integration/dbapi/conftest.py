@@ -11,6 +11,13 @@ from firebolt.db import ARRAY, DATETIME64, DECIMAL
 
 LOGGER = getLogger(__name__)
 
+VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
+LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+CREATE_TEST_TABLE = (
+    "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
+)
+DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl"
+
 
 @fixture
 def all_types_query() -> str:
