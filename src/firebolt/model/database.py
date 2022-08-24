@@ -164,3 +164,16 @@ class Database(FireboltBaseModel):
         return Database.parse_obj_with_service(
             response.json()["database"], self._service
         )
+
+    def get_default_engine(self) -> Optional[Engine]:
+        """
+        Returns: default engine of the database, or None if default engine is missing
+        """
+        rm = self._service.resource_manager
+        default_engines = [
+            rm.engines.get(binding.engine_id)
+            for binding in rm.bindings.get_many(database_id=self.database_id)
+            if binding.is_default_engine
+        ]
+
+        return None if len(default_engines) == 0 else default_engines[0]
