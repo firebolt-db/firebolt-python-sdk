@@ -15,7 +15,7 @@ Prerequisites
 ========================
 
 * Python version 3.7 or later along with the pip package installer. For more information,
-see the `Python <https://www.python.org/downloads/>`_ web page.
+  see the `Python <https://www.python.org/downloads/>`_ web page.
 
 * A Firebolt account and login credentials.
 

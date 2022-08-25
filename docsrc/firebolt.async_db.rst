@@ -1,21 +1,16 @@
 ==========================
-Async DB
+Async db
 ==========================
 
-The Async DB package enables asynchronous API calls to a Firebolt database, allowing
+The async_db package enables asynchronous API calls to a Firebolt database, allowing
 client-side processes to continue to run while waiting for API responses. For executing
-queries asynchronously `server-side` see :ref:`server-side asynchronous query execution`.
+queries asynchronously `server-side` see
+:ref:`connecting_and_queries:server-side asynchronous query execution`.
 
-:: _async-connect
-Connect
+connect
 ------------------------------------
 
-.. automodule:: firebolt.async_db.connect
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. _async-connection:
+.. autofunction:: firebolt.async_db.connection.connect
 
 Connection
 ------------------------------------
@@ -26,11 +21,9 @@ Connection
 .. automodule:: firebolt.async_db.connection
    :members:
    :inherited-members:
-   :exclude-members: BaseConnection, async_connect_factory, OverriddenHttpBackend
+   :exclude-members: BaseConnection, async_connect_factory, OverriddenHttpBackend, connect
    :undoc-members:
    :show-inheritance:
-
-.. _async-cursor:
 
 Cursor
 --------------------------------

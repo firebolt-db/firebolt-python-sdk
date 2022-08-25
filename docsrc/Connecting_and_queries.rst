@@ -119,7 +119,7 @@ To get started, follow the steps below:
 	database and engine. See below for examples of functions using the ``cursor`` object.
 
 Server-side synchronous command and query examples
-============================
+==================================================
 
 This section includes Python examples of various SQL commands and queries.
 
@@ -133,7 +133,7 @@ The example below uses ``cursor`` to create a new table called ``test_table``, i
 rows into it, and then select the table's contents.
 
 The engine attached to your specified database must be started before executing any
-queries. For help, see :ref:`starting an engine`.
+queries. For help, see :ref:`managing_resources:starting an engine`.
 
 ::
 
@@ -162,14 +162,15 @@ queries. For help, see :ref:`starting an engine`.
 
 .. note::
 
-	For reference documentation on ``cursor`` functions, see :ref:`Db.cursor`
+	For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
 
 
 Fetching query results
 -----------------------
 
 After running a query, you can fetch the results using a ``cursor`` object. The examples
-below use the data queried from ``test_table`` created in the :ref:`Inserting and selecting data`.
+below use the data queried from ``test_table`` created in the
+:ref:`connecting_and_queries:Inserting and selecting data`.
 
 .. _fetch_example:
 
@@ -291,7 +292,7 @@ SQL statements in the Firebolt UI.
 Server-side asynchronous query execution
 ==========================================
 
-In addition to :ref:`asynchronous API calls <Async DB>`, which allow `client-side`
+In addition to :ref:`asynchronous API calls <firebolt.async_db:async db>`, which allow `client-side`
 execution to continue while waiting for API responses, the Python SDK provides `server-side`
 asynchronous query execution. When a query is executed asynchronously the only response
 from the server is a query ID. The status of the query can then be retrieved by polling
@@ -300,13 +301,13 @@ closed while the query continues to run. And entire service, such as AWS Lamdba,
 potentially even be spun down an entire while a long-running database job is still underway.
 
 Note, however, that it is not possible to retrieve the results of a server-side asynchronous
-query, so these queries are best used for running DMLs and DDLs and ``SELECT``s should be used
+query, so these queries are best used for running DMLs and DDLs and ``SELECT``\ s should be used
 only for warming the cache.
 
 Executing asynchronous DDL commands
 ------------------------------------
 
-.. _basic_execute_example:
+.. _ddl_execution_example:
 
 Executing queries server-side asynchronously is similar to executing server-side synchronous
 queries, but the ``execute()`` command receives an extra parameter, ``async_execution=True``.

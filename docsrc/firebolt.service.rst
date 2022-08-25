@@ -59,7 +59,7 @@ Manager
    :undoc-members:
    :show-inheritance:
 
-Service.provider
+provider
 --------------------------------
 
 .. automodule:: firebolt.service.provider
