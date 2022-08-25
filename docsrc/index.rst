@@ -7,13 +7,15 @@
 **Firebolt-python-sdk**
 ########################
 
-The Firebolt Python SDK enables connecting to Firebolt, managing Firebolt resources and executing queries using a library of Python classes and functions.
+The Firebolt Python SDK enables connecting to Firebolt, managing Firebolt resources and
+executing queries using a library of Python classes and functions.
 
 ========================
 Prerequisites
 ========================
 
-* Python version 3.7 or later along with the pip package installer. For more information, see the `Python <https://www.python.org/downloads/>`_ web page.
+* Python version 3.7 or later along with the pip package installer. For more information,
+see the `Python <https://www.python.org/downloads/>`_ web page.
 
 * A Firebolt account and login credentials.
 
@@ -29,7 +31,10 @@ Use pip to install the Firebolt Python SDK from the command line as shown in the
 Optional features
 ^^^^^^^^^^^^^^^^^^^
 
-By default, the Firebolt Python SDK uses the ``datetime`` module to parse date and datetime values. For large operations involving date and datetime values, the Python SDK can achieve faster results by using the `ciso8601 <https://pypi.org/project/ciso8601/>`_ package, however this can cause installation issues in some cases.
+By default, the Firebolt Python SDK uses the ``datetime`` module to parse date and datetime
+values. For large operations involving date and datetime values, the Python SDK can achieve
+faster results by using the `ciso8601 <https://pypi.org/project/ciso8601/>`_ package,
+however this can cause installation issues in some cases.
 
 To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install "firebolt-sdk[ciso8601]"``.
 
@@ -37,18 +42,23 @@ To install firebolt-python-sdk with ``ciso8601`` support, run ``pip install "fir
 Release notes
 ^^^^^^^^^^^^^^
 
-For information about changes in the latest version of the Firebolt Python SDK, see the `release notes <https://github.com/firebolt-db/firebolt-python-sdk/releases>`_
+For information about changes in the latest version of the Firebolt Python SDK, see the
+`release notes <https://github.com/firebolt-db/firebolt-python-sdk/releases>`_
 
 
 Contributing
 ^^^^^^^^^^^^^^
 
-For procedures and requirements for contributing to this SDK, see the `contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_ page on Github.
+For procedures and requirements for contributing to this SDK, see the
+`contributing <https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD>`_
+page on Github.
 
 License
 ^^^^^^^^
 
-The Firebolt DB API is licensed under the `Apache License Version 2.0 <https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE>`_ software license.
+The Firebolt DB API is licensed under the
+`Apache License Version 2.0 <https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE>`_
+software license.
 
 .. note::
 
