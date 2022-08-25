@@ -268,7 +268,7 @@ asynchronous query execution. When a query is executed asynchronously the only r
 from the server is a query ID. The status of the query can then be retrieved by polling
 the server at a later point. This frees the connection to do other queries or even be
 closed while the query continues to run. And entire service, such as AWS Lamdba, could
-potentially even be spun down an entire while a long-running database job is still underway.
+potentially even be spun down while a long-running database job is still underway.
 
 Note, however, that it is not possible to retrieve the results of a server-side asynchronous
 query, so these queries are best used for running DMLs and DDLs and ``SELECT``s should be used
