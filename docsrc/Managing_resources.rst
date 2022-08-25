@@ -59,7 +59,7 @@ To get started, follow the steps below:
 				    password="your_password",
 				    server="api.app.firebolt.io"
 				    default_region="your_region"
-			    )
+				)
 
 		* Use a ``.env`` file located in your root directory containing the following parameters:
 
