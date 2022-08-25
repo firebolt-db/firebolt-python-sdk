@@ -55,11 +55,11 @@ To get started, follow the steps below:
 			::
 
 				settings = Settings(
-					user="your_username",
-					password="your_password",
-					server="api.app.firebolt.io"
-					default_region="your_region"
-					)
+				    user="your_username",
+				    password="your_password",
+				    server="api.app.firebolt.io"
+				    default_region="your_region"
+			    )
 
 		* Use a ``.env`` file located in your root directory containing the following parameters:
 
@@ -130,7 +130,7 @@ List out the names of all databases under your account by using the ``get_many``
 			all_dbs = rm.databases.get_many()
 			all_db_names = [d.name for d in all_dbs]
 			for db in db_names:
-				print(db)
+			    print(db)
 
 	.. note::
 
@@ -255,7 +255,7 @@ List out the names of all engines under your account by using the ``get_many`` f
 			all_engines = rm.engines.get_many()
 			all_engine_names = [e.name for e in all_engines]
 			for name in all_engine_names:
-				print(name)
+			    print(name)
 
 
 	.. note::
@@ -294,7 +294,8 @@ it can run SQL commands or queries.
 
 		engine = rm.engines.get_by_name(name="engine_name")
 		engine.attach_to_database(
-			database=rm.databases.get_by_name(name="database_name"))
+		    database=rm.databases.get_by_name(name="database_name")
+		)
 
 
 
