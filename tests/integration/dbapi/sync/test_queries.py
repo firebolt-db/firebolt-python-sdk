@@ -430,10 +430,8 @@ def test_server_side_async_execution_cancel(
 ) -> None:
     """Test cancel."""
     c = create_drop_test_table_setup_teardown
-    query_id = c.execute(
-        LONG_INSERT,
-        async_execution=True,
-    )
+
+    query_id = c.execute(LONG_INSERT, async_execution=True)
     # Cancel, then check that status is cancelled.
     c.cancel(query_id)
     status_loop(

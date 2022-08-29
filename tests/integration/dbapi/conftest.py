@@ -11,28 +11,62 @@ from firebolt.db import ARRAY, DATETIME64, DECIMAL, Connection
 
 LOGGER = getLogger(__name__)
 
-VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
+VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 14000))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+VALS_TO_INSERT_2 = ",".join(
+    [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 14000))]
+)
+LONG_INSERT_2 = f"INSERT INTO test_tbl2 VALUES {VALS_TO_INSERT_2}"
+LONG_INSERT_3 = f"INSERT INTO test_tbl3 VALUES {VALS_TO_INSERT_2}"
+
 CREATE_TEST_TABLE = (
     "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
 )
-DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl"
+CREATE_TEST_TABLE_2 = (
+    "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl2 "
+    "(id int, tst_tbl_id int, model string)"
+)
+CREATE_TEST_TABLE_3 = (
+    "CREATE DIMENSION TABLE TEST_TABLE_3 AS ("
+    "WITH temp1 AS (SELECT * FROM test_tbl), "
+    "temp2 AS (SELECT tst_tbl_id, model FROM test_tbl2 WHERE SUBSTR(test_tbl2.model, 1, 1) = '4') "
+    "SELECT * FROM temp1 JOIN temp2 ON temp2.tst_tbl_id = temp1.id)"
+)
+DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl CASCADE"
+DROP_TEST_TABLE_2 = "DROP TABLE IF EXISTS test_tbl2 CASCADE"
+DROP_TEST_TABLE_3 = "DROP TABLE IF EXISTS test_tbl3 CASCADE"
 
 
 @fixture
 def create_drop_test_table_setup_teardown(connection: Connection) -> None:
     with connection.cursor() as c:
         c.execute(CREATE_TEST_TABLE)
+        c.execute(CREATE_TEST_TABLE_2)
+        # c.execute(CREATE_TEST_TABLE_3)
+        c.execute(LONG_INSERT)
+        c.execute(LONG_INSERT_2)
+        # c.execute(CREATE_TEST_TABLE_3)
         yield c
         c.execute(DROP_TEST_TABLE)
+        c.execute(DROP_TEST_TABLE_2)
+        c.execute(DROP_TEST_TABLE_3)
 
 
 @fixture
-async def create_drop_test_table_setup_teardown_async(connection: Connection) -> None:
+async def create_server_side_test_table_setup_teardown_async(
+    connection: Connection,
+) -> None:
     with connection.cursor() as c:
         await c.execute(CREATE_TEST_TABLE)
+        await c.execute(CREATE_TEST_TABLE_2)
+        # await c.execute(CREATE_TEST_TABLE_3)
+        await c.execute(LONG_INSERT)
+        await c.execute(LONG_INSERT_2)
+        # await c.execute(LONG_INSERT_3)
         yield c
         await c.execute(DROP_TEST_TABLE)
+        await c.execute(DROP_TEST_TABLE_2)
+        # await c.execute(DROP_TEST_TABLE_3)
 
 
 @fixture
