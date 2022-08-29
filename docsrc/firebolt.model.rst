@@ -4,6 +4,8 @@ Model
 
 The model package contains various classes and functions for managing Firebolt engines and databases.
 
+.. _model-database:
+
 Database
 ------------------------------
 
@@ -12,6 +14,8 @@ Database
    :exclude-members: DatabaseKey, FieldMask
    :undoc-members:
    :show-inheritance:
+
+.. _model-engine:
 
 Engine
 ----------------------------

@@ -8,6 +8,13 @@ from firebolt.async_db import Connection, Cursor, DataError, OperationalError
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
 
+VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
+LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+CREATE_TEST_TABLE = (
+    "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
+)
+DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl"
+
 CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS ex_lineitem (
   l_orderkey              LONG,
   l_partkey               LONG,
@@ -420,59 +427,52 @@ async def test_server_side_async_execution_query(connection: Connection) -> None
     ), "Invalid query id was returned from server-side async query."
 
 
-async def test_server_side_async_execution_cancel(connection: Connection) -> None:
+async def test_server_side_async_execution_cancel(
+    create_drop_test_table_setup_teardown_async,
+) -> None:
     """Test cancel."""
-    with connection.cursor() as c:
-        try:
-            await c.execute(CREATE_TEST_TABLE)
-            query_id = await c.execute(
-                LONG_INSERT,
-                async_execution=True,
-            )
-            # Cancel, then check that status is cancelled.
-            await c.cancel(query_id)
-            await status_loop(
-                query_id,
-                "cancel",
-                c,
-                final_status=QueryStatus.CANCELED_EXECUTION,
-            )
-        finally:
-            await c.execute(DROP_TEST_TABLE)
+    c = create_drop_test_table_setup_teardown_async
+    query_id = await c.execute(
+        LONG_INSERT,
+        async_execution=True,
+    )
+    # Cancel, then check that status is cancelled.
+    await c.cancel(query_id)
+    await status_loop(
+        query_id,
+        "cancel",
+        c,
+        final_status=QueryStatus.CANCELED_EXECUTION,
+    )
 
 
-async def test_server_side_async_execution_get_status(connection: Connection) -> None:
+async def test_server_side_async_execution_get_status(
+    create_drop_test_table_setup_teardown_async,
+) -> None:
     """
     Test get_status(). Test for three ending conditions: PARSE_ERROR,
     STARTED_EXECUTION, ENDED_EXECUTION.
     """
-    with connection.cursor() as c:
-        try:
-            await c.execute(CREATE_TEST_TABLE)
-            # A long insert so we can check for STARTED_EXECUTION.
-            query_id = await c.execute(
-                LONG_INSERT,
-                async_execution=True,
-            )
-            await status_loop(
-                query_id, "get status", c, final_status=QueryStatus.STARTED_EXECUTION
-            )
-            # Now a check for ENDED_SUCCESSFULLY status of last query.
-            await status_loop(
-                query_id,
-                "get status",
-                c,
-                start_status=QueryStatus.STARTED_EXECUTION,
-                final_status=QueryStatus.ENDED_SUCCESSFULLY,
-            )
-            # Now, check for PARSE_ERROR. '1' will fail, as id is int.
-            query_id = await c.execute(
-                """INSERT INTO test_tbl ('1', 'a')""",
-                async_execution=True,
-            )
-            await status_loop(
-                query_id, "get status", c, final_status=QueryStatus.PARSE_ERROR
-            )
-
-        finally:
-            await c.execute(DROP_TEST_TABLE)
+    c = create_drop_test_table_setup_teardown_async
+    # A long insert so we can check for STARTED_EXECUTION.
+    query_id = await c.execute(
+        LONG_INSERT,
+        async_execution=True,
+    )
+    await status_loop(
+        query_id, "get status", c, final_status=QueryStatus.STARTED_EXECUTION
+    )
+    # Now a check for ENDED_SUCCESSFULLY status of last query.
+    await status_loop(
+        query_id,
+        "get status",
+        c,
+        start_status=QueryStatus.STARTED_EXECUTION,
+        final_status=QueryStatus.ENDED_SUCCESSFULLY,
+    )
+    # Now, check for PARSE_ERROR. '1' will fail, as id is int.
+    query_id = await c.execute(
+        """INSERT INTO test_tbl ('1', 'a')""",
+        async_execution=True,
+    )
+    await status_loop(query_id, "get status", c, final_status=QueryStatus.PARSE_ERROR)

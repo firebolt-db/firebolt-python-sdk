@@ -16,6 +16,8 @@ The service package enables launching and cataloging Firebolt engines and databa
    :undoc-members:
    :show-inheritance:
 
+.. _service-database:
+
 Database
 --------------------------------
 
@@ -23,6 +25,8 @@ Database
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. _service-engine:
 
 Engine
 ------------------------------
@@ -55,7 +59,7 @@ Manager
    :undoc-members:
    :show-inheritance:
 
-Service.provider
+provider
 --------------------------------
 
 .. automodule:: firebolt.service.provider
