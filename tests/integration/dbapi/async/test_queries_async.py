@@ -452,7 +452,11 @@ async def test_server_side_async_execution_cancel(
 
 
 @mark.skip(
-    reason="Can't get consistently slow queries so fails significant portion of time. get_status() always returns a QueryStatus object, so this assertion will always pass. Error condition of invalid status is caught in get_status()."
+    reason=(
+        "Can't get consistently slow queries so fails significant portion of time. "
+        "get_status() always returns a QueryStatus object, so this assertion will "
+        "always pass. Error condition of invalid status is caught in get_status()."
+    )
 )
 async def test_server_side_async_execution_get_status(
     create_server_side_test_table_setup_teardown_async,
