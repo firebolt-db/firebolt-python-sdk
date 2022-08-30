@@ -187,7 +187,7 @@ class Engine(FireboltBaseModel):
         """Get a connection to the attached database for running queries.
 
         Returns:
-            Connection: engine connection instance
+            firebolt.db.connection.Connection: engine connection instance
 
         """
         return connect(

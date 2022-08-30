@@ -362,7 +362,7 @@ class BaseConnection:
 
     @property
     def closed(self) -> bool:
-        """`True if connection is closed; False otherwise."""
+        """`True` if connection is closed; `False` otherwise."""
         return self._is_closed
 
     def _remove_cursor(self, cursor: Cursor) -> None:

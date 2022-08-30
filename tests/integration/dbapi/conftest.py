@@ -7,16 +7,48 @@ from pytest import fixture
 
 from firebolt.async_db._types import ColType
 from firebolt.async_db.cursor import Column
-from firebolt.db import ARRAY, DATETIME64, DECIMAL
+from firebolt.db import ARRAY, DATETIME64, DECIMAL, Connection
 
 LOGGER = getLogger(__name__)
 
-VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
-LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
 CREATE_TEST_TABLE = (
     "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
 )
-DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl"
+DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl CASCADE"
+
+
+@fixture
+def create_drop_test_table_setup_teardown(connection: Connection) -> None:
+    with connection.cursor() as c:
+        c.execute(CREATE_TEST_TABLE)
+        yield c
+        c.execute(DROP_TEST_TABLE)
+
+
+@fixture
+async def create_server_side_test_table_setup_teardown_async(
+    connection: Connection,
+) -> None:
+    with connection.cursor() as c:
+        await c.execute(CREATE_TEST_TABLE)
+        yield c
+        await c.execute(DROP_TEST_TABLE)
+
+
+@fixture
+def create_drop_test_table_setup_teardown(connection: Connection) -> None:
+    with connection.cursor() as c:
+        c.execute(CREATE_TEST_TABLE)
+        yield c
+        c.execute(DROP_TEST_TABLE)
+
+
+@fixture
+async def create_drop_test_table_setup_teardown_async(connection: Connection) -> None:
+    with connection.cursor() as c:
+        await c.execute(CREATE_TEST_TABLE)
+        yield c
+        await c.execute(DROP_TEST_TABLE)
 
 
 @fixture
