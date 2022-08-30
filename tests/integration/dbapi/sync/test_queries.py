@@ -433,7 +433,7 @@ def test_server_side_async_execution_query(connection: Connection) -> None:
 async def test_server_side_async_execution_cancel(
     create_server_side_test_table_setup_teardown,
 ) -> None:
-    """Test cancel."""
+    """Test cancel()."""
     c = create_server_side_test_table_setup_teardown
     # Cancel, then check that status is cancelled.
     c.cancel(query_id)
@@ -456,11 +456,7 @@ async def test_server_side_async_execution_cancel(
 async def test_server_side_async_execution_get_status(
     create_server_side_test_table_setup_teardown,
 ) -> None:
-    """
-    Test get_status(). Test for three ending conditions: Simply test to see
-    that a StatusQuery object is returned. Queries are succeeding too quickly
-    to be able to check for specific status states.
-    """
+    """Test get_status()."""
     c = create_server_side_test_table_setup_teardown
     query_id = c.execute(LONG_INSERT, async_execution=True)
     status = c.get_status(query_id)

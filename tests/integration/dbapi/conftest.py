@@ -36,6 +36,22 @@ async def create_server_side_test_table_setup_teardown_async(
 
 
 @fixture
+def create_drop_test_table_setup_teardown(connection: Connection) -> None:
+    with connection.cursor() as c:
+        c.execute(CREATE_TEST_TABLE)
+        yield c
+        c.execute(DROP_TEST_TABLE)
+
+
+@fixture
+async def create_drop_test_table_setup_teardown_async(connection: Connection) -> None:
+    with connection.cursor() as c:
+        await c.execute(CREATE_TEST_TABLE)
+        yield c
+        await c.execute(DROP_TEST_TABLE)
+
+
+@fixture
 def all_types_query() -> str:
     return (
         "select 1 as uint8, "
