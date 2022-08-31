@@ -60,7 +60,6 @@ async def _resolve_engine_url(
     ) as client:
         account_id = await client.account_id
         url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-        print(url)
         try:
             response = await client.get(
                 url=url,
@@ -69,7 +68,6 @@ async def _resolve_engine_url(
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
             url = ACCOUNT_ENGINE_URL.format(account_id=account_id, engine_id=engine_id)
-            print(url)
             response = await client.get(url=url)
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
