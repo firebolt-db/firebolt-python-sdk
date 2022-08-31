@@ -664,7 +664,6 @@ class BaseCursor:
         # Remember that query_id might be empty.
         if resp_json["status"] == "":
             return QueryStatus.NOT_READY
-        print(resp_json)
         return QueryStatus[resp_json["status"]]
 
     # Context manager support
