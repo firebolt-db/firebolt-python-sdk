@@ -34,10 +34,8 @@ from firebolt.utils.urls import (
     AUTH_URL,
     DATABASES_URL,
     ENGINES_URL,
-    PROVIDERS_URL,
 )
 from tests.unit.db_conftest import *  # noqa
-from tests.unit.util import list_to_paginated_response
 
 
 # Register nofakefs mark
@@ -197,25 +195,46 @@ def account_id_callback(
 
 @fixture
 def engine_id() -> str:
-    return "engine_id"
+    return "mock_engine_id"
 
 
 @fixture
-def get_engine_url(settings: Settings, account_id: str, engine_id: str) -> str:
+def engine_endpoint() -> str:
+    return "mock_engine_endpoint"
+
+
+@fixture
+def engine_name() -> str:
+    return "mock_engine_name"
+
+
+@fixture
+def get_engine_name_by_id_url(
+    settings: Settings, account_id: str, engine_id: str
+) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
 @fixture
-def get_engine_callback(
-    get_engine_url: str, engine_id: str, settings: Settings
+def get_engine_url_by_id_url(
+    settings: Settings, account_id: str, engine_id: str
+) -> str:
+    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
+        account_id=account_id, engine_id=engine_id
+    )
+
+
+@fixture
+def get_engine_url_by_id_callback(
+    get_engine_url_by_id_url: str, engine_id: str, settings: Settings
 ) -> Callable:
     def do_mock(
         request: Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == get_engine_url
+        assert request.url == get_engine_url_by_id_url
         return Response(
             status_code=httpx.codes.OK,
             json={
@@ -235,26 +254,6 @@ def get_engine_callback(
                     "endpoint": f"https://{settings.server}",
                 }
             },
-        )
-
-    return do_mock
-
-
-@fixture
-def get_providers_url(settings: Settings, account_id: str, engine_id: str) -> str:
-    return f"https://{settings.server}{PROVIDERS_URL}"
-
-
-@fixture
-def get_providers_callback(get_providers_url: str, provider: Provider) -> Callable:
-    def do_mock(
-        request: Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == get_providers_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response([provider]),
         )
 
     return do_mock

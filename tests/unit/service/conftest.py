@@ -23,8 +23,8 @@ from firebolt.utils.urls import (
     ACCOUNT_DATABASE_URL,
     ACCOUNT_DATABASES_URL,
     ACCOUNT_ENGINE_URL,
-    ACCOUNT_ENGINES_URL,
     ACCOUNT_INSTANCE_TYPES_URL,
+    ACCOUNT_LIST_ENGINES_URL,
     PROVIDERS_URL,
     REGIONS_URL,
 )
@@ -261,7 +261,7 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
 
 @fixture
 def engine_url(settings: Settings, account_id) -> str:
-    return f"https://{settings.server}" + ACCOUNT_ENGINES_URL.format(
+    return f"https://{settings.server}" + ACCOUNT_LIST_ENGINES_URL.format(
         account_id=account_id
     )
 
