@@ -13,8 +13,6 @@ from firebolt.db.cursor import Cursor
 from firebolt.utils.exception import ConnectionClosedError
 from firebolt.utils.util import AsyncJobThread, async_to_sync
 
-DEFAULT_TIMEOUT_SECONDS: int = 5
-
 
 class Connection(AsyncBaseConnection):
     """

@@ -423,7 +423,7 @@ def test_server_side_async_execution_query(connection: Connection) -> None:
     with connection.cursor() as c:
         query_id = c.execute("SELECT 1", [], async_execution=True)
     assert (
-        type(query_id) is str and query_id
+        query_id and type(query_id) is str
     ), "Invalid query id was returned from server-side async query."
 
 
