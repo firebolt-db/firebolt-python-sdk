@@ -15,8 +15,10 @@ from firebolt.utils.exception import (
     AccountNotFoundError,
     ConfigurationError,
     ConnectionClosedError,
+    FireboltEngineError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
 
 
 async def test_closed_connection(connection: Connection) -> None:
@@ -143,11 +145,8 @@ async def test_connect_engine_name(
     account_id_url: Pattern,
     account_id_callback: Callable,
     engine_id: str,
-    engine_name: str,
-    get_engine_id_by_name_url: str,
-    get_engine_id_by_name_callback: Callable,
-    get_engine_url_url: str,
-    get_engine_url_callback: Callable,
+    get_engine_url_by_id_url: str,
+    get_engine_url_by_id_callback: Callable,
     python_query_data: List[List[ColType]],
     account_id: str,
 ):
@@ -165,39 +164,38 @@ async def test_connect_engine_name(
             pass
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
 
-    # bad_engine_name = settings.server.split(".")[0]
-    # # Mock engine id lookup error
-    # httpx_mock.add_response(
-    #     url=f"https://{settings.server}"
-    #     + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-    #     + f"?engine_name={bad_engine_name}",
-    #     status_code=codes.NOT_FOUND,
-    # )
+    engine_name = settings.server.split(".")[0]
 
-    # with raises(FireboltEngineError):
-    #     async with await connect(
-    #         database="db",
-    #         username="username",
-    #         password="password",
-    #         engine_name=engine_name,
-    #         account_name=settings.account_name,
-    #         api_endpoint=settings.server,
-    #     ):
-    #         pass
-
-    httpx_mock.add_callback(get_engine_url_callback, url=get_engine_url_url)
-    httpx_mock.add_callback(
-        get_engine_id_by_name_callback, url=get_engine_id_by_name_url
+    # Mock engine id lookup error
+    httpx_mock.add_response(
+        url=f"https://{settings.server}"
+        + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
+        + f"?engine_name={engine_name}",
+        status_code=codes.NOT_FOUND,
     )
-    # httpx_mock.add_callback(query_callback, url=query_url)
+
+    with raises(FireboltEngineError):
+        async with await connect(
+            database="db",
+            username="username",
+            password="password",
+            engine_name=engine_name,
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+        ):
+            pass
 
     # Mock engine id lookup by name
     httpx_mock.add_response(
-        url=f"https://{settings.server}" + get_engine_id_by_name_url,
+        url=f"https://{settings.server}"
+        + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
+        + f"?engine_name={engine_name}",
         status_code=codes.OK,
-        # json={"engine_id": {"engine_id": engine_id}},
+        json={"engine_id": {"engine_id": engine_id}},
     )
 
     async with await connect(
@@ -221,13 +219,8 @@ async def test_connect_default_engine(
     query_url: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
-    engine_id: str,
-    database_by_name_url: str,
-    database_by_name_callback: Callable,
-    database_id: str,
     engine_by_db_url: str,
     python_query_data: List[List[ColType]],
-    account_id: str,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
