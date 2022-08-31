@@ -13,7 +13,7 @@ from firebolt.utils.exception import FireboltError
 from firebolt.utils.urls import (
     ACCOUNT_ENGINE_ID_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
-    ACCOUNT_ENGINES_URL,
+    ACCOUNT_LIST_ENGINES_URL,
     ENGINES_BY_IDS_URL,
 )
 from firebolt.utils.util import prune_dict
@@ -88,7 +88,7 @@ class EngineService(BaseService):
             ).key.region_id
 
         response = self.client.get(
-            url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),
+            url=ACCOUNT_LIST_ENGINES_URL.format(account_id=self.account_id),
             params=prune_dict(
                 {
                     "page.first": 5000,  # FUTURE: pagination support w/ generator
@@ -210,7 +210,7 @@ class EngineService(BaseService):
         """
 
         response = self.client.post(
-            url=ACCOUNT_ENGINES_URL.format(account_id=self.account_id),
+            url=ACCOUNT_LIST_ENGINES_URL.format(account_id=self.account_id),
             headers={"Content-type": "application/json"},
             json=_EngineCreateRequest(
                 account_id=self.account_id,

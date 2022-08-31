@@ -198,37 +198,53 @@ def account_id_callback(
 
 @fixture
 def engine_id() -> str:
-    return "engine_id"
+    return "mock_engine_id"
 
 
 @fixture
 def engine_endpoint() -> str:
-    return "engine_endpoint"
+    return "mock_engine_endpoint"
 
 
 @fixture
-def get_engine_id_url(settings: Settings, account_id: str, engine_id: str) -> str:
+def engine_name() -> str:
+    return "mock_engine_name"
+
+
+@fixture
+def get_engine_name_by_id_url(
+    settings: Settings, account_id: str, engine_id: str
+) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
 @fixture
-def get_engine_url_url(settings: Settings, account_id: str, engine_id: str) -> str:
+def get_engine_id_by_name_url(
+    settings: Settings, account_id: str, engine_name: str
+) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(
+        account_id=account_id
+    )
+
+
+@fixture
+def get_engine_url_url(settings: Settings, account_id: str, engine_id: str) -> str:
+    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
 @fixture
-def get_engine_id_callback(
-    get_engine_id_url: str, engine_id: str, settings: Settings
+def get_engine_id_by_name_callback(
+    get_engine_id_by_name_url: str, engine_id: str, settings: Settings
 ) -> Callable:
     def do_mock(
         request: Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == get_engine_id_url
+        assert request.url == get_engine_id_by_name_url
         return Response(
             status_code=httpx.codes.OK,
             json={
@@ -262,7 +278,7 @@ def get_engine_url_callback(
         request: Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == get_engine_id_url
+        assert request.url == get_engine_id_by_name_url
         return Response(
             status_code=httpx.codes.OK,
             json={

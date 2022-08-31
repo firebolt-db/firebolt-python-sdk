@@ -58,9 +58,10 @@ async def _resolve_engine_url(
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
     ) as client:
+        account_id = await client.account_id
+        url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
+        print(url)
         try:
-            account_id = await client.account_id
-            url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
             response = await client.get(
                 url=url,
                 params={"engine_name": engine_name},
@@ -68,6 +69,7 @@ async def _resolve_engine_url(
             response.raise_for_status()
             engine_id = response.json()["engine_id"]["engine_id"]
             url = ACCOUNT_ENGINE_URL.format(account_id=account_id, engine_id=engine_id)
+            print(url)
             response = await client.get(url=url)
             response.raise_for_status()
             return response.json()["engine"]["endpoint"]
