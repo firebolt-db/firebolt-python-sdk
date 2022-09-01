@@ -28,6 +28,7 @@ from firebolt.utils.exception import (
 from firebolt.utils.urls import (
     ACCOUNT_BY_NAME_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
+    ACCOUNT_ENGINE_ID_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
     ACCOUNT_URL,
@@ -214,6 +215,15 @@ def get_engine_name_by_id_url(
 ) -> str:
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
+    )
+
+
+@fixture
+def get_engine_id_by_name_url(
+    settings: Settings, account_id: str, engine_name: str
+) -> str:
+    return f"https://{settings.server}" + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(
+        account_id=account_id
     )
 
 
