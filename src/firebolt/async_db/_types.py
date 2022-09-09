@@ -120,6 +120,9 @@ class DECIMAL:
     def __str__(self) -> str:
         return f"Decimal({self.precision}, {self.scale})"
 
+    def __hash__(self) -> int:
+        return hash(str(self))
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, DECIMAL):
             return NotImplemented
@@ -136,6 +139,9 @@ class DATETIME64:
 
     def __str__(self) -> str:
         return f"DateTime64({self.precision})"
+
+    def __hash__(self) -> int:
+        return hash(str(self))
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, DATETIME64):
