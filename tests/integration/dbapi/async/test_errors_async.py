@@ -1,5 +1,5 @@
 from httpx import ConnectError
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.async_db import Connection, connect
 from firebolt.utils.exception import (
@@ -119,6 +119,7 @@ async def test_engine_stopped(
             await connection.cursor().execute("show tables")
 
 
+@mark.skip(reason="Behaviour is different in prod vs dev")
 async def test_database_not_exists(
     engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
 ) -> None:
