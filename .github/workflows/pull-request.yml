@@ -12,4 +12,4 @@ jobs:
       - name: run
         run: |
           chmod +x dev_cli_linux_amd64
-          ( echo token; echo key; echo secret; echo "${{ secrets.TEMP_USERNAME }}"; echo "${{ secrets.TEMP_PASSWORD }}"; ) | ./dev_cli_linux_amd64 authenticate --debug
+          { echo "${{ secrets.TEMP_USERNAME }}"; echo "${{ secrets.TEMP_PASSWORD }}"; echo ; echo ; echo token; echo ghuser; echo ghpat; } | ./dev_cli_linux_amd64 authenticate --debug
