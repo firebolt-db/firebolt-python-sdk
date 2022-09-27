@@ -21,7 +21,7 @@ jobs:
           echo "expiry = \"2022-09-22T02:48:02+01:00\"" >> ~/.firebolt/dev-cli/dev.toml # making sure to keep it in the past
           echo "refresh_token = \"\"" >> ~/.firebolt/dev-cli/dev.toml
           
-          touch ~/.firebolt/dev-cli/config.toml
+          echo "" > ~/.firebolt/dev-cli/config.toml
       
       - name: run
         run: |
