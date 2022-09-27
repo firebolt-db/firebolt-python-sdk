@@ -6,6 +6,9 @@ jobs:
   check-title:
     runs-on: ubuntu-latest
     steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      
       - name: run
         run: |
           chmod +x dev_cli_linux_amd64
