@@ -9,7 +9,21 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
       
+      - name: Setup auth
+        run: |
+          mkdir -p ~/.firebolt/dev-cli/
+          echo "account_id = \"${{ secrets.TEMP_ACCOUNT_ID }}\"" > ~/.firebolt/dev-cli/dev.toml
+          echo "api_url = \"https://api.dev.firebolt.io\"" >> ~/.firebolt/dev-cli/dev.toml
+          echo "email = \"${{ secrets.TEMP_USERNAME }}\"" >> ~/.firebolt/dev-cli/dev.toml
+          echo "password = \"${{ secrets.TEMP_PASSWORD }}\"" >> ~/.firebolt/dev-cli/dev.toml
+          echo "\n[token]" >> ~/.firebolt/dev-cli/dev.toml
+          echo "access_token = \"dummy\"" >> ~/.firebolt/dev-cli/dev.toml
+          echo "expiry = \"2022-09-22T02:48:02+01:00\"" >> ~/.firebolt/dev-cli/dev.toml # making sure to keep it in the past
+          echo "refresh_token = \"\"" >> ~/.firebolt/dev-cli/dev.toml
+          
+          touch ~/.firebolt/dev-cli/config.toml
+      
       - name: run
         run: |
           chmod +x dev_cli_linux_amd64
-          { echo "${{ secrets.TEMP_USERNAME }}"; echo "\"${{ secrets.TEMP_PASSWORD }}\""; echo ; echo ; echo ; echo ; echo ; } | ./dev_cli_linux_amd64 authenticate
+          ./dev_cli_linux_amd64 drop petro_to_drop
