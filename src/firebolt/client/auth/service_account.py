@@ -12,26 +12,26 @@ from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import cached_property
 
 
-class UsernamePassword(Auth):
-    """Username/Password authentication class for Firebolt Database.
+class ServiceAccount(Auth):
+    """Service Account authentication class for Firebolt Database.
 
     Gets authentication token using
     provided credentials and updates it when it expires.
 
     Args:
-        username (str): Username
-        password (str): Password
+        id (str): Client ID
+        secret (str): Client secret
         use_token_cache (bool): True if token should be cached in filesystem;
             False otherwise
 
     Attributes:
-        username (str): Username
-        password (str): Password
+        id (str): Client ID
+        secret (str): Client secret
     """
 
     __slots__ = (
-        "username",
-        "password",
+        "id",
+        "secret",
         "_token",
         "_expires",
         "_use_token_cache",
@@ -42,22 +42,22 @@ class UsernamePassword(Auth):
 
     def __init__(
         self,
-        username: str,
-        password: str,
+        id: str,
+        secret: str,
         use_token_cache: bool = True,
     ):
-        self.username = username
-        self.password = password
+        self.id = id
+        self.secret = secret
         self._user_agent = get_user_agent_header()
         super().__init__(use_token_cache)
 
-    def copy(self) -> "UsernamePassword":
+    def copy(self) -> "ServiceAccount":
         """Make another auth object with same credentials.
 
         Returns:
-            UsernamePassword: Auth object
+            ServiceAccount: Auth object
         """
-        return UsernamePassword(self.username, self.password, self._use_token_cache)
+        return ServiceAccount(self.id, self.secret, self._use_token_cache)
 
     @cached_property
     def _token_storage(self) -> Optional[TokenSecureStorage]:
@@ -68,7 +68,7 @@ class UsernamePassword(Auth):
         Returns:
             TokenSecureStorage: Token filesystem cache storage
         """
-        return TokenSecureStorage(username=self.username, password=self.password)
+        return TokenSecureStorage(username=self.id, password=self.secret)
 
     def get_new_token_generator(self) -> Generator[Request, Response, None]:
         """Get new token using username and password.
@@ -86,10 +86,11 @@ class UsernamePassword(Auth):
                 # it to api_endpoint
                 AUTH_URL,
                 headers={
-                    "Content-Type": "application/json;charset=UTF-8",
+                    "Content-Type": "application/x-www-form-urlencoded",
                     "User-Agent": self._user_agent,
                 },
-                json={"username": self.username, "password": self.password},
+                content=f"client_id={self.id}&client_secret={self.secret}"
+                "&grant_type=client_credentials",
             )
             response.raise_for_status()
 
