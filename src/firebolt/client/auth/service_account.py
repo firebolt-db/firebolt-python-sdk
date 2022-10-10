@@ -7,7 +7,7 @@ from firebolt.client.auth.base import Auth
 from firebolt.client.constants import _REQUEST_ERRORS
 from firebolt.utils.exception import AuthenticationError
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.urls import AUTH_URL
+from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import cached_property
 
@@ -84,13 +84,15 @@ class ServiceAccount(Auth):
                 "POST",
                 # The full url is generated on client side by attaching
                 # it to api_endpoint
-                AUTH_URL,
+                AUTH_SERVICE_ACCOUNT_URL,
                 headers={
-                    "Content-Type": "application/x-www-form-urlencoded",
                     "User-Agent": self._user_agent,
                 },
-                content=f"client_id={self.id}&client_secret={self.secret}"
-                "&grant_type=client_credentials",
+                data={
+                    "client_id": self.id,
+                    "client_secret": self.secret,
+                    "grant_type": "client_credentials",
+                },
             )
             response.raise_for_status()
 
