@@ -1,18 +1,13 @@
-from time import time
-from typing import Generator, Optional
+from typing import Optional
 
-from httpx import Request, Response
-
-from firebolt.client.auth.base import Auth
-from firebolt.client.constants import _REQUEST_ERRORS
-from firebolt.utils.exception import AuthenticationError
+from firebolt.client.auth.base import AuthRequest
+from firebolt.client.auth.request_auth_base import _RequestBasedAuth
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
-from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import cached_property
 
 
-class ServiceAccount(Auth):
+class ServiceAccount(_RequestBasedAuth):
     """Service Account authentication class for Firebolt Database.
 
     Gets authentication token using
@@ -48,7 +43,6 @@ class ServiceAccount(Auth):
     ):
         self.id = id
         self.secret = secret
-        self._user_agent = get_user_agent_header()
         super().__init__(use_token_cache)
 
     def copy(self) -> "ServiceAccount":
@@ -70,7 +64,7 @@ class ServiceAccount(Auth):
         """
         return TokenSecureStorage(username=self.id, password=self.secret)
 
-    def get_new_token_generator(self) -> Generator[Request, Response, None]:
+    def _make_auth_request(self) -> AuthRequest:
         """Get new token using username and password.
 
         Yields:
@@ -79,42 +73,17 @@ class ServiceAccount(Auth):
         Raises:
             AuthenticationError: Error while authenticating with provided credentials
         """
-        try:
-            response = yield self.request_class(
-                "POST",
-                # The full url is generated on client side by attaching
-                # it to api_endpoint
-                AUTH_SERVICE_ACCOUNT_URL,
-                headers={
-                    "User-Agent": self._user_agent,
-                },
-                data={
-                    "client_id": self.id,
-                    "client_secret": self.secret,
-                    "grant_type": "client_credentials",
-                },
-            )
-            response.raise_for_status()
 
-            parsed = response.json()
-            self._check_response_error(parsed)
-
-            self._token = parsed["access_token"]
-            self._expires = int(time()) + int(parsed["expires_in"])
-
-        except _REQUEST_ERRORS as e:
-            raise AuthenticationError(repr(e)) from e
-
-    def _check_response_error(self, response: dict) -> None:
-        """Check if response data contains errors.
-
-        Args:
-            response (dict): Response data
-
-        Raises:
-            AuthenticationError: Were unable to authenticate
-        """
-        if "error" in response:
-            raise AuthenticationError(
-                response.get("message", "unknown server error"),
-            )
+        response = self.request_class(
+            "POST",
+            AUTH_SERVICE_ACCOUNT_URL,
+            headers={
+                "User-Agent": self._user_agent,
+            },
+            data={
+                "client_id": self.id,
+                "client_secret": self.secret,
+                "grant_type": "client_credentials",
+            },
+        )
+        return response
