@@ -41,7 +41,7 @@ async def test_credentials_invalidation(
             # Invalidate the token
             c._client.auth._token += "_"
             # Invalidate credentials
-            for cred in ("username", "password", "id", "secret"):
+            for cred in ("username", "password", "client_id", "client_secret"):
                 if hasattr(c._client.auth, cred):
                     setattr(c._client.auth, cred, "_")
 
