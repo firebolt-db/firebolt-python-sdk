@@ -28,16 +28,19 @@ def test_refresh_token(connection: Connection) -> None:
         assert c._client.auth.token != old, "Auth didn't update token on expiration"
 
 
-def test_credentials_invalidation(connection: Connection) -> None:
+@mark.parametrize("connection_fixture", ["connection", "service_account_connection"])
+def test_credentials_invalidation(connection_fixture: str, request) -> None:
     """Auth raises Authentication Error on credentials invalidation"""
-    with connection.cursor() as c:
+    with request.getfixturevalue(connection_fixture).cursor() as c:
         # Works fine
         c.execute("show tables")
 
         # Invalidate the token
         c._client.auth._token += "_"
-        c._client.auth.username += "_"
-        c._client.auth.password += "_"
+        # Invalidate credentials
+        for cred in ("username", "password", "id", "secret"):
+            if hasattr(c._client.auth, cred):
+                setattr(c._client.auth, cred, "_")
 
         with raises(AuthenticationError) as exc_info:
             c.execute("show tables")

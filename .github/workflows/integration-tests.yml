@@ -7,6 +7,10 @@ on:
         required: true
       FIREBOLT_PASSWORD:
         required: true
+      SERVICE_ID:
+        required: true
+      SERVICE_SECRET:
+        required: true
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -37,6 +41,8 @@ jobs:
         env:
           USER_NAME: ${{ secrets.FIREBOLT_USERNAME }}
           PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+          SERVICE_ID: ${{ secrets.SERVICE_ID }}
+          SERVICE_SECRET: ${{ secrets.SERVICE_SECRET }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           ENGINE_URL: ${{ steps.setup.outputs.engine_url }}

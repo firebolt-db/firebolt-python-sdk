@@ -17,6 +17,8 @@ USER_NAME_ENV = "USER_NAME"
 PASSWORD_ENV = "PASSWORD"
 ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 API_ENDPOINT_ENV = "API_ENDPOINT"
+SERVICE_ID_ENV = "SERVICE_ID"
+SERVICE_SECRET_ENV = "SERVICE_SECRET"
 
 
 def must_env(var_name: str) -> str:
@@ -78,3 +80,13 @@ def account_name() -> str:
 @fixture(scope="session")
 def api_endpoint() -> str:
     return must_env(API_ENDPOINT_ENV)
+
+
+@fixture(scope="session")
+def service_id() -> str:
+    return must_env(SERVICE_ID_ENV)
+
+
+@fixture(scope="session")
+def service_secret() -> str:
+    return must_env(SERVICE_SECRET_ENV)

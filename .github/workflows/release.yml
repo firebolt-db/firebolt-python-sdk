@@ -16,6 +16,8 @@ jobs:
     secrets:
       FIREBOLT_USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
       FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+      SERVICE_ID: ${{ secrets.SERVICE_ID }}
+      SERVICE_SECRET: ${{ secrets.SERVICE_SECRET }}
 
   publish:
     runs-on: ubuntu-latest
