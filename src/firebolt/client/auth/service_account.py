@@ -14,19 +14,19 @@ class ServiceAccount(_RequestBasedAuth):
     provided credentials and updates it when it expires.
 
     Args:
-        id (str): Client ID
-        secret (str): Client secret
+        client_id (str): Client ID
+        client_secret (str): Client secret
         use_token_cache (bool): True if token should be cached in filesystem;
             False otherwise
 
     Attributes:
-        id (str): Client ID
-        secret (str): Client secret
+        client_id (str): Client ID
+        client_secret (str): Client secret
     """
 
     __slots__ = (
-        "id",
-        "secret",
+        "client_id",
+        "client_secret",
         "_token",
         "_expires",
         "_use_token_cache",
@@ -37,12 +37,12 @@ class ServiceAccount(_RequestBasedAuth):
 
     def __init__(
         self,
-        id: str,
-        secret: str,
+        client_id: str,
+        client_secret: str,
         use_token_cache: bool = True,
     ):
-        self.id = id
-        self.secret = secret
+        self.client_id = client_id
+        self.client_secret = client_secret
         super().__init__(use_token_cache)
 
     def copy(self) -> "ServiceAccount":
@@ -51,7 +51,7 @@ class ServiceAccount(_RequestBasedAuth):
         Returns:
             ServiceAccount: Auth object
         """
-        return ServiceAccount(self.id, self.secret, self._use_token_cache)
+        return ServiceAccount(self.client_id, self.client_secret, self._use_token_cache)
 
     @cached_property
     def _token_storage(self) -> Optional[TokenSecureStorage]:
@@ -62,7 +62,7 @@ class ServiceAccount(_RequestBasedAuth):
         Returns:
             TokenSecureStorage: Token filesystem cache storage
         """
-        return TokenSecureStorage(username=self.id, password=self.secret)
+        return TokenSecureStorage(username=self.client_id, password=self.client_secret)
 
     def _make_auth_request(self) -> AuthRequest:
         """Get new token using username and password.
@@ -81,8 +81,8 @@ class ServiceAccount(_RequestBasedAuth):
                 "User-Agent": self._user_agent,
             },
             data={
-                "client_id": self.id,
-                "client_secret": self.secret,
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
                 "grant_type": "client_credentials",
             },
         )
