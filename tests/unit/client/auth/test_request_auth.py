@@ -2,12 +2,31 @@ import typing
 
 import pytest
 from httpx import StreamError, codes
+from pytest import mark
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
-from firebolt.client.auth import UsernamePassword
+from firebolt.client.auth import Auth, ServiceAccount, UsernamePassword
 from firebolt.utils.exception import AuthenticationError
 from tests.unit.util import execute_generator_requests
+
+
+def test_auth_service_account(
+    httpx_mock: HTTPXMock,
+    mocker: MockerFixture,
+    check_service_credentials_callback: typing.Callable,
+    mock_service_id: str,
+    mock_service_secret: str,
+    test_token: str,
+):
+    """Auth can retrieve token and expiration values."""
+    httpx_mock.add_callback(check_service_credentials_callback)
+
+    mocker.patch("firebolt.client.auth.request_auth_base.time", return_value=0)
+    auth = ServiceAccount(mock_service_id, mock_service_secret)
+    execute_generator_requests(auth.get_new_token_generator())
+    assert auth.token == test_token, "invalid access token"
+    assert auth._expires == 2**32, "invalid expiration value"
 
 
 def test_auth_username_password(
@@ -21,17 +40,18 @@ def test_auth_username_password(
     """Auth can retrieve token and expiration values."""
     httpx_mock.add_callback(check_credentials_callback)
 
-    mocker.patch("firebolt.client.auth.username_password.time", return_value=0)
+    mocker.patch("firebolt.client.auth.request_auth_base.time", return_value=0)
     auth = UsernamePassword(test_username, test_password)
     execute_generator_requests(auth.get_new_token_generator())
     assert auth.token == test_token, "invalid access token"
     assert auth._expires == 2**32, "invalid expiration value"
 
 
-def test_auth_error_handling(httpx_mock: HTTPXMock):
+@mark.parametrize("auth_class", [UsernamePassword, ServiceAccount])
+def test_auth_error_handling(httpx_mock: HTTPXMock, auth_class: Auth):
     """Auth handles various errors properly."""
     for api_endpoint in ("https://host", "host"):
-        auth = UsernamePassword("user", "password", use_token_cache=False)
+        auth = auth_class("user", "password", use_token_cache=False)
 
         # Internal httpx error
         def http_error(*args, **kwargs):
