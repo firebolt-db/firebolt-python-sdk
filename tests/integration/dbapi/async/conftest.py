@@ -1,22 +1,22 @@
 from pytest_asyncio import fixture as async_fixture
 
 from firebolt.async_db import Connection, connect
-from firebolt.client.auth import ServiceAccount, UsernamePassword
+from firebolt.client.auth import ServiceAccount
 
 
 @async_fixture
 async def connection(
     engine_url: str,
     database_name: str,
-    username: str,
-    password: str,
+    service_id: str,
+    service_secret: str,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
     async with await connect(
         engine_url=engine_url,
         database=database_name,
-        auth=UsernamePassword(username, password),
+        auth=ServiceAccount(service_id, service_secret),
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
