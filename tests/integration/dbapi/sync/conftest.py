@@ -1,6 +1,6 @@
 from pytest import fixture
 
-from firebolt.client.auth import ServiceAccount
+from firebolt.client.auth import ServiceAccount, UsernamePassword
 from firebolt.db import Connection, connect
 
 
@@ -8,15 +8,15 @@ from firebolt.db import Connection, connect
 def connection(
     engine_url: str,
     database_name: str,
-    service_id: str,
-    service_secret: str,
+    username: str,
+    password: str,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
     connection = connect(
         engine_url=engine_url,
         database=database_name,
-        auth=ServiceAccount(service_id, service_secret),
+        auth=UsernamePassword(username, password),
         account_name=account_name,
         api_endpoint=api_endpoint,
     )
