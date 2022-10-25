@@ -2,9 +2,9 @@ from httpx import ConnectError
 from pytest import mark, raises
 
 from firebolt.async_db import Connection, connect
+from firebolt.client.auth import ServiceAccount, UsernamePassword
 from firebolt.utils.exception import (
     AccountNotFoundError,
-    AuthenticationError,
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltEngineError,
@@ -12,30 +12,10 @@ from firebolt.utils.exception import (
 )
 
 
-async def test_invalid_credentials(
-    engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
-) -> None:
-    """Connection properly reacts to invalid credentials error."""
-    async with await connect(
-        engine_url=engine_url,
-        database=database_name,
-        username=username + "_",
-        password=password + "_",
-        api_endpoint=api_endpoint,
-    ) as connection:
-        with raises(AuthenticationError) as exc_info:
-            await connection.cursor().execute("show tables")
-
-        assert str(exc_info.value).startswith(
-            "Failed to authenticate"
-        ), "Invalid authentication error message."
-
-
 async def test_invalid_account(
     database_name: str,
     engine_name: str,
-    username: str,
-    password: str,
+    password_auth: UsernamePassword,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid account error."""
@@ -44,8 +24,7 @@ async def test_invalid_account(
         async with await connect(
             database=database_name,
             engine_name=engine_name,  # Omit engine_url to force account_id lookup.
-            username=username,
-            password=password,
+            auth=password_auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -59,8 +38,7 @@ async def test_invalid_account(
 async def test_engine_url_not_exists(
     engine_url: str,
     database_name: str,
-    username: str,
-    password: str,
+    service_auth: ServiceAccount,
     account_name: str,
     api_endpoint: str,
 ) -> None:
@@ -68,8 +46,7 @@ async def test_engine_url_not_exists(
     async with await connect(
         engine_url=engine_url + "_",
         database=database_name,
-        username=username,
-        password=password,
+        auth=service_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
@@ -80,8 +57,7 @@ async def test_engine_url_not_exists(
 async def test_engine_name_not_exists(
     engine_name: str,
     database_name: str,
-    username: str,
-    password: str,
+    service_auth: ServiceAccount,
     account_name: str,
     api_endpoint: str,
 ) -> None:
@@ -90,8 +66,7 @@ async def test_engine_name_not_exists(
         async with await connect(
             engine_name=engine_name + "_________",
             database=database_name,
-            username=username,
-            password=password,
+            auth=service_auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -101,8 +76,7 @@ async def test_engine_name_not_exists(
 async def test_engine_stopped(
     stopped_engine_url: str,
     database_name: str,
-    username: str,
-    password: str,
+    service_auth: ServiceAccount,
     account_name: str,
     api_endpoint: str,
 ) -> None:
@@ -111,8 +85,7 @@ async def test_engine_stopped(
         async with await connect(
             engine_url=stopped_engine_url,
             database=database_name,
-            username=username,
-            password=password,
+            auth=service_auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -121,15 +94,14 @@ async def test_engine_stopped(
 
 @mark.skip(reason="Behaviour is different in prod vs dev")
 async def test_database_not_exists(
-    engine_url: str, database_name: str, username: str, password: str, api_endpoint: str
+    engine_url: str, database_name: str, service_auth: ServiceAccount, api_endpoint: str
 ) -> None:
     """Connection properly reacts to invalid database error."""
     new_db_name = database_name + "_"
     async with await connect(
         engine_url=engine_url,
         database=new_db_name,
-        username=username,
-        password=password,
+        auth=service_auth,
         api_endpoint=api_endpoint,
     ) as connection:
         with raises(FireboltDatabaseError) as exc_info:

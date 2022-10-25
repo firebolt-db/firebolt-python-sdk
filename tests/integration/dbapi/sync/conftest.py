@@ -1,22 +1,21 @@
 from pytest import fixture
 
-from firebolt.client.auth import ServiceAccount, UsernamePassword
+from firebolt.client.auth.base import Auth
 from firebolt.db import Connection, connect
 
 
 @fixture
-def connection(
+def username_password_connection(
     engine_url: str,
     database_name: str,
-    username: str,
-    password: str,
+    password_auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
     connection = connect(
         engine_url=engine_url,
         database=database_name,
-        auth=UsernamePassword(username, password),
+        auth=password_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     )
@@ -25,18 +24,17 @@ def connection(
 
 
 @fixture
-async def service_account_connection(
+async def connection(
     engine_url: str,
     database_name: str,
-    service_id: str,
-    service_secret: str,
+    service_auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
     connection = connect(
         engine_url=engine_url,
         database=database_name,
-        auth=ServiceAccount(service_id, service_secret),
+        auth=service_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     )
@@ -48,16 +46,14 @@ async def service_account_connection(
 def connection_engine_name(
     engine_name: str,
     database_name: str,
-    username: str,
-    password: str,
+    service_auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
     connection = connect(
         engine_name=engine_name,
         database=database_name,
-        username=username,
-        password=password,
+        auth=service_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     )
@@ -68,15 +64,13 @@ def connection_engine_name(
 @fixture
 def connection_no_engine(
     database_name: str,
-    username: str,
-    password: str,
+    service_auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
     connection = connect(
         database=database_name,
-        username=username,
-        password=password,
+        auth=service_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     )
