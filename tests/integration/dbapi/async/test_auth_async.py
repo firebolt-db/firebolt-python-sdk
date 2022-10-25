@@ -29,11 +29,11 @@ async def test_refresh_token(connection: Connection) -> None:
 
 
 async def test_credentials_invalidation(
-    connection: Connection, service_account_connection: Connection
+    connection: Connection, username_password_connection: Connection
 ) -> None:
     """Auth raises authentication error on credentials invalidation"""
     # Can't pytest.parametrize it due to nested event loop error
-    for conn in [connection, service_account_connection]:
+    for conn in [connection, username_password_connection]:
         with conn.cursor() as c:
             # Works fine
             await c.execute("show tables")
