@@ -28,6 +28,7 @@ async def test_refresh_token(connection: Connection) -> None:
         assert c._client.auth.token != old, "Auth didn't update token on expiration."
 
 
+@mark.skip("Avoiding excessive load with username/password")
 async def test_credentials_invalidation(
     connection: Connection, username_password_connection: Connection
 ) -> None:
