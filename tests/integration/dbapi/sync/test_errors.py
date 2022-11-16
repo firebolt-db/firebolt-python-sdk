@@ -1,7 +1,7 @@
 from httpx import ConnectError
 from pytest import mark, raises
 
-from firebolt.client.auth import ServiceAccount, UsernamePassword
+from firebolt.client.auth import UsernamePassword
 from firebolt.db import Connection, connect
 from firebolt.utils.exception import (
     AccountNotFoundError,
@@ -36,13 +36,16 @@ def test_invalid_account(
 
 
 def test_engine_url_not_exists(
-    engine_url: str, database_name: str, service_auth: ServiceAccount, api_endpoint: str
+    engine_url: str,
+    database_name: str,
+    password_auth: UsernamePassword,
+    api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine url error."""
     with connect(
         engine_url=engine_url + "_",
         database=database_name,
-        auth=service_auth,
+        auth=password_auth,
         api_endpoint=api_endpoint,
     ) as connection:
         with raises(ConnectError):
@@ -52,7 +55,7 @@ def test_engine_url_not_exists(
 def test_engine_name_not_exists(
     engine_name: str,
     database_name: str,
-    service_auth: ServiceAccount,
+    password_auth: UsernamePassword,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
@@ -60,7 +63,7 @@ def test_engine_name_not_exists(
         with connect(
             engine_name=engine_name + "_________",
             database=database_name,
-            auth=service_auth,
+            auth=password_auth,
             api_endpoint=api_endpoint,
         ) as connection:
             connection.cursor().execute("show tables")
@@ -69,7 +72,7 @@ def test_engine_name_not_exists(
 def test_engine_stopped(
     stopped_engine_url: str,
     database_name: str,
-    service_auth: ServiceAccount,
+    password_auth: UsernamePassword,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to engine not running error."""
@@ -77,7 +80,7 @@ def test_engine_stopped(
         with connect(
             engine_url=stopped_engine_url,
             database=database_name,
-            auth=service_auth,
+            auth=password_auth,
             api_endpoint=api_endpoint,
         ) as connection:
             connection.cursor().execute("show tables")
@@ -85,14 +88,17 @@ def test_engine_stopped(
 
 @mark.skip(reason="Behaviour is different in prod vs dev")
 def test_database_not_exists(
-    engine_url: str, database_name: str, service_auth: ServiceAccount, api_endpoint: str
+    engine_url: str,
+    database_name: str,
+    password_auth: UsernamePassword,
+    api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid database error."""
     new_db_name = database_name + "_"
     with connect(
         engine_url=engine_url,
         database=new_db_name,
-        auth=service_auth,
+        auth=password_auth,
         api_endpoint=api_endpoint,
     ) as connection:
         with raises(FireboltDatabaseError) as exc_info:
