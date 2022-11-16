@@ -32,15 +32,15 @@ jobs:
         id: setup
         uses: firebolt-db/integration-testing-setup@master
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
-          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
-          api-endpoint: "api.staging.firebolt.io"
+          firebolt-username: ${{ secrets.FIREBOLT_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD }}
+          api-endpoint: "api.dev.firebolt.io"
           region: "us-east-1"
 
       - name: Run integration tests
         env:
-          USER_NAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
-          PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+          USER_NAME: ${{ secrets.FIREBOLT_USERNAME }}
+          PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
           SERVICE_ID: ${{ secrets.SERVICE_ID_STG }}
           SERVICE_SECRET: ${{ secrets.SERVICE_SECRET_STG }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
@@ -48,7 +48,7 @@ jobs:
           ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
           STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
-          API_ENDPOINT: "api.staging.firebolt.io"
+          API_ENDPOINT: "api.dev.firebolt.io"
           ACCOUNT_NAME: "firebolt"
         run: |
           pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration
