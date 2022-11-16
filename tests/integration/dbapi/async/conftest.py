@@ -26,14 +26,14 @@ async def username_password_connection(
 async def connection(
     engine_url: str,
     database_name: str,
-    service_auth: Auth,
+    password_auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
     async with await connect(
         engine_url=engine_url,
         database=database_name,
-        auth=service_auth,
+        auth=password_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
@@ -44,7 +44,7 @@ async def connection(
 async def connection_engine_name(
     engine_name: str,
     database_name: str,
-    service_auth: Auth,
+    password_auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
@@ -52,7 +52,7 @@ async def connection_engine_name(
     async with await connect(
         engine_name=engine_name,
         database=database_name,
-        auth=service_auth,
+        auth=password_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
@@ -62,14 +62,14 @@ async def connection_engine_name(
 @async_fixture
 async def connection_no_engine(
     database_name: str,
-    service_auth: Auth,
+    password_auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
 
     async with await connect(
         database=database_name,
-        auth=service_auth,
+        auth=password_auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:

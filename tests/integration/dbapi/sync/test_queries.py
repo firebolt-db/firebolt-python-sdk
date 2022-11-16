@@ -7,7 +7,7 @@ from pytest import mark, raises
 
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
-from firebolt.client.auth import ServiceAccount
+from firebolt.client.auth import Auth
 from firebolt.db import (
     Connection,
     Cursor,
@@ -379,8 +379,7 @@ def test_set_invalid_parameter(connection: Connection):
 def test_anyio_backend_import_issue(
     engine_url: str,
     database_name: str,
-    service_id: str,
-    service_secret: str,
+    password_auth: Auth,
     account_name: str,
     api_endpoint: str,
     _: int,
@@ -391,10 +390,10 @@ def test_anyio_backend_import_issue(
     exceptions = []
 
     def run_query(idx: int):
-        nonlocal service_id, service_secret, database_name, engine_url, account_name, api_endpoint
+        nonlocal password_auth, database_name, engine_url, account_name, api_endpoint
         try:
             with connect(
-                auth=ServiceAccount(service_id, service_secret),
+                auth=password_auth,
                 database=database_name,
                 account_name=account_name,
                 engine_url=engine_url,

@@ -28,6 +28,7 @@ def test_refresh_token(connection: Connection) -> None:
         assert c._client.auth.token != old, "Auth didn't update token on expiration"
 
 
+@mark.skip("Avoiding excessive load with username/password")
 @mark.parametrize("connection_fixture", ["connection", "username_password_connection"])
 def test_credentials_invalidation(connection_fixture: str, request) -> None:
     """Auth raises Authentication Error on credentials invalidation"""
