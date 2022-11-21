@@ -32,5 +32,5 @@ from firebolt.utils.exception import (
 
 apilevel = "2.0"
 # threads may only share the module and connections, cursors should not be shared
-threadsafety = 1
+threadsafety = 2
 paramstyle = "qmark"
