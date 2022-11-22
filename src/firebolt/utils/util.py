@@ -4,7 +4,7 @@ from asyncio import (
     new_event_loop,
     set_event_loop,
 )
-from functools import lru_cache, wraps
+from functools import lru_cache, partial, wraps
 from threading import Thread
 from typing import (
     TYPE_CHECKING,
@@ -16,6 +16,7 @@ from typing import (
     TypeVar,
 )
 
+import trio  # type: ignore
 from httpx import URL
 
 T = TypeVar("T")
@@ -166,18 +167,7 @@ def async_to_sync(f: Callable, async_job_thread: AsyncJobThread = None) -> Calla
 
     @wraps(f)
     def sync(*args: Any, **kwargs: Any) -> Any:
-        try:
-            loop = get_event_loop()
-        except RuntimeError:
-            loop = new_event_loop()
-            set_event_loop(loop)
-        # We are inside a running loop
-        if loop.is_running():
-            nonlocal async_job_thread
-            if not async_job_thread:
-                async_job_thread = AsyncJobThread()
-            return async_job_thread.execute(f(*args, **kwargs))
-        return loop.run_until_complete(f(*args, **kwargs))
+        return trio.run(partial(f, *args, **kwargs))
 
     return sync
 
