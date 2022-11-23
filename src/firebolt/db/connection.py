@@ -11,7 +11,7 @@ from firebolt.async_db.connection import BaseConnection as AsyncBaseConnection
 from firebolt.async_db.connection import async_connect_factory
 from firebolt.db.cursor import Cursor
 from firebolt.utils.exception import ConnectionClosedError
-from firebolt.utils.util import AsyncJobThread, async_to_sync
+from firebolt.utils.util import async_to_sync
 
 
 class Connection(AsyncBaseConnection):
@@ -31,7 +31,7 @@ class Connection(AsyncBaseConnection):
         are not implemented.
     """
 
-    __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock", "_async_job_thread")
+    __slots__ = AsyncBaseConnection.__slots__ + ("_closing_lock",)
 
     cursor_class = Cursor
 
@@ -40,18 +40,17 @@ class Connection(AsyncBaseConnection):
         # Holding this lock for write means that connection is closing itself.
         # cursor() should hold this lock for read to read/write state
         self._closing_lock = RWLockWrite()
-        self._async_job_thread = AsyncJobThread()
 
     def cursor(self) -> Cursor:
         with self._closing_lock.gen_rlock():
-            c = super()._cursor(async_job_thread=self._async_job_thread)
+            c = super()._cursor()
             assert isinstance(c, Cursor)  # typecheck
             return c
 
     @wraps(AsyncBaseConnection._aclose)
     def close(self) -> None:
         with self._closing_lock.gen_wlock():
-            async_to_sync(self._aclose, self._async_job_thread)()
+            async_to_sync(self._aclose)()
 
     # Context manager support
     def __enter__(self) -> Connection:

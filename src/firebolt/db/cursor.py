@@ -14,7 +14,7 @@ from firebolt.async_db.cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.utils.util import AsyncJobThread, async_to_sync
+from firebolt.utils.util import async_to_sync
 
 
 class Cursor(AsyncBaseCursor):
@@ -34,13 +34,11 @@ class Cursor(AsyncBaseCursor):
     __slots__ = AsyncBaseCursor.__slots__ + (
         "_query_lock",
         "_idx_lock",
-        "_async_job_thread",
     )
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._query_lock = RWLockWrite()
         self._idx_lock = Lock()
-        self._async_job_thread: AsyncJobThread = kwargs.pop("async_job_thread")
         super().__init__(*args, **kwargs)
 
     @wraps(AsyncBaseCursor.execute)
@@ -52,7 +50,7 @@ class Cursor(AsyncBaseCursor):
         async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         with self._query_lock.gen_wlock():
-            return async_to_sync(super().execute, self._async_job_thread)(
+            return async_to_sync(super().execute)(
                 query, parameters, skip_parsing, async_execution
             )
 
@@ -64,7 +62,7 @@ class Cursor(AsyncBaseCursor):
         async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         with self._query_lock.gen_wlock():
-            return async_to_sync(super().executemany, self._async_job_thread)(
+            return async_to_sync(super().executemany)(
                 query, parameters_seq, async_execution
             )
 
@@ -106,9 +104,9 @@ class Cursor(AsyncBaseCursor):
     @wraps(AsyncBaseCursor.get_status)
     def get_status(self, query_id: str) -> QueryStatus:
         with self._query_lock.gen_rlock():
-            return async_to_sync(super().get_status, self._async_job_thread)(query_id)
+            return async_to_sync(super().get_status)(query_id)
 
     @wraps(AsyncBaseCursor.cancel)
     def cancel(self, query_id: str) -> None:
         with self._query_lock.gen_rlock():
-            return async_to_sync(super().cancel, self._async_job_thread)(query_id)
+            return async_to_sync(super().cancel)(query_id)
