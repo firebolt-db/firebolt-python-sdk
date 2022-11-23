@@ -464,3 +464,41 @@ async def test_server_side_async_execution_get_status(
     # assert (
     #     type(status) is QueryStatus,
     # ), "get_status() did not return a QueryStatus object."
+
+
+def test_multi_thread_connection_sharing(
+    engine_url: str,
+    database_name: str,
+    password_auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> None:
+
+    exceptions = []
+
+    connection = connect(
+        auth=password_auth,
+        database=database_name,
+        account_name=account_name,
+        engine_url=engine_url,
+        api_endpoint=api_endpoint,
+    )
+
+    def run_query():
+        try:
+            cursor = connection.cursor()
+            cursor.execute("select 1")
+            cursor.fetchall()
+        except BaseException as e:
+            exceptions.append(e)
+
+    thread_1 = Thread(target=run_query)
+    thread_2 = Thread(target=run_query)
+
+    thread_1.start()
+    thread_1.join()
+    thread_2.start()
+    thread_2.join()
+
+    connection.close()
+    assert not exceptions
