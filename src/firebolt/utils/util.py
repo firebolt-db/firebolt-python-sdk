@@ -1,21 +1,7 @@
-from asyncio import (
-    AbstractEventLoop,
-    get_event_loop,
-    new_event_loop,
-    set_event_loop,
-)
-from functools import lru_cache, wraps
-from threading import Thread
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Coroutine,
-    Optional,
-    Type,
-    TypeVar,
-)
+from functools import lru_cache, partial, wraps
+from typing import TYPE_CHECKING, Any, Callable, Type, TypeVar
 
+import trio
 from httpx import URL
 
 T = TypeVar("T")
@@ -84,81 +70,11 @@ def fix_url_schema(url: str) -> str:
     return url if url.startswith("http") else f"https://{url}"
 
 
-class AsyncJobThread:
-    """Thread runner that allows running async tasks synchronously in a separate thread.
-
-    Caches loop to be reused in all threads.
-    It allows running async functions synchronously inside a running event loop.
-    Since nesting loops is not allowed, we create a separate thread for a new event loop
-
-    Attributes:
-        result (Any): Value, returned by coroutine execution
-        exception (Optional[BaseException]): If any, exception that occurred
-            during coroutine execution
-    """
-
-    def __init__(self) -> None:
-        self._loop: Optional[AbstractEventLoop] = None
-        self.result: Any = None
-        self.exception: Optional[BaseException] = None
-
-    def _initialize_loop(self) -> None:
-        """Initialize a loop once to use for later execution.
-
-        Tries to get a running loop.
-        Creates a new loop if no active one, and sets it as active.
-        """
-        if not self._loop:
-            try:
-                # despite the docs, this function fails if no loop is set
-                self._loop = get_event_loop()
-            except RuntimeError:
-                self._loop = new_event_loop()
-        set_event_loop(self._loop)
-
-    def _run(self, coro: Coroutine) -> None:
-        """Run coroutine in an event loop.
-
-        Execution return value is stored into ``result`` field.
-        If an exception occurs, it will be caught and stored into ``exception`` field.
-
-        Args:
-            coro (Coroutine): Coroutine to execute
-        """
-        try:
-            self._initialize_loop()
-            assert self._loop is not None
-            self.result = self._loop.run_until_complete(coro)
-        except BaseException as e:
-            self.exception = e
-
-    def execute(self, coro: Coroutine) -> Any:
-        """Execute coroutine in a separate thread.
-
-        Args:
-            coro (Coroutine): Coroutine to execute
-
-        Returns:
-            Any: Coroutine execution return value
-
-        Raises:
-            exception: Exeption, occured within coroutine
-        """
-        thread = Thread(target=self._run, args=[coro])
-        thread.start()
-        thread.join()
-        if self.exception:
-            raise self.exception
-        return self.result
-
-
-def async_to_sync(f: Callable, async_job_thread: AsyncJobThread = None) -> Callable:
+def async_to_sync(f: Callable) -> Callable:
     """Convert async function to sync.
 
     Args:
         f (Callable): function to convert
-        async_job_thread (AsyncJobThread): Job thread instance to use for async excution
-            (Default value = None)
 
     Returns:
         Callable: regular function, which can be executed synchronously
@@ -166,18 +82,7 @@ def async_to_sync(f: Callable, async_job_thread: AsyncJobThread = None) -> Calla
 
     @wraps(f)
     def sync(*args: Any, **kwargs: Any) -> Any:
-        try:
-            loop = get_event_loop()
-        except RuntimeError:
-            loop = new_event_loop()
-            set_event_loop(loop)
-        # We are inside a running loop
-        if loop.is_running():
-            nonlocal async_job_thread
-            if not async_job_thread:
-                async_job_thread = AsyncJobThread()
-            return async_job_thread.execute(f(*args, **kwargs))
-        return loop.run_until_complete(f(*args, **kwargs))
+        return trio.run(partial(f, *args, **kwargs))
 
     return sync
 
