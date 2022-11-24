@@ -473,6 +473,12 @@ def test_multi_thread_connection_sharing(
     account_name: str,
     api_endpoint: str,
 ) -> None:
+    """
+    Test to verify sharing the same connection between different
+    threads works. With asyncio synching an async function this used
+    to fail due to a different loop having exclusive rights to the
+    Httpx client. Trio fixes this issue.
+    """
 
     exceptions = []
 
