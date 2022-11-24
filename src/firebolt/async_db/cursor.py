@@ -679,7 +679,7 @@ class BaseCursor:
 
 class Cursor(BaseCursor):
     """
-    Executes asyncio queries to Firebolt Database.
+    Executes async queries to Firebolt Database.
     Should not be created directly;
     use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
