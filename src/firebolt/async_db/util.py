@@ -32,13 +32,13 @@ async def is_engine_running(connection: Connection, engine_url: str) -> bool:
     """
     # Url is not guaranteed to be of this structure,
     # but for the sake of error checking this is sufficient.
-    engine_name = URL(engine_url).host.split(".")[0]
+    engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
     resp = await _filter_request(
         connection,
         ENGINES_URL,
         {
             "filter.name_contains": engine_name,
-            "filter.current_status_eq": "ENGINE_STATUS_RUNNING",
+            "filter.current_status_eq": "ENGINE_STATUS_RUNNING_REVISION_SERVING",
         },
     )
     return len(resp.json()["edges"]) > 0

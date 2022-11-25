@@ -281,8 +281,8 @@ async def test_cursor_execute_error(
         httpx_mock.add_response(
             json={"edges": []},
             url=(
-                get_engines_url + "?filter.name_contains=api"
-                "&filter.current_status_eq=ENGINE_STATUS_RUNNING"
+                get_engines_url + "?filter.name_contains=api_dev"
+                "&filter.current_status_eq=ENGINE_STATUS_RUNNING_REVISION_SERVING"
             ),
         )
         with raises(EngineNotRunningError) as excinfo:

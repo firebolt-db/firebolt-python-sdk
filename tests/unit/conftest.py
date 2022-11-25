@@ -64,7 +64,7 @@ def password() -> str:
 
 @fixture
 def server() -> str:
-    return "api.mock.firebolt.io"
+    return "api-dev.mock.firebolt.io"
 
 
 @fixture
