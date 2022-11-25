@@ -1,7 +1,6 @@
 from typing import Any, Optional
 
 from anyio._core._eventloop import get_asynclib
-from async_property import async_cached_property  # type: ignore
 from httpx import URL
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
@@ -123,7 +122,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     FireboltAuth instance.
     """
 
-    @async_cached_property
+    @cached_property
     async def account_id(self) -> str:
         """User account id.
 
