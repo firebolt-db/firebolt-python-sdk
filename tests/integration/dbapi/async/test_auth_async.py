@@ -28,20 +28,27 @@ async def test_refresh_token(connection: Connection) -> None:
         assert c._client.auth.token != old, "Auth didn't update token on expiration."
 
 
-async def test_credentials_invalidation(connection: Connection) -> None:
+@mark.skip("Avoiding excessive load with username/password")
+async def test_credentials_invalidation(
+    connection: Connection, username_password_connection: Connection
+) -> None:
     """Auth raises authentication error on credentials invalidation"""
-    with connection.cursor() as c:
-        # Works fine
-        await c.execute("show tables")
-
-        # Invalidate the token
-        c._client.auth._token += "_"
-        c._client.auth.username += "_"
-        c._client.auth.password += "_"
-
-        with raises(AuthenticationError) as exc_info:
+    # Can't pytest.parametrize it due to nested event loop error
+    for conn in [connection, username_password_connection]:
+        with conn.cursor() as c:
+            # Works fine
             await c.execute("show tables")
 
-        assert str(exc_info.value).startswith(
-            "Failed to authenticate"
-        ), "Invalid authentication error message"
+            # Invalidate the token
+            c._client.auth._token += "_"
+            # Invalidate credentials
+            for cred in ("username", "password", "client_id", "client_secret"):
+                if hasattr(c._client.auth, cred):
+                    setattr(c._client.auth, cred, "_")
+
+            with raises(AuthenticationError) as exc_info:
+                await c.execute("show tables")
+
+            assert str(exc_info.value).startswith(
+                "Failed to authenticate"
+            ), "Invalid authentication error message"

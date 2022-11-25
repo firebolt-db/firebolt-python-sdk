@@ -4,6 +4,7 @@ from os import environ
 from pytest import fixture
 from pytest_asyncio import fixture as async_fixture
 
+from firebolt.client.auth import ServiceAccount, UsernamePassword
 from firebolt.service.manager import Settings
 
 LOGGER = getLogger(__name__)
@@ -17,6 +18,8 @@ USER_NAME_ENV = "USER_NAME"
 PASSWORD_ENV = "PASSWORD"
 ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 API_ENDPOINT_ENV = "API_ENDPOINT"
+SERVICE_ID_ENV = "SERVICE_ID"
+SERVICE_SECRET_ENV = "SERVICE_SECRET"
 
 
 def must_env(var_name: str) -> str:
@@ -78,3 +81,23 @@ def account_name() -> str:
 @fixture(scope="session")
 def api_endpoint() -> str:
     return must_env(API_ENDPOINT_ENV)
+
+
+@fixture(scope="session")
+def service_id() -> str:
+    return must_env(SERVICE_ID_ENV)
+
+
+@fixture(scope="session")
+def service_secret() -> str:
+    return must_env(SERVICE_SECRET_ENV)
+
+
+@fixture
+def service_auth(service_id, service_secret) -> ServiceAccount:
+    return ServiceAccount(service_id, service_secret)
+
+
+@fixture
+def password_auth(username, password) -> UsernamePassword:
+    return UsernamePassword(username, password)

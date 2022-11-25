@@ -7,7 +7,7 @@ from pytest import mark, raises
 
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
-from firebolt.client.auth import UsernamePassword
+from firebolt.client.auth import Auth
 from firebolt.db import (
     Connection,
     Cursor,
@@ -379,8 +379,7 @@ def test_set_invalid_parameter(connection: Connection):
 def test_anyio_backend_import_issue(
     engine_url: str,
     database_name: str,
-    username: str,
-    password: str,
+    password_auth: Auth,
     account_name: str,
     api_endpoint: str,
     _: int,
@@ -391,10 +390,10 @@ def test_anyio_backend_import_issue(
     exceptions = []
 
     def run_query(idx: int):
-        nonlocal username, password, database_name, engine_url, account_name, api_endpoint
+        nonlocal password_auth, database_name, engine_url, account_name, api_endpoint
         try:
             with connect(
-                auth=UsernamePassword(username, password),
+                auth=password_auth,
                 database=database_name,
                 account_name=account_name,
                 engine_url=engine_url,
@@ -465,3 +464,47 @@ async def test_server_side_async_execution_get_status(
     # assert (
     #     type(status) is QueryStatus,
     # ), "get_status() did not return a QueryStatus object."
+
+
+def test_multi_thread_connection_sharing(
+    engine_url: str,
+    database_name: str,
+    password_auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> None:
+    """
+    Test to verify sharing the same connection between different
+    threads works. With asyncio synching an async function this used
+    to fail due to a different loop having exclusive rights to the
+    Httpx client. Trio fixes this issue.
+    """
+
+    exceptions = []
+
+    connection = connect(
+        auth=password_auth,
+        database=database_name,
+        account_name=account_name,
+        engine_url=engine_url,
+        api_endpoint=api_endpoint,
+    )
+
+    def run_query():
+        try:
+            cursor = connection.cursor()
+            cursor.execute("select 1")
+            cursor.fetchall()
+        except BaseException as e:
+            exceptions.append(e)
+
+    thread_1 = Thread(target=run_query)
+    thread_2 = Thread(target=run_query)
+
+    thread_1.start()
+    thread_1.join()
+    thread_2.start()
+    thread_2.join()
+
+    connection.close()
+    assert not exceptions
