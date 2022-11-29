@@ -26,10 +26,6 @@ def engine_name(engine_name):
 @fixture
 def setup_dbs(connection_system_engine, db_name, second_db_name, engine_name, region):
     with connection_system_engine.cursor() as cursor:
-        # Cleanup any previous failed runs
-        cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
-        cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
-        cursor.execute(f"DROP DATABASE IF EXISTS {second_db_name}")
 
         cursor.execute(create_database(name=db_name))
 
