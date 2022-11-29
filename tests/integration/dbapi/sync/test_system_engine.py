@@ -26,6 +26,11 @@ def engine_name(engine_name):
 @fixture
 def setup_dbs(connection_system_engine, db_name, second_db_name, engine_name, region):
     with connection_system_engine.cursor() as cursor:
+        # Cleanup any previous failed runs
+        cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
+        cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
+        cursor.execute(f"DROP DATABASE IF EXISTS {second_db_name}")
+
         cursor.execute(create_database(name=db_name))
 
         cursor.execute(create_engine(engine_name, engine_specs(region)))
@@ -75,6 +80,7 @@ def test_query_errors(connection_system_engine, query):
             cursor.execute(query)
 
 
+@mark.xdist_group(name="system_engine")
 def test_show_databases(setup_dbs, connection_system_engine, db_name):
     with connection_system_engine.cursor() as cursor:
 
@@ -86,6 +92,7 @@ def test_show_databases(setup_dbs, connection_system_engine, db_name):
         assert f"{db_name}_two" in dbs
 
 
+@mark.xdist_group(name="system_engine")
 def test_detach_engine(
     setup_dbs, connection_system_engine, engine_name, second_db_name
 ):
@@ -108,6 +115,7 @@ def test_detach_engine(
         check_engine_exists(cursor, engine_name, db_name=second_db_name)
 
 
+@mark.xdist_group(name="system_engine")
 def test_alter_engine(setup_dbs, connection_system_engine, engine_name):
     with connection_system_engine.cursor() as cursor:
         cursor.execute(f"ALTER ENGINE {engine_name} SET SPEC = B2")
@@ -117,6 +125,7 @@ def test_alter_engine(setup_dbs, connection_system_engine, engine_name):
         assert (engine_name, "B2") in [(row[0], row[2]) for row in engines]
 
 
+@mark.xdist_group(name="system_engine")
 def test_start_stop_engine(setup_dbs, connection_system_engine, engine_name):
     def check_engine_status(cursor, engine_name, status):
         cursor.execute("SHOW ENGINES")
