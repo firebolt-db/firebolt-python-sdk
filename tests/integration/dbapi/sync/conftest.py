@@ -76,3 +76,20 @@ def connection_no_engine(
     )
     yield connection
     connection.close()
+
+
+@fixture(scope="session")
+def connection_system_engine(
+    password_auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> Connection:
+    connection = connect(
+        database="dummy",
+        engine_name="system",
+        auth=password_auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    )
+    yield connection
+    connection.close()
