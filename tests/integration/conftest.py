@@ -98,6 +98,6 @@ def service_auth(service_id, service_secret) -> ServiceAccount:
     return ServiceAccount(service_id, service_secret)
 
 
-@fixture
+@fixture(scope="session")
 def password_auth(username, password) -> UsernamePassword:
     return UsernamePassword(username, password)
