@@ -78,7 +78,7 @@ def connection_no_engine(
     connection.close()
 
 
-@fixture
+@fixture(scope="session")
 def connection_system_engine(
     password_auth: Auth,
     account_name: str,

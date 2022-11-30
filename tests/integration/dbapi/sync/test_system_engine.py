@@ -3,27 +3,27 @@ from pytest import fixture, mark, raises
 from firebolt.utils.exception import OperationalError
 
 
-@fixture
+@fixture(scope="module")
 def db_name(database_name):
     return database_name + "_system_test"
 
 
-@fixture
+@fixture(scope="module")
 def second_db_name(database_name):
     return database_name + "_system_test_two"
 
 
-@fixture
+@fixture(scope="module")
 def region():
     return "us-east-1"
 
 
-@fixture
+@fixture(scope="module")
 def engine_name(engine_name):
     return engine_name + "_system_test"
 
 
-@fixture
+@fixture(scope="module")
 def setup_dbs(connection_system_engine, db_name, second_db_name, engine_name, region):
     with connection_system_engine.cursor() as cursor:
 
