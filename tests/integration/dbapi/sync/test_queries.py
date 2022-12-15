@@ -113,6 +113,7 @@ def test_select(
         )
 
 
+@mark.skip("Don't have a good way to test this anymore. FIR-16038")
 @mark.timeout(timeout=400)
 def test_long_query(
     connection: Connection,
