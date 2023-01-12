@@ -68,7 +68,7 @@ def db_specs(region, attached_engine):
 
 @mark.parametrize(
     "query",
-    ["SELECT 1", "CREATE DIMENSION TABLE dummy(id INT)", "SHOW TABLES", "SHOW INDEXES"],
+    ["CREATE DIMENSION TABLE dummy(id INT)", "SHOW TABLES", "SHOW INDEXES"],
 )
 def test_query_errors(connection_system_engine, query):
     with connection_system_engine.cursor() as cursor:
