@@ -179,9 +179,12 @@ class _InternalType(Enum):
     # DATE
     Date = "Date"
     Date32 = "Date32"
-
+    PGDate = "PGDate"
+    
     # DATETIME, TIMESTAMP
     DateTime = "DateTime"
+    TimestampNtz = "TimestampNtz"
+    TimestampTz = "TimestampTz"
 
     # Nullable(Nothing)
     Nothing = "Nothing"
@@ -203,7 +206,10 @@ class _InternalType(Enum):
             _InternalType.String: str,
             _InternalType.Date: date,
             _InternalType.Date32: date,
+            _InternalType.PGDate: date,
             _InternalType.DateTime: datetime,
+            _InternalType.TimestampNtz: datetime,
+            _InternalType.TimestampTz: datetime,
             # For simplicity, this could happen only during 'select null' query
             _InternalType.Nothing: str,
         }
