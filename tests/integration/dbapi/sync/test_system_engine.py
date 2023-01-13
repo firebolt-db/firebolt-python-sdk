@@ -137,3 +137,10 @@ def test_start_stop_engine(setup_dbs, connection_system_engine, engine_name):
         check_engine_status(cursor, engine_name, "Running")
         cursor.execute(f"STOP ENGINE {engine_name}")
         check_engine_status(cursor, engine_name, "Stopped")
+
+
+@mark.xdist_group(name="system_engine")
+def test_select_one(connection_system_engine):
+    """SELECT statements are supported"""
+    with connection_system_engine.cursor() as cursor:
+        cursor.execute("SELECT 1")
