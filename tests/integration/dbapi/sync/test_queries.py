@@ -89,7 +89,6 @@ def test_select(
 ) -> None:
     """Select handles all data types properly."""
     with connection.cursor() as c:
-        assert c.execute("set firebolt_use_decimal = 1") == -1
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = c.fetchall()
@@ -263,7 +262,6 @@ def test_parameterized_query(connection: Connection) -> None:
             c.fetchall()
 
     with connection.cursor() as c:
-        c.execute("set firebolt_use_decimal = 1")
         c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
         c.execute(
             "CREATE FACT TABLE test_tb_parameterized(i int, f float, s string, sn"
