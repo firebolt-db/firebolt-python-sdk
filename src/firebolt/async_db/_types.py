@@ -5,6 +5,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional, Sequence, Union
+from dateutil import parser
 
 from sqlparse import parse as parse_sql  # type: ignore
 from sqlparse.sql import (  # type: ignore
@@ -18,13 +19,8 @@ from sqlparse.tokens import Token as TokenType  # type: ignore
 try:
     from ciso8601 import parse_datetime  # type: ignore
 except ImportError:
-    # Unfortunately, there seems to be no support for optional bits in strptime
-    def parse_datetime(date_string: str) -> datetime:  # type: ignore
-        format = "%Y-%m-%d %H:%M:%S.%f"
-        # fromisoformat doesn't support milliseconds
-        if "." in date_string:
-            return datetime.strptime(date_string, format)
-        return datetime.fromisoformat(date_string)
+    from dateutil import parser
+    parse_datetime = parser.parse
 
 
 from firebolt.utils.exception import (
