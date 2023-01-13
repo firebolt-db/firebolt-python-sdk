@@ -130,7 +130,6 @@ async def test_select(
 ) -> None:
     """Select handles all data types properly."""
     with connection.cursor() as c:
-        assert (await c.execute("set firebolt_use_decimal = 1")) == -1
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = await c.fetchall()
@@ -310,7 +309,6 @@ async def test_parameterized_query(connection: Connection) -> None:
             await c.fetchall()
 
     with connection.cursor() as c:
-        await c.execute("set firebolt_use_decimal = 1")
         await c.execute("DROP TABLE IF EXISTS test_tb_async_parameterized")
         await c.execute(
             "CREATE FACT TABLE test_tb_async_parameterized(i int, f float, s string, sn"
