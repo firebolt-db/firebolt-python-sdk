@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 from decimal import Decimal
 from logging import getLogger
 from typing import List
@@ -67,8 +67,11 @@ def all_types_query() -> str:
         "'text' as \"string\", "
         "CAST('2021-03-28' AS DATE) as \"date\", "
         "CAST('1860-03-04' AS DATE_EXT) as \"date32\","
+        "pgdate '0001-01-01' as pgdate, "
         "CAST('2019-07-31 01:01:01' AS DATETIME) as \"datetime\", "
         "CAST('2019-07-31 01:01:01.1234' AS TIMESTAMP_EXT(4)) as \"datetime64\", "
+        "CAST('1111-01-05 17:04:42.123456' as timestampntz) as timestampntz, "
+        "'1111-01-05 17:04:42.123456'::timestamptz as timestamptz,"
         'true as "bool",'
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
@@ -92,8 +95,11 @@ def all_types_query_description() -> List[Column]:
         Column("string", str, None, None, None, None, None),
         Column("date", date, None, None, None, None, None),
         Column("date32", date, None, None, None, None, None),
+        Column("pgdate", date, None, None, None, None, None),        
         Column("datetime", datetime, None, None, None, None, None),
         Column("datetime64", DATETIME64(4), None, None, None, None, None),
+        Column("timestampntz", datetime, None, None, None, None, None),
+        Column("timestamptz", datetime, None, None, None, None, None),        
         Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(38, 30), None, None, None, None, None),
@@ -102,7 +108,7 @@ def all_types_query_description() -> List[Column]:
 
 
 @fixture
-def all_types_query_response() -> List[ColType]:
+def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
     return [
         [
             1,
@@ -118,14 +124,27 @@ def all_types_query_response() -> List[ColType]:
             "text",
             date(2021, 3, 28),
             date(1860, 3, 4),
+            date(1, 1, 1),
             datetime(2019, 7, 31, 1, 1, 1),
             datetime(2019, 7, 31, 1, 1, 1, 123400),
+            datetime(1111, 1, 5, 17, 4, 42, 123456),
+            datetime(1111, 1, 5, 17, 4, 42, 123456, tzinfo=timezone(timedelta(seconds=timezone_offset_seconds))),
             1,
             [1, 2, 3, 4],
             Decimal("1231232.123459999990457054844258706536"),
             None,
         ]
     ]
+
+
+@fixture
+def timezone_name() -> str:
+    return "Asia/Calcutta"
+
+
+@fixture
+def timezone_offset_seconds() -> int:
+    return 5 * 3600 + 53 * 60 + 28 # 05:53:28
 
 
 @fixture
