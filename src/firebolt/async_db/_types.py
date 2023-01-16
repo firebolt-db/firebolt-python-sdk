@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from collections import namedtuple
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -19,8 +21,28 @@ from sqlparse.tokens import Token as TokenType  # type: ignore
 try:
     from ciso8601 import parse_datetime  # type: ignore
 except ImportError:
-    from dateutil import parser
-    parse_datetime = parser.parse
+    unsupported_milliseconds_re = re.compile(r"(?<=\.)\d{1,5}(?!\d)")
+
+    def _fix_milliseconds(datetime_string: str) -> str:
+        # Fill milliseconds with 0 to have exactly 6 digits
+        # Python parser only supports 3 or 6 digit milliseconds untill 3.11
+        def allign_ms(match: re.Match):
+            ms = match.group()
+            return ms + "0" * (6 - len(ms))
+
+        return re.sub(unsupported_milliseconds_re, allign_ms, datetime_string)
+
+    def _fix_timezone(datetime_string: str) -> str:
+        # timezone, provided as +/-dd is not supported by datetime. We need to append :00 to it
+        from logging import getLogger
+        l = getLogger(__name__)
+        l.error(f"{datetime_string}, {datetime_string[-3]}")
+        if datetime_string[-3] in "+-":
+            return datetime_string + ":00"
+        return datetime_string
+
+    def parse_datetime(datetime_string: str) -> datetime:
+        return datetime.fromisoformat(_fix_timezone(_fix_milliseconds(datetime_string)))
 
 
 from firebolt.utils.exception import (
@@ -176,7 +198,7 @@ class _InternalType(Enum):
     Date = "Date"
     Date32 = "Date32"
     PGDate = "PGDate"
-    
+
     # DATETIME, TIMESTAMP
     DateTime = "DateTime"
     TimestampNtz = "TimestampNtz"
