@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import re
-
 from collections import namedtuple
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import List, Optional, Sequence, Union
-from dateutil import parser
 
 from sqlparse import parse as parse_sql  # type: ignore
 from sqlparse.sql import (  # type: ignore
@@ -26,17 +24,15 @@ except ImportError:
     def _fix_milliseconds(datetime_string: str) -> str:
         # Fill milliseconds with 0 to have exactly 6 digits
         # Python parser only supports 3 or 6 digit milliseconds untill 3.11
-        def allign_ms(match: re.Match):
+        def allign_ms(match: re.Match) -> str:
             ms = match.group()
             return ms + "0" * (6 - len(ms))
 
         return re.sub(unsupported_milliseconds_re, allign_ms, datetime_string)
 
     def _fix_timezone(datetime_string: str) -> str:
-        # timezone, provided as +/-dd is not supported by datetime. We need to append :00 to it
-        from logging import getLogger
-        l = getLogger(__name__)
-        l.error(f"{datetime_string}, {datetime_string[-3]}")
+        # timezone, provided as +/-dd is not supported by datetime.
+        # We need to append :00 to it
         if datetime_string[-3] in "+-":
             return datetime_string + ":00"
         return datetime_string

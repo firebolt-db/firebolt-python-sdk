@@ -97,7 +97,7 @@ async def test_connect_engine_name(
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
-    timezone_name: str,        
+    timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
     await test_select(
@@ -135,8 +135,12 @@ async def test_select(
 ) -> None:
     """Select handles all data types properly."""
     with connection.cursor() as c:
-        assert await c.execute(f"SET advanced_mode=1") == -1, "Invalid set statment row count"
-        assert await c.execute(f"SET time_zone={timezone_name}") == -1, "Invalid set statment row count"
+        assert (
+            await c.execute(f"SET advanced_mode=1") == -1
+        ), "Invalid set statment row count"
+        assert (
+            await c.execute(f"SET time_zone={timezone_name}") == -1
+        ), "Invalid set statment row count"
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = await c.fetchall()

@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from logging import getLogger
 from typing import List
@@ -95,11 +95,11 @@ def all_types_query_description() -> List[Column]:
         Column("string", str, None, None, None, None, None),
         Column("date", date, None, None, None, None, None),
         Column("date32", date, None, None, None, None, None),
-        Column("pgdate", date, None, None, None, None, None),        
+        Column("pgdate", date, None, None, None, None, None),
         Column("datetime", datetime, None, None, None, None, None),
         Column("datetime64", DATETIME64(4), None, None, None, None, None),
         Column("timestampntz", datetime, None, None, None, None, None),
-        Column("timestamptz", datetime, None, None, None, None, None),        
+        Column("timestamptz", datetime, None, None, None, None, None),
         Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(38, 30), None, None, None, None, None),
@@ -128,7 +128,16 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
             datetime(2019, 7, 31, 1, 1, 1),
             datetime(2019, 7, 31, 1, 1, 1, 123400),
             datetime(1111, 1, 5, 17, 4, 42, 123456),
-            datetime(1111, 1, 5, 17, 4, 42, 123456, tzinfo=timezone(timedelta(seconds=timezone_offset_seconds))),
+            datetime(
+                1111,
+                1,
+                5,
+                17,
+                4,
+                42,
+                123456,
+                tzinfo=timezone(timedelta(seconds=timezone_offset_seconds)),
+            ),
             1,
             [1, 2, 3, 4],
             Decimal("1231232.123459999990457054844258706536"),
@@ -144,7 +153,7 @@ def timezone_name() -> str:
 
 @fixture
 def timezone_offset_seconds() -> int:
-    return 5 * 3600 + 53 * 60 + 28 # 05:53:28
+    return 5 * 3600 + 53 * 60 + 28  # 05:53:28
 
 
 @fixture

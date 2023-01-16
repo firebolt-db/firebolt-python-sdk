@@ -1,8 +1,8 @@
-from datetime import date, datetime, timezone, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, Optional
 
-from pytest import raises, mark
+from pytest import mark, raises
 
 from firebolt.async_db import (
     ARRAY,
@@ -115,7 +115,14 @@ def test_parse_value_date(value: Optional[str], expected: Optional[date], case: 
         (
             "2021-12-31 23:59:59.1234+05:30:12",
             datetime(
-                2021, 12, 31, 23, 59, 59, 123400, tzinfo=timezone(timedelta(hours=5, minutes=30, seconds=12))
+                2021,
+                12,
+                31,
+                23,
+                59,
+                59,
+                123400,
+                tzinfo=timezone(timedelta(hours=5, minutes=30, seconds=12)),
             ),
             "timezone with seconds provided",
         ),
@@ -123,7 +130,9 @@ def test_parse_value_date(value: Optional[str], expected: Optional[date], case: 
         ("2021-12-31", datetime(2021, 12, 31), "date provided"),
     ],
 )
-def test_parse_value_datetime(value: Optional[str], expected: Optional[date], case: str):
+def test_parse_value_datetime(
+    value: Optional[str], expected: Optional[date], case: str
+):
     """parse_value parses all date values correctly."""
     assert parse_value(value, datetime) == expected, f"Error parsing datetime: {case}"
 

@@ -95,7 +95,9 @@ def test_select(
     """Select handles all data types properly."""
     with connection.cursor() as c:
         assert c.execute(f"SET advanced_mode=1") == -1, "Invalid set statment row count"
-        assert c.execute(f"SET time_zone={timezone_name}") == -1, "Invalid set statment row count"
+        assert (
+            c.execute(f"SET time_zone={timezone_name}") == -1
+        ), "Invalid set statment row count"
 
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
