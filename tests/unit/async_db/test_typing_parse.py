@@ -113,11 +113,11 @@ def test_parse_value_date(value: Optional[str], expected: Optional[date], case: 
             "timezone provided",
         ),
         (
-            "2021-12-31 23:59:59.1234+05:30",
+            "2021-12-31 23:59:59.1234+05:30:12",
             datetime(
-                2021, 12, 31, 23, 59, 59, 123400, tzinfo=timezone(timedelta(hours=5, minutes=30))
+                2021, 12, 31, 23, 59, 59, 123400, tzinfo=timezone(timedelta(hours=5, minutes=30, seconds=12))
             ),
-            "timezone with minutes provided",
+            "timezone with seconds provided",
         ),
         (None, None, "None provided"),
         ("2021-12-31", datetime(2021, 12, 31), "date provided"),
