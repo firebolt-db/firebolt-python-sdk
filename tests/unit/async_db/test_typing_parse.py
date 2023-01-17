@@ -1,8 +1,8 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Dict
+from typing import Dict, Optional
 
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.async_db import (
     ARRAY,
@@ -72,22 +72,73 @@ def test_parse_value_str() -> None:
     assert parse_value(None, str) is None, "Error parsing str: provided None"
 
 
-def test_parse_value_datetime() -> None:
+@mark.parametrize(
+    "value,expected,case",
+    [
+        ("2021-12-31", date(2021, 12, 31), "str provided"),
+        ("0001-01-01", date(1, 1, 1), "range low provided"),
+        ("9999-12-31", date(9999, 12, 31), "range high provided"),
+        (None, None, "None provided"),
+        ("2021-12-31 23:59:59", date(2021, 12, 31), "datetime provided"),
+    ],
+)
+def test_parse_value_date(value: Optional[str], expected: Optional[date], case: str):
+    """parse_value parses all date values correctly."""
+    assert parse_value(value, date) == expected, f"Error parsing date: {case}"
+
+
+@mark.parametrize(
+    "value,expected,case",
+    [
+        (
+            "2021-12-31 23:59:59.1234",
+            datetime(2021, 12, 31, 23, 59, 59, 123400),
+            "str provided",
+        ),
+        (
+            "0001-01-01 00:00:00.000000",
+            datetime(1, 1, 1, 0, 0, 0, 0),
+            "range low provided",
+        ),
+        (
+            "9999-12-31 23:59:59.999999",
+            datetime(9999, 12, 31, 23, 59, 59, 999999),
+            "range high provided",
+        ),
+        (
+            "2021-12-31 23:59:59.1234-03",
+            datetime(
+                2021, 12, 31, 23, 59, 59, 123400, tzinfo=timezone(timedelta(hours=-3))
+            ),
+            "timezone provided",
+        ),
+        (
+            "2021-12-31 23:59:59.1234+05:30:12",
+            datetime(
+                2021,
+                12,
+                31,
+                23,
+                59,
+                59,
+                123400,
+                tzinfo=timezone(timedelta(hours=5, minutes=30, seconds=12)),
+            ),
+            "timezone with seconds provided",
+        ),
+        (None, None, "None provided"),
+        ("2021-12-31", datetime(2021, 12, 31), "date provided"),
+    ],
+)
+def test_parse_value_datetime(
+    value: Optional[str], expected: Optional[date], case: str
+):
+    """parse_value parses all date values correctly."""
+    assert parse_value(value, datetime) == expected, f"Error parsing datetime: {case}"
+
+
+def test_parse_value_datetime_errors() -> None:
     """parse_value parses all date and datetime values correctly."""
-    # Date
-    assert parse_value("2021-12-31", date) == date(
-        2021, 12, 31
-    ), "Error parsing date: str provided"
-    assert parse_value("1860-12-31", date) == date(
-        1860, 12, 31
-    ), "Error parsing extended date: str provided"
-
-    assert parse_value(None, date) is None, "Error parsing date: None provided"
-
-    assert parse_value("2021-12-31 23:59:59", date) == date(
-        2021, 12, 31
-    ), "Error parsing date: datetime string provided"
-
     with raises(ValueError):
         parse_value("abd", date)
 

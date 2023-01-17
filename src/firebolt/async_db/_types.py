@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from collections import namedtuple
 from datetime import date, datetime, timezone
 from decimal import Decimal
@@ -18,13 +19,26 @@ from sqlparse.tokens import Token as TokenType  # type: ignore
 try:
     from ciso8601 import parse_datetime  # type: ignore
 except ImportError:
-    # Unfortunately, there seems to be no support for optional bits in strptime
-    def parse_datetime(date_string: str) -> datetime:  # type: ignore
-        format = "%Y-%m-%d %H:%M:%S.%f"
-        # fromisoformat doesn't support milliseconds
-        if "." in date_string:
-            return datetime.strptime(date_string, format)
-        return datetime.fromisoformat(date_string)
+    unsupported_milliseconds_re = re.compile(r"(?<=\.)\d{1,5}(?!\d)")
+
+    def _fix_milliseconds(datetime_string: str) -> str:
+        # Fill milliseconds with 0 to have exactly 6 digits
+        # Python parser only supports 3 or 6 digit milliseconds untill 3.11
+        def align_ms(match: re.Match) -> str:
+            ms = match.group()
+            return ms + "0" * (6 - len(ms))
+
+        return re.sub(unsupported_milliseconds_re, align_ms, datetime_string)
+
+    def _fix_timezone(datetime_string: str) -> str:
+        # timezone, provided as +/-dd is not supported by datetime.
+        # We need to append :00 to it
+        if datetime_string[-3] in "+-":
+            return datetime_string + ":00"
+        return datetime_string
+
+    def parse_datetime(datetime_string: str) -> datetime:
+        return datetime.fromisoformat(_fix_timezone(_fix_milliseconds(datetime_string)))
 
 
 from firebolt.utils.exception import (
@@ -179,9 +193,12 @@ class _InternalType(Enum):
     # DATE
     Date = "Date"
     Date32 = "Date32"
+    PGDate = "PGDate"
 
     # DATETIME, TIMESTAMP
     DateTime = "DateTime"
+    TimestampNtz = "TimestampNtz"
+    TimestampTz = "TimestampTz"
 
     # Nullable(Nothing)
     Nothing = "Nothing"
@@ -203,7 +220,10 @@ class _InternalType(Enum):
             _InternalType.String: str,
             _InternalType.Date: date,
             _InternalType.Date32: date,
+            _InternalType.PGDate: date,
             _InternalType.DateTime: datetime,
+            _InternalType.TimestampNtz: datetime,
+            _InternalType.TimestampTz: datetime,
             # For simplicity, this could happen only during 'select null' query
             _InternalType.Nothing: str,
         }
