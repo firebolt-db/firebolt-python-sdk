@@ -24,11 +24,11 @@ except ImportError:
     def _fix_milliseconds(datetime_string: str) -> str:
         # Fill milliseconds with 0 to have exactly 6 digits
         # Python parser only supports 3 or 6 digit milliseconds untill 3.11
-        def allign_ms(match: re.Match) -> str:
+        def align_ms(match: re.Match) -> str:
             ms = match.group()
             return ms + "0" * (6 - len(ms))
 
-        return re.sub(unsupported_milliseconds_re, allign_ms, datetime_string)
+        return re.sub(unsupported_milliseconds_re, align_ms, datetime_string)
 
     def _fix_timezone(datetime_string: str) -> str:
         # timezone, provided as +/-dd is not supported by datetime.
