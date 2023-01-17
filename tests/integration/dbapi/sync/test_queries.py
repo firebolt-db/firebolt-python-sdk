@@ -56,6 +56,7 @@ def test_connect_engine_name(
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
+    timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
     test_select(
@@ -63,6 +64,7 @@ def test_connect_engine_name(
         all_types_query,
         all_types_query_description,
         all_types_query_response,
+        timezone_name,
     )
 
 
@@ -71,6 +73,7 @@ def test_connect_no_engine(
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
+    timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
     test_select(
@@ -78,6 +81,7 @@ def test_connect_no_engine(
         all_types_query,
         all_types_query_description,
         all_types_query_response,
+        timezone_name,
     )
 
 
@@ -86,9 +90,15 @@ def test_select(
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
+    timezone_name: str,
 ) -> None:
     """Select handles all data types properly."""
     with connection.cursor() as c:
+        assert c.execute(f"SET advanced_mode=1") == -1, "Invalid set statment row count"
+        assert (
+            c.execute(f"SET time_zone={timezone_name}") == -1
+        ), "Invalid set statment row count"
+
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = c.fetchall()
