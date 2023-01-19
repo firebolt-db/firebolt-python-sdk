@@ -49,8 +49,8 @@ jobs:
         percentage=$(echo "scale=1; $fraction * 100" | bc -l)
         percentage_whole=$(echo "${percentage%.*}")
         colour=$(if [ $percentage_whole -ge 80 ]; then echo "green"; else echo "orange"; fi)
-        echo "::set-output name=colour::$colour"
-        echo "::set-output name=covered::$percentage_whole"
+        echo "colour::$colour" >>  $GITHUB_OUTPUT
+        echo "covered::$percentage_whole" >>  $GITHUB_OUTPUT
     
     - name: Create Coverage Badge
       uses: schneegans/dynamic-badges-action@v1.2.0
