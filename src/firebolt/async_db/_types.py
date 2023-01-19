@@ -201,7 +201,7 @@ class _InternalType(Enum):
     TimestampTz = "TimestampTz"
 
     # BOOLEAN
-    Boolean = "Boolean"
+    Boolean = "boolean"
 
     # Nullable(Nothing)
     Nothing = "Nothing"

@@ -138,9 +138,11 @@ async def test_select(
         assert (
             await c.execute(f"SET advanced_mode=1") == -1
         ), "Invalid set statment row count"
+        # For TimestampTz test
         assert (
             await c.execute(f"SET time_zone={timezone_name}") == -1
         ), "Invalid set statment row count"
+
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = await c.fetchall()
@@ -164,6 +166,37 @@ async def test_select(
         assert_deep_eq(
             data, all_types_query_response, "Invalid data returned by fetchmany"
         )
+
+
+async def test_boolean(
+    connection: Connection,
+) -> None:
+    """Select handles boolean properly."""
+    with connection.cursor() as c:
+        assert (
+            await c.execute(f"SET advanced_mode=1") == -1
+        ), "Invalid set statment row count"
+        # Unfortunately our parser doesn't support string set parameters
+        c._set_parameters.update(
+            {
+                "bool_output_format": "postgres",
+                "output_format_firebolt_type_names": "true",
+            }
+        )
+
+        assert (
+            await c.execute('select true as "bool"') == 1
+        ), "Invalid row count returned"
+        assert c.rowcount == 1, "Invalid rowcount value"
+        data = await c.fetchall()
+        assert len(data) == c.rowcount, "Invalid data length"
+        assert_deep_eq(data, [[True]], "Invalid data")
+        assert (
+            c.description == [Column("bool", bool, None, None, None, None, None)],
+            "Invalid description value",
+        )
+        assert len(data[0]) == len(c.description), "Invalid description length"
+        assert len(await c.fetchall()) == 0, "Redundant data returned by fetchall"
 
 
 @mark.skip("Don't have a good way to test this anymore. FIR-16038")
