@@ -60,6 +60,7 @@ def types_map() -> Dict[str, type]:
         "Decimal(38,0)": DECIMAL(38, 0),
         # Invalid decimal format
         "Decimal(38)": str,
+        "Boolean": bool,
         "SomeRandomNotExistingType": str,
     }
     array_types = {f"Array({k})": ARRAY(v) for k, v in base_types.items()}

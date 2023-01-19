@@ -312,7 +312,7 @@ escape_chars = {
 def format_value(value: ParameterType) -> str:
     """For Python value to be used in a SQL query."""
     if isinstance(value, bool):
-        return str(int(value))
+        return "true" if value else "false"
     if isinstance(value, (int, float, Decimal)):
         return str(value)
     elif isinstance(value, str):
