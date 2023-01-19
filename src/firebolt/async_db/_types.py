@@ -200,6 +200,9 @@ class _InternalType(Enum):
     TimestampNtz = "TimestampNtz"
     TimestampTz = "TimestampTz"
 
+    # BOOLEAN
+    Boolean = "Boolean"
+
     # Nullable(Nothing)
     Nothing = "Nothing"
 
@@ -224,6 +227,7 @@ class _InternalType(Enum):
             _InternalType.DateTime: datetime,
             _InternalType.TimestampNtz: datetime,
             _InternalType.TimestampTz: datetime,
+            _InternalType.Boolean: bool,
             # For simplicity, this could happen only during 'select null' query
             _InternalType.Nothing: str,
         }
@@ -285,6 +289,10 @@ def parse_value(
         if not isinstance(value, str):
             raise DataError(f"Invalid datetime value {value}: str expected")
         return parse_datetime(value)
+    if ctype is bool:
+        if not isinstance(value, (bool, int)):
+            raise DataError(f"Invalid boolean value {value}: bool or int expected")
+        return bool(value)
     if isinstance(ctype, DECIMAL):
         assert isinstance(value, (str, int))
         return Decimal(value)
