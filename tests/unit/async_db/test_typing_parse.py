@@ -244,7 +244,7 @@ def test_parse_value_bool() -> None:
     assert parse_value(False, bool) == False, "Error parsing boolean: provided false"
     assert parse_value(2, bool) == True, "Error parsing boolean: provided 2"
     assert parse_value(0, bool) == False, "Error parsing boolean: provided 0"
-    assert parse_value(None, int) is None, "Error parsing boolean: provided None"
+    assert parse_value(None, bool) is None, "Error parsing boolean: provided None"
 
     with raises(DataError):
         parse_value("true", bool)
