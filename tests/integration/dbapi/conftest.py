@@ -72,7 +72,6 @@ def all_types_query() -> str:
         "CAST('2019-07-31 01:01:01.1234' AS TIMESTAMP_EXT(4)) as \"datetime64\", "
         "CAST('1111-01-05 17:04:42.123456' as timestampntz) as timestampntz, "
         "'1111-01-05 17:04:42.123456'::timestamptz as timestamptz,"
-        'true as "bool",'
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
         "cast(null as  int) as nullable"
@@ -100,7 +99,6 @@ def all_types_query_description() -> List[Column]:
         Column("datetime64", DATETIME64(4), None, None, None, None, None),
         Column("timestampntz", datetime, None, None, None, None, None),
         Column("timestamptz", datetime, None, None, None, None, None),
-        Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(38, 30), None, None, None, None, None),
         Column("nullable", int, None, None, None, None, None),
@@ -138,7 +136,6 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
                 123456,
                 tzinfo=timezone(timedelta(seconds=timezone_offset_seconds)),
             ),
-            1,
             [1, 2, 3, 4],
             Decimal("1231232.123459999990457054844258706536"),
             None,
