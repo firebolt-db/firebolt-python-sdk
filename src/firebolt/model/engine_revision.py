@@ -48,7 +48,7 @@ class EngineRevision(FireboltBaseModel):
     specification: EngineRevisionSpecification
 
     # optional
-    key: Optional[EngineRevisionKey] = Field(alias="id")
+    key: Optional[EngineRevisionKey] = Field(None, alias="id")
     current_status: Optional[str]
     create_time: Optional[datetime]
     create_actor: Optional[str]

@@ -122,15 +122,17 @@ class Engine(FireboltBaseModel):
     settings: EngineSettings
 
     # optional
-    key: Optional[EngineKey] = Field(alias="id")
+    key: Optional[EngineKey] = Field(None, alias="id")
     description: Optional[str]
     emoji: Optional[str]
     current_status: Optional[EngineStatus]
     current_status_summary: Optional[EngineStatusSummary]
-    latest_revision_key: Optional[EngineRevisionKey] = Field(alias="latest_revision_id")
+    latest_revision_key: Optional[EngineRevisionKey] = Field(
+        None, alias="latest_revision_id"
+    )
     endpoint: Optional[str]
     endpoint_serving_revision_key: Optional[EngineRevisionKey] = Field(
-        alias="endpoint_serving_revision_id"
+        None, alias="endpoint_serving_revision_id"
     )
     create_time: Optional[datetime]
     create_actor: Optional[str]
@@ -140,7 +142,7 @@ class Engine(FireboltBaseModel):
     desired_status: Optional[str]
     health_status: Optional[str]
     endpoint_desired_revision_key: Optional[EngineRevisionKey] = Field(
-        alias="endpoint_desired_revision_id"
+        None, alias="endpoint_desired_revision_id"
     )
 
     @classmethod

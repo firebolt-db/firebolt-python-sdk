@@ -36,6 +36,9 @@ class ResourceManager:
             if self.settings.access_token:
                 auth = Token(self.settings.access_token)
             else:
+                # mypy checks
+                assert self.settings.user
+                assert self.settings.password
                 auth = UsernamePassword(
                     self.settings.user,
                     self.settings.password.get_secret_value(),
