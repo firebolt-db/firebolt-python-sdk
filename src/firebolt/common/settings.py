@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from pydantic import BaseSettings, Field, SecretStr, root_validator
 
@@ -33,14 +34,14 @@ class Settings(BaseSettings):
         default_region (str): Default region for provisioning
     """
 
-    auth: Auth = Field(...)
+    auth: Optional[Auth] = Field(None)
     # Authorization
-    user: str = Field(..., env="FIREBOLT_USER")
-    password: SecretStr = Field(..., env="FIREBOLT_PASSWORD")
+    user: Optional[str] = Field(None, env="FIREBOLT_USER")
+    password: Optional[SecretStr] = Field(None, env="FIREBOLT_PASSWORD")
     # Or
-    access_token: str = Field(..., env="FIREBOLT_AUTH_TOKEN")
+    access_token: Optional[str] = Field(None, env="FIREBOLT_AUTH_TOKEN")
 
-    account_name: str = Field(..., env="FIREBOLT_ACCOUNT")
+    account_name: Optional[str] = Field(None, env="FIREBOLT_ACCOUNT")
     server: str = Field(..., env="FIREBOLT_SERVER")
     default_region: str = Field(..., env="FIREBOLT_DEFAULT_REGION")
     use_token_cache: bool = Field(True)
