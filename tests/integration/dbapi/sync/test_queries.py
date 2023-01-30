@@ -252,7 +252,7 @@ def test_insert(connection: Connection) -> None:
                     1.1,
                     date(2021, 1, 1),
                     datetime(2021, 1, 1, 1, 1, 1),
-                    1,
+                    True,
                     [1, 2, 3],
                 ],
             ],
@@ -305,9 +305,6 @@ def test_parameterized_query(connection: Connection) -> None:
 
         # \0 is converted to 0
         params[2] = "text0"
-
-        # Bool is converted to int
-        params[6] = 1
 
         assert (
             c.execute("SELECT * FROM test_tb_parameterized") == 1
