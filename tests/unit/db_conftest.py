@@ -8,7 +8,7 @@ from pytest import fixture
 
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.common.settings import Settings
-from firebolt.db import ARRAY, DATETIME64, DECIMAL
+from firebolt.db import ARRAY, DECIMAL
 
 QUERY_ROW_COUNT: int = 10
 
@@ -50,7 +50,7 @@ def python_query_description() -> List[Column]:
         Column("date", date, None, None, None, None, None),
         Column("date32", date, None, None, None, None, None),
         Column("datetime", datetime, None, None, None, None, None),
-        Column("datetime64", DATETIME64(4), None, None, None, None, None),
+        Column("datetime64", datetime, None, None, None, None, None),
         Column("bool", int, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(12, 34), None, None, None, None, None),

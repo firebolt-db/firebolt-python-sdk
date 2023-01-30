@@ -7,7 +7,7 @@ from pytest import fixture
 
 from firebolt.async_db._types import ColType
 from firebolt.async_db.cursor import Column
-from firebolt.db import ARRAY, DATETIME64, DECIMAL, Connection
+from firebolt.db import ARRAY, DECIMAL, Connection
 
 LOGGER = getLogger(__name__)
 
@@ -96,7 +96,7 @@ def all_types_query_description() -> List[Column]:
         Column("date32", date, None, None, None, None, None),
         Column("pgdate", date, None, None, None, None, None),
         Column("datetime", datetime, None, None, None, None, None),
-        Column("datetime64", DATETIME64(4), None, None, None, None, None),
+        Column("datetime64", datetime, None, None, None, None, None),
         Column("timestampntz", datetime, None, None, None, None, None),
         Column("timestamptz", datetime, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),

@@ -4,14 +4,7 @@ from typing import Dict
 from pytest import fixture
 from pytest_asyncio import fixture as asyncio_fixture
 
-from firebolt.async_db import (
-    ARRAY,
-    DATETIME64,
-    DECIMAL,
-    Connection,
-    Cursor,
-    connect,
-)
+from firebolt.async_db import ARRAY, DECIMAL, Connection, Cursor, connect
 from firebolt.common.settings import Settings
 from tests.unit.db_conftest import *  # noqa
 
@@ -39,23 +32,19 @@ async def cursor(connection: Connection, settings: Settings) -> Cursor:
 @fixture
 def types_map() -> Dict[str, type]:
     base_types = {
-        "UInt8": int,
-        "UInt16": int,
-        "UInt32": int,
-        "Int32": int,
-        "UInt64": int,
-        "Int64": int,
-        "Float32": float,
-        "Float64": float,
-        "String": str,
-        "Date": date,
-        "Date32": date,
-        "PGDate": date,
-        "DateTime": datetime,
-        "DateTime64(7)": DATETIME64(7),
-        "TimestampNtz": datetime,
-        "TimestampTz": datetime,
-        "Nullable(Nothing)": str,
+        "int": int,
+        "long": int,
+        "float": float,
+        "double": float,
+        "text": str,
+        "date": date,
+        "date_ext": date,
+        "pgdate": date,
+        "timestamp": datetime,
+        "timestamp_ext": datetime,
+        "timestampntz": datetime,
+        "timestamptz": datetime,
+        "Nothing null": str,
         "Decimal(123, 4)": DECIMAL(123, 4),
         "Decimal(38,0)": DECIMAL(38, 0),
         # Invalid decimal format
@@ -63,7 +52,7 @@ def types_map() -> Dict[str, type]:
         "boolean": bool,
         "SomeRandomNotExistingType": str,
     }
-    array_types = {f"Array({k})": ARRAY(v) for k, v in base_types.items()}
-    nullable_arrays = {f"Nullable({k})": v for k, v in array_types.items()}
-    nested_arrays = {f"Array({k})": ARRAY(v) for k, v in array_types.items()}
+    array_types = {f"array({k})": ARRAY(v) for k, v in base_types.items()}
+    nullable_arrays = {f"{k} null": v for k, v in array_types.items()}
+    nested_arrays = {f"array({k})": ARRAY(v) for k, v in array_types.items()}
     return {**base_types, **array_types, **nullable_arrays, **nested_arrays}
