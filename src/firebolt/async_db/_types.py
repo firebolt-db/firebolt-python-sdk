@@ -105,11 +105,11 @@ Column = namedtuple(
 class ARRAY:
     """Class for holding `array` column type information in Firebolt DB."""
 
-    _prefix = "Array("
+    _prefix = "array("
 
-    def __init__(self, subtype: Union[type, ARRAY, DECIMAL, DATETIME64]):
+    def __init__(self, subtype: Union[type, ARRAY, DECIMAL]):
         assert (subtype in _col_types and subtype is not list) or isinstance(
-            subtype, (ARRAY, DECIMAL, DATETIME64)
+            subtype, (ARRAY, DECIMAL)
         ), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
 
@@ -143,88 +143,46 @@ class DECIMAL:
         return other.precision == self.precision and other.scale == self.scale
 
 
-class DATETIME64:
-    """Class for holding `datetime64` value information in Firebolt DB."""
-
-    _prefix = "DateTime64("
-
-    def __init__(self, precision: int):
-        self.precision = precision
-
-    def __str__(self) -> str:
-        return f"DateTime64({self.precision})"
-
-    def __hash__(self) -> int:
-        return hash(str(self))
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, DATETIME64):
-            return NotImplemented
-        return other.precision == self.precision
-
-
-NULLABLE_PREFIX = "Nullable("
+NULLABLE_SUFFIX = "null"
 
 
 class _InternalType(Enum):
     """Enum of all internal Firebolt types, except for `array`."""
 
-    # INT, INTEGER
-    Int8 = "Int8"
-    UInt8 = "UInt8"
-    Int16 = "Int16"
-    UInt16 = "UInt16"
-    Int32 = "Int32"
-    UInt32 = "UInt32"
+    Int = "int"
+    Long = "long"
+    Float = "float"
+    Double = "double"
 
-    # BIGINT, LONG
-    Int64 = "Int64"
-    UInt64 = "UInt64"
+    Text = "text"
 
-    # FLOAT
-    Float32 = "Float32"
+    Date = "date"
+    DateExt = "date_ext"
+    PGDate = "pgdate"
 
-    # DOUBLE, DOUBLE PRECISION
-    Float64 = "Float64"
+    Timestamp = "timestamp"
+    TimestampExt = "timestamp_ext"
+    TimestampNtz = "timestampntz"
+    TimestampTz = "timestamptz"
 
-    # VARCHAR, TEXT, STRING
-    String = "String"
-
-    # DATE
-    Date = "Date"
-    Date32 = "Date32"
-    PGDate = "PGDate"
-
-    # DATETIME, TIMESTAMP
-    DateTime = "DateTime"
-    TimestampNtz = "TimestampNtz"
-    TimestampTz = "TimestampTz"
-
-    # BOOLEAN
     Boolean = "boolean"
 
-    # Nullable(Nothing)
     Nothing = "Nothing"
 
     @cached_property
     def python_type(self) -> type:
         """Convert internal type to Python type."""
         types = {
-            _InternalType.Int8: int,
-            _InternalType.UInt8: int,
-            _InternalType.Int16: int,
-            _InternalType.UInt16: int,
-            _InternalType.Int32: int,
-            _InternalType.UInt32: int,
-            _InternalType.Int64: int,
-            _InternalType.UInt64: int,
-            _InternalType.Float32: float,
-            _InternalType.Float64: float,
-            _InternalType.String: str,
+            _InternalType.Int: int,
+            _InternalType.Long: int,
+            _InternalType.Float: float,
+            _InternalType.Double: float,
+            _InternalType.Text: str,
             _InternalType.Date: date,
-            _InternalType.Date32: date,
+            _InternalType.DateExt: date,
             _InternalType.PGDate: date,
-            _InternalType.DateTime: datetime,
+            _InternalType.Timestamp: datetime,
+            _InternalType.TimestampExt: datetime,
             _InternalType.TimestampNtz: datetime,
             _InternalType.TimestampTz: datetime,
             _InternalType.Boolean: bool,
@@ -234,7 +192,7 @@ class _InternalType(Enum):
         return types[self]
 
 
-def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:  # noqa: C901
+def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:  # noqa: C901
     """Parse typename provided by query metadata into Python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
@@ -250,18 +208,9 @@ def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:  # noq
             pass
         else:
             return DECIMAL(precision, scale)
-    # Handle detetime64
-    if raw_type.startswith(DATETIME64._prefix) and raw_type.endswith(")"):
-        try:
-            precision = int(raw_type[len(DATETIME64._prefix) : -1])
-        except (ValueError, IndexError):
-            pass
-        else:
-            return DATETIME64(precision)
     # Handle nullable
-    if raw_type.startswith(NULLABLE_PREFIX) and raw_type.endswith(")"):
-        return parse_type(raw_type[len(NULLABLE_PREFIX) : -1])
-
+    if raw_type.endswith(NULLABLE_SUFFIX):
+        return parse_type(raw_type[: -len(NULLABLE_SUFFIX)].strip(" "))
     try:
         return _InternalType(raw_type).python_type
     except ValueError:
@@ -272,7 +221,7 @@ def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, DATETIME64]:  # noq
 
 def parse_value(
     value: RawColType,
-    ctype: Union[type, ARRAY, DECIMAL, DATETIME64],
+    ctype: Union[type, ARRAY, DECIMAL],
 ) -> ColType:
     """Provided raw value, and Python type; parses first into Python value."""
     if value is None:
@@ -285,7 +234,7 @@ def parse_value(
             raise DataError(f"Invalid date value {value}: str expected")
         assert isinstance(value, str)
         return parse_datetime(value).date()
-    if ctype is datetime or isinstance(ctype, DATETIME64):
+    if ctype is datetime:
         if not isinstance(value, str):
             raise DataError(f"Invalid datetime value {value}: str expected")
         return parse_datetime(value)

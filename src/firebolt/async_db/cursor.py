@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-JSON_OUTPUT_FORMAT = "JSONCompact"
+JSON_OUTPUT_FORMAT = "JSON_Compact"
 
 
 class CursorState(Enum):

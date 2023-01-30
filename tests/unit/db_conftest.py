@@ -8,7 +8,7 @@ from pytest import fixture
 
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.common.settings import Settings
-from firebolt.db import ARRAY, DATETIME64, DECIMAL
+from firebolt.db import ARRAY, DECIMAL
 
 QUERY_ROW_COUNT: int = 10
 
@@ -16,21 +16,21 @@ QUERY_ROW_COUNT: int = 10
 @fixture
 def query_description() -> List[Column]:
     return [
-        Column("uint8", "UInt8", None, None, None, None, None),
-        Column("uint16", "UInt16", None, None, None, None, None),
-        Column("uint32", "UInt32", None, None, None, None, None),
-        Column("int32", "Int32", None, None, None, None, None),
-        Column("uint64", "UInt64", None, None, None, None, None),
-        Column("int64", "Int64", None, None, None, None, None),
-        Column("float32", "Float32", None, None, None, None, None),
-        Column("float64", "Float64", None, None, None, None, None),
-        Column("string", "String", None, None, None, None, None),
-        Column("date", "Date", None, None, None, None, None),
-        Column("date32", "Date32", None, None, None, None, None),
-        Column("datetime", "DateTime", None, None, None, None, None),
-        Column("datetime64", "DateTime64(4)", None, None, None, None, None),
-        Column("bool", "UInt8", None, None, None, None, None),
-        Column("array", "Array(UInt8)", None, None, None, None, None),
+        Column("uint8", "int", None, None, None, None, None),
+        Column("uint16", "int", None, None, None, None, None),
+        Column("uint32", "int", None, None, None, None, None),
+        Column("int32", "int", None, None, None, None, None),
+        Column("uint64", "long", None, None, None, None, None),
+        Column("int64", "long", None, None, None, None, None),
+        Column("float32", "float", None, None, None, None, None),
+        Column("float64", "double", None, None, None, None, None),
+        Column("string", "text", None, None, None, None, None),
+        Column("date", "date", None, None, None, None, None),
+        Column("date32", "date_ext", None, None, None, None, None),
+        Column("datetime", "timestamp", None, None, None, None, None),
+        Column("datetime64", "timestamp_ext", None, None, None, None, None),
+        Column("bool", "boolean", None, None, None, None, None),
+        Column("array", "array(int)", None, None, None, None, None),
         Column("decimal", "Decimal(12, 34)", None, None, None, None, None),
     ]
 
@@ -50,8 +50,8 @@ def python_query_description() -> List[Column]:
         Column("date", date, None, None, None, None, None),
         Column("date32", date, None, None, None, None, None),
         Column("datetime", datetime, None, None, None, None, None),
-        Column("datetime64", DATETIME64(4), None, None, None, None, None),
-        Column("bool", int, None, None, None, None, None),
+        Column("datetime64", datetime, None, None, None, None, None),
+        Column("bool", bool, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(12, 34), None, None, None, None, None),
     ]
