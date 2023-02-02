@@ -1,7 +1,7 @@
 from json import JSONDecodeError
 from logging import getLogger
 
-from httpx import HTTPStatusError, Request, RequestError, Response
+from httpx import HTTPStatusError, Request, RequestError, Response, codes
 
 logger = getLogger(__name__)
 
@@ -51,6 +51,9 @@ def raise_on_4xx_5xx(response: Response) -> None:
         HTTPStatusError: HTTP error
     """
     try:
+        if response.status_code == codes.UNAUTHORIZED:
+            # This should be handled by Auth
+            return
         response.raise_for_status()
     except RequestError as exc:
         logger.debug("An error occurred while requesting %s.", exc.request.url)
