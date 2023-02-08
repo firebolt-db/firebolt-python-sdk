@@ -49,7 +49,7 @@ from firebolt.utils.exception import (
 from firebolt.utils.util import cached_property
 
 _NoneType = type(None)
-_col_types = (int, float, str, datetime, date, bool, list, Decimal, _NoneType)
+_col_types = (int, float, str, datetime, date, bool, list, Decimal, _NoneType, bytes)
 # duplicating this since 3.7 can't unpack Union
 ColType = Union[int, float, str, datetime, date, bool, list, Decimal, _NoneType, bytes]
 RawColType = Union[int, float, str, bool, list, _NoneType]

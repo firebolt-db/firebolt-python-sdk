@@ -32,6 +32,7 @@ def query_description() -> List[Column]:
         Column("bool", "boolean", None, None, None, None, None),
         Column("array", "array(int)", None, None, None, None, None),
         Column("decimal", "Decimal(12, 34)", None, None, None, None, None),
+        Column("bytea", "bytea", None, None, None, None, None),
     ]
 
 
@@ -54,6 +55,7 @@ def python_query_description() -> List[Column]:
         Column("bool", bool, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(12, 34), None, None, None, None, None),
+        Column("bytea", bytes, None, None, None, None, None),
     ]
 
 
@@ -77,6 +79,7 @@ def query_data() -> List[List[ColType]]:
             1,
             [1, 2, 3, 4],
             "123456789.123456789123456789123456789",
+            "\\\\x616263",
         ]
         for i in range(QUERY_ROW_COUNT)
     ]
@@ -102,6 +105,7 @@ def python_query_data() -> List[List[ColType]]:
             1,
             [1, 2, 3, 4],
             Decimal("123456789.123456789123456789123456789"),
+            b"abc",
         ]
         for i in range(QUERY_ROW_COUNT)
     ]
