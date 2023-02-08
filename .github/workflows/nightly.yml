@@ -67,14 +67,45 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO tests/integration
-        
+
       - name: Slack Notify of failure
         if: failure()
-        uses: rtCamp/action-slack-notify@v2.2.0
+        id: slack
+        uses: slackapi/slack-github-action@v1.23.0
+        with:
+          # Slack channel id, channel name, or user id to post message.
+          channel-id: 'test-ci-notifications-ptiurin'
+          # https://api.slack.com/reference/block-kit
+          payload: |
+            {
+              "text": "GitHub Nightly has failed HEADER",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "emoji": true,
+                    "text": "Nightly has failed :sadparrot:"
+                  }
+                },
+                {
+                  "type": "divider"
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    {
+                      "type": "mrkdwn",
+                      "text": "*Repository:* ${{ github.event.repository.name }}\n*Link:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|GH Action>"
+                    },
+                    {
+                      "type": "mrkdwn",
+                      "text": "*OS:* ${{ matrix.os }}\n*Python version:* ${{ matrix.python-version }}"
+                    }
+                  ]
+                }
+              ]
+            }
+
         env:
-          SLACK_USERNAME: CI bot
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: "#FF0000"
-          SLACK_ICON: None
-          SLACK_TITLE: Nightly tests failed
-          SLACK_MESSAGE: Please investigate
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
