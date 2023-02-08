@@ -79,7 +79,7 @@ def query_data() -> List[List[ColType]]:
             1,
             [1, 2, 3, 4],
             "123456789.123456789123456789123456789",
-            "\\\\x616263",
+            "\\x616263",
         ]
         for i in range(QUERY_ROW_COUNT)
     ]

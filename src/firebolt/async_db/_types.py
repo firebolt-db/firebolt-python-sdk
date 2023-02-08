@@ -225,7 +225,7 @@ def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:  # noqa: C901
         return str
 
 
-BYTEA_PREFIX = "\\\\x"
+BYTEA_PREFIX = "\\x"
 
 
 def _parse_bytea(str_value: str) -> bytes:
@@ -291,7 +291,7 @@ def format_value(value: ParameterType) -> str:
         return f"'{value.isoformat()}'"
     elif isinstance(value, bytes):
         # Encode each byte into hex
-        return "".join(f"\\x{b:02x}" for b in value)
+        return "'" + "".join(f"\\x{b:02x}" for b in value) + "'"
     if value is None:
         return "NULL"
     elif isinstance(value, Sequence):

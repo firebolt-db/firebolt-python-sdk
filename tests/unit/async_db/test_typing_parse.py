@@ -253,12 +253,12 @@ def test_parse_value_bool() -> None:
 def test_parse_value_bytes() -> None:
     """parse_value parses all int values correctly."""
     assert (
-        parse_value("\\\\x616263", bytes) == b"abc"
+        parse_value("\\x616263", bytes) == b"abc"
     ), "Error parsing bytes: provided str"
     assert parse_value(None, bytes) is None, "Error parsing bytes: provided None"
 
     with raises(ValueError):
-        parse_value("\\\\xabc", bytes)
+        parse_value("\\xabc", bytes)
 
     for val in (1, True, Exception()):
         with raises(DataError):

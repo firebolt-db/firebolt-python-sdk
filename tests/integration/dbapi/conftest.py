@@ -76,6 +76,7 @@ def all_types_query() -> str:
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
         'cast(null as  int) as "nullable"'
+        "'abc123'::bytea as bytea"
     )
 
 
@@ -104,6 +105,7 @@ def all_types_query_description() -> List[Column]:
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(38, 30), None, None, None, None, None),
         Column("nullable", int, None, None, None, None, None),
+        Column("bytea", bytes, None, None, None, None, None),
     ]
 
 
@@ -142,6 +144,7 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
             [1, 2, 3, 4],
             Decimal("1231232.123459999990457054844258706536"),
             None,
+            b"abc123",
         ]
     ]
 
