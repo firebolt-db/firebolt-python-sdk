@@ -69,6 +69,7 @@ jobs:
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO tests/integration
 
       - name: Slack Notify of failure
+        if: failure()
         id: slack
         uses: firebolt-db/action-slack-nightly-notify@v1
         with:
