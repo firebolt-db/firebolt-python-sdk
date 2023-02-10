@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false # finish all jobs even if one fails
       max-parallel: 2
-      matrix: 
+      matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
         python-version: ['3.7', '3.8', '3.9', '3.10']
     steps:
@@ -38,7 +38,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[dev]"
 
-      - name: Test with pytest
+      - name: Unit test with pytest
         run: |
           pytest tests/unit
 
@@ -67,14 +67,14 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO tests/integration
-        
+
       - name: Slack Notify of failure
         if: failure()
-        uses: rtCamp/action-slack-notify@v2.2.0
-        env:
-          SLACK_USERNAME: CI bot
-          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
-          SLACK_COLOR: "#FF0000"
-          SLACK_ICON: None
-          SLACK_TITLE: Nightly tests failed
-          SLACK_MESSAGE: Please investigate
+        id: slack
+        uses: firebolt-db/action-slack-nightly-notify@v1
+        with:
+          os: ${{ matrix.os }}
+          programming-language: Python
+          language-version: ${{ matrix.python-version }}
+          notifications-channel: 'ecosystem-ci-notifications'
+          slack-api-key: ${{ secrets.SLACK_BOT_TOKEN }}
