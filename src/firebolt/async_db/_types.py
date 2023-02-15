@@ -125,6 +125,7 @@ class ARRAY:
 class DECIMAL:
     """Class for holding `decimal` value information in Firebolt DB."""
 
+    __name__ = "Decimal"
     _prefix = "Decimal("
 
     def __init__(self, precision: int, scale: int):
