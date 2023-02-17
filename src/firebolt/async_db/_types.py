@@ -105,6 +105,7 @@ Column = namedtuple(
 class ARRAY:
     """Class for holding `array` column type information in Firebolt DB."""
 
+    __name__ = "Array"
     _prefix = "array("
 
     def __init__(self, subtype: Union[type, ARRAY, DECIMAL]):
