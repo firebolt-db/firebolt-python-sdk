@@ -656,7 +656,7 @@ class BaseCursor:
             resp_json = resp.json()
             if "status" not in resp_json:
                 raise OperationalError(
-                    f"Invalid response to asynchronous query: missing status."
+                    "Invalid response to asynchronous query: missing status."
                 )
         except Exception:
             self._state = CursorState.ERROR
