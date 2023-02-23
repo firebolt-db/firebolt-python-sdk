@@ -67,15 +67,15 @@ def all_types_query() -> str:
         "'text' as \"string\", "
         "CAST('2021-03-28' AS DATE) as \"date\", "
         "CAST('1860-03-04' AS DATE_EXT) as \"date32\","
-        "pgdate '0001-01-01' as pgdate, "
+        "pgdate '0001-01-01' as \"pgdate\", "
         "CAST('2019-07-31 01:01:01' AS DATETIME) as \"datetime\", "
         "CAST('2019-07-31 01:01:01.1234' AS TIMESTAMP_EXT(4)) as \"datetime64\", "
-        "CAST('1111-01-05 17:04:42.123456' as timestampntz) as timestampntz, "
-        "'1111-01-05 17:04:42.123456'::timestamptz as timestamptz, "
+        "CAST('1111-01-05 17:04:42.123456' as timestampntz) as \"timestampntz\", "
+        "'1111-01-05 17:04:42.123456'::timestamptz as \"timestamptz\", "
         'true as "boolean", '
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
-        "cast(null as  int) as nullable"
+        "cast(null as  int) as \"nullable\""
     )
 
 
