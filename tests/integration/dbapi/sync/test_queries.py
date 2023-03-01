@@ -532,7 +532,7 @@ def test_bytea_roundtrip(
             "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
         )
 
-        data = "bytea_123"
+        data = "bytea_123\n\t\\ヽ༼ຈل͜ຈ༽ﾉ"
 
         c.execute("INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),))
         c.execute("SELECT b FROM test_bytea_roundtrip")
