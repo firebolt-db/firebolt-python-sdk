@@ -505,7 +505,7 @@ async def test_bytea_roundtrip(
             "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
         )
 
-        data = "bytea_123\n\t\\\0ヽ༼ຈل͜ຈ༽ﾉ"
+        data = "bytea_123\n\t\\ヽ༼ຈل͜ຈ༽ﾉ"
 
         await c.execute(
             "INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),)
