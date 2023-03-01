@@ -75,7 +75,7 @@ def all_types_query() -> str:
         'true as "boolean", '
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
-        'cast(null as  int) as "nullable"'
+        'cast(null as  int) as "nullable", '
         "'abc123'::bytea as \"bytea\""
     )
 
