@@ -260,6 +260,10 @@ def test_parse_value_bytes() -> None:
     with raises(ValueError):
         parse_value("\\xabc", bytes)
 
+    # Missing prefix
+    with raises(ValueError):
+        parse_value("616263", bytes)
+
     for val in (1, True, Exception()):
         with raises(DataError):
             parse_value(val, bytes)
