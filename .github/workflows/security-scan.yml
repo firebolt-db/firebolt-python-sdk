@@ -3,6 +3,11 @@ name: Firebolt Security Scan
 on:
   workflow_dispatch:
   workflow_call:
+    inputs:
+      branch:
+        required: false
+        type: string
+        description: 'Branch to run on'
     secrets:
       FOSSA_TOKEN:
         required: true
