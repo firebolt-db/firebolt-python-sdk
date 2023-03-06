@@ -5,11 +5,16 @@ name: Unit tests
 
 on:
   workflow_call:
+    inputs:
+      branch:
+        required: false
+        type: string
+        description: 'Branch to run on'
     secrets:
       GIST_PAT:
         required: true
   push:
-    branches: [ main ]
+    branches: [ main, 0.x ]
 
 jobs:
   unit-tests:
@@ -19,6 +24,8 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v2
+      with:
+        ref: ${{ github.event.inputs.branch }}
     
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
