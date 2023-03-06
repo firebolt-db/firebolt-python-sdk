@@ -1,0 +1,44 @@
+name: v0.x Release new version
+
+on:
+  workflow_dispatch:
+    inputs:
+      pre-release-tag:
+        required: false
+        description: 'Tag for pre-release (optional)'
+      major-release:
+        required: false
+        description: 'Trigger a major release (optional). Leave empty for regular release.'
+
+jobs:
+  integration-tests:
+    uses: ./.github/workflows/integration-tests.yml
+    with:
+      branch: 0.x
+    secrets:
+      FIREBOLT_USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
+      FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
+      SERVICE_ID: ${{ secrets.SERVICE_ID }}
+      SERVICE_SECRET: ${{ secrets.SERVICE_SECRET }}
+
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    needs: integration-tests
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        ref: 0.x
+        token: ${{ secrets.RELEASE_PAT }}
+    
+    - name: 'Publish action'
+      uses: firebolt-db/action-python-release@main
+      with:
+        pre-release-tag: ${{ inputs.pre-release-tag }}
+        major-release: ${{ inputs.major-release }}
+        pypi-username: ${{ secrets.PYPI_USERNAME }}
+        pypi-password: ${{ secrets.PYPI_PASSWORD }}
+        version-file-path: "src/firebolt/__init__.py"
