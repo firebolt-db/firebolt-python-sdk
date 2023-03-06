@@ -37,6 +37,8 @@ from firebolt.utils.urls import (
 )
 from tests.unit.db_conftest import *  # noqa
 
+# intentionally breaking
+import NOTHING_HERE
 
 # Register nofakefs mark
 def pytest_configure(config):
