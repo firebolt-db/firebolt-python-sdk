@@ -6,7 +6,12 @@ from pytest import mark, raises
 from sqlparse import parse
 from sqlparse.sql import Statement
 
-from firebolt.async_db import DataError, InterfaceError, NotSupportedError
+from firebolt.async_db import (
+    Binary,
+    DataError,
+    InterfaceError,
+    NotSupportedError,
+)
 from firebolt.async_db._types import (
     SetParameter,
     format_statement,
@@ -44,6 +49,8 @@ from firebolt.async_db._types import (
         (("a", "b", "c"), "['a', 'b', 'c']"),
         # None
         (None, "NULL"),
+        # Bytea
+        (b"abc", "'\\x61\\x62\\x63'"),
     ],
 )
 def test_format_value(value: str, result: str) -> None:
@@ -188,3 +195,7 @@ def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) 
 def test_statement_to_set_errors(statement: Statement, error: Exception) -> None:
     with raises(error):
         statement_to_set(statement)
+
+
+def test_binary() -> None:
+    assert Binary("abc") == b"abc"

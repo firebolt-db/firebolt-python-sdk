@@ -4,7 +4,13 @@ from typing import Any, List
 
 from pytest import mark, raises
 
-from firebolt.async_db import Connection, Cursor, DataError, OperationalError
+from firebolt.async_db import (
+    Binary,
+    Connection,
+    Cursor,
+    DataError,
+    OperationalError,
+)
 from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
 
@@ -487,3 +493,27 @@ async def test_server_side_async_execution_get_status(
     # assert (
     #     type(status) is QueryStatus,
     # ), "get_status() did not return a QueryStatus object."
+
+
+async def test_bytea_roundtrip(
+    connection: Connection,
+) -> None:
+    """Inserted and than selected bytea value doesn't get corrupted."""
+    with connection.cursor() as c:
+        await c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip")
+        await c.execute(
+            "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
+        )
+
+        data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
+
+        await c.execute(
+            "INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),)
+        )
+        await c.execute("SELECT b FROM test_bytea_roundtrip")
+
+        bytes_data = (await c.fetchone())[0]
+
+        assert (
+            bytes_data.decode("utf-8") == data
+        ), "Invalid bytea data returned after roundtrip"

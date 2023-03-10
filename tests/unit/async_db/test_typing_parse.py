@@ -248,3 +248,22 @@ def test_parse_value_bool() -> None:
 
     with raises(DataError):
         parse_value("true", bool)
+
+
+def test_parse_value_bytes() -> None:
+    """parse_value parses all int values correctly."""
+    assert (
+        parse_value("\\x616263", bytes) == b"abc"
+    ), "Error parsing bytes: provided str"
+    assert parse_value(None, bytes) is None, "Error parsing bytes: provided None"
+
+    with raises(ValueError):
+        parse_value("\\xabc", bytes)
+
+    # Missing prefix
+    with raises(ValueError):
+        parse_value("616263", bytes)
+
+    for val in (1, True, Exception()):
+        with raises(DataError):
+            parse_value(val, bytes)
