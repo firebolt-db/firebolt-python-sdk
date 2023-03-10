@@ -118,15 +118,13 @@ def _validate_engine_name_and_url(
             "Both engine_name and engine_url are provided. Provide only one to connect."
         )
 
-
 async def connect(
-    auth: Auth,
     database: str = None,
+    auth: Auth = None,
     engine_name: Optional[str] = None,
     engine_url: Optional[str] = None,
     account_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
-    use_token_cache: bool = True,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
     """Connect to Firebolt database.
@@ -139,8 +137,6 @@ async def connect(
         `account_name` (Optional[str]): For customers with multiple accounts;
                                       if none, default is used
         `api_endpoint` (str): Firebolt API endpoint. Used for authentication
-        `use_token_cache` (bool): Cached authentication token in filesystem
-                                Default: True
         `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
                                 arguments for connection
 

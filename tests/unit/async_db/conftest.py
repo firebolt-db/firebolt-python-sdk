@@ -5,18 +5,18 @@ from pytest import fixture
 from pytest_asyncio import fixture as asyncio_fixture
 
 from firebolt.async_db import ARRAY, DECIMAL, Connection, Cursor, connect
+from firebolt.client.auth import Auth
 from firebolt.common.settings import Settings
 from tests.unit.db_conftest import *  # noqa
 
 
 @asyncio_fixture
-async def connection(settings: Settings, db_name: str) -> Connection:
+async def connection(settings: Settings, auth: Auth, db_name: str) -> Connection:
     async with (
         await connect(
             engine_url=settings.server,
             database=db_name,
-            username="u",
-            password="p",
+            auth=auth,
             account_name=settings.account_name,
             api_endpoint=settings.server,
         )

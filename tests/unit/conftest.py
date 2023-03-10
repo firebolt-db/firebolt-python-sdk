@@ -1,4 +1,3 @@
-from json import loads
 from re import Pattern, compile
 from typing import Callable, List
 
@@ -7,7 +6,7 @@ from httpx import Request, Response
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.client.auth import Auth, UsernamePassword
+from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common.settings import Settings
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
@@ -30,7 +29,7 @@ from firebolt.utils.urls import (
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
     ACCOUNT_URL,
-    AUTH_URL,
+    AUTH_SERVICE_ACCOUNT_URL,
     DATABASES_URL,
     ENGINES_URL,
 )
@@ -52,13 +51,13 @@ def global_fake_fs(request) -> None:
 
 
 @fixture
-def username() -> str:
-    return "email@domain.com"
+def client_id() -> str:
+    return "client_id"
 
 
 @fixture
-def password() -> str:
-    return "*****"
+def client_secret() -> str:
+    return "client_secret"
 
 
 @fixture
@@ -117,19 +116,18 @@ def mock_regions(region_1, region_2) -> List[Region]:
 
 
 @fixture
-def settings(server: str, region_1: str, username: str, password: str) -> Settings:
-    return Settings(
-        server=server,
-        user=username,
-        password=password,
-        default_region=region_1.name,
-        account_name=None,
-    )
+def auth(client_id: str, client_secret: str) -> Auth:
+    return ClientCredentials(client_id, client_secret)
 
 
 @fixture
-def auth(username: str, password: str) -> Auth:
-    return UsernamePassword(username, password)
+def settings(server: str, region_1: str, auth: Auth) -> Settings:
+    return Settings(
+        server=server,
+        auth=auth,
+        default_region=region_1.name,
+        account_name=None,
+    )
 
 
 @fixture
@@ -149,7 +147,7 @@ def auth_callback(auth_url: str) -> Callable:
 
 @fixture
 def auth_url(settings: Settings) -> str:
-    return f"https://{settings.server}{AUTH_URL}"
+    return f"https://{settings.server}{AUTH_SERVICE_ACCOUNT_URL}"
 
 
 @fixture
@@ -327,33 +325,21 @@ def db_api_exceptions():
 
 
 @fixture
-def check_token_callback(access_token: str) -> Callable:
-    def check_token(request: Request = None, **kwargs) -> Response:
-        prefix = "Bearer "
-        assert request, "empty request"
-        assert "authorization" in request.headers, "missing authorization header"
-        auth = request.headers["authorization"]
-        assert auth.startswith(prefix), "invalid authorization header format"
-        token = auth[len(prefix) :]
-        assert token == access_token, "invalid authorization token"
-
-        return Response(status_code=httpx.codes.OK, headers={"content-length": "0"})
-
-    return check_token
-
-
-@fixture
-def check_credentials_callback(settings: Settings, access_token: str) -> Callable:
+def check_credentials_callback(
+    client_id: str, client_secret: str, access_token: str
+) -> Callable:
     def check_credentials(
-        request: Request = None,
+        request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request, "empty request"
-        body = loads(request.read())
-        assert "username" in body, "Missing username"
-        assert body["username"] == settings.user, "Invalid username"
-        assert "password" in body, "Missing password"
-        assert body["password"] == settings.password, "Invalid password"
+        body = request.read().decode("utf-8")
+        assert "client_id" in body, "Missing id"
+        assert f"client_id={client_id}" in body, "Invalid id"
+        assert "client_secret" in body, "Missing secret"
+        assert f"client_secret={client_secret}" in body, "Invalid secret"
+        assert "grant_type" in body, "Missing grant_type"
+        assert "grant_type=client_credentials" in body, "Invalid grant_type"
 
         return Response(
             status_code=httpx.codes.OK,
