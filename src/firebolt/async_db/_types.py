@@ -229,7 +229,10 @@ BYTEA_PREFIX = "\\x"
 
 
 def _parse_bytea(str_value: str) -> bytes:
-    if len(str_value) < len(BYTEA_PREFIX) or str_value[:len(BYTEA_PREFIX)] != BYTEA_PREFIX:
+    if (
+        len(str_value) < len(BYTEA_PREFIX)
+        or str_value[: len(BYTEA_PREFIX)] != BYTEA_PREFIX
+    ):
         raise ValueError(f"Invalid bytea value format: {BYTEA_PREFIX} prefix expected")
     return bytes.fromhex(str_value[len(BYTEA_PREFIX) :])
 
