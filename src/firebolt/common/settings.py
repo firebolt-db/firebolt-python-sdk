@@ -3,7 +3,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Callable, Optional
 
-from firebolt.client.auth import Auth, UsernamePassword
+from firebolt.client.auth import Auth, ClientCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -23,9 +23,8 @@ AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials direct
   >>> ...
   >>> settings = Settings(auth=Token(access_token), ...)"""
 
-USERNAME_ENV = "FIREBOLT_USER"
-PASSWORD_ENV = "FIREBOLT_PASSWORD"
-AUTH_TOKEN_ENV = "FIREBOLT_AUTH_TOKEN"
+CLIENT_ID_ENV = "FIREBOLT_CLIENT_ID"
+CLIENT_SECRET_ENV = "FIREBOLT_CLIENT_SECRET"
 ACCOUNT_ENV = "FIREBOLT_ACCOUNT"
 SERVER_ENV = "FIREBOLT_SERVER"
 DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
@@ -39,10 +38,10 @@ def from_env(var_name: str, default: Any = None) -> Callable:
 
 
 def auth_from_env() -> Optional[Auth]:
-    username = os.environ.get(USERNAME_ENV, None)
-    password = os.environ.get(PASSWORD_ENV, None)
-    if username and password:
-        return UsernamePassword(username, password)
+    client_id = os.environ.get(CLIENT_ID_ENV, None)
+    client_secret = os.environ.get(CLIENT_SECRET_ENV, None)
+    if client_id and client_secret:
+        return ClientCredentials(client_id, client_secret)
     return None
 
 
@@ -63,11 +62,6 @@ class Settings:
     """
 
     auth: Optional[Auth] = field(default_factory=auth_from_env)
-    # Authorization
-    user: Optional[str] = field(default=None)
-    password: Optional[str] = field(default=None)
-    # Or
-    access_token: Optional[str] = field(default_factory=from_env(AUTH_TOKEN_ENV))
 
     account_name: Optional[str] = field(default_factory=from_env(ACCOUNT_ENV))
     server: str = field(default_factory=from_env(SERVER_ENV))

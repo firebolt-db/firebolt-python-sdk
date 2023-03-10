@@ -12,14 +12,13 @@ from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.client.auth import Auth, _get_auth
+from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
 )
-from firebolt.common.util import validate_engine_name_and_url
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -33,18 +32,6 @@ from firebolt.utils.urls import (
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
-
-AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials
- directly to the `connect` function is deprecated.
- Pass the `Auth` object instead.
- Examples:
-  >>> from firebolt.client.auth import UsernamePassword
-  >>> ...
-  >>> connect(auth=UsernamePassword(username, password), ...)
- or
-  >>> from firebolt.client.auth import Token
-  >>> ...
-  >>> connect(auth=Token(access_token), ...)"""
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +109,95 @@ async def _get_database_default_engine_url(
             KeyError,
         ) as e:
             raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
+
+def _validate_engine_name_and_url(
+    engine_name: Optional[str], engine_url: Optional[str]
+) -> None:
+    if engine_name and engine_url:
+        raise ConfigurationError(
+            "Both engine_name and engine_url are provided. Provide only one to connect."
+        )
+
+
+async def connect(
+    auth: Auth,
+    database: str = None,
+    engine_name: Optional[str] = None,
+    engine_url: Optional[str] = None,
+    account_name: Optional[str] = None,
+    api_endpoint: str = DEFAULT_API_URL,
+    use_token_cache: bool = True,
+    additional_parameters: Dict[str, Any] = {},
+) -> Connection:
+    """Connect to Firebolt database.
+
+    Args:
+        `auth` (Auth) Authentication object.
+        `database` (str): Name of the database to connect
+        `engine_name` (Optional[str]): Name of the engine to connect to
+        `engine_url` (Optional[str]): The engine endpoint to use
+        `account_name` (Optional[str]): For customers with multiple accounts;
+                                      if none, default is used
+        `api_endpoint` (str): Firebolt API endpoint. Used for authentication
+        `use_token_cache` (bool): Cached authentication token in filesystem
+                                Default: True
+        `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
+                                arguments for connection
+
+    Note:
+        Providing both `engine_name` and `engine_url` will result in an error
+
+    """
+    # These parameters are optional in function signature
+    # but are required to connect.
+    # PEP 249 recommends making them kwargs.
+    if not database:
+        raise ConfigurationError("database name is required to connect.")
+
+    if not auth:
+        raise ConfigurationError("auth is required to connect.")
+
+    _validate_engine_name_and_url(engine_name, engine_url)
+
+    api_endpoint = fix_url_schema(api_endpoint)
+
+    # Mypy checks, this should never happen
+    assert database is not None
+
+    if not engine_name and not engine_url:
+        engine_url = await _get_database_default_engine_url(
+            database=database,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        )
+
+    elif engine_name:
+        engine_url = await _resolve_engine_url(
+            engine_name=engine_name,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        )
+    elif account_name:
+        # In above if branches account name is validated since it's used to
+        # resolve or get an engine url.
+        # We need to manually validate account_name if none of the above
+        # cases are triggered.
+        async with AsyncClient(
+            auth=auth,
+            base_url=api_endpoint,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as client:
+            await client.account_id
+
+    assert engine_url is not None
+
+    engine_url = fix_url_schema(engine_url)
+    return Connection(
+        engine_url, database, auth, api_endpoint, additional_parameters
+    )
 
 
 class OverriddenHttpBackend(AutoBackend):
@@ -260,92 +336,3 @@ class Connection(BaseConnection):
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
         await self.aclose()
-
-
-async def connect(
-    database: str = None,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    access_token: Optional[str] = None,
-    auth: Auth = None,
-    engine_name: Optional[str] = None,
-    engine_url: Optional[str] = None,
-    account_name: Optional[str] = None,
-    api_endpoint: str = DEFAULT_API_URL,
-    use_token_cache: bool = True,
-    additional_parameters: Dict[str, Any] = {},
-) -> Connection:
-    """Connect to Firebolt database.
-
-    Args:
-        `database` (str): Name of the database to connect
-        `username` (Optional[str]): User name to use for authentication (Deprecated)
-        `password` (Optional[str]): Password to use for authentication (Deprecated)
-        `access_token` (Optional[str]): Authentication token to use instead of
-                                        credentials (Deprecated)
-        `auth` (Auth)L Authentication object.
-        `engine_name` (Optional[str]): Name of the engine to connect to
-        `engine_url` (Optional[str]): The engine endpoint to use
-        `account_name` (Optional[str]): For customers with multiple accounts;
-                                        if none, default is used
-        `api_endpoint` (str): Firebolt API endpoint. Used for authentication
-        `use_token_cache` (bool): Cached authentication token in filesystem
-                                Default: True
-        `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
-                                arguments for connection
-
-    Note:
-        Providing both `engine_name` and `engine_url` will result in an error
-
-    """
-    # These parameters are optional in function signature
-    # but are required to connect.
-    # PEP 249 recommends making them kwargs.
-    if not database:
-        raise ConfigurationError("database name is required to connect.")
-
-    validate_engine_name_and_url(engine_name, engine_url)
-
-    if not auth:
-        if any([username, password, access_token, api_endpoint, use_token_cache]):
-            logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
-            auth = _get_auth(username, password, access_token, use_token_cache)
-        else:
-            raise ConfigurationError("No authentication provided.")
-    api_endpoint = fix_url_schema(api_endpoint)
-
-    # Mypy checks, this should never happen
-    assert database is not None
-
-    if not engine_name and not engine_url:
-        engine_url = await _get_database_default_engine_url(
-            database=database,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        )
-
-    elif engine_name:
-        engine_url = await _resolve_engine_url(
-            engine_name=engine_name,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        )
-    elif account_name:
-        # In above if branches account name is validated since it's used to
-        # resolve or get an engine url.
-        # We need to manually validate account_name if none of the above
-        # cases are triggered.
-        async with AsyncClient(
-            auth=auth,
-            base_url=api_endpoint,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        ) as client:
-            await client.account_id
-
-    assert engine_url is not None
-
-    engine_url = fix_url_schema(engine_url)
-    return Connection(engine_url, database, auth, api_endpoint, additional_parameters)
