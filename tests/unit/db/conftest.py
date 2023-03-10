@@ -1,16 +1,16 @@
 from pytest import fixture
 
+from firebolt.client.auth import Auth
 from firebolt.common.settings import Settings
 from firebolt.db import Connection, Cursor, connect
 
 
 @fixture
-def connection(settings: Settings, db_name: str) -> Connection:
+def connection(settings: Settings, db_name: str, auth: Auth) -> Connection:
     with connect(
         engine_url=settings.server,
         database=db_name,
-        username="u",
-        password="p",
+        auth=auth,
         api_endpoint=settings.server,
     ) as connection:
         yield connection
