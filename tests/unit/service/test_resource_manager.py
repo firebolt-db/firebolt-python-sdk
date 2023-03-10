@@ -5,7 +5,7 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client.auth import Auth
+from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common.settings import Settings
 from firebolt.service.manager import ResourceManager
 from firebolt.utils.exception import AccountNotFoundError
@@ -14,6 +14,7 @@ from firebolt.utils.token_storage import TokenSecureStorage
 
 def test_rm_credentials(
     httpx_mock: HTTPXMock,
+    check_token_callback: Callable,
     check_credentials_callback: Callable,
     settings: Settings,
     auth_url: str,
@@ -27,6 +28,7 @@ def test_rm_credentials(
     url = "https://url"
 
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(check_token_callback, url=url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
@@ -39,6 +41,7 @@ def test_rm_token_cache(
     httpx_mock: HTTPXMock,
     check_token_callback: Callable,
     check_credentials_callback: Callable,
+    settings: Settings,
     auth_url: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
@@ -56,29 +59,35 @@ def test_rm_token_cache(
 
     with Patcher():
         local_settings = Settings(
-            auth=settings.auth,
+            auth=ClientCredentials(
+                settings.auth.client_id,
+                settings.auth.client_secret,
+                use_token_cache=True,
+            ),
             server=settings.server,
             default_region=settings.default_region,
-            use_token_cache=True,
         )
         rm = ResourceManager(local_settings)
         rm.client.get(url)
 
-        ts = TokenSecureStorage(settings.user, settings.password)
+        ts = TokenSecureStorage(settings.auth.client_id, settings.auth.client_secret)
         assert ts.get_cached_token() == access_token, "Invalid token value cached"
 
     # Do the same, but with use_token_cache=False
     with Patcher():
         local_settings = Settings(
-            auth=settings.auth,
+            auth=ClientCredentials(
+                settings.auth.client_id,
+                settings.auth.client_secret,
+                use_token_cache=False,
+            ),
             server=settings.server,
             default_region=settings.default_region,
-            use_token_cache=False,
         )
         rm = ResourceManager(local_settings)
         rm.client.get(url)
 
-        ts = TokenSecureStorage(settings.user, settings.password)
+        ts = TokenSecureStorage(settings.auth.client_id, settings.auth.client_secret)
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"

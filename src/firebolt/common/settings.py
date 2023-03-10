@@ -66,7 +66,6 @@ class Settings:
     account_name: Optional[str] = field(default_factory=from_env(ACCOUNT_ENV))
     server: str = field(default_factory=from_env(SERVER_ENV))
     default_region: str = field(default_factory=from_env(DEFAULT_REGION_ENV))
-    use_token_cache: bool = field(default=True)
 
     def __post_init__(self) -> None:
         """Validate that either creds or token is provided.

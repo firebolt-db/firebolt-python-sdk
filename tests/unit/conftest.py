@@ -76,6 +76,11 @@ def access_token() -> str:
 
 
 @fixture
+def access_token_2() -> str:
+    return "mock_access_token_2"
+
+
+@fixture
 def provider() -> Provider:
     return Provider(
         provider_id="mock_provider_id",
@@ -322,6 +327,22 @@ def db_api_exceptions():
         "Warning": Warning,
     }
     return exceptions
+
+
+@fixture
+def check_token_callback(access_token: str) -> Callable:
+    def check_token(request: Request = None, **kwargs) -> Response:
+        prefix = "Bearer "
+        assert request, "empty request"
+        assert "authorization" in request.headers, "missing authorization header"
+        auth = request.headers["authorization"]
+        assert auth.startswith(prefix), "invalid authorization header format"
+        token = auth[len(prefix) :]
+        assert token == access_token, "invalid authorization token"
+
+        return Response(status_code=httpx.codes.OK, headers={"content-length": "0"})
+
+    return check_token
 
 
 @fixture
