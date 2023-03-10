@@ -51,6 +51,7 @@ def types_map() -> Dict[str, type]:
         "Decimal(38)": str,
         "boolean": bool,
         "SomeRandomNotExistingType": str,
+        "bytea": bytes,
     }
     array_types = {f"array({k})": ARRAY(v) for k, v in base_types.items()}
     nullable_arrays = {f"{k} null": v for k, v in array_types.items()}

@@ -9,6 +9,7 @@ from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
 from firebolt.db import (
+    Binary,
     Connection,
     Cursor,
     DataError,
@@ -519,3 +520,25 @@ def test_multi_thread_connection_sharing(
 
     connection.close()
     assert not exceptions
+
+
+def test_bytea_roundtrip(
+    connection: Connection,
+) -> None:
+    """Inserted and than selected bytea value doesn't get corrupted."""
+    with connection.cursor() as c:
+        c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip")
+        c.execute(
+            "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
+        )
+
+        data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
+
+        c.execute("INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),))
+        c.execute("SELECT b FROM test_bytea_roundtrip")
+
+        bytes_data = (c.fetchone())[0]
+
+        assert (
+            bytes_data.decode("utf-8") == data
+        ), "Invalid bytea data returned after roundtrip"

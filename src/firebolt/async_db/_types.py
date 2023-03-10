@@ -49,11 +49,11 @@ from firebolt.utils.exception import (
 from firebolt.utils.util import cached_property
 
 _NoneType = type(None)
-_col_types = (int, float, str, datetime, date, bool, list, Decimal, _NoneType)
+_col_types = (int, float, str, datetime, date, bool, list, Decimal, _NoneType, bytes)
 # duplicating this since 3.7 can't unpack Union
-ColType = Union[int, float, str, datetime, date, bool, list, Decimal, _NoneType]
+ColType = Union[int, float, str, datetime, date, bool, list, Decimal, _NoneType, bytes]
 RawColType = Union[int, float, str, bool, list, _NoneType]
-ParameterType = Union[int, float, str, datetime, date, bool, Decimal, Sequence]
+ParameterType = Union[int, float, str, datetime, date, bool, Decimal, Sequence, bytes]
 
 # These definitions are required by PEP-249
 Date = date
@@ -78,12 +78,13 @@ Timestamp = datetime
 TimestampFromTicks = datetime.fromtimestamp
 
 
-def Binary(value: str) -> str:
-    """Convert string to binary for Firebolt DB does nothing."""
-    return value
+def Binary(value: str) -> bytes:
+    """Encode a string into UTF-8."""
+    return value.encode("utf-8")
 
 
-STRING = BINARY = str
+STRING = str
+BINARY = bytes
 NUMBER = int
 DATETIME = datetime
 ROWID = int
@@ -169,6 +170,8 @@ class _InternalType(Enum):
 
     Boolean = "boolean"
 
+    Bytea = "bytea"
+
     Nothing = "Nothing"
 
     @cached_property
@@ -188,6 +191,7 @@ class _InternalType(Enum):
             _InternalType.TimestampNtz: datetime,
             _InternalType.TimestampTz: datetime,
             _InternalType.Boolean: bool,
+            _InternalType.Bytea: bytes,
             # For simplicity, this could happen only during 'select null' query
             _InternalType.Nothing: str,
         }
@@ -221,6 +225,18 @@ def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:  # noqa: C901
         return str
 
 
+BYTEA_PREFIX = "\\x"
+
+
+def _parse_bytea(str_value: str) -> bytes:
+    if (
+        len(str_value) < len(BYTEA_PREFIX)
+        or str_value[: len(BYTEA_PREFIX)] != BYTEA_PREFIX
+    ):
+        raise ValueError(f"Invalid bytea value format: {BYTEA_PREFIX} prefix expected")
+    return bytes.fromhex(str_value[len(BYTEA_PREFIX) :])
+
+
 def parse_value(
     value: RawColType,
     ctype: Union[type, ARRAY, DECIMAL],
@@ -244,6 +260,10 @@ def parse_value(
         if not isinstance(value, (bool, int)):
             raise DataError(f"Invalid boolean value {value}: bool or int expected")
         return bool(value)
+    if ctype is bytes:
+        if not isinstance(value, str):
+            raise DataError(f"Invalid bytea value {value}: str expected")
+        return _parse_bytea(value)
     if isinstance(ctype, DECIMAL):
         assert isinstance(value, (str, int))
         return Decimal(value)
@@ -274,6 +294,9 @@ def format_value(value: ParameterType) -> str:
         return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'"
     elif isinstance(value, date):
         return f"'{value.isoformat()}'"
+    elif isinstance(value, bytes):
+        # Encode each byte into hex
+        return "'" + "".join(f"\\x{b:02x}" for b in value) + "'"
     if value is None:
         return "NULL"
     elif isinstance(value, Sequence):
