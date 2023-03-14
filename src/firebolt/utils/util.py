@@ -72,6 +72,20 @@ def fix_url_schema(url: str) -> str:
     return url if url.startswith("http") else f"https://{url}"
 
 
+def get_auth_endpoint(api_endpoint: URL) -> URL:
+    """Create auth endpoint from api endpoint.
+
+    Args:
+        api_endpoint (URL): provided API endpoint
+
+    Returns:
+        URL: authentication endpoint
+    """
+    return api_endpoint.copy_with(
+        host=".".join(["id"] + api_endpoint.host.split(".")[1:])
+    )
+
+
 def async_to_sync(f: Callable) -> Callable:
     """Convert async function to sync.
 

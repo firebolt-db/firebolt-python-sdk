@@ -1,4 +1,4 @@
-AUTH_SERVICE_ACCOUNT_URL = "/auth/v1/token"
+AUTH_SERVICE_ACCOUNT_URL = "/oauth/token"
 
 DATABASES_URL = "/core/v1/account/databases"
 

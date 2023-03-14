@@ -16,6 +16,7 @@ from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
 from firebolt.utils.util import (
     cached_property,
     fix_url_schema,
+    get_auth_endpoint,
     merge_urls,
     mixin_for,
 )
@@ -45,6 +46,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
     ):
         self.account_name = account_name
         self._api_endpoint = URL(fix_url_schema(api_endpoint))
+        self._auth_endpoint = get_auth_endpoint(self._api_endpoint)
         super().__init__(*args, auth=auth, **kwargs)
 
     def _build_auth(self, auth: Optional[AuthTypes]) -> Optional[Auth]:
@@ -61,13 +63,15 @@ class FireboltClientMixin(FireboltClientMixinBase):
         Raises:
             TypeError: Auth argument has unsupported type
         """
-        if auth is None or isinstance(auth, Auth):
-            return auth
-        raise TypeError(f'Invalid "auth" argument: {auth!r}')
+        if not (auth is None or isinstance(auth, Auth)):
+            raise TypeError(f'Invalid "auth" argument: {auth!r}')
+        if hasattr(auth, "_audience"):
+            auth._audience = self._api_endpoint  # type: ignore
+        return auth
 
     def _merge_auth_request(self, request: Request) -> Request:
         if isinstance(request, AuthRequest):
-            request.url = merge_urls(self._api_endpoint, request.url)
+            request.url = merge_urls(self._auth_endpoint, request.url)
             request._prepare(dict(request.headers))
         return request
 

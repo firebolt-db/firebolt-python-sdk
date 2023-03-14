@@ -5,7 +5,7 @@ from httpx import codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import DEFAULT_API_URL, AsyncClient
+from firebolt.client import AsyncClient
 from firebolt.client.auth import Auth
 from firebolt.common import Settings
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
@@ -54,6 +54,8 @@ async def test_client_different_auths(
     check_credentials_callback: Callable,
     check_token_callback: Callable,
     auth: Auth,
+    auth_server: str,
+    server: str,
 ):
     """
     Client properly handles such auth types:
@@ -65,21 +67,21 @@ async def test_client_different_auths(
 
     httpx_mock.add_callback(
         check_credentials_callback,
-        url=f"https://{DEFAULT_API_URL}{AUTH_SERVICE_ACCOUNT_URL}",
+        url=f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}",
     )
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    async with AsyncClient(auth=auth) as client:
+    async with AsyncClient(auth=auth, api_endpoint=server) as client:
         await client.get("https://url")
 
     # client accepts None auth, but authorization fails
     with raises(AssertionError) as excinfo:
-        async with AsyncClient(auth=None) as client:
+        async with AsyncClient(auth=None, api_endpoint=server) as client:
             await client.get("https://url")
 
     with raises(TypeError) as excinfo:
-        async with AsyncClient(auth=lambda r: r):
+        async with AsyncClient(auth=lambda r: r, api_endpoint=server):
             await client.get("https://url")
 
     assert str(excinfo.value).startswith(

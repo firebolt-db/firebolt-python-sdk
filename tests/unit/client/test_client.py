@@ -6,7 +6,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import DEFAULT_API_URL, Client
+from firebolt.client import Client
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
 from firebolt.common import Settings
@@ -58,6 +58,8 @@ def test_client_different_auths(
     check_credentials_callback: Callable,
     check_token_callback: Callable,
     auth: Auth,
+    auth_server: str,
+    server: str,
 ):
     """
     Client properly handles such auth types:
@@ -69,12 +71,12 @@ def test_client_different_auths(
 
     httpx_mock.add_callback(
         check_credentials_callback,
-        url=f"https://{DEFAULT_API_URL}{AUTH_SERVICE_ACCOUNT_URL}",
+        url=f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}",
     )
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    Client(auth=auth).get("https://url")
+    Client(auth=auth, api_endpoint=server).get("https://url")
 
     # client accepts None auth, but authorization fails
     with raises(AssertionError) as excinfo:

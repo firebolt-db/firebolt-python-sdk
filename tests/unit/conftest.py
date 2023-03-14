@@ -66,6 +66,11 @@ def server() -> str:
 
 
 @fixture
+def auth_server() -> str:
+    return "id.mock.firebolt.io"
+
+
+@fixture
 def account_id() -> str:
     return "mock_account_id"
 
@@ -151,8 +156,8 @@ def auth_callback(auth_url: str) -> Callable:
 
 
 @fixture
-def auth_url(settings: Settings) -> str:
-    return f"https://{settings.server}{AUTH_SERVICE_ACCOUNT_URL}"
+def auth_url(auth_server: str) -> str:
+    return f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}"
 
 
 @fixture
