@@ -296,17 +296,16 @@ class BaseCursor:
     ]:
         """Fetch information about executed query from http response."""
 
-        # Empty response is returned for insert query
-        if response.headers.get("content-length", "") == "0":
-            return (-1, None, None, None)
         try:
             # Skip parsing floats to properly parse them later
             query_data = response.json(parse_float=str)
             rowcount = int(query_data["rows"])
-            descriptions = [
+            descriptions: Optional[List[Column]] = [
                 Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
                 for d in query_data["meta"]
             ]
+            if not descriptions:
+                descriptions = None
             statistics = Statistics(**query_data["statistics"])
             # Parse data during fetch
             rows = query_data["data"]
