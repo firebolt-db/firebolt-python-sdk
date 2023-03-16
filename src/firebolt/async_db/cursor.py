@@ -295,7 +295,9 @@ class BaseCursor:
         Optional[List[List[RawColType]]],
     ]:
         """Fetch information about executed query from http response."""
-
+        # Empty response is returned for insert query
+        if response.headers.get("content-length", "") == "0":
+            return (-1, None, None, None)
         try:
             # Skip parsing floats to properly parse them later
             query_data = response.json(parse_float=str)
