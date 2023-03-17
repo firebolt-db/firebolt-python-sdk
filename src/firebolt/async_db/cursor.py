@@ -303,10 +303,12 @@ class BaseCursor:
             # Skip parsing floats to properly parse them later
             query_data = response.json(parse_float=str)
             rowcount = int(query_data["rows"])
-            descriptions = [
+            descriptions: Optional[List[Column]] = [
                 Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
                 for d in query_data["meta"]
             ]
+            if not descriptions:
+                descriptions = None
             statistics = Statistics(**query_data["statistics"])
             # Parse data during fetch
             rows = query_data["data"]
