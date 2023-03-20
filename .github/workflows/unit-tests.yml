@@ -25,6 +25,8 @@ jobs:
     - name: Collect Workflow Telemetry
       uses: runforesight/foresight-workflow-kit-action@v1
       if: ${{ always() }}
+      with:
+        api_key: ${{ secrets.FORESIGHT_KEY }}
     - name: Check out code
       uses: actions/checkout@v2
       with:
@@ -48,6 +50,7 @@ jobs:
       uses: runforesight/foresight-test-kit-action@v1
       if: success() || failure()
       with:
+        api_key: ${{ secrets.FORESIGHT_KEY }}
         # following 3 options are required if you want to use test monitoring features
         test_format: JUNIT
         test_framework: pytest
