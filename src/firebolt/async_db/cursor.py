@@ -159,15 +159,15 @@ class Cursor(BaseCursor):
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
         """
+        parameters = {}
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        if self.connection.database:
+            parameters["database"] = self.connection.database
         return await self._client.request(
             url=f"/{path}",
             method="POST",
-            params={
-                "database": self.connection.database,
-                **(parameters or dict()),
-            },
+            params=parameters,
             content=query,
         )
 
