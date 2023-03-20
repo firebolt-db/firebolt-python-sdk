@@ -22,6 +22,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Collect Workflow Telemetry
+      uses: runforesight/foresight-workflow-kit-action@v1
+      if: ${{ always() }}
     - name: Check out code
       uses: actions/checkout@v2
       with:
