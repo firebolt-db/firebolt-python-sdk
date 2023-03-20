@@ -119,7 +119,9 @@ class Cursor(BaseCursor):
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            if not await is_db_available(self.connection, self.connection.database):
+            if self.connection.database and not await is_db_available(
+                self.connection, self.connection.database
+            ):
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
                 )

@@ -28,3 +28,5 @@ ACCOUNT_INSTANCE_TYPES_URL = "/aws/v2/accounts/{account_id}/instanceTypes"
 
 PROVIDERS_URL = "/compute/v1/providers"
 REGIONS_URL = "/compute/v1/regions"
+
+GATEWAY_HOST_BY_ACCOUNT_NAME = "/v3/getGatewayHostByAccountName/{account_name}"

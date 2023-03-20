@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import logging
 import socket
-from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
-from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
+from httpx import AsyncHTTPTransport, Timeout, codes
 
 from firebolt.async_db.cursor import Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
@@ -22,25 +21,19 @@ from firebolt.common.settings import (
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
-    FireboltEngineError,
     InterfaceError,
 )
-from firebolt.utils.urls import (
-    ACCOUNT_ENGINE_ID_BY_NAME_URL,
-    ACCOUNT_ENGINE_URL,
-    ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
-)
+from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
 logger = logging.getLogger(__name__)
 
 
-async def _resolve_engine_url(
-    engine_name: str,
+async def _get_system_engine_url(
     auth: Auth,
+    account_name: str,
     api_endpoint: str,
-    account_name: Optional[str] = None,
 ) -> str:
     async with AsyncClient(
         auth=auth,
@@ -49,74 +42,60 @@ async def _resolve_engine_url(
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
     ) as client:
-        account_id = await client.account_id
-        url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-        try:
-            response = await client.get(
-                url=url,
-                params={"engine_name": engine_name},
-            )
-            response.raise_for_status()
-            engine_id = response.json()["engine_id"]["engine_id"]
-            url = ACCOUNT_ENGINE_URL.format(account_id=account_id, engine_id=engine_id)
-            response = await client.get(url=url)
-            response.raise_for_status()
-            return response.json()["engine"]["endpoint"]
-        except HTTPStatusError as e:
-            # Engine error would be 404.
-            if e.response.status_code != 404:
-                raise InterfaceError(
-                    f"Error {e.__class__.__name__}: Unable to retrieve engine "
-                    f"endpoint {url}."
-                )
-            # Once this is point is reached we've already authenticated with
-            # the backend so it's safe to assume the cause of the error is
-            # missing engine.
-            raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist.")
-        except (JSONDecodeError, RequestError, RuntimeError) as e:
+        url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
+        response = await client.get(url=url)
+        if response.status != codes.OK:
             raise InterfaceError(
-                f"Error {e.__class__.__name__}: "
-                f"Unable to retrieve engine endpoint {url}."
+                f"Unable to retrieve system engine endpoint {url}: "
+                f"{response.status} {response.content}"
             )
+        return response.json()["gatewayHost"]
 
 
 async def _get_database_default_engine_url(
-    database: str,
-    auth: Auth,
-    api_endpoint: str,
-    account_name: Optional[str] = None,
+    system_engine: Connection, database_name: str
 ) -> str:
-    async with AsyncClient(
-        auth=auth,
-        base_url=api_endpoint,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
-    ) as client:
-        try:
-            account_id = await client.account_id
-            response = await client.get(
-                url=ACCOUNT_ENGINE_URL_BY_DATABASE_NAME.format(account_id=account_id),
-                params={"database_name": database},
-            )
-            response.raise_for_status()
-            return response.json()["engine_url"]
-        except (
-            JSONDecodeError,
-            RequestError,
-            RuntimeError,
-            HTTPStatusError,
-            KeyError,
-        ) as e:
-            raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
+    cursor = system_engine.cursor()
+    await cursor.execute(
+        """
+        SELECT engs.engine_url, engs.status
+        FROM information_schema.databases AS dbs
+        INNER JOIN information_schema.engines AS engs
+        ON engs.attached_to = dbs.database_name
+        AND engs.engine_name = NULLIF(SPLIT_PART(ARRAY_FIRST(
+                eng_name -> eng_name LIKE '%(default)',
+                SPLIT(',', attached_engines)
+            ), ' ', 1), '')
+        WHERE database_name = ?;
+        """,
+        [database_name],
+    )
+    row = await cursor.fetchone()
+    if row is None:
+        raise InterfaceError(f"Database {database_name} doesn't have a default engine")
+    engine_url, status = row
+    if status != "Running":
+        raise InterfaceError(f"A default engine for {database_name} is not running")
+    return str(engine_url)  # Mypy check
 
-def _validate_engine_name_and_url(
-    engine_name: Optional[str], engine_url: Optional[str]
-) -> None:
-    if engine_name and engine_url:
-        raise ConfigurationError(
-            "Both engine_name and engine_url are provided. Provide only one to connect."
-        )
+async def _get_engine_url_and_db(
+    system_engine: Connection, engine_name: str
+) -> Tuple[str, str]:
+    cursor = system_engine.cursor()
+    await cursor.execute(
+        """
+        SELECT engine_url, attached_to, status FROM information_schema.engines
+        WHERE engine_name=?
+        """,
+        [engine_name],
+    )
+    row = await cursor.fetchone()
+    if row is None:
+        raise InterfaceError(f"Engine with name {engine_name} doesn't exist")
+    engine_url, database, status = row
+    if status != "Running":
+        raise InterfaceError(f"Engine {engine_name} is not running")
+    return str(engine_url), str(database)  # Mypy check
 
 async def connect(
     database: str = None,
@@ -144,56 +123,53 @@ async def connect(
         Providing both `engine_name` and `engine_url` will result in an error
 
     """
+
     # These parameters are optional in function signature
     # but are required to connect.
     # PEP 249 recommends making them kwargs.
-    if not database:
-        raise ConfigurationError("database name is required to connect.")
+    for name, value in (("auth", auth), (account_name, "account_name")):
+        if not value:
+            raise ConfigurationError(f"{name} is required to connect.")
 
-    if not auth:
-        raise ConfigurationError("auth is required to connect.")
-
-    _validate_engine_name_and_url(engine_name, engine_url)
-
-    api_endpoint = fix_url_schema(api_endpoint)
-
-    # Mypy checks, this should never happen
-    assert database is not None
-
-    if not engine_name and not engine_url:
-        engine_url = await _get_database_default_engine_url(
-            database=database,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        )
-
-    elif engine_name:
-        engine_url = await _resolve_engine_url(
-            engine_name=engine_name,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        )
-    elif account_name:
-        # In above if branches account name is validated since it's used to
-        # resolve or get an engine url.
-        # We need to manually validate account_name if none of the above
-        # cases are triggered.
-        async with AsyncClient(
-            auth=auth,
-            base_url=api_endpoint,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        ) as client:
-            await client.account_id
-
-    assert engine_url is not None
-
-    engine_url = fix_url_schema(engine_url)
-    return Connection(
-        engine_url, database, auth, api_endpoint, additional_parameters
+    system_engine_url = fix_url_schema(
+        await _get_system_engine_url(auth, account_name, api_endpoint)
     )
+
+    if not engine_name and not database:
+        # Return system engine connection
+        return connection_class(
+            system_engine_url, None, auth, api_endpoint, additional_parameters
+        )
+
+    else:
+        async with Connection(
+            system_engine_url, None, auth, api_endpoint, additional_parameters
+        ) as system_engine_connection:
+            if engine_name:
+                engine_url, attached_db = await _get_engine_url_and_db(
+                    system_engine_connection, engine_name
+                )
+
+                if database is not None and database != attached_db:
+                    raise InterfaceError(
+                        f"Engine {engine_name} is not attached to {database}, "
+                        f"but to {attached_db}"
+                    )
+                elif database is None:
+                    database = attached_db
+
+            elif database:
+                # Get database default engine
+                engine_url = await _get_database_default_engine_url(
+                    system_engine_connection, database
+                )
+
+        assert engine_url is not None
+
+        engine_url = fix_url_schema(engine_url)
+        return Connection(
+            engine_url, database, auth, api_endpoint, additional_parameters
+        )
 
 
 class OverriddenHttpBackend(AutoBackend):
@@ -236,7 +212,6 @@ class OverriddenHttpBackend(AutoBackend):
             socket.IPPROTO_TCP, keepidle, KEEPIDLE_RATE
         )
         return stream
-
 
 class Connection(BaseConnection):
     """
