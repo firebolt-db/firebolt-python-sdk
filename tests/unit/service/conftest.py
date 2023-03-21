@@ -290,9 +290,9 @@ def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
 
 
 @fixture
-def mock_database(region_1, account_id) -> Database:
+def mock_database(region_1: str, account_id: str) -> Database:
     return Database(
-        name="mock_db_name",
+        name="database",
         description="mock_db_description",
         compute_region_key=region_1.key,
         database_key=DatabaseKey(

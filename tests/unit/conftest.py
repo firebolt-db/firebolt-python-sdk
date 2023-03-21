@@ -135,12 +135,12 @@ def auth(client_id: str, client_secret: str) -> Auth:
 
 
 @fixture
-def settings(server: str, region_1: str, auth: Auth) -> Settings:
+def settings(server: str, region_1: str, auth: Auth, account_name: str) -> Settings:
     return Settings(
         server=server,
         auth=auth,
         default_region=region_1.name,
-        account_name=None,
+        account_name=account_name,
     )
 
 
