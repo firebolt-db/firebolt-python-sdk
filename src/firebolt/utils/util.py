@@ -1,5 +1,6 @@
+from contextlib import contextmanager
 from functools import lru_cache, partial, wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, Type, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Generator, Type, TypeVar
 
 import trio
 from httpx import URL
@@ -86,6 +87,38 @@ def get_auth_endpoint(api_endpoint: URL) -> URL:
     )
 
 
+@contextmanager
+def nested_loop() -> Generator:
+    from trio._core._run import GLOBAL_RUN_CONTEXT  # type: ignore
+
+    s = object()
+    task, runner, _dict = s, s, s
+    if hasattr(GLOBAL_RUN_CONTEXT, "__dict__"):
+        _dict = GLOBAL_RUN_CONTEXT.__dict__
+    if hasattr(GLOBAL_RUN_CONTEXT, "task"):
+        task = GLOBAL_RUN_CONTEXT.task
+        del GLOBAL_RUN_CONTEXT.task
+    if hasattr(GLOBAL_RUN_CONTEXT, "runner"):
+        runner = GLOBAL_RUN_CONTEXT.runner
+        del GLOBAL_RUN_CONTEXT.runner
+
+    try:
+        yield
+    finally:
+        if task is not s:
+            GLOBAL_RUN_CONTEXT.task = task
+        elif hasattr(GLOBAL_RUN_CONTEXT, "task"):
+            del GLOBAL_RUN_CONTEXT.task
+
+        if runner is not s:
+            GLOBAL_RUN_CONTEXT.runner = runner
+        elif hasattr(GLOBAL_RUN_CONTEXT, "runner"):
+            del GLOBAL_RUN_CONTEXT.runner
+
+        if _dict is not s:
+            GLOBAL_RUN_CONTEXT.__dict__.update(_dict)
+
+
 def async_to_sync(f: Callable) -> Callable:
     """Convert async function to sync.
 
@@ -98,7 +131,8 @@ def async_to_sync(f: Callable) -> Callable:
 
     @wraps(f)
     def sync(*args: Any, **kwargs: Any) -> Any:
-        return trio.run(partial(f, *args, **kwargs))
+        with nested_loop():
+            return trio.run(partial(f, *args, **kwargs))
 
     return sync
 
@@ -119,12 +153,3 @@ def merge_urls(base: URL, merge: URL) -> URL:
         merge_raw_path = base.raw_path + merge.raw_path.lstrip(b"/")
         return base.copy_with(raw_path=merge_raw_path)
     return merge
-
-
-def validate_engine_name_and_url(
-    engine_name: Optional[str], engine_url: Optional[str]
-) -> None:
-    if engine_name and engine_url:
-        raise ConfigurationError(
-            "Both engine_name and engine_url are provided. Provide only one to connect."
-        )
