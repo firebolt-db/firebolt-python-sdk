@@ -488,3 +488,15 @@ def mock_query(
         httpx_mock.add_callback(query_callback, url=query_url)
 
     return inner
+
+
+@fixture
+def mock_insert_query(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    insert_query_callback: Callable,
+) -> Callable:
+    def inner() -> None:
+        httpx_mock.add_callback(insert_query_callback, url=query_url)
+
+    return inner

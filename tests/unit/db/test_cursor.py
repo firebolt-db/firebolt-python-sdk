@@ -18,15 +18,12 @@ from tests.unit.db_conftest import encode_param
 
 def test_cursor_state(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
+    mock_query: Callable,
     query_url: str,
     cursor: Cursor,
 ):
     """Cursor state changes depending on the operations performed with it."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
 
     assert cursor._state == CursorState.NONE
 
@@ -89,10 +86,7 @@ def test_closed_cursor(cursor: Cursor):
 
 def test_cursor_no_query(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
+    mock_query: Callable,
     cursor: Cursor,
 ):
     """Some of cursor methods are unavailable until a query is run."""
@@ -103,8 +97,7 @@ def test_cursor_no_query(
         "nextset",
     )
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
 
     for method in methods:
         with raises(QueryNotRunError):
@@ -134,12 +127,8 @@ def test_cursor_no_query(
 
 
 def test_cursor_execute(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    insert_query_callback: Callable,
-    query_url: str,
+    mock_query: Callable,
+    mock_insert_query: Callable,
     cursor: Cursor,
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
@@ -157,8 +146,7 @@ def test_cursor_execute(
         ),
     ):
         # Query with json output
-        httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(query_callback, url=query_url)
+        mock_query()
         assert query() == len(
             python_query_data
         ), f"Invalid row count returned for {message}."
@@ -181,11 +169,8 @@ def test_cursor_execute(
             cursor.fetchone() is None
         ), f"Non-empty fetchone after all data received for {message}."
 
-        httpx_mock.reset(True)
-
         # Query with empty output
-        httpx_mock.add_callback(auth_callback, url=auth_url)
-        httpx_mock.add_callback(insert_query_callback, url=query_url)
+        mock_insert_query()
         assert query() == -1, f"Invalid row count for insert using {message}."
         assert (
             cursor.rowcount == -1
@@ -197,8 +182,6 @@ def test_cursor_execute(
 
 def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     query_url: str,
     cursor: Cursor,
 ):
@@ -213,8 +196,6 @@ def test_cursor_execute_error(
             "server-side synchronous executemany()",
         ),
     ):
-        httpx_mock.add_callback(auth_callback, url=auth_url)
-
         # Internal httpx error
         def http_error(*args, **kwargs):
             raise StreamError("httpx error")
@@ -254,17 +235,12 @@ def test_cursor_execute_error(
 
 
 def test_cursor_fetchone(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    insert_query_callback: Callable,
-    query_url: str,
+    mock_query: Callable,
+    mock_insert_query: Callable,
     cursor: Cursor,
 ):
     """cursor fetchone fetches single row in correct order; if no rows returns None."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
 
     cursor.execute("sql")
 
@@ -279,27 +255,22 @@ def test_cursor_fetchone(
         cursor.fetchone() is None
     ), "fetchone should return None when no rows left to fetch"
 
-    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    mock_insert_query()
     cursor.execute("sql")
     with raises(DataError):
         cursor.fetchone()
 
 
 def test_cursor_fetchmany(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    insert_query_callback: Callable,
-    query_url: str,
+    mock_query: Callable,
+    mock_insert_query: Callable,
     cursor: Cursor,
 ):
     """
     Cursor's fetchmany fetches the provided amount of rows, or arraysize by
     default. If not enough rows left, returns less or None if there are no rows.
     """
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
 
     cursor.execute("sql")
 
@@ -340,24 +311,19 @@ def test_cursor_fetchmany(
         len(cursor.fetchmany()) == 0
     ), "fetchmany should return empty result set when no rows left to fetch"
 
-    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    mock_insert_query()
     cursor.execute("sql")
     with raises(DataError):
         cursor.fetchmany()
 
 
 def test_cursor_fetchall(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    insert_query_callback: Callable,
-    query_url: str,
+    mock_query: Callable,
+    mock_insert_query: Callable,
     cursor: Cursor,
 ):
     """cursor fetchall fetches all rows that left after last query."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
 
     cursor.execute("sql")
 
@@ -374,28 +340,23 @@ def test_cursor_fetchall(
         len(cursor.fetchall()) == 0
     ), "fetchmany should return empty result set when no rows left to fetch"
 
-    httpx_mock.add_callback(insert_query_callback, url=query_url)
+    mock_insert_query()
     cursor.execute("sql")
     with raises(DataError):
         cursor.fetchall()
 
 
 def test_cursor_multi_statement(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    insert_query_callback: Callable,
-    query_url: str,
+    mock_query: Callable,
+    mock_insert_query: Callable,
     cursor: Cursor,
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
     """executemany with multiple parameter sets is not supported."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(insert_query_callback, url=query_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
+    mock_insert_query()
+    mock_query()
 
     rc = cursor.execute("select * from t; insert into t values (1, 2); select * from t")
     assert rc == len(python_query_data), "Invalid row count returned"
@@ -432,8 +393,6 @@ def test_cursor_multi_statement(
 
 def test_cursor_set_statements(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     query_callback: Callable,
     select_one_query_callback: Callable,
     set_query_url: str,
@@ -442,7 +401,6 @@ def test_cursor_set_statements(
     python_query_data: List[List[ColType]],
 ):
     """cursor correctly parses and processes set statements."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
 
     assert len(cursor._set_parameters) == 0
@@ -504,8 +462,6 @@ def test_cursor_set_statements(
 
 def test_cursor_set_parameters_sent(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     set_query_url: str,
     query_url: str,
     query_with_params_callback: Callable,
@@ -514,7 +470,6 @@ def test_cursor_set_parameters_sent(
     set_params: Dict,
 ):
     """Cursor passes provided set parameters to engine."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
 
     params = ""
 
@@ -531,16 +486,11 @@ def test_cursor_set_parameters_sent(
 
 
 def test_cursor_skip_parse(
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_url: str,
-    query_callback: Callable,
+    mock_query: Callable,
     cursor: Cursor,
 ):
     """Cursor doesn't process a query if skip_parsing is provided."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
 
     with patch("firebolt.db.cursor.split_format_sql") as split_format_sql_mock:
         cursor.execute("non-an-actual-sql")
@@ -553,8 +503,6 @@ def test_cursor_skip_parse(
 
 def test_cursor_server_side_async_execute(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     server_side_async_id_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
@@ -576,7 +524,6 @@ def test_cursor_server_side_async_execute(
     ):
 
         # Query with json output
-        httpx_mock.add_callback(auth_callback, url=auth_url)
         httpx_mock.add_callback(
             server_side_async_id_callback, url=query_with_params_url
         )
@@ -594,8 +541,6 @@ def test_cursor_server_side_async_execute(
 
 def test_cursor_server_side_async_cancel(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     server_side_async_cancel_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
@@ -607,7 +552,6 @@ def test_cursor_server_side_async_cancel(
     """
 
     # Query with json output
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
         server_side_async_cancel_callback, url=query_with_params_url
     )
@@ -616,8 +560,6 @@ def test_cursor_server_side_async_cancel(
 
 def test_cursor_server_side_async_get_status_completed(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     server_side_async_get_status_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
@@ -629,7 +571,6 @@ def test_cursor_server_side_async_get_status_completed(
     """
 
     # Query with json output
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
         server_side_async_get_status_callback, url=query_with_params_url
     )
@@ -639,8 +580,6 @@ def test_cursor_server_side_async_get_status_completed(
 
 def test_cursor_server_side_async_get_status_not_yet_available(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     server_side_async_get_status_not_yet_availabe_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
@@ -652,7 +591,6 @@ def test_cursor_server_side_async_get_status_not_yet_available(
     """
 
     # Query with json output
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
         server_side_async_get_status_not_yet_availabe_callback,
         url=query_with_params_url,
@@ -663,15 +601,12 @@ def test_cursor_server_side_async_get_status_not_yet_available(
 
 def test_cursor_server_side_async_get_status_error(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     server_side_async_get_status_error: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
     cursor: Cursor,
 ):
     """ """
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
         server_side_async_get_status_error, url=query_with_params_url
     )
