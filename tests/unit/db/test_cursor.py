@@ -393,12 +393,9 @@ def test_cursor_multi_statement(
 
 def test_cursor_set_statements(
     httpx_mock: HTTPXMock,
-    query_callback: Callable,
     select_one_query_callback: Callable,
     set_query_url: str,
     cursor: Cursor,
-    python_query_description: List[Column],
-    python_query_data: List[List[ColType]],
 ):
     """cursor correctly parses and processes set statements."""
     httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
@@ -470,7 +467,6 @@ def test_cursor_set_parameters_sent(
     set_params: Dict,
 ):
     """Cursor passes provided set parameters to engine."""
-
     params = ""
 
     for p, v in set_params.items():

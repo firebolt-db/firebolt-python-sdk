@@ -2,7 +2,6 @@ from datetime import date, datetime
 from typing import Dict
 
 from pytest import fixture
-from pytest_asyncio import fixture as asyncio_fixture
 
 from firebolt.async_db import ARRAY, DECIMAL, Connection, Cursor, connect
 from firebolt.client.auth import Auth
@@ -10,21 +9,29 @@ from firebolt.common.settings import Settings
 from tests.unit.db_conftest import *  # noqa
 
 
-@asyncio_fixture
-async def connection(settings: Settings, auth: Auth, db_name: str) -> Connection:
+@fixture
+async def connection(
+    server: str,
+    db_name: str,
+    auth: Auth,
+    engine_name: str,
+    account_name: str,
+    mock_connection_flow: Callable,
+) -> Connection:
+    mock_connection_flow()
     async with (
         await connect(
-            engine_url=settings.server,
+            engine_name=engine_name,
             database=db_name,
             auth=auth,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
+            account_name=account_name,
+            api_endpoint=server,
         )
     ) as connection:
         yield connection
 
 
-@asyncio_fixture
+@fixture
 async def cursor(connection: Connection, settings: Settings) -> Cursor:
     return connection.cursor()
 
