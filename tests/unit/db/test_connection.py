@@ -1,9 +1,7 @@
 import gc
 import warnings
-from re import Pattern
 from typing import Callable, List
 
-from httpx import codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
@@ -13,13 +11,11 @@ from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common.settings import Settings
 from firebolt.db import Connection, connect
 from firebolt.utils.exception import (
-    AccountNotFoundError,
     ConfigurationError,
     ConnectionClosedError,
-    FireboltEngineError,
+    InterfaceError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
 
 
 def test_closed_connection(connection: Connection) -> None:
@@ -53,45 +49,40 @@ def test_cursors_closed_on_close(connection: Connection) -> None:
 def test_cursor_initialized(
     settings: Settings,
     db_name: str,
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
+    mock_connection_flow: Callable,
+    mock_query: Callable,
+    account_name: str,
     python_query_data: List[List[ColType]],
     auth: Auth,
+    engine_name: str,
 ) -> None:
     """Connection initialized its cursors properly."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_connection_flow()
+    mock_query()
 
-    for url in (settings.server, f"https://{settings.server}"):
-        with connect(
-            engine_url=url,
-            database=db_name,
-            api_endpoint=settings.server,
-            auth=auth,
-        ) as connection:
+    with connect(
+        engine_name=engine_name,
+        database=db_name,
+        api_endpoint=settings.server,
+        auth=auth,
+        account_name=account_name,
+    ) as connection:
 
-            cursor = connection.cursor()
-            assert (
-                cursor.connection == connection
-            ), "Invalid cursor connection attribute"
-            assert (
-                cursor._client == connection._client
-            ), "Invalid cursor _client attribute"
+        cursor = connection.cursor()
+        assert cursor.connection == connection, "Invalid cursor connection attribute"
+        assert cursor._client == connection._client, "Invalid cursor _client attribute"
 
-            assert cursor.execute("select*") == len(python_query_data)
+        assert cursor.execute("select*") == len(python_query_data)
 
-            cursor.close()
-            assert (
-                cursor not in connection._cursors
-            ), "Cursor wasn't removed from connection after close"
+        cursor.close()
+        assert (
+            cursor not in connection._cursors
+        ), "Cursor wasn't removed from connection after close"
 
 
 def test_connect_empty_parameters():
     with raises(ConfigurationError):
-        with connect(engine_url="engine_url"):
+        with connect(engine_name="engine_name"):
             pass
 
 
@@ -99,67 +90,48 @@ def test_connect_engine_name(
     settings: Settings,
     db_name: str,
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-    engine_id: str,
-    get_engine_url_by_id_url: str,
-    get_engine_url_by_id_callback: Callable,
+    mock_connection_flow: Callable,
+    mock_query: Callable,
+    account_name: str,
+    engine_name: str,
     python_query_data: List[List[ColType]],
-    account_id: str,
     auth: Auth,
+    system_engine_query_url: str,
+    get_engine_url_not_running_callback: Callable,
+    get_engine_url_invalid_db_callback: Callable,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    get_engine_url_callback: Callable,
 ):
     """connect properly handles engine_name"""
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
 
-    with raises(ConfigurationError):
-        connect(
-            engine_url="engine_url",
-            engine_name="engine_name",
-            database="db",
-            auth=auth,
-        )
+    mock_query()
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
+    for callback in (
+        get_engine_url_invalid_db_callback,
+        get_engine_url_not_running_callback,
+    ):
+        httpx_mock.add_callback(callback, url=system_engine_query_url)
+        with raises(InterfaceError):
+            connect(
+                database="db",
+                auth=auth,
+                engine_name=engine_name,
+                account_name=account_name,
+                api_endpoint=settings.server,
+            )
 
-    engine_name = settings.server.split(".")[0]
-
-    # Mock engine id lookup error
-    httpx_mock.add_response(
-        url=f"https://{settings.server}"
-        + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-        + f"?engine_name={engine_name}",
-        status_code=codes.NOT_FOUND,
-    )
-
-    with raises(FireboltEngineError):
-        connect(
-            database="db",
-            auth=auth,
-            engine_name=engine_name,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
-        )
-
-    # Mock engine id lookup by name
-    httpx_mock.add_response(
-        url=f"https://{settings.server}"
-        + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-        + f"?engine_name={engine_name}",
-        status_code=codes.OK,
-        json={"engine_id": {"engine_id": engine_id}},
-    )
+    httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
 
     with connect(
         engine_name=engine_name,
         database=db_name,
         auth=auth,
-        account_name=settings.account_name,
+        account_name=account_name,
         api_endpoint=settings.server,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
@@ -168,35 +140,42 @@ def test_connect_engine_name(
 def test_connect_default_engine(
     settings: Settings,
     db_name: str,
+    mock_query: Callable,
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
     auth_url: str,
-    query_callback: Callable,
-    query_url: str,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
+    check_credentials_callback: Callable,
     database_id: str,
-    engine_by_db_url: str,
     python_query_data: List[List[ColType]],
     account_id: str,
     auth: Auth,
+    account_name: str,
+    system_engine_query_url: str,
+    get_default_db_engine_callback: Callable,
+    get_default_db_engine_not_running_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    engine_by_db_url = f"{engine_by_db_url}?database_name={db_name}"
-
-    httpx_mock.add_response(
-        url=engine_by_db_url,
-        status_code=codes.OK,
-        json={
-            "engine_url": settings.server,
-        },
+    mock_query()
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(
+        get_default_db_engine_not_running_callback, url=system_engine_query_url
     )
+    with raises(InterfaceError):
+        with connect(
+            database=db_name,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=settings.server,
+        ) as connection:
+            connection.cursor().execute("select*")
+
+    httpx_mock.add_callback(get_default_db_engine_callback, url=system_engine_query_url)
+
     with connect(
         database=db_name,
         auth=auth,
-        account_name=settings.account_name,
+        account_name=account_name,
         api_endpoint=settings.server,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
@@ -235,25 +214,24 @@ def test_connection_commit(connection: Connection):
 def test_connection_token_caching(
     settings: Settings,
     db_name: str,
-    httpx_mock: HTTPXMock,
-    check_credentials_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
+    mock_connection_flow: Callable,
+    mock_query: Callable,
     python_query_data: List[List[ColType]],
     access_token: str,
     client_id: str,
     client_secret: str,
+    engine_name: str,
+    account_name: str,
 ) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_connection_flow()
+    mock_query()
 
     with Patcher():
         with connect(
             database=db_name,
             auth=ClientCredentials(client_id, client_secret, use_token_cache=True),
-            engine_url=settings.server,
-            account_name=settings.account_name,
+            engine_name=engine_name,
+            account_name=account_name,
             api_endpoint=settings.server,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
@@ -265,8 +243,8 @@ def test_connection_token_caching(
         with connect(
             database=db_name,
             auth=ClientCredentials(client_id, client_secret, use_token_cache=False),
-            engine_url=settings.server,
-            account_name=settings.account_name,
+            engine_name=engine_name,
+            account_name=account_name,
             api_endpoint=settings.server,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
@@ -274,60 +252,3 @@ def test_connection_token_caching(
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"
-
-
-def test_connect_with_auth(
-    httpx_mock: HTTPXMock,
-    settings: Settings,
-    db_name: str,
-    check_credentials_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
-    access_token: str,
-    auth: Auth,
-) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-
-    with connect(
-        auth=auth,
-        database=db_name,
-        engine_url=settings.server,
-        account_name=settings.account_name,
-        api_endpoint=settings.server,
-    ) as connection:
-        connection.cursor().execute("select*")
-
-
-def test_connect_account_name(
-    httpx_mock: HTTPXMock,
-    auth: Auth,
-    settings: Settings,
-    db_name: str,
-    auth_url: str,
-    check_credentials_callback: Callable,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-
-    with raises(AccountNotFoundError):
-        with connect(
-            auth=auth,
-            database=db_name,
-            engine_url=settings.server,
-            account_name="invalid",
-            api_endpoint=settings.server,
-        ):
-            pass
-
-    with connect(
-        auth=auth,
-        database=db_name,
-        engine_url=settings.server,
-        account_name=settings.account_name,
-        api_endpoint=settings.server,
-    ):
-        pass

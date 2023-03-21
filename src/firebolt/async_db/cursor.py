@@ -17,8 +17,8 @@ from typing import (
     Union,
 )
 
-from aiorwlock import RWLock
 from httpx import Response, codes
+from tricycle import RWLock
 
 from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.common._types import (
@@ -139,10 +139,10 @@ class Cursor(BaseCursor):
 
     async def _api_request(
         self,
-        query: Optional[str] = "",
-        parameters: Optional[dict[str, Any]] = {},
-        path: Optional[str] = "",
-        use_set_parameters: Optional[bool] = True,
+        query: str = "",
+        parameters: dict[str, Any] = {},
+        path: str = "",
+        use_set_parameters: bool = True,
     ) -> Response:
         """
         Query API, return Response object.
@@ -159,7 +159,6 @@ class Cursor(BaseCursor):
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
         """
-        parameters = {}
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
         if self.connection.database:
@@ -431,13 +430,13 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             """Fetch the next row of a query result set."""
             return super().fetchone()
 
     @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             """
             Fetch the next set of rows of a query result;
             size is cursor.arraysize by default.
@@ -446,11 +445,11 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             """Fetch all remaining rows of a query result."""
             return super().fetchall()
 
     @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             return super().nextset()

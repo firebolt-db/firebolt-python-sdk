@@ -44,7 +44,7 @@ async def _get_system_engine_url(
     ) as client:
         url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
         response = await client.get(url=url)
-        if response.status != codes.OK:
+        if response.status_code != codes.OK:
             raise InterfaceError(
                 f"Unable to retrieve system engine endpoint {url}: "
                 f"{response.status} {response.content}"
@@ -98,11 +98,10 @@ async def _get_engine_url_and_db(
     return str(engine_url), str(database)  # Mypy check
 
 async def connect(
-    database: str = None,
-    auth: Auth = None,
-    engine_name: Optional[str] = None,
-    engine_url: Optional[str] = None,
+    auth: Optional[Auth] = None,
     account_name: Optional[str] = None,
+    database: Optional[str] = None,
+    engine_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
@@ -112,28 +111,25 @@ async def connect(
         `auth` (Auth) Authentication object.
         `database` (str): Name of the database to connect
         `engine_name` (Optional[str]): Name of the engine to connect to
-        `engine_url` (Optional[str]): The engine endpoint to use
         `account_name` (Optional[str]): For customers with multiple accounts;
                                       if none, default is used
         `api_endpoint` (str): Firebolt API endpoint. Used for authentication
         `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
                                 arguments for connection
 
-    Note:
-        Providing both `engine_name` and `engine_url` will result in an error
-
     """
-
     # These parameters are optional in function signature
     # but are required to connect.
     # PEP 249 recommends making them kwargs.
-    for name, value in (("auth", auth), (account_name, "account_name")):
+    for name, value in (("auth", auth), ("account_name", account_name)):
         if not value:
             raise ConfigurationError(f"{name} is required to connect.")
 
-    system_engine_url = fix_url_schema(
-        await _get_system_engine_url(auth, account_name, api_endpoint)
-    )
+    # Type checks
+    assert auth is not None
+    assert account_name is not None
+
+    api_endpoint = fix_url_schema(api_endpoint)
 
     if not engine_name and not database:
         # Return system engine connection
