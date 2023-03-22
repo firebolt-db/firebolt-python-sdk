@@ -24,6 +24,7 @@ async def is_engine_running(connection: Connection, engine_url: str) -> bool:
         connection (firebolt.async_db.connection.Connection): connection.
         engine_url (str): URL of the engine
     """
+
     if connection._is_system:
         # System engine is always running
         return True

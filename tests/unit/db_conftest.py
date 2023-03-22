@@ -353,7 +353,11 @@ def query_with_params_url(query_url: str, set_params: str) -> str:
 def _get_engine_url_callback(server: str, db_name: str, status="Running") -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         set_parameters = request.url.params
-        assert len(set_parameters) == 1 and "output_format" in set_parameters
+        assert (
+            len(set_parameters) == 2
+            and "output_format" in set_parameters
+            and "database" in set_parameters
+        )
         data = [[server, db_name, status]]
         query_response = {
             "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
@@ -431,7 +435,12 @@ def system_engine_url() -> str:
 
 
 @fixture
-def system_engine_query_url(system_engine_url: str) -> str:
+def system_engine_query_url(system_engine_url: str, db_name: str) -> str:
+    return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}"
+
+
+@fixture
+def system_engine_no_db_query_url(system_engine_url: str) -> str:
     return f"{system_engine_url}/?output_format=JSON_Compact"
 
 

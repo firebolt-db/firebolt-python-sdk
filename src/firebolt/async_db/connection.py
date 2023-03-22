@@ -86,31 +86,29 @@ async def connect(
         )
 
     else:
-        async with Connection(
+        # Don't use context manager since this will be stored
+        # and used in a resulting connection
+        system_engine_connection = Connection(
             system_engine_url,
             database,
             auth,
             api_endpoint,
             None,
             additional_parameters,
-        ) as system_engine_connection:
-            if engine_name:
-                engine_url, status, attached_db = await _get_engine_url_status_db(
-                    system_engine_connection, engine_name
-                )
-            elif database is None:
-                database = attached_db
+        )
+        engine_url, status, attached_db = await _get_engine_url_status_db(
+            system_engine_connection, engine_name
+        )
+        if status != "Running":
+            raise InterfaceError(f"Engine {engine_name} is not running")
 
-            if status != "Running":
-                raise InterfaceError(f"Engine {engine_name} is not running")
-
-            if database is not None and database != attached_db:
-                raise InterfaceError(
-                    f"Engine {engine_name} is not attached to {database}, "
-                    f"but to {attached_db}"
-                )
-            elif database is None:
-                database = attached_db
+        if database is not None and database != attached_db:
+            raise InterfaceError(
+                f"Engine {engine_name} is not attached to {database}, "
+                f"but to {attached_db}"
+            )
+        elif database is None:
+            database = attached_db
 
     assert engine_url is not None
 

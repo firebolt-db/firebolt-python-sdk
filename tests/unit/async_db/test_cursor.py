@@ -13,7 +13,6 @@ from firebolt.utils.exception import (
     CursorClosedError,
     DataError,
     EngineNotRunningError,
-    FireboltDatabaseError,
     OperationalError,
     QueryNotRunError,
 )
@@ -191,6 +190,8 @@ async def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
     query_url: str,
     cursor: Cursor,
+    get_engine_url_not_running_callback: Callable,
+    system_engine_query_url: str,
 ):
     """Cursor handles all types of errors properly."""
     for query, message in (
@@ -239,32 +240,15 @@ async def test_cursor_execute_error(
             str(excinfo.value) == "Error executing query:\nQuery error message"
         ), f"Invalid authentication error message for {message}."
 
-        # Database does not exist error
-        httpx_mock.add_response(
-            status_code=codes.FORBIDDEN,
-            content="Query error message",
-            url=query_url,
-        )
-        httpx_mock.add_response(
-            json={"edges": []},
-            url=get_databases_url + "?filter.name_contains=database",
-        )
-        with raises(FireboltDatabaseError) as excinfo:
-            await query()
-        assert cursor._state == CursorState.ERROR
-
         # Engine is not running error
         httpx_mock.add_response(
             status_code=codes.SERVICE_UNAVAILABLE,
             content="Query error message",
             url=query_url,
         )
-        httpx_mock.add_response(
-            json={"edges": []},
-            url=(
-                get_engines_url + "?filter.name_contains=api_dev"
-                "&filter.current_status_eq=ENGINE_STATUS_RUNNING_REVISION_SERVING"
-            ),
+        httpx_mock.add_callback(
+            get_engine_url_not_running_callback,
+            url=system_engine_query_url,
         )
         with raises(EngineNotRunningError) as excinfo:
             await query()

@@ -124,38 +124,35 @@ def test_connect_engine_name(
         assert connection.cursor().execute("select*") == len(python_query_data)
 
 
-def test_connect_default_engine(
+def test_connect_database(
     db_name: str,
     auth_url: str,
     server: str,
     auth: Auth,
     account_name: str,
     python_query_data: List[List[ColType]],
-    mock_query: Callable,
     httpx_mock: HTTPXMock,
+    query_callback: str,
     check_credentials_callback: Callable,
     system_engine_query_url: str,
-    get_default_db_engine_callback: Callable,
-    get_default_db_engine_not_running_callback: Callable,
+    system_engine_no_db_query_url: str,
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
 ):
-    mock_query()
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-    httpx_mock.add_callback(
-        get_default_db_engine_not_running_callback, url=system_engine_query_url
-    )
-    with raises(InterfaceError):
-        with connect(
-            database=db_name,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=server,
-        ) as connection:
-            connection.cursor().execute("select*")
+    httpx_mock.add_callback(query_callback, url=system_engine_no_db_query_url)
+    with connect(
+        database=None,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=server,
+    ) as connection:
+        connection.cursor().execute("select*")
 
-    httpx_mock.add_callback(get_default_db_engine_callback, url=system_engine_query_url)
+    httpx_mock.reset(True)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(query_callback, url=system_engine_query_url)
 
     with connect(
         database=db_name,
@@ -167,7 +164,7 @@ def test_connect_default_engine(
 
 
 def test_connection_unclosed_warnings():
-    c = Connection("", "", None, "")
+    c = Connection("", "", None, "", None)
     with warns(UserWarning) as winfo:
         del c
         gc.collect()
@@ -178,7 +175,7 @@ def test_connection_unclosed_warnings():
 
 
 def test_connection_no_warnings():
-    c = Connection("", "", None, "")
+    c = Connection("", "", None, "", None)
     c.close()
     with warnings.catch_warnings():
         warnings.simplefilter("error")
