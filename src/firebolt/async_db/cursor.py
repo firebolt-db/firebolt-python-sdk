@@ -29,6 +29,9 @@ from firebolt.common._types import (
     SetParameter,
     split_format_sql,
 )
+
+from firebolt.async_db.util import is_engine_running
+from firebolt.client import AsyncClient
 from firebolt.common.base_cursor import (
     BaseCursor,
     CursorState,
@@ -39,7 +42,6 @@ from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     CursorClosedError,
     EngineNotRunningError,
-    FireboltDatabaseError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -119,12 +121,6 @@ class Cursor(BaseCursor):
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            if self.connection.database and not await is_db_available(
-                self.connection, self.connection.database
-            ):
-                raise FireboltDatabaseError(
-                    f"Database {self.connection.database} does not exist"
-                )
             raise ProgrammingError(resp.read().decode("utf-8"))
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE

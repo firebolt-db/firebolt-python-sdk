@@ -3,13 +3,18 @@ from __future__ import annotations
 import logging
 import socket
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
-from httpx import AsyncHTTPTransport, Timeout, codes
+from httpx import AsyncHTTPTransport, Timeout
 
 from firebolt.async_db.cursor import Cursor
+from firebolt.async_db.util import (
+    DEFAULT_TIMEOUT_SECONDS,
+    _get_engine_url_status_db,
+    _get_system_engine_url,
+)
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
@@ -23,79 +28,12 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
     InterfaceError,
 )
-from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
+
 logger = logging.getLogger(__name__)
 
-
-async def _get_system_engine_url(
-    auth: Auth,
-    account_name: str,
-    api_endpoint: str,
-) -> str:
-    async with AsyncClient(
-        auth=auth,
-        base_url=api_endpoint,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
-    ) as client:
-        url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
-        response = await client.get(url=url)
-        if response.status_code != codes.OK:
-            raise InterfaceError(
-                f"Unable to retrieve system engine endpoint {url}: "
-                f"{response.status} {response.content}"
-            )
-        return response.json()["gatewayHost"]
-
-
-async def _get_database_default_engine_url(
-    system_engine: Connection, database_name: str
-) -> str:
-    cursor = system_engine.cursor()
-    await cursor.execute(
-        """
-        SELECT engs.engine_url, engs.status
-        FROM information_schema.databases AS dbs
-        INNER JOIN information_schema.engines AS engs
-        ON engs.attached_to = dbs.database_name
-        AND engs.engine_name = NULLIF(SPLIT_PART(ARRAY_FIRST(
-                eng_name -> eng_name LIKE '%(default)',
-                SPLIT(',', attached_engines)
-            ), ' ', 1), '')
-        WHERE database_name = ?;
-        """,
-        [database_name],
-    )
-    row = await cursor.fetchone()
-    if row is None:
-        raise InterfaceError(f"Database {database_name} doesn't have a default engine")
-    engine_url, status = row
-    if status != "Running":
-        raise InterfaceError(f"A default engine for {database_name} is not running")
-    return str(engine_url)  # Mypy check
-
-async def _get_engine_url_and_db(
-    system_engine: Connection, engine_name: str
-) -> Tuple[str, str]:
-    cursor = system_engine.cursor()
-    await cursor.execute(
-        """
-        SELECT engine_url, attached_to, status FROM information_schema.engines
-        WHERE engine_name=?
-        """,
-        [engine_name],
-    )
-    row = await cursor.fetchone()
-    if row is None:
-        raise InterfaceError(f"Engine with name {engine_name} doesn't exist")
-    engine_url, database, status = row
-    if status != "Running":
-        raise InterfaceError(f"Engine {engine_name} is not running")
-    return str(engine_url), str(database)  # Mypy check
 
 async def connect(
     auth: Optional[Auth] = None,
@@ -116,7 +54,6 @@ async def connect(
         `api_endpoint` (str): Firebolt API endpoint. Used for authentication
         `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
                                 arguments for connection
-
     """
     # These parameters are optional in function signature
     # but are required to connect.
@@ -137,35 +74,55 @@ async def connect(
             system_engine_url, None, auth, api_endpoint, additional_parameters
         )
 
+    if not engine_name:
+        # Return system engine connection
+        return connection_class(
+            system_engine_url,
+            database,
+            auth,
+            api_endpoint,
+            None,
+            additional_parameters,
+        )
+
     else:
         async with Connection(
-            system_engine_url, None, auth, api_endpoint, additional_parameters
+            system_engine_url,
+            database,
+            auth,
+            api_endpoint,
+            None,
+            additional_parameters,
         ) as system_engine_connection:
             if engine_name:
-                engine_url, attached_db = await _get_engine_url_and_db(
+                engine_url, status, attached_db = await _get_engine_url_status_db(
                     system_engine_connection, engine_name
                 )
+            elif database is None:
+                database = attached_db
 
-                if database is not None and database != attached_db:
-                    raise InterfaceError(
-                        f"Engine {engine_name} is not attached to {database}, "
-                        f"but to {attached_db}"
-                    )
-                elif database is None:
-                    database = attached_db
+            if status != "Running":
+                raise InterfaceError(f"Engine {engine_name} is not running")
 
-            elif database:
-                # Get database default engine
-                engine_url = await _get_database_default_engine_url(
-                    system_engine_connection, database
+            if database is not None and database != attached_db:
+                raise InterfaceError(
+                    f"Engine {engine_name} is not attached to {database}, "
+                    f"but to {attached_db}"
                 )
+            elif database is None:
+                database = attached_db
 
-        assert engine_url is not None
+    assert engine_url is not None
 
-        engine_url = fix_url_schema(engine_url)
-        return Connection(
-            engine_url, database, auth, api_endpoint, additional_parameters
-        )
+    engine_url = fix_url_schema(engine_url)
+    return Connection(
+        engine_url,
+        database,
+        auth,
+        api_endpoint,
+        system_engine_connection,
+        additional_parameters,
+    )
 
 
 class OverriddenHttpBackend(AutoBackend):
@@ -240,6 +197,7 @@ class Connection(BaseConnection):
         "engine_url",
         "api_endpoint",
         "_is_closed",
+        "_system_engine_connection",
     )
 
     def __init__(
@@ -248,6 +206,7 @@ class Connection(BaseConnection):
         database: str,
         auth: Auth,
         api_endpoint: str = DEFAULT_API_URL,
+        system_engine_connection: Optional["Connection"],
         additional_parameters: Dict[str, Any] = {},
     ):
         self.api_endpoint = api_endpoint
@@ -267,7 +226,13 @@ class Connection(BaseConnection):
             transport=transport,
             headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
         )
+        self._system_engine_connection = system_engine_connection
         super().__init__()
+
+    @property
+    def _is_system(self) -> bool:
+        """`True` if connection is a system engine connection; `False` otherwise."""
+        return self._system_engine_connection is not None        
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
