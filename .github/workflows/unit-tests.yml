@@ -44,17 +44,16 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest --cov=src/ tests/unit --cov-report=xml --junit-xml=junit.xml
+        pytest --cov=src/ tests/unit --cov-report=xml --junit-xml=report/junit.xml
     
     - name: Foresight Test / Coverage Results
       uses: runforesight/foresight-test-kit-action@v1
       if: success() || failure()
       with:
-        api_key: ${{ secrets.FORESIGHT_KEY }}
-        # following 3 options are required if you want to use test monitoring features
         test_format: JUNIT
-        test_framework: pytest
-        test_path: ./junit.xml
+        test_framework: PYTEST
+        test_path: ./report/
+
     - name: Upload coverage report
       uses: actions/upload-artifact@v2
       with:
