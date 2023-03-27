@@ -25,8 +25,7 @@ jobs:
     - name: Collect Workflow Telemetry
       uses: runforesight/foresight-workflow-kit-action@v1
       if: ${{ always() }}
-      with:
-        api_key: ${{ secrets.FORESIGHT_KEY }}
+
     - name: Check out code
       uses: actions/checkout@v2
       with:
