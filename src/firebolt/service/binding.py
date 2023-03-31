@@ -81,6 +81,8 @@ class BindingService(BaseService):
         """Get a list of engines that are bound to a database."""
 
         bindings = self.get_many(database_id=database.database_id)
+        if not bindings:
+            return []
         return self.resource_manager.engines.get_by_ids(
             ids=[b.engine_id for b in bindings]
         )
