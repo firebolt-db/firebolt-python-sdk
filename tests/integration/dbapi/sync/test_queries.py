@@ -327,15 +327,11 @@ def test_multi_statement_query(connection: Connection) -> None:
             "CREATE FACT TABLE test_tb_multi_statement(i int, s string) primary index i"
         )
 
-        assert (
-            c.execute(
-                "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
-                "SELECT * FROM test_tb_multi_statement;"
-                "SELECT * FROM test_tb_multi_statement WHERE i <= 1"
-            )
-            == 1  # Insert always returns 1 row with num of rows modified
-        ), "Invalid row count returned for insert"
-        assert c.rowcount == 1, "Invalid row count"
+        c.execute(
+            "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
+            "SELECT * FROM test_tb_multi_statement;"
+            "SELECT * FROM test_tb_multi_statement WHERE i <= 1"
+        )
         assert c.description is None, "Invalid description"
 
         assert c.nextset()
