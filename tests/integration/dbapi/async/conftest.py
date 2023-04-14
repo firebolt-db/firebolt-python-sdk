@@ -1,75 +1,67 @@
-from pytest_asyncio import fixture as async_fixture
+from pytest import fixture
 
 from firebolt.async_db import Connection, connect
 from firebolt.client.auth.base import Auth
 
 
-@async_fixture
-async def username_password_connection(
-    engine_url: str,
-    database_name: str,
-    password_auth: Auth,
-    account_name: str,
-    api_endpoint: str,
-) -> Connection:
-    async with await connect(
-        engine_url=engine_url,
-        database=database_name,
-        auth=password_auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        yield connection
-
-
-@async_fixture
+@fixture
 async def connection(
-    engine_url: str,
-    database_name: str,
-    password_auth: Auth,
-    account_name: str,
-    api_endpoint: str,
-) -> Connection:
-    async with await connect(
-        engine_url=engine_url,
-        database=database_name,
-        auth=password_auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        yield connection
-
-
-@async_fixture
-async def connection_engine_name(
     engine_name: str,
     database_name: str,
-    password_auth: Auth,
+    auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
-
     async with await connect(
         engine_name=engine_name,
         database=database_name,
-        auth=password_auth,
+        auth=auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection
 
 
-@async_fixture
-async def connection_no_engine(
-    database_name: str,
-    password_auth: Auth,
+@fixture
+async def connection_no_db(
+    engine_name: str,
+    auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
+    async with await connect(
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        yield connection
 
+
+@fixture
+async def connection_system_engine(
+    database_name: str,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> Connection:
     async with await connect(
         database=database_name,
-        auth=password_auth,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        yield connection
+
+
+@fixture
+async def connection_system_engine_no_db(
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> Connection:
+    async with await connect(
+        auth=auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:

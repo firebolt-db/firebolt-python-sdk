@@ -110,17 +110,17 @@ async def connect(
         elif database is None:
             database = attached_db
 
-    assert engine_url is not None
+        assert engine_url is not None
 
-    engine_url = fix_url_schema(engine_url)
-    return Connection(
-        engine_url,
-        database,
-        auth,
-        api_endpoint,
-        system_engine_connection,
-        additional_parameters,
-    )
+        engine_url = fix_url_schema(engine_url)
+        return Connection(
+            engine_url,
+            database,
+            auth,
+            api_endpoint,
+            system_engine_connection,
+            additional_parameters,
+        )
 
 
 class OverriddenHttpBackend(AutoBackend):

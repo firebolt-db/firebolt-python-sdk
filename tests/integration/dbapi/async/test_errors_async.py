@@ -1,13 +1,11 @@
-from httpx import ConnectError
 from pytest import mark, raises
 
 from firebolt.async_db import Connection, connect
-from firebolt.client.auth import UsernamePassword
+from firebolt.client.auth import ClientCredentials
 from firebolt.utils.exception import (
     AccountNotFoundError,
-    EngineNotRunningError,
-    FireboltDatabaseError,
     FireboltEngineError,
+    InterfaceError,
     OperationalError,
 )
 
@@ -15,7 +13,7 @@ from firebolt.utils.exception import (
 async def test_invalid_account(
     database_name: str,
     engine_name: str,
-    password_auth: UsernamePassword,
+    auth: ClientCredentials,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid account error."""
@@ -23,8 +21,8 @@ async def test_invalid_account(
     with raises(AccountNotFoundError) as exc_info:
         async with await connect(
             database=database_name,
-            engine_name=engine_name,  # Omit engine_url to force account_id lookup.
-            auth=password_auth,
+            engine_name=engine_name,
+            auth=auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -35,29 +33,10 @@ async def test_invalid_account(
         ), "Invalid account error message."
 
 
-async def test_engine_url_not_exists(
-    engine_url: str,
-    database_name: str,
-    password_auth: UsernamePassword,
-    account_name: str,
-    api_endpoint: str,
-) -> None:
-    """Connection properly reacts to invalid engine url error."""
-    async with await connect(
-        engine_url=engine_url + "_",
-        database=database_name,
-        auth=password_auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        with raises(ConnectError):
-            await connection.cursor().execute("show tables")
-
-
 async def test_engine_name_not_exists(
     engine_name: str,
     database_name: str,
-    password_auth: UsernamePassword,
+    password_auth: ClientCredentials,
     account_name: str,
     api_endpoint: str,
 ) -> None:
@@ -66,7 +45,7 @@ async def test_engine_name_not_exists(
         async with await connect(
             engine_name=engine_name + "_________",
             database=database_name,
-            auth=password_auth,
+            auth=auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -74,18 +53,18 @@ async def test_engine_name_not_exists(
 
 
 async def test_engine_stopped(
-    stopped_engine_url: str,
+    stopped_engine_name: str,
     database_name: str,
-    password_auth: UsernamePassword,
+    auth: ClientCredentials,
     account_name: str,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
-    with raises(EngineNotRunningError):
+    with raises(InterfaceError):
         async with await connect(
-            engine_url=stopped_engine_url,
+            engine_name=stopped_engine_name,
             database=database_name,
-            auth=password_auth,
+            auth=auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -94,25 +73,27 @@ async def test_engine_stopped(
 
 @mark.skip(reason="Behaviour is different in prod vs dev")
 async def test_database_not_exists(
-    engine_url: str,
+    engine_name: str,
     database_name: str,
-    password_auth: UsernamePassword,
+    auth: ClientCredentials,
     api_endpoint: str,
+    account_name: str,
 ) -> None:
     """Connection properly reacts to invalid database error."""
     new_db_name = database_name + "_"
-    async with await connect(
-        engine_url=engine_url,
-        database=new_db_name,
-        auth=password_auth,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        with raises(FireboltDatabaseError) as exc_info:
+    with raises(InterfaceError) as exc_info:
+        async with await connect(
+            engine_name=engine_name,
+            database=new_db_name,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as connection:
             await connection.cursor().execute("show tables")
 
-        assert (
-            str(exc_info.value) == f"Database {new_db_name} does not exist"
-        ), "Invalid database name error message."
+    assert (
+        str(exc_info.value) == f"Database {new_db_name} does not exist"
+    ), "Invalid database name error message."
 
 
 async def test_sql_error(connection: Connection) -> None:
