@@ -249,6 +249,7 @@ class BaseCursor:
         return True
 
     def flush_parameters(self) -> None:
+        """Cleanup all previously set parameters"""
         self._set_parameters = dict()
 
     async def _raise_if_error(self, resp: Response) -> None:
