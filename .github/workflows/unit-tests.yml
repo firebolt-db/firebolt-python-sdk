@@ -36,7 +36,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
-        pip install allure-pytest
 
     - name: Run unit tests
       run: |
@@ -50,25 +49,12 @@ jobs:
         ref: gh-pages
         path: gh-pages
 
-    - name: Allure Report action from marketplace
-      uses: simple-elf/allure-report-action@master
+    - name: Allure Report
+      uses: firebolt-db/action-allure-report@v1
       if: always()
-      #id: allure-report
       with:
-        allure_results: allure-results
-        #gh_pages: gh-pages
-        #allure_report: allure-report
-        allure_history: allure-history
-        keep_reports: 20
+        github-key: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Deploy report to Github Pages
-      if: always()
-      uses: peaceiris/actions-gh-pages@v2
-      env:
-        PERSONAL_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        PUBLISH_BRANCH: gh-pages
-        PUBLISH_DIR: allure-history
-        
     - name: Upload coverage report
       uses: actions/upload-artifact@v2
       with:

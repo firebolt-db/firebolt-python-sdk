@@ -48,7 +48,7 @@ def global_fake_fs(request) -> None:
     if "nofakefs" in request.keywords:
         yield
     else:
-        with Patcher():
+        with Patcher(additional_skip_names=["logger", "allure-pytest"]):
             yield
 
 
