@@ -1,4 +1,6 @@
+import os
 from typing import Tuple
+from unittest.mock import Mock, patch
 
 from pydantic import ValidationError
 from pytest import mark, raises
@@ -46,3 +48,14 @@ def test_settings_auth_credentials(kwargs) -> None:
 
     err = exc_info.value
     assert len(err.errors()) > 0
+
+
+@patch("firebolt.common.settings.logger")
+def test_deprecation_warning_with_env(logger_mock: Mock):
+    with patch.dict(
+        os.environ,
+        {"FIREBOLT_USER": "user", "FIREBOLT_PASSWORD": "password"},
+        clear=True,
+    ):
+        Settings(server="server", default_region="region")
+        logger_mock.warning.assert_not_called()
