@@ -2,7 +2,6 @@ import os
 from typing import Tuple
 from unittest.mock import Mock, patch
 
-from pydantic import ValidationError
 from pytest import mark, raises
 
 from firebolt.client.auth import Auth
@@ -23,8 +22,6 @@ def test_settings_happy_path(fields: Tuple[str]) -> None:
 
     for f in fields:
         field = getattr(s, f)
-        if hasattr(field, "get_secret_value"):
-            field = field.get_secret_value()
         assert (
             (field == f) if f != "auth" else isinstance(field, Auth)
         ), f"Invalid settings value {f}"
@@ -43,11 +40,8 @@ other_fields = ("server", "default_region")
     ),
 )
 def test_settings_auth_credentials(kwargs) -> None:
-    with raises(ValidationError) as exc_info:
+    with raises(ValueError) as exc_info:
         Settings(**kwargs)
-
-    err = exc_info.value
-    assert len(err.errors()) > 0
 
 
 @patch("firebolt.common.settings.logger")
@@ -57,5 +51,8 @@ def test_deprecation_warning_with_env(logger_mock: Mock):
         {"FIREBOLT_USER": "user", "FIREBOLT_PASSWORD": "password"},
         clear=True,
     ):
-        Settings(server="server", default_region="region")
+        s = Settings(server="server", default_region="region")
         logger_mock.warning.assert_not_called()
+        assert s.auth is not None, "Settings.auth wasn't populated from env variables"
+        assert s.auth.username == "user", "Invalid username in Settings.auth"
+        assert s.auth.password == "password", "Invalid password in Settings.auth"
