@@ -365,7 +365,6 @@ def statement_to_set(statement: Statement) -> Optional[SetParameter]:
         right_idx -= 1
 
     tokens = tokens[: right_idx + 1]
-    print(tokens)
 
     # Check if it's a SET statement by checking if it starts with set
     if (
