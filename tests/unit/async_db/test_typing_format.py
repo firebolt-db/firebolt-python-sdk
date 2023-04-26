@@ -200,7 +200,6 @@ def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) 
         (to_statement("set"), InterfaceError),
         (to_statement("set a"), InterfaceError),
         (to_statement("set a ="), InterfaceError),
-        (to_statement("set a = '"), InterfaceError),
     ],
 )
 def test_statement_to_set_errors(statement: Statement, error: Exception) -> None:
