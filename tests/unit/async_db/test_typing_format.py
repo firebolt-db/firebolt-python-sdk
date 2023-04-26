@@ -177,6 +177,17 @@ def test_split_format_error() -> None:
         (to_statement("set a = b"), SetParameter("a", "b")),
         (to_statement("set a=b"), SetParameter("a", "b")),
         (to_statement("set \t\na     =   \t\n b   ;"), SetParameter("a", "b")),
+        (to_statement("set /*comment*/a=b"), SetParameter("a", "b")),
+        (to_statement("set a='some 'string'"), SetParameter("a", "some 'string")),
+        (
+            to_statement(
+                'set query_parameters={"name":"param1","value":"Hello, world!"}'
+            ),
+            SetParameter(
+                "query_parameters", '{"name":"param1","value":"Hello, world!"}'
+            ),
+        ),
+        (to_statement("UPDATE t SET a=50 WHERE a>b"), None),
     ],
 )
 def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) -> None:
@@ -189,7 +200,6 @@ def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) 
         (to_statement("set"), InterfaceError),
         (to_statement("set a"), InterfaceError),
         (to_statement("set a ="), InterfaceError),
-        (to_statement("set a = '"), InterfaceError),
     ],
 )
 def test_statement_to_set_errors(statement: Statement, error: Exception) -> None:
