@@ -11,7 +11,7 @@ from firebolt.async_db import (
     TimeFromTicks,
     TimestampFromTicks,
 )
-from firebolt.async_db._types import parse_type, parse_value
+from firebolt.common._types import parse_type, parse_value
 from firebolt.utils.exception import DataError, NotSupportedError
 
 

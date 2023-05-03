@@ -8,8 +8,8 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
 
-from firebolt.async_db._types import ColType
 from firebolt.client.auth import Auth, Token, UsernamePassword
+from firebolt.common._types import ColType
 from firebolt.common.settings import Settings
 from firebolt.db import Connection, connect
 from firebolt.utils.exception import (

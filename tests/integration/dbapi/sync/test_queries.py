@@ -5,9 +5,9 @@ from typing import Any, List
 
 from pytest import mark, raises
 
-from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
+from firebolt.common._types import ColType, Column
 from firebolt.db import (
     Binary,
     Connection,

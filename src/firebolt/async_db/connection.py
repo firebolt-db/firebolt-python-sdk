@@ -4,15 +4,23 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Callable, Dict, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
 from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 
-from firebolt.async_db.cursor import BaseCursor, Cursor
+from firebolt.async_db.cursor import Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.client.auth import Auth, Token, UsernamePassword
+from firebolt.client.auth import Auth
+from firebolt.common.base_connection import (
+    DEFAULT_TIMEOUT_SECONDS,
+    KEEPALIVE_FLAG,
+    KEEPIDLE_RATE,
+    BaseConnection,
+    _get_auth,
+    _validate_engine_name_and_url,
+)
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -27,9 +35,6 @@ from firebolt.utils.urls import (
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
-DEFAULT_TIMEOUT_SECONDS: int = 60
-KEEPALIVE_FLAG: int = 1
-KEEPIDLE_RATE: int = 60  # seconds
 AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials
  directly to the `connect` function is deprecated.
  Pass the `Auth` object instead.
@@ -120,49 +125,7 @@ async def _get_database_default_engine_url(
             raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
 
 
-def _validate_engine_name_and_url(
-    engine_name: Optional[str], engine_url: Optional[str]
-) -> None:
-    if engine_name and engine_url:
-        raise ConfigurationError(
-            "Both engine_name and engine_url are provided. Provide only one to connect."
-        )
-
-
-def _get_auth(
-    username: Optional[str],
-    password: Optional[str],
-    access_token: Optional[str],
-    use_token_cache: bool,
-) -> Auth:
-    """Create `Auth` class based on provided credentials.
-
-    If `access_token` is provided, it's used for `Auth` creation.
-    Otherwise, username/password are used.
-
-    Returns:
-        Auth: `auth object`
-
-    Raises:
-        `ConfigurationError`: Invalid combination of credentials provided
-
-    """
-    if not access_token:
-        if not username or not password:
-            raise ConfigurationError(
-                "Neither username/password nor access_token are provided. Provide one"
-                " to authenticate."
-            )
-        return UsernamePassword(username, password, use_token_cache)
-    if username or password:
-        raise ConfigurationError(
-            "Username/password and access_token are both provided. Provide only one"
-            " to authenticate."
-        )
-    return Token(access_token)
-
-
-def async_connect_factory(connection_class: Type) -> Callable:
+def async_connect_factory(connection_class: Type, async_class=False) -> Callable:
     async def connect_inner(
         database: str = None,
         username: Optional[str] = None,
@@ -293,92 +256,6 @@ class OverriddenHttpBackend(AutoBackend):
         return stream
 
 
-class BaseConnection:
-    client_class: type
-    cursor_class: type
-    __slots__ = (
-        "_client",
-        "_cursors",
-        "database",
-        "engine_url",
-        "api_endpoint",
-        "_is_closed",
-    )
-
-    def __init__(
-        self,
-        engine_url: str,
-        database: str,
-        auth: Auth,
-        api_endpoint: str = DEFAULT_API_URL,
-        additional_parameters: Dict[str, Any] = {},
-    ):
-        # Override tcp keepalive settings for connection
-        transport = AsyncHTTPTransport()
-        transport._pool._network_backend = OverriddenHttpBackend()
-        user_drivers = additional_parameters.get("user_drivers", [])
-        user_clients = additional_parameters.get("user_clients", [])
-        self._client = AsyncClient(
-            auth=auth,
-            base_url=engine_url,
-            api_endpoint=api_endpoint,
-            timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-            transport=transport,
-            headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
-        )
-        self.api_endpoint = api_endpoint
-        self.engine_url = engine_url
-        self.database = database
-        self._cursors: List[BaseCursor] = []
-        self._is_closed = False
-
-    def _cursor(self, **kwargs: Any) -> BaseCursor:
-        """
-        Create new cursor object.
-        """
-
-        if self.closed:
-            raise ConnectionClosedError("Unable to create cursor: connection closed.")
-
-        c = self.cursor_class(self._client, self, **kwargs)
-        self._cursors.append(c)
-        return c
-
-    async def _aclose(self) -> None:
-        """Close connection and all underlying cursors."""
-        if self.closed:
-            return
-
-        # self._cursors is going to be changed during closing cursors
-        # after this point no cursors would be added to _cursors, only removed since
-        # closing lock is held, and later connection will be marked as closed
-        cursors = self._cursors[:]
-        for c in cursors:
-            # Here c can already be closed by another thread,
-            # but it shouldn't raise an error in this case
-            c.close()
-        await self._client.aclose()
-        self._is_closed = True
-
-    @property
-    def closed(self) -> bool:
-        """`True` if connection is closed; `False` otherwise."""
-        return self._is_closed
-
-    def _remove_cursor(self, cursor: Cursor) -> None:
-        # This way it's atomic
-        try:
-            self._cursors.remove(cursor)
-        except ValueError:
-            pass
-
-    def commit(self) -> None:
-        """Does nothing since Firebolt doesn't have transactions."""
-
-        if self.closed:
-            raise ConnectionClosedError("Unable to commit: Connection closed.")
-
-
 class Connection(BaseConnection):
     """
     Firebolt asynchronous database connection class. Implements `PEP 249`_.
@@ -402,9 +279,34 @@ class Connection(BaseConnection):
 
     """
 
+    __slots__ = BaseConnection.__slots__
+
     cursor_class = Cursor
 
-    aclose = BaseConnection._aclose
+    def __init__(
+        self,
+        engine_url: str,
+        database: str,
+        auth: Auth,
+        api_endpoint: str = DEFAULT_API_URL,
+        additional_parameters: Dict[str, Any] = {},
+    ):
+        super().__init__(
+            engine_url, database, auth, api_endpoint, additional_parameters
+        )
+        user_drivers = additional_parameters.get("user_drivers", [])
+        user_clients = additional_parameters.get("user_clients", [])
+        # Override tcp keepalive settings for connection
+        transport = AsyncHTTPTransport()
+        transport._pool._network_backend = OverriddenHttpBackend()
+        self._client = AsyncClient(
+            auth=auth,
+            base_url=engine_url,
+            api_endpoint=api_endpoint,
+            timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+            transport=transport,
+            headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
+        )
 
     def cursor(self) -> Cursor:
         c = super()._cursor()
@@ -417,10 +319,26 @@ class Connection(BaseConnection):
             raise ConnectionClosedError("Connection is already closed.")
         return self
 
+    async def aclose(self) -> None:
+        """Close connection and all underlying cursors."""
+        if self.closed:
+            return
+
+        # self._cursors is going to be changed during closing cursors
+        # after this point no cursors would be added to _cursors, only removed since
+        # closing lock is held, and later connection will be marked as closed
+        cursors = self._cursors[:]
+        for c in cursors:
+            # Here c can already be closed by another thread,
+            # but it shouldn't raise an error in this case
+            c.close()
+        await self._client.aclose()
+        self._is_closed = True
+
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
-        await self._aclose()
+        await self.aclose()
 
 
 connect = async_connect_factory(Connection)

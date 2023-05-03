@@ -1,4 +1,6 @@
-from firebolt.async_db._types import (
+from firebolt.async_db.connection import Connection, connect
+from firebolt.async_db.cursor import Cursor
+from firebolt.common._types import (
     ARRAY,
     BINARY,
     DATETIME,
@@ -14,8 +16,6 @@ from firebolt.async_db._types import (
     Timestamp,
     TimestampFromTicks,
 )
-from firebolt.async_db.connection import Connection, connect
-from firebolt.async_db.cursor import Cursor
 from firebolt.utils.exception import (
     DatabaseError,
     DataError,
