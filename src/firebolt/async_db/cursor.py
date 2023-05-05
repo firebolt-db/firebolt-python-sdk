@@ -9,6 +9,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Iterator,
     List,
     Optional,
     Sequence,
@@ -359,8 +360,21 @@ class Cursor(BaseCursor):
 
     # Context manager support
     @check_not_closed
+    def __enter__(self) -> Cursor:
+        return self
+
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()
+
+    # TODO: figure out how to implement __aenter__ and __await__
+    @check_not_closed
     def __aenter__(self) -> Cursor:
         return self
+
+    def __await__(self) -> Iterator:
+        pass
 
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
