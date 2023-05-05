@@ -4,7 +4,7 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
@@ -12,14 +12,11 @@ from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
-from firebolt.client.auth import Auth
-from firebolt.common.base_connection import (
+from firebolt.client.auth import Auth, _get_auth
+from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
-    BaseConnection,
-    _get_auth,
-    _validate_engine_name_and_url,
 )
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -48,6 +45,15 @@ AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials
   >>> connect(auth=Token(access_token), ...)"""
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_engine_name_and_url(
+    engine_name: Optional[str], engine_url: Optional[str]
+) -> None:
+    if engine_name and engine_url:
+        raise ConfigurationError(
+            "Both engine_name and engine_url are provided. Provide only one to connect."
+        )
 
 
 async def _resolve_engine_url(
@@ -125,7 +131,7 @@ async def _get_database_default_engine_url(
             raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
 
 
-def async_connect_factory(connection_class: Type, async_class=False) -> Callable:
+def async_connect_factory(connection_class: Type) -> Callable:
     async def connect_inner(
         database: str = None,
         username: Optional[str] = None,
@@ -256,7 +262,7 @@ class OverriddenHttpBackend(AutoBackend):
         return stream
 
 
-class Connection(BaseConnection):
+class Connection:
     """
     Firebolt asynchronous database connection class. Implements `PEP 249`_.
 
@@ -279,7 +285,15 @@ class Connection(BaseConnection):
 
     """
 
-    __slots__ = BaseConnection.__slots__
+    client_class: type
+    __slots__ = (
+        "_client",
+        "_cursors",
+        "database",
+        "engine_url",
+        "api_endpoint",
+        "_is_closed",
+    )
 
     cursor_class = Cursor
 
@@ -291,9 +305,11 @@ class Connection(BaseConnection):
         api_endpoint: str = DEFAULT_API_URL,
         additional_parameters: Dict[str, Any] = {},
     ):
-        super().__init__(
-            engine_url, database, auth, api_endpoint, additional_parameters
-        )
+        self.api_endpoint = api_endpoint
+        self.engine_url = engine_url
+        self.database = database
+        self._cursors: List[Cursor] = []
+        self._is_closed = False
         user_drivers = additional_parameters.get("user_drivers", [])
         user_clients = additional_parameters.get("user_clients", [])
         # Override tcp keepalive settings for connection
@@ -309,8 +325,11 @@ class Connection(BaseConnection):
         )
 
     def cursor(self) -> Cursor:
-        c = super()._cursor()
-        assert isinstance(c, Cursor)  # typecheck
+        if self.closed:
+            raise ConnectionClosedError("Unable to create cursor: connection closed.")
+
+        c = self.cursor_class(client=self._client, connection=self)
+        self._cursors.append(c)
         return c
 
     # Context manager support
@@ -318,6 +337,18 @@ class Connection(BaseConnection):
         if self.closed:
             raise ConnectionClosedError("Connection is already closed.")
         return self
+
+    def _remove_cursor(self, cursor: Cursor) -> None:
+        # This way it's atomic
+        try:
+            self._cursors.remove(cursor)
+        except ValueError:
+            pass
+
+    @property
+    def closed(self) -> bool:
+        """`True` if connection is closed; `False` otherwise."""
+        return self._is_closed
 
     async def aclose(self) -> None:
         """Close connection and all underlying cursors."""
@@ -334,6 +365,12 @@ class Connection(BaseConnection):
             c.close()
         await self._client.aclose()
         self._is_closed = True
+
+    def commit(self) -> None:
+        """Does nothing since Firebolt doesn't have transactions."""
+
+        if self.closed:
+            raise ConnectionClosedError("Unable to commit: Connection closed.")
 
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType

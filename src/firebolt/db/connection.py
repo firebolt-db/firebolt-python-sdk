@@ -4,7 +4,7 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Callable, Dict, Optional, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 from warnings import warn
 
 from httpcore.backends.base import NetworkStream
@@ -13,16 +13,13 @@ from httpx import HTTPStatusError, HTTPTransport, RequestError, Timeout
 from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, Client
-from firebolt.client.auth import Auth
-from firebolt.common.base_connection import (
+from firebolt.client.auth import Auth, _get_auth
+from firebolt.common.settings import (
+    AUTH_CREDENTIALS_DEPRECATION_MESSAGE,
     DEFAULT_TIMEOUT_SECONDS,
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
-    BaseConnection,
-    _get_auth,
-    _validate_engine_name_and_url,
 )
-from firebolt.common.settings import AUTH_CREDENTIALS_DEPRECATION_MESSAGE
 from firebolt.db.cursor import Cursor
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -39,6 +36,15 @@ from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
 logger = logging.getLogger(__name__)
+
+
+def _validate_engine_name_and_url(
+    engine_name: Optional[str], engine_url: Optional[str]
+) -> None:
+    if engine_name and engine_url:
+        raise ConfigurationError(
+            "Both engine_name and engine_url are provided. Provide only one to connect."
+        )
 
 
 def _resolve_engine_url(
@@ -248,7 +254,7 @@ class OverriddenHttpBackend(SyncBackend):
         return stream
 
 
-class Connection(BaseConnection):
+class Connection:
     """
     Firebolt database connection class. Implements PEP-249.
 
@@ -265,7 +271,16 @@ class Connection(BaseConnection):
         are not implemented.
     """
 
-    __slots__ = BaseConnection.__slots__ + ("_closing_lock",)
+    client_class: type
+    __slots__ = (
+        "_client",
+        "_cursors",
+        "database",
+        "engine_url",
+        "api_endpoint",
+        "_is_closed",
+        "_closing_lock",
+    )
 
     cursor_class = Cursor
 
@@ -277,9 +292,11 @@ class Connection(BaseConnection):
         api_endpoint: str = DEFAULT_API_URL,
         additional_parameters: Dict[str, Any] = {},
     ):
-        super().__init__(
-            engine_url, database, auth, api_endpoint, additional_parameters
-        )
+        self.api_endpoint = api_endpoint
+        self.engine_url = engine_url
+        self.database = database
+        self._cursors: List[Cursor] = []
+        self._is_closed = False
         user_drivers = additional_parameters.get("user_drivers", [])
         user_clients = additional_parameters.get("user_clients", [])
         # Override tcp keepalive settings for connection
@@ -298,10 +315,25 @@ class Connection(BaseConnection):
         self._closing_lock = RWLockWrite()
 
     def cursor(self) -> Cursor:
+        if self.closed:
+            raise ConnectionClosedError("Unable to create cursor: connection closed.")
+
         with self._closing_lock.gen_rlock():
-            c = super()._cursor()
-            assert isinstance(c, Cursor)  # typecheck
-            return c
+            c = self.cursor_class(client=self._client, connection=self)
+            self._cursors.append(c)
+        return c
+
+    def _remove_cursor(self, cursor: Cursor) -> None:
+        # This way it's atomic
+        try:
+            self._cursors.remove(cursor)
+        except ValueError:
+            pass
+
+    @property
+    def closed(self) -> bool:
+        """`True` if connection is closed; `False` otherwise."""
+        return self._is_closed
 
     def close(self) -> None:
         if self.closed:
@@ -317,6 +349,12 @@ class Connection(BaseConnection):
             c.close()
         self._client.close()
         self._is_closed = True
+
+    def commit(self) -> None:
+        """Does nothing since Firebolt doesn't have transactions."""
+
+        if self.closed:
+            raise ConnectionClosedError("Unable to commit: Connection closed.")
 
     # Context manager support
     def __enter__(self) -> Connection:

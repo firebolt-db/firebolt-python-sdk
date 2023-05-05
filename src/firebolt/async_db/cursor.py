@@ -44,7 +44,9 @@ from firebolt.utils.exception import (
 )
 
 if TYPE_CHECKING:
-    pass
+    from firebolt.async_db.connection import Connection
+
+from httpx import AsyncClient as AsyncHttpxClient
 
 logger = logging.getLogger(__name__)
 
@@ -96,9 +98,17 @@ class Cursor(BaseCursor):
 
     __slots__ = BaseCursor.__slots__ + ("_async_query_lock",)
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        *args: Any,
+        client: AsyncHttpxClient,
+        connection: Connection,
+        **kwargs: Any,
+    ) -> None:
         self._async_query_lock = RWLock()
         super().__init__(*args, **kwargs)
+        self._client = client
+        self.connection = connection
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""

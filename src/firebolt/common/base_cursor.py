@@ -19,7 +19,6 @@ from typing import (
 from httpx import Response
 from pydantic import BaseModel
 
-from firebolt.client import AsyncClient, Client
 from firebolt.common._types import (
     ColType,
     Column,
@@ -37,7 +36,7 @@ from firebolt.utils.exception import (
 )
 
 if TYPE_CHECKING:
-    from firebolt.common.base_connection import BaseConnection
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +125,9 @@ class BaseCursor:
 
     default_arraysize = 1
 
-    def __init__(self, client: Union[AsyncClient, Client], connection: BaseConnection):
-        self.connection = connection
-        self._client = client
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        # self.connection = None
+        # self._client = None
         self._arraysize = self.default_arraysize
         # These fields initialized here for type annotations purpose
         self._rows: Optional[List[List[RawColType]]] = None

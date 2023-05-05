@@ -4,8 +4,18 @@ import logging
 import re
 import time
 from threading import Lock
-from typing import Any, Generator, List, Optional, Sequence, Tuple, Union
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Generator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
+from httpx import Client as HttpxClient
 from httpx import Response, codes
 from readerwriterlock.rwlock import RWLockWrite
 
@@ -42,6 +52,9 @@ from firebolt.utils.exception import (
     ProgrammingError,
 )
 
+if TYPE_CHECKING:
+    from firebolt.db.connection import Connection
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,10 +77,14 @@ class Cursor(BaseCursor):
         "_idx_lock",
     )
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self, *args: Any, client: HttpxClient, connection: Connection, **kwargs: Any
+    ) -> None:
         self._query_lock = RWLockWrite()
         self._idx_lock = Lock()
         super().__init__(*args, **kwargs)
+        self._client = client
+        self.connection = connection
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
