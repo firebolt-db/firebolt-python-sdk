@@ -4,6 +4,7 @@ import logging
 import re
 import time
 from functools import wraps
+from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -105,8 +106,8 @@ class Cursor(BaseCursor):
         connection: Connection,
         **kwargs: Any,
     ) -> None:
-        self._async_query_lock = RWLock()
         super().__init__(*args, **kwargs)
+        self._async_query_lock = RWLock()
         self._client = client
         self.connection = connection
 
@@ -348,6 +349,24 @@ class Cursor(BaseCursor):
     def __aiter__(self) -> Cursor:
         return self
 
+    def close(self) -> None:
+        """Terminate an ongoing query (if any) and mark connection as closed."""
+        self._state = CursorState.CLOSED
+        self.connection._remove_cursor(self)
+
+    def __del__(self) -> None:
+        self.close()
+
+    # Context manager support
+    @check_not_closed
+    def __aenter__(self) -> Cursor:
+        return self
+
+    async def __aexit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()
+
     @check_not_closed
     @check_query_executed
     async def __anext__(self) -> List[ColType]:
@@ -394,11 +413,13 @@ class Cursor(BaseCursor):
             use_set_parameters=False,
         )
 
+    @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
         async with self._async_query_lock.reader:
             """Fetch the next row of a query result set."""
             return super().fetchone()
 
+    @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
             """
@@ -407,11 +428,13 @@ class Cursor(BaseCursor):
             """
             return super().fetchmany(size)
 
+    @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
         async with self._async_query_lock.reader:
             """Fetch all remaining rows of a query result."""
             return super().fetchall()
 
+    @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:
         async with self._async_query_lock.reader:
             return super().nextset()

@@ -4,6 +4,7 @@ import logging
 import re
 import time
 from threading import Lock
+from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -36,13 +37,6 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
-
-# from firebolt.db.cursor import (
-#     ParameterType,
-#     QueryStatus,
-#     check_not_closed,
-#     check_query_executed,
-# )
 from firebolt.db.util import is_db_available, is_engine_running
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
@@ -80,9 +74,9 @@ class Cursor(BaseCursor):
     def __init__(
         self, *args: Any, client: HttpxClient, connection: Connection, **kwargs: Any
     ) -> None:
+        super().__init__(*args, **kwargs)
         self._query_lock = RWLockWrite()
         self._idx_lock = Lock()
-        super().__init__(*args, **kwargs)
         self._client = client
         self.connection = connection
 
@@ -346,6 +340,24 @@ class Cursor(BaseCursor):
         if resp_json["status"] == "":
             return QueryStatus.NOT_READY
         return QueryStatus[resp_json["status"]]
+
+    def close(self) -> None:
+        """Terminate an ongoing query (if any) and mark connection as closed."""
+        self._state = CursorState.CLOSED
+        self.connection._remove_cursor(self)
+
+    def __del__(self) -> None:
+        self.close()
+
+    # Context manager support
+    @check_not_closed
+    def __enter__(self) -> Cursor:
+        return self
+
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()
 
     @check_not_closed
     def cancel(self, query_id: str) -> None:

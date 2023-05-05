@@ -204,7 +204,7 @@ def sync_connect_factory(connection_class: Type) -> Callable:
                 account_name=account_name,
                 api_endpoint=api_endpoint,
             ) as client:
-                client.account_id  # TODO: is this correct?
+                client.account_id
 
         assert engine_url is not None
 
@@ -272,6 +272,7 @@ class Connection:
     """
 
     client_class: type
+    cursor_class = Cursor
     __slots__ = (
         "_client",
         "_cursors",
@@ -281,8 +282,6 @@ class Connection:
         "_is_closed",
         "_closing_lock",
     )
-
-    cursor_class = Cursor
 
     def __init__(
         self,
@@ -297,11 +296,11 @@ class Connection:
         self.database = database
         self._cursors: List[Cursor] = []
         self._is_closed = False
-        user_drivers = additional_parameters.get("user_drivers", [])
-        user_clients = additional_parameters.get("user_clients", [])
         # Override tcp keepalive settings for connection
         transport = HTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
+        user_drivers = additional_parameters.get("user_drivers", [])
+        user_clients = additional_parameters.get("user_clients", [])
         self._client = Client(
             auth=auth,
             base_url=engine_url,
@@ -314,12 +313,12 @@ class Connection:
         # cursor() should hold this lock for read to read/write state
         self._closing_lock = RWLockWrite()
 
-    def cursor(self) -> Cursor:
+    def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
         with self._closing_lock.gen_rlock():
-            c = self.cursor_class(client=self._client, connection=self)
+            c = self.cursor_class(client=self._client, connection=self, **kwargs)
             self._cursors.append(c)
         return c
 
@@ -342,13 +341,14 @@ class Connection:
         # self._cursors is going to be changed during closing cursors
         # after this point no cursors would be added to _cursors, only removed since
         # closing lock is held, and later connection will be marked as closed
-        cursors = self._cursors[:]
-        for c in cursors:
-            # Here c can already be closed by another thread,
-            # but it shouldn't raise an error in this case
-            c.close()
-        self._client.close()
-        self._is_closed = True
+        with self._closing_lock.gen_wlock():
+            cursors = self._cursors[:]
+            for c in cursors:
+                # Here c can already be closed by another thread,
+                # but it shouldn't raise an error in this case
+                c.close()
+            self._client.close()
+            self._is_closed = True
 
     def commit(self) -> None:
         """Does nothing since Firebolt doesn't have transactions."""

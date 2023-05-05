@@ -3,18 +3,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from functools import wraps
-from types import TracebackType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from httpx import Response
 from pydantic import BaseModel
@@ -34,9 +23,6 @@ from firebolt.utils.exception import (
     DataError,
     QueryNotRunError,
 )
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 
@@ -126,8 +112,6 @@ class BaseCursor:
     default_arraysize = 1
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # self.connection = None
-        # self._client = None
         self._arraysize = self.default_arraysize
         # These fields initialized here for type annotations purpose
         self._rows: Optional[List[List[RawColType]]] = None
@@ -147,9 +131,6 @@ class BaseCursor:
         self._next_set_idx = 0
         self._query_id = ""
         self._reset()
-
-    def __del__(self) -> None:
-        self.close()
 
     @property  # type: ignore
     @check_not_closed
@@ -204,12 +185,6 @@ class BaseCursor:
     def closed(self) -> bool:
         """True if connection is closed, False otherwise."""
         return self._state == CursorState.CLOSED
-
-    def close(self) -> None:
-        """Terminate an ongoing query (if any) and mark connection as closed."""
-        self._state = CursorState.CLOSED
-        # remove typecheck skip  after connection is implemented
-        self.connection._remove_cursor(self)  # type: ignore
 
     @check_not_closed
     @check_query_executed
@@ -388,13 +363,3 @@ class BaseCursor:
     @check_not_closed
     def setoutputsize(self, size: int, column: Optional[int] = None) -> None:
         """Set a column buffer size for fetches of large columns (does nothing)."""
-
-    # Context manager support
-    @check_not_closed
-    def __enter__(self) -> BaseCursor:
-        return self
-
-    def __exit__(
-        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
-    ) -> None:
-        self.close()

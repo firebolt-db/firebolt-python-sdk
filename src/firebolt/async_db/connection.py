@@ -286,6 +286,7 @@ class Connection:
     """
 
     client_class: type
+    cursor_class = Cursor
     __slots__ = (
         "_client",
         "_cursors",
@@ -294,8 +295,6 @@ class Connection:
         "api_endpoint",
         "_is_closed",
     )
-
-    cursor_class = Cursor
 
     def __init__(
         self,
@@ -310,11 +309,11 @@ class Connection:
         self.database = database
         self._cursors: List[Cursor] = []
         self._is_closed = False
-        user_drivers = additional_parameters.get("user_drivers", [])
-        user_clients = additional_parameters.get("user_clients", [])
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
+        user_drivers = additional_parameters.get("user_drivers", [])
+        user_clients = additional_parameters.get("user_clients", [])
         self._client = AsyncClient(
             auth=auth,
             base_url=engine_url,
@@ -324,11 +323,11 @@ class Connection:
             headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
         )
 
-    def cursor(self) -> Cursor:
+    def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = self.cursor_class(client=self._client, connection=self)
+        c = self.cursor_class(client=self._client, connection=self, **kwargs)
         self._cursors.append(c)
         return c
 
