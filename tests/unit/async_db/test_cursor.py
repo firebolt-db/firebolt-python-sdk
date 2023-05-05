@@ -139,6 +139,9 @@ async def test_cursor_no_query(
     # Context manager is also available
     with cursor:
         pass
+    # should this be available?
+    # async with cursor:
+    #     pass
 
 
 async def test_cursor_execute(
