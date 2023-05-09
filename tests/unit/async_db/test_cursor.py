@@ -8,6 +8,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db import Cursor
 from firebolt.common._types import Column
 from firebolt.common.base_cursor import ColType, CursorState, QueryStatus
+from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     CursorClosedError,
@@ -15,6 +16,7 @@ from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
     OperationalError,
+    ProgrammingError,
     QueryNotRunError,
 )
 from tests.unit.db_conftest import encode_param
@@ -209,6 +211,8 @@ async def test_cursor_execute_error(
     auth_url: str,
     query_url: str,
     get_engines_url: str,
+    settings: Settings,
+    db_name: str,
     get_databases_url: str,
     cursor: Cursor,
 ):
@@ -274,6 +278,23 @@ async def test_cursor_execute_error(
         with raises(FireboltDatabaseError) as excinfo:
             await query()
         assert cursor._state == CursorState.ERROR
+        assert db_name in str(excinfo)
+
+        # Database exists but some other error
+        error_message = "My query error message"
+        httpx_mock.add_response(
+            status_code=codes.FORBIDDEN,
+            content=error_message,
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            json={"edges": ["my_db"]},
+            url=get_databases_url + "?filter.name_contains=database",
+        )
+        with raises(ProgrammingError) as excinfo:
+            await query()
+        assert cursor._state == CursorState.ERROR
+        assert error_message in str(excinfo)
 
         # Engine is not running error
         httpx_mock.add_response(
@@ -291,6 +312,7 @@ async def test_cursor_execute_error(
         with raises(EngineNotRunningError) as excinfo:
             await query()
         assert cursor._state == CursorState.ERROR
+        assert settings.server in str(excinfo)
 
         httpx_mock.reset(True)
 
@@ -747,7 +769,11 @@ async def test_cursor_server_side_async_cancel(
     httpx_mock.add_callback(
         server_side_async_cancel_callback, url=query_with_params_url
     )
+    cursor._set_parameters = {"invalid_parameter": "should_not_be_present"}
     await cursor.cancel(server_side_async_id)
+    cursor.close()
+    with raises(CursorClosedError):
+        await cursor.cancel(server_side_async_id)
 
 
 async def test_cursor_server_side_async_get_status_completed(
@@ -819,3 +845,34 @@ async def test_cursor_server_side_async_get_status_error(
             str(excinfo.value)
             == f"Asynchronous query {server_side_async_id} status check failed."
         ), f"Invalid get_status error message."
+
+
+async def test_cursor_iterate(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_data: List[List[ColType]],
+):
+    """Cursor is able to execute query, all fields are populated properly."""
+
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    with raises(QueryNotRunError):
+        async for res in cursor:
+            pass
+
+    await cursor.execute("select * from t")
+    i = 0
+    async for res in cursor:
+        assert res in python_query_data
+        i += 1
+    assert i == len(python_query_data), "Wrong number iterations of a cursor were done"
+
+    cursor.close()
+    with raises(CursorClosedError):
+        async for res in cursor:
+            pass
