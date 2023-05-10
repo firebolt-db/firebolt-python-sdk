@@ -45,9 +45,9 @@ class Database(FireboltBaseModel):
     compute_region_key: RegionKey = Field(alias="compute_region_id")
 
     # optional
-    database_key: Optional[DatabaseKey] = Field(alias="id")
-    description: Optional[str] = Field(max_length=255)
-    emoji: Optional[str] = Field(max_length=255)
+    database_key: Optional[DatabaseKey] = Field(None, alias="id")
+    description: Optional[str] = Field(None, max_length=255)
+    emoji: Optional[str] = Field(None, max_length=255)
     current_status: Optional[str]
     health_status: Optional[str]
     data_size_full: Optional[int]

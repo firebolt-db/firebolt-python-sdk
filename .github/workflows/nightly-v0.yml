@@ -1,4 +1,4 @@
-name: Nightly code check
+name: v0.x Nightly code check
 on:
   workflow_dispatch:
   schedule:
@@ -7,5 +7,5 @@ jobs:
   code-check:
     uses: ./.github/workflows/nightly-workflow.yml
     with:
-      branch: main
+      branch: 0.x
     secrets: inherit

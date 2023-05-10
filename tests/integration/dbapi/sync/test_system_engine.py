@@ -68,7 +68,7 @@ def db_specs(region, attached_engine):
 
 @mark.parametrize(
     "query",
-    ["SELECT 1", "CREATE DIMENSION TABLE dummy(id INT)", "SHOW TABLES", "SHOW INDEXES"],
+    ["CREATE DIMENSION TABLE dummy(id INT)"],
 )
 def test_query_errors(connection_system_engine, query):
     with connection_system_engine.cursor() as cursor:
@@ -137,3 +137,10 @@ def test_start_stop_engine(setup_dbs, connection_system_engine, engine_name):
         check_engine_status(cursor, engine_name, "Running")
         cursor.execute(f"STOP ENGINE {engine_name}")
         check_engine_status(cursor, engine_name, "Stopped")
+
+
+@mark.xdist_group(name="system_engine")
+def test_select_one(connection_system_engine):
+    """SELECT statements are supported"""
+    with connection_system_engine.cursor() as cursor:
+        cursor.execute("SELECT 1")

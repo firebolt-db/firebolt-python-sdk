@@ -9,6 +9,7 @@ from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
 from firebolt.db import (
+    Binary,
     Connection,
     Cursor,
     DataError,
@@ -56,6 +57,7 @@ def test_connect_engine_name(
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
+    timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
     test_select(
@@ -63,6 +65,7 @@ def test_connect_engine_name(
         all_types_query,
         all_types_query_description,
         all_types_query_response,
+        timezone_name,
     )
 
 
@@ -71,6 +74,7 @@ def test_connect_no_engine(
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
+    timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
     test_select(
@@ -78,6 +82,7 @@ def test_connect_no_engine(
         all_types_query,
         all_types_query_description,
         all_types_query_response,
+        timezone_name,
     )
 
 
@@ -86,10 +91,20 @@ def test_select(
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
+    timezone_name: str,
 ) -> None:
     """Select handles all data types properly."""
     with connection.cursor() as c:
-        assert c.execute("set firebolt_use_decimal = 1") == -1
+        assert c.execute(f"SET advanced_mode=1") == -1, "Invalid set statment row count"
+        # For timestamptz test
+        assert (
+            c.execute(f"SET time_zone={timezone_name}") == -1
+        ), "Invalid set statment row count"
+        # For boolean test
+        assert (
+            c.execute(f"SET bool_output_format=postgres") == -1
+        ), "Invalid set statment row count"
+
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = c.fetchall()
@@ -238,7 +253,7 @@ def test_insert(connection: Connection) -> None:
                     1.1,
                     date(2021, 1, 1),
                     datetime(2021, 1, 1, 1, 1, 1),
-                    1,
+                    True,
                     [1, 2, 3],
                 ],
             ],
@@ -263,7 +278,6 @@ def test_parameterized_query(connection: Connection) -> None:
             c.fetchall()
 
     with connection.cursor() as c:
-        c.execute("set firebolt_use_decimal = 1")
         c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
         c.execute(
             "CREATE FACT TABLE test_tb_parameterized(i int, f float, s string, sn"
@@ -293,9 +307,6 @@ def test_parameterized_query(connection: Connection) -> None:
         # \0 is converted to 0
         params[2] = "text0"
 
-        # Bool is converted to int
-        params[6] = 1
-
         assert (
             c.execute("SELECT * FROM test_tb_parameterized") == 1
         ), "Invalid data length in table after parameterized insert"
@@ -316,15 +327,11 @@ def test_multi_statement_query(connection: Connection) -> None:
             "CREATE FACT TABLE test_tb_multi_statement(i int, s string) primary index i"
         )
 
-        assert (
-            c.execute(
-                "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
-                "SELECT * FROM test_tb_multi_statement;"
-                "SELECT * FROM test_tb_multi_statement WHERE i <= 1"
-            )
-            == -1
-        ), "Invalid row count returned for insert"
-        assert c.rowcount == -1, "Invalid row count"
+        c.execute(
+            "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
+            "SELECT * FROM test_tb_multi_statement;"
+            "SELECT * FROM test_tb_multi_statement WHERE i <= 1"
+        )
         assert c.description is None, "Invalid description"
 
         assert c.nextset()
@@ -509,3 +516,25 @@ def test_multi_thread_connection_sharing(
 
     connection.close()
     assert not exceptions
+
+
+def test_bytea_roundtrip(
+    connection: Connection,
+) -> None:
+    """Inserted and than selected bytea value doesn't get corrupted."""
+    with connection.cursor() as c:
+        c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip")
+        c.execute(
+            "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
+        )
+
+        data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
+
+        c.execute("INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),))
+        c.execute("SELECT b FROM test_bytea_roundtrip")
+
+        bytes_data = (c.fetchone())[0]
+
+        assert (
+            bytes_data.decode("utf-8") == data
+        ), "Invalid bytea data returned after roundtrip"

@@ -6,7 +6,12 @@ from pytest import mark, raises
 from sqlparse import parse
 from sqlparse.sql import Statement
 
-from firebolt.async_db import DataError, InterfaceError, NotSupportedError
+from firebolt.async_db import (
+    Binary,
+    DataError,
+    InterfaceError,
+    NotSupportedError,
+)
 from firebolt.async_db._types import (
     SetParameter,
     format_statement,
@@ -29,8 +34,8 @@ from firebolt.async_db._types import (
         (1.123, "1.123"),
         (Decimal("1.123"), "1.123"),
         (Decimal(1.123), "1.1229999999999999982236431605997495353221893310546875"),
-        (True, "1"),
-        (False, "0"),
+        (True, "true"),
+        (False, "false"),
         # Date, datetime
         (date(2022, 1, 10), "'2022-01-10'"),
         (datetime(2022, 1, 10, 1, 1, 1), "'2022-01-10 01:01:01'"),
@@ -44,6 +49,8 @@ from firebolt.async_db._types import (
         (("a", "b", "c"), "['a', 'b', 'c']"),
         # None
         (None, "NULL"),
+        # Bytea
+        (b"abc", "'\\x61\\x62\\x63'"),
     ],
 )
 def test_format_value(value: str, result: str) -> None:
@@ -170,6 +177,17 @@ def test_split_format_error() -> None:
         (to_statement("set a = b"), SetParameter("a", "b")),
         (to_statement("set a=b"), SetParameter("a", "b")),
         (to_statement("set \t\na     =   \t\n b   ;"), SetParameter("a", "b")),
+        (to_statement("set /*comment*/a=b"), SetParameter("a", "b")),
+        (to_statement("set a='some 'string'"), SetParameter("a", "some 'string")),
+        (
+            to_statement(
+                'set query_parameters={"name":"param1","value":"Hello, world!"}'
+            ),
+            SetParameter(
+                "query_parameters", '{"name":"param1","value":"Hello, world!"}'
+            ),
+        ),
+        (to_statement("UPDATE t SET a=50 WHERE a>b"), None),
     ],
 )
 def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) -> None:
@@ -182,9 +200,12 @@ def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) 
         (to_statement("set"), InterfaceError),
         (to_statement("set a"), InterfaceError),
         (to_statement("set a ="), InterfaceError),
-        (to_statement("set a = '"), InterfaceError),
     ],
 )
 def test_statement_to_set_errors(statement: Statement, error: Exception) -> None:
     with raises(error):
         statement_to_set(statement)
+
+
+def test_binary() -> None:
+    assert Binary("abc") == b"abc"

@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-JSON_OUTPUT_FORMAT = "JSONCompact"
+JSON_OUTPUT_FORMAT = "JSON_Compact"
 
 
 class CursorState(Enum):
@@ -249,6 +249,7 @@ class BaseCursor:
         return True
 
     def flush_parameters(self) -> None:
+        """Cleanup all previously set parameters"""
         self._set_parameters = dict()
 
     async def _raise_if_error(self, resp: Response) -> None:
@@ -303,10 +304,12 @@ class BaseCursor:
             # Skip parsing floats to properly parse them later
             query_data = response.json(parse_float=str)
             rowcount = int(query_data["rows"])
-            descriptions = [
+            descriptions: Optional[List[Column]] = [
                 Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
                 for d in query_data["meta"]
             ]
+            if not descriptions:
+                descriptions = None
             statistics = Statistics(**query_data["statistics"])
             # Parse data during fetch
             rows = query_data["data"]
@@ -656,7 +659,7 @@ class BaseCursor:
             resp_json = resp.json()
             if "status" not in resp_json:
                 raise OperationalError(
-                    f"Invalid response to asynchronous query: missing status."
+                    "Invalid response to asynchronous query: missing status."
                 )
         except Exception:
             self._state = CursorState.ERROR
