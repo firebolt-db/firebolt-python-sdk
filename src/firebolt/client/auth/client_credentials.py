@@ -88,7 +88,7 @@ class ClientCredentials(_RequestBasedAuth):
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
                 "grant_type": "client_credentials",
-                "audience": "https://dev-firebolt-v2.us.auth0.com/api/v2/"
+                "audience": "https://api.firebolt.io"
                 #                "audience": self._audience,
             },
         )
