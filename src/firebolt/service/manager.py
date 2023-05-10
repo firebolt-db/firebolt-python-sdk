@@ -41,7 +41,7 @@ class ResourceManager:
                 assert self.settings.password
                 auth = UsernamePassword(
                     self.settings.user,
-                    self.settings.password.get_secret_value(),
+                    self.settings.password,
                     self.settings.use_token_cache,
                 )
 

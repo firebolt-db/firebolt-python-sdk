@@ -290,16 +290,14 @@ def test_connection_token_caching(
         with connect(
             database=db_name,
             username=settings.user,
-            password=settings.password.get_secret_value(),
+            password=settings.password,
             engine_url=settings.server,
             account_name=settings.account_name,
             api_endpoint=settings.server,
             use_token_cache=True,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
-        ts = TokenSecureStorage(
-            username=settings.user, password=settings.password.get_secret_value()
-        )
+        ts = TokenSecureStorage(username=settings.user, password=settings.password)
         assert ts.get_cached_token() == access_token, "Invalid token value cached"
 
     # Do the same, but with use_token_cache=False
@@ -307,16 +305,14 @@ def test_connection_token_caching(
         with connect(
             database=db_name,
             username=settings.user,
-            password=settings.password.get_secret_value(),
+            password=settings.password,
             engine_url=settings.server,
             account_name=settings.account_name,
             api_endpoint=settings.server,
             use_token_cache=False,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
-        ts = TokenSecureStorage(
-            username=settings.user, password=settings.password.get_secret_value()
-        )
+        ts = TokenSecureStorage(username=settings.user, password=settings.password)
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"
@@ -338,7 +334,7 @@ def test_connect_with_auth(
     for auth in (
         UsernamePassword(
             settings.user,
-            settings.password.get_secret_value(),
+            settings.password,
             use_token_cache=False,
         ),
         Token(access_token),

@@ -45,7 +45,7 @@ def test_rm_credentials(
     rm.client.get(url)
 
     auth_username_password_settings = Settings(
-        auth=UsernamePassword(settings.user, settings.password.get_secret_value()),
+        auth=UsernamePassword(settings.user, settings.password),
         server=settings.server,
         default_region=settings.default_region,
     )
@@ -87,7 +87,7 @@ def test_rm_token_cache(
     with Patcher():
         local_settings = Settings(
             user=settings.user,
-            password=settings.password.get_secret_value(),
+            password=settings.password,
             server=settings.server,
             default_region=settings.default_region,
             use_token_cache=True,
@@ -95,14 +95,14 @@ def test_rm_token_cache(
         rm = ResourceManager(local_settings)
         rm.client.get(url)
 
-        ts = TokenSecureStorage(settings.user, settings.password.get_secret_value())
+        ts = TokenSecureStorage(settings.user, settings.password)
         assert ts.get_cached_token() == access_token, "Invalid token value cached"
 
     # Do the same, but with use_token_cache=False
     with Patcher():
         local_settings = Settings(
             user=settings.user,
-            password=settings.password.get_secret_value(),
+            password=settings.password,
             server=settings.server,
             default_region=settings.default_region,
             use_token_cache=False,
@@ -110,7 +110,7 @@ def test_rm_token_cache(
         rm = ResourceManager(local_settings)
         rm.client.get(url)
 
-        ts = TokenSecureStorage(settings.user, settings.password.get_secret_value())
+        ts = TokenSecureStorage(settings.user, settings.password)
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"

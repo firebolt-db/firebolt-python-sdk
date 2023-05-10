@@ -25,7 +25,7 @@ def test_username(settings: Settings) -> str:
 
 @fixture
 def test_password(settings: Settings) -> str:
-    return settings.password.get_secret_value()
+    return settings.password
 
 
 @fixture
