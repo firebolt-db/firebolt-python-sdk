@@ -4,7 +4,6 @@ from typing import Callable, List
 
 import httpx
 from httpx import Request, Response
-from pydantic import SecretStr
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
@@ -122,7 +121,7 @@ def settings(server: str, region_1: str, username: str, password: str) -> Settin
     return Settings(
         server=server,
         user=username,
-        password=SecretStr(password),
+        password=password,
         default_region=region_1.name,
         account_name=None,
     )
@@ -354,9 +353,7 @@ def check_credentials_callback(settings: Settings, access_token: str) -> Callabl
         assert "username" in body, "Missing username"
         assert body["username"] == settings.user, "Invalid username"
         assert "password" in body, "Missing password"
-        assert (
-            body["password"] == settings.password.get_secret_value()
-        ), "Invalid password"
+        assert body["password"] == settings.password, "Invalid password"
 
         return Response(
             status_code=httpx.codes.OK,
