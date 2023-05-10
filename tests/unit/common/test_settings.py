@@ -45,7 +45,7 @@ def test_settings_auth_credentials(kwargs) -> None:
 
 
 @patch("firebolt.common.settings.logger")
-def test_deprecation_warning_with_env(logger_mock: Mock):
+def test_no_deprecation_warning_with_env(logger_mock: Mock):
     with patch.dict(
         os.environ,
         {"FIREBOLT_USER": "user", "FIREBOLT_PASSWORD": "password"},
