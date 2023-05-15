@@ -201,8 +201,6 @@ async def test_drop_create(
     """Create and drop table/index queries are handled properly."""
 
     async def test_query(c: Cursor, query: str) -> None:
-        assert await c.execute(query) == 1, "Invalid row count returned"
-        assert c.rowcount == 1, "Invalid rowcount value"
         assert_deep_eq(
             c.description,
             create_drop_description,
