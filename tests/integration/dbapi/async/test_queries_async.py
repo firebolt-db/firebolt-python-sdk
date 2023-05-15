@@ -195,18 +195,13 @@ async def test_long_query(
         assert len(data) == 360, "Invalid data size returned by fetchall"
 
 
-async def test_drop_create(
-    connection: Connection, create_drop_description: List[Column]
-) -> None:
+async def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
     async def test_query(c: Cursor, query: str) -> None:
-        assert_deep_eq(
-            c.description,
-            create_drop_description,
-            "Invalid create table query description",
-        )
-        assert len(await c.fetchall()) == 1, "Invalid data returned"
+        await c.execute(query)
+        assert c.description == None
+        assert c.rowcount == -1
 
     """Create table query is handled properly"""
     with connection.cursor() as c:

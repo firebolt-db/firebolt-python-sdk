@@ -150,6 +150,7 @@ def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
     def test_query(c: Cursor, query: str) -> None:
+        c.execute(query)
         assert c.description == None
         assert c.rowcount == -1
 
