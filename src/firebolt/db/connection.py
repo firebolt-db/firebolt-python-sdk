@@ -20,6 +20,7 @@ from firebolt.common.settings import (
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
 )
+from firebolt.common.util import validate_engine_name_and_url
 from firebolt.db.cursor import Cursor
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -36,15 +37,6 @@ from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
 logger = logging.getLogger(__name__)
-
-
-def _validate_engine_name_and_url(
-    engine_name: Optional[str], engine_url: Optional[str]
-) -> None:
-    if engine_name and engine_url:
-        raise ConfigurationError(
-            "Both engine_name and engine_url are provided. Provide only one to connect."
-        )
 
 
 def _resolve_engine_url(
@@ -165,7 +157,7 @@ def sync_connect_factory(connection_class: Type) -> Callable:
         if not database:
             raise ConfigurationError("database name is required to connect.")
 
-        _validate_engine_name_and_url(engine_name, engine_url)
+        validate_engine_name_and_url(engine_name, engine_url)
 
         if not auth:
             if any([username, password, access_token, api_endpoint, use_token_cache]):
