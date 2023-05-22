@@ -39,8 +39,22 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest --cov=src/ tests/unit --cov-report=xml
+        pytest --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
     
+    - name: Get Allure history
+      uses: actions/checkout@v2
+      if: always()
+      continue-on-error: true
+      with:
+        ref: gh-pages
+        path: gh-pages
+
+    - name: Allure Report
+      uses: firebolt-db/action-allure-report@v1
+      if: always()
+      with:
+        github-key: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Upload coverage report
       uses: actions/upload-artifact@v2
       with:
