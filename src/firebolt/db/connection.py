@@ -14,6 +14,7 @@ from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, Client
 from firebolt.client.auth import Auth, _get_auth
+from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
     AUTH_CREDENTIALS_DEPRECATION_MESSAGE,
     DEFAULT_TIMEOUT_SECONDS,
@@ -114,7 +115,6 @@ def _get_database_default_engine_url(
             raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
 
 
-# TODO: verify new httpx has not improved this
 class OverriddenHttpBackend(SyncBackend):
     """
     `OverriddenHttpBackend` is a short-term solution for the TCP
@@ -152,7 +152,7 @@ class OverriddenHttpBackend(SyncBackend):
         return stream
 
 
-class Connection:
+class Connection(BaseConnection):
     """
     Firebolt database connection class. Implements PEP-249.
 
@@ -192,7 +192,6 @@ class Connection:
         self.engine_url = engine_url
         self.database = database
         self._cursors: List[Cursor] = []
-        self._is_closed = False
         # Override tcp keepalive settings for connection
         transport = HTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
@@ -209,6 +208,7 @@ class Connection:
         # Holding this lock for write means that connection is closing itself.
         # cursor() should hold this lock for read to read/write state
         self._closing_lock = RWLockWrite()
+        super().__init__()
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -226,11 +226,6 @@ class Connection:
         except ValueError:
             pass
 
-    @property
-    def closed(self) -> bool:
-        """`True` if connection is closed; `False` otherwise."""
-        return self._is_closed
-
     def close(self) -> None:
         if self.closed:
             return
@@ -246,12 +241,6 @@ class Connection:
                 c.close()
             self._client.close()
             self._is_closed = True
-
-    def commit(self) -> None:
-        """Does nothing since Firebolt doesn't have transactions."""
-
-        if self.closed:
-            raise ConnectionClosedError("Unable to commit: Connection closed.")
 
     # Context manager support
     def __enter__(self) -> Connection:

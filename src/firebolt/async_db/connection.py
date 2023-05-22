@@ -13,6 +13,7 @@ from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 from firebolt.async_db.cursor import Cursor
 from firebolt.client import DEFAULT_API_URL, AsyncClient
 from firebolt.client.auth import Auth, _get_auth
+from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,
     KEEPALIVE_FLAG,
@@ -160,7 +161,7 @@ class OverriddenHttpBackend(AutoBackend):
         return stream
 
 
-class Connection:
+class Connection(BaseConnection):
     """
     Firebolt asynchronous database connection class. Implements `PEP 249`_.
 
@@ -205,7 +206,6 @@ class Connection:
         self.engine_url = engine_url
         self.database = database
         self._cursors: List[Cursor] = []
-        self._is_closed = False
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
@@ -219,6 +219,7 @@ class Connection:
             transport=transport,
             headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
         )
+        super().__init__()
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -233,18 +234,6 @@ class Connection:
         if self.closed:
             raise ConnectionClosedError("Connection is already closed.")
         return self
-
-    def _remove_cursor(self, cursor: Cursor) -> None:
-        # This way it's atomic
-        try:
-            self._cursors.remove(cursor)
-        except ValueError:
-            pass
-
-    @property
-    def closed(self) -> bool:
-        """`True` if connection is closed; `False` otherwise."""
-        return self._is_closed
 
     async def aclose(self) -> None:
         """Close connection and all underlying cursors."""
@@ -261,12 +250,6 @@ class Connection:
             c.close()
         await self._client.aclose()
         self._is_closed = True
-
-    def commit(self) -> None:
-        """Does nothing since Firebolt doesn't have transactions."""
-
-        if self.closed:
-            raise ConnectionClosedError("Unable to commit: Connection closed.")
 
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
