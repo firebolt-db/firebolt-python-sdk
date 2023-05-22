@@ -1,9 +1,9 @@
 import logging
-from typing import Optional
+import os
+from dataclasses import dataclass, field
+from typing import Any, Callable, Optional
 
-from pydantic import BaseSettings, Field, SecretStr, root_validator
-
-from firebolt.client.auth import Auth
+from firebolt.client.auth import Auth, UsernamePassword
 
 logger = logging.getLogger(__name__)
 
@@ -23,8 +23,31 @@ AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials direct
   >>> ...
   >>> settings = Settings(auth=Token(access_token), ...)"""
 
+USERNAME_ENV = "FIREBOLT_USER"
+PASSWORD_ENV = "FIREBOLT_PASSWORD"
+AUTH_TOKEN_ENV = "FIREBOLT_AUTH_TOKEN"
+ACCOUNT_ENV = "FIREBOLT_ACCOUNT"
+SERVER_ENV = "FIREBOLT_SERVER"
+DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
 
-class Settings(BaseSettings):
+
+def from_env(var_name: str, default: Any = None) -> Callable:
+    def inner() -> Any:
+        os.environ.get(var_name, default)
+
+    return inner
+
+
+def auth_from_env() -> Optional[Auth]:
+    username = os.environ.get(USERNAME_ENV, None)
+    password = os.environ.get(PASSWORD_ENV, None)
+    if username and password:
+        return UsernamePassword(username, password)
+    return None
+
+
+@dataclass
+class Settings:
     """Settings for Firebolt SDK.
 
     Attributes:
@@ -39,25 +62,19 @@ class Settings(BaseSettings):
         default_region (str): Default region for provisioning
     """
 
-    auth: Optional[Auth] = Field(None)
+    auth: Optional[Auth] = field(default_factory=auth_from_env)
     # Authorization
-    user: Optional[str] = Field(None, env="FIREBOLT_USER")
-    password: Optional[SecretStr] = Field(None, env="FIREBOLT_PASSWORD")
+    user: Optional[str] = field(default=None)
+    password: Optional[str] = field(default=None)
     # Or
-    access_token: Optional[str] = Field(None, env="FIREBOLT_AUTH_TOKEN")
+    access_token: Optional[str] = field(default_factory=from_env(AUTH_TOKEN_ENV))
 
-    account_name: Optional[str] = Field(None, env="FIREBOLT_ACCOUNT")
-    server: str = Field(..., env="FIREBOLT_SERVER")
-    default_region: str = Field(..., env="FIREBOLT_DEFAULT_REGION")
-    use_token_cache: bool = Field(True)
+    account_name: Optional[str] = field(default_factory=from_env(ACCOUNT_ENV))
+    server: str = field(default_factory=from_env(SERVER_ENV))
+    default_region: str = field(default_factory=from_env(DEFAULT_REGION_ENV))
+    use_token_cache: bool = field(default=True)
 
-    class Config:
-        """Internal pydantic config."""
-
-        env_file = ".env"
-
-    @root_validator
-    def mutual_exclusive_with_creds(cls, values: dict) -> dict:
+    def __post_init__(self) -> None:
         """Validate that either creds or token is provided.
 
         Args:
@@ -71,9 +88,9 @@ class Settings(BaseSettings):
         """
 
         params_present = (
-            values.get("user") is not None or values.get("password") is not None,
-            values.get("access_token") is not None,
-            values.get("auth") is not None,
+            self.user is not None or self.password is not None,
+            self.access_token is not None,
+            self.auth is not None,
         )
         if sum(params_present) == 0:
             raise ValueError(
@@ -81,7 +98,5 @@ class Settings(BaseSettings):
             )
         if sum(params_present) > 1:
             raise ValueError("Provide only one of auth, user/password or access_token")
-        if any(values.get(f) for f in ("user", "password", "access_token")):
+        if any((self.user, self.password, self.access_token)):
             logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
-
-        return values
