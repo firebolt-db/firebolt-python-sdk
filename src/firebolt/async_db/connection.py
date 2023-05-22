@@ -184,7 +184,6 @@ class Connection:
     """
 
     client_class: type
-    cursor_class = Cursor
     __slots__ = (
         "_client",
         "_cursors",
@@ -225,7 +224,7 @@ class Connection:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = self.cursor_class(client=self._client, connection=self, **kwargs)
+        c = Cursor(client=self._client, connection=self, **kwargs)
         self._cursors.append(c)
         return c
 
