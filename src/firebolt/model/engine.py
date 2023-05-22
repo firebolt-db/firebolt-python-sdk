@@ -194,7 +194,7 @@ class Engine(FireboltBaseModel):
         """
         return connect(
             database=self.database.name,  # type: ignore # already checked by decorator
-            auth=self._service.client.auth,
+            auth=self._service.client.auth,  # type: ignore
             engine_url=self.endpoint,
             account_name=self._service.settings.account_name,
             api_endpoint=self._service.settings.server,
