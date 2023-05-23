@@ -6,8 +6,8 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
-from firebolt.async_db._types import Column
-from firebolt.async_db.cursor import ColType, CursorState, QueryStatus
+from firebolt.common._types import Column
+from firebolt.common.base_cursor import ColType, CursorState, QueryStatus
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     CursorClosedError,
@@ -139,6 +139,9 @@ async def test_cursor_no_query(
     # Context manager is also available
     with cursor:
         pass
+    # should this be available?
+    # async with cursor:
+    #     pass
 
 
 async def test_cursor_execute(

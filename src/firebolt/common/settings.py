@@ -7,6 +7,11 @@ from firebolt.client.auth import Auth, UsernamePassword
 
 logger = logging.getLogger(__name__)
 
+KEEPALIVE_FLAG: int = 1
+
+KEEPIDLE_RATE: int = 60  # seconds
+DEFAULT_TIMEOUT_SECONDS: int = 60
+
 AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly in Settings is deprecated.
  Use Auth object instead.
  Examples:

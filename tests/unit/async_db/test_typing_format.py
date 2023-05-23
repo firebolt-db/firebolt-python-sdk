@@ -12,7 +12,7 @@ from firebolt.async_db import (
     InterfaceError,
     NotSupportedError,
 )
-from firebolt.async_db._types import (
+from firebolt.common._types import (
     SetParameter,
     format_statement,
     format_value,

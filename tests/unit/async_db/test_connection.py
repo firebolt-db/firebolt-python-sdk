@@ -7,9 +7,9 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.async_db._types import ColType
 from firebolt.async_db.connection import Connection, connect
 from firebolt.client.auth import Auth, Token, UsernamePassword
+from firebolt.common._types import ColType
 from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
     AccountNotFoundError,
