@@ -1,4 +1,4 @@
-from firebolt.async_db._types import (
+from firebolt.common._types import (
     ARRAY,
     BINARY,
     DATETIME,

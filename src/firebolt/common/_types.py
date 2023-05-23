@@ -63,17 +63,17 @@ ParameterType = Union[int, float, str, datetime, date, bool, Decimal, Sequence, 
 Date = date
 
 
-def DateFromTicks(t: int) -> date:
+def DateFromTicks(t: int) -> date:  # NOSONAR
     """Convert `ticks` to `date` for Firebolt DB."""
     return datetime.fromtimestamp(t).date()
 
 
-def Time(hour: int, minute: int, second: int) -> None:
+def Time(hour: int, minute: int, second: int) -> None:  # NOSONAR
     """Unsupported: Construct `time`, for Firebolt DB."""
     raise NotSupportedError("The time construct is not supported by Firebolt")
 
 
-def TimeFromTicks(t: int) -> None:
+def TimeFromTicks(t: int) -> None:  # NOSONAR
     """Unsupported: Convert `ticks` to `time` for Firebolt DB."""
     raise NotSupportedError("The time construct is not supported by Firebolt")
 
@@ -82,7 +82,7 @@ Timestamp = datetime
 TimestampFromTicks = datetime.fromtimestamp
 
 
-def Binary(value: str) -> bytes:
+def Binary(value: str) -> bytes:  # NOSONAR
     """Encode a string into UTF-8."""
     return value.encode("utf-8")
 

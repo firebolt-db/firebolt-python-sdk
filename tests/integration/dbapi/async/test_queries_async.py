@@ -11,8 +11,8 @@ from firebolt.async_db import (
     DataError,
     OperationalError,
 )
-from firebolt.async_db._types import ColType, Column
 from firebolt.async_db.cursor import QueryStatus
+from firebolt.common._types import ColType, Column
 
 VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
