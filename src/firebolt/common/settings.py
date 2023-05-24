@@ -33,7 +33,7 @@ DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
 
 def from_env(var_name: str, default: Any = None) -> Callable:
     def inner() -> Any:
-        os.environ.get(var_name, default)
+        return os.environ.get(var_name, default)
 
     return inner
 
