@@ -4,10 +4,10 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 from warnings import warn
 
-from httpcore.backends.base import SOCKET_OPTION, NetworkStream
+from httpcore.backends.base import NetworkStream
 from httpcore.backends.sync import SyncBackend
 from httpx import HTTPStatusError, HTTPTransport, RequestError, Timeout
 from readerwriterlock.rwlock import RWLockWrite
@@ -131,14 +131,14 @@ class OverriddenHttpBackend(SyncBackend):
         port: int,
         timeout: Optional[float] = None,
         local_address: Optional[str] = None,
-        socket_options: Optional[Iterable[SOCKET_OPTION]] = None,
+        **kwargs: Any,
     ) -> NetworkStream:
-        stream = super().connect_tcp(
+        stream = super().connect_tcp(  # type: ignore [call-arg]
             host,
             port,
             timeout=timeout,
             local_address=local_address,
-            socket_options=socket_options,
+            **kwargs,
         )
         # Enable keepalive
         stream.get_extra_info("socket").setsockopt(

@@ -4,10 +4,10 @@ import logging
 import socket
 from json import JSONDecodeError
 from types import TracebackType
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, List, Optional
 
 from httpcore.backends.auto import AutoBackend
-from httpcore.backends.base import SOCKET_OPTION, AsyncNetworkStream
+from httpcore.backends.base import AsyncNetworkStream
 from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import Cursor
@@ -140,10 +140,14 @@ class OverriddenHttpBackend(AutoBackend):
         port: int,
         timeout: Optional[float] = None,
         local_address: Optional[str] = None,
-        socket_options: Optional[Iterable[SOCKET_OPTION]] = None,
+        **kwargs: Any,
     ) -> AsyncNetworkStream:
-        stream = await super().connect_tcp(
-            host, port, timeout=timeout, local_address=local_address
+        stream = await super().connect_tcp(  # type: ignore [call-arg]
+            host,
+            port,
+            timeout=timeout,
+            local_address=local_address,
+            **kwargs,
         )
         # Enable keepalive
         stream.get_extra_info("socket").setsockopt(
