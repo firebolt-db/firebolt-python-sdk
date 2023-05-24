@@ -125,7 +125,7 @@ class OverriddenHttpBackend(SyncBackend):
     and `KEEPIDLE` settings.
     """
 
-    def connect_tcp(
+    def connect_tcp(  # type: ignore [override]
         self,
         host: str,
         port: int,

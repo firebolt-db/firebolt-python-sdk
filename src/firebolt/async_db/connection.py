@@ -134,7 +134,7 @@ class OverriddenHttpBackend(AutoBackend):
     and `KEEPIDLE` settings.
     """
 
-    async def connect_tcp(
+    async def connect_tcp(  # type: ignore [override]
         self,
         host: str,
         port: int,
