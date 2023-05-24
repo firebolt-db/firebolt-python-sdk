@@ -48,11 +48,16 @@ def test_settings_auth_credentials(kwargs) -> None:
 def test_no_deprecation_warning_with_env(logger_mock: Mock):
     with patch.dict(
         os.environ,
-        {"FIREBOLT_USER": "user", "FIREBOLT_PASSWORD": "password"},
+        {
+            "FIREBOLT_USER": "user",
+            "FIREBOLT_PASSWORD": "password",
+            "FIREBOLT_SERVER": "dummy.firebolt.io",
+        },
         clear=True,
     ):
-        s = Settings(server="server", default_region="region")
+        s = Settings(default_region="region")
         logger_mock.warning.assert_not_called()
+        assert s.server == "dummy.firebolt.io"
         assert s.auth is not None, "Settings.auth wasn't populated from env variables"
         assert s.auth.username == "user", "Invalid username in Settings.auth"
         assert s.auth.password == "password", "Invalid password in Settings.auth"
