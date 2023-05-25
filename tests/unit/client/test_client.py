@@ -63,7 +63,6 @@ def test_client_different_auths(
 ):
     """
     Client properly handles such auth types:
-    - tuple(username, password)
     - Auth
     - None
     All other types should raise TypeError.
