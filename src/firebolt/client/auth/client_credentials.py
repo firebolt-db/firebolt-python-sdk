@@ -31,7 +31,6 @@ class ClientCredentials(_RequestBasedAuth):
         "_expires",
         "_use_token_cache",
         "_user_agent",
-        "_audience",
     )
 
     requires_response_body = True
@@ -44,7 +43,6 @@ class ClientCredentials(_RequestBasedAuth):
     ):
         self.client_id = client_id
         self.client_secret = client_secret
-        self._audience = ""
         super().__init__(use_token_cache)
 
     def copy(self) -> "ClientCredentials":
@@ -88,8 +86,7 @@ class ClientCredentials(_RequestBasedAuth):
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
                 "grant_type": "client_credentials",
-                "audience": "https://api.firebolt.io"
-                #                "audience": self._audience,
+                "audience": "https://api.firebolt.io",
             },
         )
         return response

@@ -141,7 +141,7 @@ class Connection(BaseConnection):
     @property
     def _is_system(self) -> bool:
         """`True` if connection is a system engine connection; `False` otherwise."""
-        return self._system_engine_connection is not None
+        return self._system_engine_connection is None
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -232,7 +232,7 @@ async def connect(
         # and used in a resulting connection
         system_engine_connection = Connection(
             system_engine_url,
-            None,
+            database,
             auth,
             api_endpoint,
             None,

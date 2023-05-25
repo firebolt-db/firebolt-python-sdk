@@ -65,8 +65,6 @@ class FireboltClientMixin(FireboltClientMixinBase):
         """
         if not (auth is None or isinstance(auth, Auth)):
             raise TypeError(f'Invalid "auth" argument: {auth!r}')
-        if hasattr(auth, "_audience"):
-            auth._audience = self._api_endpoint  # type: ignore
         return auth
 
     def _merge_auth_request(self, request: Request) -> Request:

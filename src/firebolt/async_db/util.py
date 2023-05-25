@@ -49,7 +49,7 @@ async def _get_system_engine_url(
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
     ) as client:
-        return "https://api.us-east-1.dev.firebolt.io/dynamic"
+        #       return "https://api.us-east-1.dev.firebolt.io/dynamic"
         url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
         response = await client.get(url=url)
         if response.status_code != codes.OK:
