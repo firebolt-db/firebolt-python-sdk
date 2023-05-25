@@ -20,7 +20,7 @@ from typing import (
 from httpx import Response, codes
 from tricycle import RWLock
 
-from firebolt.async_db.util import is_db_available, is_engine_running
+from firebolt.async_db.util import is_engine_running
 from firebolt.common._types import (
     ColType,
     Column,
@@ -29,9 +29,6 @@ from firebolt.common._types import (
     SetParameter,
     split_format_sql,
 )
-
-from firebolt.async_db.util import is_engine_running
-from firebolt.client import AsyncClient
 from firebolt.common.base_cursor import (
     BaseCursor,
     CursorState,

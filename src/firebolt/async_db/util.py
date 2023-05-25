@@ -6,13 +6,13 @@ from httpx import URL, Timeout, codes
 
 from firebolt.client import AsyncClient
 from firebolt.client.auth import Auth
+from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import InterfaceError
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-DEFAULT_TIMEOUT_SECONDS = 60
 ENGINE_STATUS_RUNNING = "Running"
 
 

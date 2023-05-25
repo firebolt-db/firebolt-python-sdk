@@ -13,15 +13,13 @@ from httpx import HTTPStatusError, HTTPTransport, RequestError, Timeout
 from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, Client
-from firebolt.client.auth import Auth, _get_auth
+from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
-    AUTH_CREDENTIALS_DEPRECATION_MESSAGE,
     DEFAULT_TIMEOUT_SECONDS,
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
 )
-from firebolt.common.util import validate_engine_name_and_url
 from firebolt.db.cursor import Cursor
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -38,6 +36,33 @@ from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
 logger = logging.getLogger(__name__)
+
+
+def _get_auth(
+    username: Optional[str],
+    password: Optional[str],
+    access_token: Optional[str],
+    use_token_cache: bool,
+) -> Auth:
+    """Create `Auth` class based on provided credentials.
+
+    If `access_token` is provided, it's used for `Auth` creation.
+    Otherwise, username/password are used.
+
+    Returns:
+        Auth: `auth object`
+
+    Raises:
+        `ConfigurationError`: Invalid combination of credentials provided
+
+    """
+    return ClientCredentials(username, password)  # type: ignore
+
+
+def validate_engine_name_and_url(
+    engine_name: Optional[str], engine_url: Optional[str]
+) -> None:
+    pass
 
 
 def _resolve_engine_url(
@@ -309,7 +334,6 @@ def connect(
 
     if not auth:
         if any([username, password, access_token, api_endpoint, use_token_cache]):
-            logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)
             auth = _get_auth(username, password, access_token, use_token_cache)
         else:
             raise ConfigurationError("No authentication provided.")

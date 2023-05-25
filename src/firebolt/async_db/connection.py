@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import socket
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
@@ -11,7 +11,6 @@ from httpx import AsyncHTTPTransport, Timeout
 
 from firebolt.async_db.cursor import Cursor
 from firebolt.async_db.util import (
-    DEFAULT_TIMEOUT_SECONDS,
     _get_engine_url_status_db,
     _get_system_engine_url,
 )
@@ -31,96 +30,7 @@ from firebolt.utils.exception import (
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema
 
-
 logger = logging.getLogger(__name__)
-
-
-async def connect(
-    auth: Optional[Auth] = None,
-    account_name: Optional[str] = None,
-    database: Optional[str] = None,
-    engine_name: Optional[str] = None,
-    api_endpoint: str = DEFAULT_API_URL,
-    additional_parameters: Dict[str, Any] = {},
-) -> Connection:
-    """Connect to Firebolt database.
-
-    Args:
-        `auth` (Auth) Authentication object.
-        `database` (str): Name of the database to connect
-        `engine_name` (Optional[str]): Name of the engine to connect to
-        `account_name` (Optional[str]): For customers with multiple accounts;
-                                      if none, default is used
-        `api_endpoint` (str): Firebolt API endpoint. Used for authentication
-        `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
-                                arguments for connection
-    """
-    # These parameters are optional in function signature
-    # but are required to connect.
-    # PEP 249 recommends making them kwargs.
-    for name, value in (("auth", auth), ("account_name", account_name)):
-        if not value:
-            raise ConfigurationError(f"{name} is required to connect.")
-
-    # Type checks
-    assert auth is not None
-    assert account_name is not None
-
-    api_endpoint = fix_url_schema(api_endpoint)
-
-    if not engine_name and not database:
-        # Return system engine connection
-        return connection_class(
-            system_engine_url, None, auth, api_endpoint, additional_parameters
-        )
-
-    if not engine_name:
-        # Return system engine connection
-        return connection_class(
-            system_engine_url,
-            database,
-            auth,
-            api_endpoint,
-            None,
-            additional_parameters,
-        )
-
-    else:
-        # Don't use context manager since this will be stored
-        # and used in a resulting connection
-        system_engine_connection = Connection(
-            system_engine_url,
-            database,
-            auth,
-            api_endpoint,
-            None,
-            additional_parameters,
-        )
-        engine_url, status, attached_db = await _get_engine_url_status_db(
-            system_engine_connection, engine_name
-        )
-        if status != "Running":
-            raise InterfaceError(f"Engine {engine_name} is not running")
-
-        if database is not None and database != attached_db:
-            raise InterfaceError(
-                f"Engine {engine_name} is not attached to {database}, "
-                f"but to {attached_db}"
-            )
-        elif database is None:
-            database = attached_db
-
-        assert engine_url is not None
-
-        engine_url = fix_url_schema(engine_url)
-        return Connection(
-            engine_url,
-            database,
-            auth,
-            api_endpoint,
-            system_engine_connection,
-            additional_parameters,
-        )
 
 
 class OverriddenHttpBackend(AutoBackend):
@@ -164,6 +74,7 @@ class OverriddenHttpBackend(AutoBackend):
         )
         return stream
 
+
 class Connection(BaseConnection):
     """
     Firebolt asynchronous database connection class. Implements `PEP 249`_.
@@ -201,9 +112,9 @@ class Connection(BaseConnection):
     def __init__(
         self,
         engine_url: str,
-        database: str,
+        database: Optional[str],
         auth: Auth,
-        api_endpoint: str = DEFAULT_API_URL,
+        api_endpoint: str,
         system_engine_connection: Optional["Connection"],
         additional_parameters: Dict[str, Any] = {},
     ):
@@ -230,7 +141,7 @@ class Connection(BaseConnection):
     @property
     def _is_system(self) -> bool:
         """`True` if connection is a system engine connection; `False` otherwise."""
-        return self._system_engine_connection is not None        
+        return self._system_engine_connection is not None
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -266,3 +177,90 @@ class Connection(BaseConnection):
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
         await self.aclose()
+
+
+async def connect(
+    auth: Optional[Auth] = None,
+    account_name: Optional[str] = None,
+    database: Optional[str] = None,
+    engine_name: Optional[str] = None,
+    api_endpoint: str = DEFAULT_API_URL,
+    additional_parameters: Dict[str, Any] = {},
+) -> Connection:
+    """Connect to Firebolt database.
+
+    Args:
+        `auth` (Auth) Authentication object.
+        `database` (str): Name of the database to connect
+        `engine_name` (Optional[str]): Name of the engine to connect to
+        `account_name` (Optional[str]): For customers with multiple accounts;
+                                      if none, default is used
+        `api_endpoint` (str): Firebolt API endpoint. Used for authentication
+        `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
+                                arguments for connection
+    """
+    # These parameters are optional in function signature
+    # but are required to connect.
+    # PEP 249 recommends making them kwargs.
+    for name, value in (("auth", auth), ("account_name", account_name)):
+        if not value:
+            raise ConfigurationError(f"{name} is required to connect.")
+
+    # Type checks
+    assert auth is not None
+    assert account_name is not None
+
+    api_endpoint = fix_url_schema(api_endpoint)
+
+    system_engine_url = fix_url_schema(
+        await _get_system_engine_url(auth, account_name, api_endpoint)
+    )
+
+    if not engine_name:
+        # Return system engine connection
+        return Connection(
+            system_engine_url,
+            database,
+            auth,
+            api_endpoint,
+            None,
+            additional_parameters,
+        )
+
+    else:
+        # Don't use context manager since this will be stored
+        # and used in a resulting connection
+        system_engine_connection = Connection(
+            system_engine_url,
+            None,
+            auth,
+            api_endpoint,
+            None,
+            additional_parameters,
+        )
+        engine_url, status, attached_db = await _get_engine_url_status_db(
+            system_engine_connection, engine_name
+        )
+
+        if status != "Running":
+            raise InterfaceError(f"Engine {engine_name} is not running")
+
+        if database is not None and database != attached_db:
+            raise InterfaceError(
+                f"Engine {engine_name} is not attached to {database}, "
+                f"but to {attached_db}"
+            )
+        elif database is None:
+            database = attached_db
+
+        assert engine_url is not None
+
+        engine_url = fix_url_schema(engine_url)
+        return Connection(
+            engine_url,
+            database,
+            auth,
+            api_endpoint,
+            system_engine_connection,
+            additional_parameters,
+        )
