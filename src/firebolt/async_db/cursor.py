@@ -21,6 +21,7 @@ from httpx import Response, codes
 from tricycle import RWLock
 
 from firebolt.async_db.util import is_engine_running
+from firebolt.client import AsyncClient
 from firebolt.common._types import (
     ColType,
     Column,
@@ -47,7 +48,6 @@ from firebolt.utils.exception import (
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from httpx import AsyncClient as AsyncHttpxClient
 
 logger = logging.getLogger(__name__)
 
@@ -102,7 +102,7 @@ class Cursor(BaseCursor):
     def __init__(
         self,
         *args: Any,
-        client: AsyncHttpxClient,
+        client: AsyncClient,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
@@ -156,8 +156,10 @@ class Cursor(BaseCursor):
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
         if self.connection.database:
             parameters["database"] = self.connection.database
+        if self.connection._is_system:
+            parameters["account_id"] = await self._client.account_id
         return await self._client.request(
-            url=f"/{path}",
+            url=f"/{path}" if path else "",
             method="POST",
             params=parameters,
             content=query,

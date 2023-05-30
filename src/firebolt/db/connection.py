@@ -69,7 +69,7 @@ def _resolve_engine_url(
     engine_name: str,
     auth: Auth,
     api_endpoint: str,
-    account_name: Optional[str] = None,
+    account_name: str,
 ) -> str:
     with Client(
         auth=auth,
@@ -113,7 +113,7 @@ def _get_database_default_engine_url(
     database: str,
     auth: Auth,
     api_endpoint: str,
-    account_name: Optional[str] = None,
+    account_name: str,
 ) -> str:
     with Client(
         auth=auth,
@@ -215,6 +215,7 @@ class Connection(BaseConnection):
         engine_url: str,
         database: str,
         auth: Auth,
+        account_name: str,
         api_endpoint: str = DEFAULT_API_URL,
         additional_parameters: Dict[str, Any] = {},
     ):
@@ -228,6 +229,7 @@ class Connection(BaseConnection):
         user_drivers = additional_parameters.get("user_drivers", [])
         user_clients = additional_parameters.get("user_clients", [])
         self._client = Client(
+            account_name=account_name,
             auth=auth,
             base_url=engine_url,
             api_endpoint=api_endpoint,
@@ -290,13 +292,13 @@ class Connection(BaseConnection):
 
 def connect(
     database: str = None,
+    account_name: str = None,
     username: Optional[str] = None,
     password: Optional[str] = None,
     access_token: Optional[str] = None,
     auth: Auth = None,
     engine_name: Optional[str] = None,
     engine_url: Optional[str] = None,
-    account_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
     use_token_cache: bool = True,
     additional_parameters: Dict[str, Any] = {},
@@ -329,6 +331,8 @@ def connect(
     # PEP 249 recommends making them kwargs.
     if not database:
         raise ConfigurationError("database name is required to connect.")
+    if not account_name:
+        raise ConfigurationError("account_name is required to connect.")
 
     validate_engine_name_and_url(engine_name, engine_url)
 
@@ -373,4 +377,6 @@ def connect(
     assert engine_url is not None
 
     engine_url = fix_url_schema(engine_url)
-    return Connection(engine_url, database, auth, api_endpoint, additional_parameters)
+    return Connection(
+        engine_url, database, auth, account_name, api_endpoint, additional_parameters
+    )

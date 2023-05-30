@@ -463,7 +463,7 @@ def get_system_engine_callback(system_engine_url: str) -> Callable:
 
         return Response(
             status_code=codes.OK,
-            json={"gatewayHost": system_engine_url},
+            json={"engineUrl": system_engine_url},
         )
 
     return inner

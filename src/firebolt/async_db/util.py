@@ -8,7 +8,7 @@ from firebolt.client import AsyncClient
 from firebolt.client.auth import Auth
 from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import InterfaceError
-from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
+from firebolt.utils.urls import DYNAMIC_QUERY, GATEWAY_HOST_BY_ACCOUNT_NAME
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
@@ -55,9 +55,9 @@ async def _get_system_engine_url(
         if response.status_code != codes.OK:
             raise InterfaceError(
                 f"Unable to retrieve system engine endpoint {url}: "
-                f"{response.status} {response.content}"
+                f"{response.status_code} {response.content}"
             )
-        return response.json()["gatewayHost"]
+        return response.json()["engineUrl"] + DYNAMIC_QUERY
 
 
 async def _get_engine_url_status_db(
@@ -66,7 +66,7 @@ async def _get_engine_url_status_db(
     cursor = system_engine.cursor()
     await cursor.execute(
         """
-        SELECT engine_url, attached_to, status FROM information_schema.engines
+        SELECT url, attached_to, status FROM information_schema.engines
         WHERE engine_name=?
         """,
         [engine_name],

@@ -1,7 +1,7 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 from firebolt.client.auth import Auth, ClientCredentials
 
@@ -52,6 +52,6 @@ class Settings:
 
     auth: Auth = field(default_factory=auth_from_env)
 
-    account_name: Optional[str] = field(default_factory=from_env(ACCOUNT_ENV))
+    account_name: str = field(default_factory=from_env(ACCOUNT_ENV))
     server: str = field(default_factory=from_env(SERVER_ENV))
     default_region: str = field(default_factory=from_env(DEFAULT_REGION_ENV))

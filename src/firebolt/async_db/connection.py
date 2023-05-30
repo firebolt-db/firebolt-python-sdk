@@ -115,6 +115,7 @@ class Connection(BaseConnection):
         database: Optional[str],
         auth: Auth,
         api_endpoint: str,
+        account_name: str,
         system_engine_connection: Optional["Connection"],
         additional_parameters: Dict[str, Any] = {},
     ):
@@ -128,6 +129,7 @@ class Connection(BaseConnection):
         user_drivers = additional_parameters.get("user_drivers", [])
         user_clients = additional_parameters.get("user_clients", [])
         self._client = AsyncClient(
+            account_name=account_name,
             auth=auth,
             base_url=engine_url,
             api_endpoint=api_endpoint,
@@ -215,29 +217,22 @@ async def connect(
     system_engine_url = fix_url_schema(
         await _get_system_engine_url(auth, account_name, api_endpoint)
     )
+    # Don't use context manager since this will be stored
+    # and used in a resulting connection
+    system_engine_connection = Connection(
+        system_engine_url,
+        database,
+        auth,
+        api_endpoint,
+        account_name,
+        None,
+        additional_parameters,
+    )
 
     if not engine_name:
-        # Return system engine connection
-        return Connection(
-            system_engine_url,
-            database,
-            auth,
-            api_endpoint,
-            None,
-            additional_parameters,
-        )
+        return system_engine_connection
 
     else:
-        # Don't use context manager since this will be stored
-        # and used in a resulting connection
-        system_engine_connection = Connection(
-            system_engine_url,
-            database,
-            auth,
-            api_endpoint,
-            None,
-            additional_parameters,
-        )
         engine_url, status, attached_db = await _get_engine_url_status_db(
             system_engine_connection, engine_name
         )
@@ -261,6 +256,7 @@ async def connect(
             database,
             auth,
             api_endpoint,
+            account_name,
             system_engine_connection,
             additional_parameters,
         )

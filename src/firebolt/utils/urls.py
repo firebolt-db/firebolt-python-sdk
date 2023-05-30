@@ -6,7 +6,7 @@ ENGINES_URL = "/core/v1/account/engines"
 ENGINES_BY_IDS_URL = "/core/v1/engines:getByIds"
 
 ACCOUNT_URL = "/iam/v2/account"
-ACCOUNT_BY_NAME_URL = "/iam/v2/accounts:getIdByName"
+ACCOUNT_BY_NAME_URL = "/web/v3/account/{account_name}/resolve"
 
 ACCOUNT_ENGINE_URL = "/core/v1/accounts/{account_id}/engines/{engine_id}"
 ACCOUNT_ENGINE_START_URL = ACCOUNT_ENGINE_URL + ":start"
@@ -29,4 +29,5 @@ ACCOUNT_INSTANCE_TYPES_URL = "/aws/v2/accounts/{account_id}/instanceTypes"
 PROVIDERS_URL = "/compute/v1/providers"
 REGIONS_URL = "/compute/v1/regions"
 
-GATEWAY_HOST_BY_ACCOUNT_NAME = "/v3/getGatewayHostByAccountName/{account_name}"
+GATEWAY_HOST_BY_ACCOUNT_NAME = "/web/v3/account/{account_name}/engineUrl"
+DYNAMIC_QUERY = "/dynamic/query"
