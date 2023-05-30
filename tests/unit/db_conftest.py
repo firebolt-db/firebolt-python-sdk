@@ -139,6 +139,14 @@ def server_side_async_id() -> str:
 @fixture
 def server_side_async_cancel_callback(server_side_async_id) -> Response:
     def do_query(request: Request, **kwargs) -> Response:
+        # Make sure no set parameters are added
+        assert list(request.url.params.keys()) == [
+            "database",
+            "query_id",
+        ], "invalid query params for async cancel"
+        assert request.url.path == "/cancel"
+        # Cancel has no body
+        assert request.read() == b""
         query_response = {
             "meta": [
                 {"name": "host", "type": "String"},
@@ -236,6 +244,9 @@ def query_callback(
     query_description: List[Column], query_data: List[List[ColType]]
 ) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        assert f"output_format={JSON_OUTPUT_FORMAT}" in str(request.url)
         query_response = {
             "meta": [{"name": c.name, "type": c.type_code} for c in query_description],
             "data": query_data,

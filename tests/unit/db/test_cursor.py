@@ -5,12 +5,16 @@ from httpx import HTTPStatusError, StreamError, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
+from firebolt.common.settings import Settings
 from firebolt.db import Cursor
 from firebolt.db.cursor import ColType, Column, CursorState, QueryStatus
 from firebolt.utils.exception import (
     CursorClosedError,
     DataError,
+    EngineNotRunningError,
+    FireboltDatabaseError,
     OperationalError,
+    ProgrammingError,
     QueryNotRunError,
 )
 from tests.unit.db_conftest import encode_param
@@ -182,7 +186,13 @@ def test_cursor_execute(
 
 def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    get_engines_url: str,
+    settings: Settings,
+    db_name: str,
     query_url: str,
+    get_databases_url: str,
     cursor: Cursor,
 ):
     """Cursor handles all types of errors properly."""
@@ -231,6 +241,56 @@ def test_cursor_execute_error(
         assert (
             str(excinfo.value) == "Error executing query:\nQuery error message"
         ), f"Invalid authentication error message for {message}."
+
+        # Database does not exist error
+        httpx_mock.add_response(
+            status_code=codes.FORBIDDEN,
+            content="Query error message",
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            json={"edges": []},
+            url=get_databases_url + "?filter.name_contains=database",
+        )
+        with raises(FireboltDatabaseError) as excinfo:
+            query()
+        assert cursor._state == CursorState.ERROR
+        assert db_name in str(excinfo)
+
+        # Database exists but some other error
+        error_message = "My query error message"
+        httpx_mock.add_response(
+            status_code=codes.FORBIDDEN,
+            content=error_message,
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            json={"edges": ["my_db"]},
+            url=get_databases_url + "?filter.name_contains=database",
+        )
+        with raises(ProgrammingError) as excinfo:
+            query()
+        assert cursor._state == CursorState.ERROR
+        assert error_message in str(excinfo)
+
+        # Engine is not running error
+        httpx_mock.add_response(
+            status_code=codes.SERVICE_UNAVAILABLE,
+            content="Query error message",
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            json={"edges": []},
+            url=(
+                get_engines_url + "?filter.name_contains=api_dev"
+                "&filter.current_status_eq=ENGINE_STATUS_RUNNING_REVISION_SERVING"
+            ),
+        )
+        with raises(EngineNotRunningError) as excinfo:
+            query()
+        assert cursor._state == CursorState.ERROR
+        assert settings.server in str(excinfo)
+
         httpx_mock.reset(True)
 
 
@@ -551,7 +611,12 @@ def test_cursor_server_side_async_cancel(
     httpx_mock.add_callback(
         server_side_async_cancel_callback, url=query_with_params_url
     )
+    cursor._set_parameters = {"invalid_parameter": "should_not_be_present"}
     cursor.cancel(server_side_async_id)
+
+    cursor.close()
+    with raises(CursorClosedError):
+        cursor.cancel(server_side_async_id)
 
 
 def test_cursor_server_side_async_get_status_completed(
@@ -614,3 +679,34 @@ def test_cursor_server_side_async_get_status_error(
             str(excinfo.value)
             == f"Asynchronous query {server_side_async_id} status check failed."
         ), f"Invalid get_status error message."
+
+
+def test_cursor_iterate(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+    python_query_data: List[List[ColType]],
+):
+    """Cursor is able to execute query, all fields are populated properly."""
+
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    with raises(QueryNotRunError):
+        for res in cursor:
+            pass
+
+    cursor.execute("select * from t")
+    i = 0
+    for res in cursor:
+        assert res == python_query_data[i]
+        i += 1
+    assert i == len(python_query_data), "Wrong number iterations of a cursor were done"
+
+    cursor.close()
+    with raises(CursorClosedError):
+        for res in cursor:
+            pass

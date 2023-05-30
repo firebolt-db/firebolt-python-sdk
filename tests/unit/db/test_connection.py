@@ -20,6 +20,14 @@ from firebolt.utils.exception import (
 from firebolt.utils.token_storage import TokenSecureStorage
 
 
+def test_connection_attributes(connection: Connection) -> None:
+    with raises(AttributeError):
+        connection.not_a_cursor()
+
+    with raises(AttributeError):
+        connection.not_a_database
+
+
 def test_closed_connection(connection: Connection) -> None:
     """Connection methods are unavailable for closed connection."""
     connection.close()
@@ -36,13 +44,14 @@ def test_closed_connection(connection: Connection) -> None:
 
 def test_cursors_closed_on_close(connection: Connection) -> None:
     """Connection closes all its cursors on close."""
+    assert connection.closed == False, "Initial state of connection is incorrect"
     c1, c2 = connection.cursor(), connection.cursor()
     assert (
         len(connection._cursors) == 2
     ), "Invalid number of cursors stored in connection"
 
     connection.close()
-    assert connection.closed, "Connection was not closed on close"
+    assert connection.closed == True, "Connection was not closed on close"
     assert c1.closed, "Cursor was not closed on connection close"
     assert c2.closed, "Cursor was not closed on connection close"
     assert len(connection._cursors) == 0, "Cursors left in connection after close"
@@ -177,8 +186,8 @@ def test_connect_database(
 def test_connection_unclosed_warnings(auth: Auth):
     c = Connection("", "", auth, "", None)
     with warns(UserWarning) as winfo:
-        del c
-        gc.collect()
+        # Can't guarantee `del c` triggers garbage collection
+        c.__del__()
 
     assert any(
         "Unclosed" in str(warning.message) for warning in winfo.list
@@ -218,6 +227,22 @@ def test_connection_token_caching(
 ) -> None:
     mock_connection_flow()
     mock_query()
+
+    # Using caching by default
+    with Patcher():
+        with connect(
+            database=db_name,
+            username=settings.user,
+            password=settings.password.get_secret_value(),
+            engine_url=settings.server,
+            account_name=settings.account_name,
+            api_endpoint=settings.server,
+        ) as connection:
+            assert connection.cursor().execute("select*") == len(python_query_data)
+        ts = TokenSecureStorage(
+            username=settings.user, password=settings.password.get_secret_value()
+        )
+        assert ts.get_cached_token() == access_token, "Invalid token value cached"
 
     with Patcher():
         with connect(
