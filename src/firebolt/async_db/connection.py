@@ -98,7 +98,6 @@ class Connection(BaseConnection):
 
     """
 
-    client_class: type
     __slots__ = (
         "_client",
         "_cursors",
@@ -114,11 +113,12 @@ class Connection(BaseConnection):
         engine_url: str,
         database: Optional[str],
         auth: Auth,
-        api_endpoint: str,
         account_name: str,
         system_engine_connection: Optional["Connection"],
+        api_endpoint: str,
         additional_parameters: Dict[str, Any] = {},
     ):
+        super().__init__()
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
         self.database = database
@@ -138,12 +138,6 @@ class Connection(BaseConnection):
             headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
         )
         self._system_engine_connection = system_engine_connection
-        super().__init__()
-
-    @property
-    def _is_system(self) -> bool:
-        """`True` if connection is a system engine connection; `False` otherwise."""
-        return self._system_engine_connection is None
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -175,6 +169,9 @@ class Connection(BaseConnection):
         await self._client.aclose()
         self._is_closed = True
 
+        if self._system_engine_connection:
+            await self._system_engine_connection.aclose()
+
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
@@ -189,10 +186,10 @@ async def connect(
     api_endpoint: str = DEFAULT_API_URL,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
-    """Connect to Firebolt database.
+    """Connect to Firebolt.
 
     Args:
-        `auth` (Auth) Authentication object.
+        `auth` (Auth) Authentication object
         `database` (str): Name of the database to connect
         `engine_name` (Optional[str]): Name of the engine to connect to
         `account_name` (Optional[str]): For customers with multiple accounts;
@@ -223,9 +220,9 @@ async def connect(
         system_engine_url,
         database,
         auth,
-        api_endpoint,
         account_name,
         None,
+        api_endpoint,
         additional_parameters,
     )
 
@@ -233,30 +230,34 @@ async def connect(
         return system_engine_connection
 
     else:
-        engine_url, status, attached_db = await _get_engine_url_status_db(
-            system_engine_connection, engine_name
-        )
-
-        if status != "Running":
-            raise InterfaceError(f"Engine {engine_name} is not running")
-
-        if database is not None and database != attached_db:
-            raise InterfaceError(
-                f"Engine {engine_name} is not attached to {database}, "
-                f"but to {attached_db}"
+        try:
+            engine_url, status, attached_db = await _get_engine_url_status_db(
+                system_engine_connection, engine_name
             )
-        elif database is None:
-            database = attached_db
 
-        assert engine_url is not None
+            if status != "Running":
+                raise InterfaceError(f"Engine {engine_name} is not running")
 
-        engine_url = fix_url_schema(engine_url)
-        return Connection(
-            engine_url,
-            database,
-            auth,
-            api_endpoint,
-            account_name,
-            system_engine_connection,
-            additional_parameters,
-        )
+            if database is not None and database != attached_db:
+                raise InterfaceError(
+                    f"Engine {engine_name} is not attached to {database}, "
+                    f"but to {attached_db}"
+                )
+            elif database is None:
+                database = attached_db
+
+            assert engine_url is not None
+
+            engine_url = fix_url_schema(engine_url)
+            return Connection(
+                engine_url,
+                database,
+                auth,
+                account_name,
+                system_engine_connection,
+                api_endpoint,
+                additional_parameters,
+            )
+        except:  # noqa
+            await system_engine_connection.aclose()
+            raise

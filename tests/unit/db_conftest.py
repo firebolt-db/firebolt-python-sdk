@@ -334,8 +334,8 @@ def set_params() -> Dict:
 @fixture
 def query_url(settings: Settings, db_name: str) -> str:
     return URL(
-        f"https://{settings.server}/?database={db_name}"
-        f"&output_format={JSON_OUTPUT_FORMAT}"
+        f"https://{settings.server}/",
+        params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name},
     )
 
 

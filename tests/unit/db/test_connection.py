@@ -91,10 +91,13 @@ def test_connect_engine_name(
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
     get_engine_url_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ):
     """connect properly handles engine_name"""
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     mock_query()
 
@@ -104,13 +107,16 @@ def test_connect_engine_name(
     ):
         httpx_mock.add_callback(callback, url=system_engine_query_url)
         with raises(InterfaceError):
-            connect(
+            c = connect(
                 database=db_name,
                 auth=auth,
                 engine_name=engine_name,
                 account_name=account_name,
                 api_endpoint=server,
             )
+            print(type(c))
+            with c:
+                pass
 
     httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
 
@@ -138,10 +144,13 @@ def test_connect_database(
     system_engine_no_db_query_url: str,
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ):
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(query_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
     with connect(
         database=None,
         auth=auth,
@@ -153,6 +162,7 @@ def test_connect_database(
     httpx_mock.reset(True)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(query_callback, url=system_engine_query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     with connect(
         database=db_name,
@@ -163,8 +173,8 @@ def test_connect_database(
         assert connection.cursor().execute("select*") == len(python_query_data)
 
 
-def test_connection_unclosed_warnings():
-    c = Connection("", "", None, "", None)
+def test_connection_unclosed_warnings(auth: Auth):
+    c = Connection("", "", auth, "", None)
     with warns(UserWarning) as winfo:
         del c
         gc.collect()
@@ -174,8 +184,8 @@ def test_connection_unclosed_warnings():
     ), "Invalid unclosed connection warning"
 
 
-def test_connection_no_warnings():
-    c = Connection("", "", None, "", None)
+def test_connection_no_warnings(auth: Auth):
+    c = Connection("", "", auth, "", None)
     c.close()
     with warnings.catch_warnings():
         warnings.simplefilter("error")
@@ -248,7 +258,7 @@ def test_connect_with_user_agent(
     query_url: str,
     mock_connection_flow: Callable,
 ) -> None:
-    with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.db.connection.get_user_agent_header") as ut:
         ut.return_value = "MyConnector/1.0 DriverA/1.1"
         mock_connection_flow()
         httpx_mock.add_callback(
@@ -284,7 +294,7 @@ def test_connect_no_user_agent(
     query_url: str,
     mock_connection_flow: Callable,
 ) -> None:
-    with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.db.connection.get_user_agent_header") as ut:
         ut.return_value = "Python/3.0"
         mock_connection_flow()
         httpx_mock.add_callback(

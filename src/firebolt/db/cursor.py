@@ -4,7 +4,6 @@ import logging
 import re
 import time
 from threading import Lock
-from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,10 +15,10 @@ from typing import (
     Union,
 )
 
-from httpx import Client as HttpxClient
 from httpx import Response, codes
 from readerwriterlock.rwlock import RWLockWrite
 
+from firebolt.client import Client
 from firebolt.common._types import (
     ColType,
     Column,
@@ -72,7 +71,7 @@ class Cursor(BaseCursor):
     )
 
     def __init__(
-        self, *args: Any, client: HttpxClient, connection: Connection, **kwargs: Any
+        self, *args: Any, client: Client, connection: Connection, **kwargs: Any
     ) -> None:
         super().__init__(*args, **kwargs)
         self._query_lock = RWLockWrite()
@@ -87,7 +86,9 @@ class Cursor(BaseCursor):
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            if not is_db_available(self.connection, self.connection.database):
+            if self.connection.database and not is_db_available(
+                self.connection, self.connection.database
+            ):
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
                 )
@@ -105,10 +106,10 @@ class Cursor(BaseCursor):
 
     def _api_request(
         self,
-        query: Optional[str] = "",
-        parameters: Optional[dict[str, Any]] = {},
-        path: Optional[str] = "",
-        use_set_parameters: Optional[bool] = True,
+        query: str = "",
+        parameters: dict[str, Any] = {},
+        path: str = "",
+        use_set_parameters: bool = True,
     ) -> Response:
         """
         Query API, return Response object.
@@ -127,13 +128,14 @@ class Cursor(BaseCursor):
         """
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        if self.connection.database:
+            parameters["database"] = self.connection.database
+        if self.connection._is_system:
+            parameters["account_id"] = self._client.account_id
         return self._client.request(
-            url=f"/{path}",
+            url=f"/{path}" if path else "",
             method="POST",
-            params={
-                "database": self.connection.database,
-                **(parameters or dict()),
-            },
+            params=parameters,
             content=query,
         )
 
@@ -341,24 +343,6 @@ class Cursor(BaseCursor):
             return QueryStatus.NOT_READY
         return QueryStatus[resp_json["status"]]
 
-    def close(self) -> None:
-        """Terminate an ongoing query (if any) and mark connection as closed."""
-        self._state = CursorState.CLOSED
-        self.connection._remove_cursor(self)
-
-    def __del__(self) -> None:
-        self.close()
-
-    # Context manager support
-    @check_not_closed
-    def __enter__(self) -> Cursor:
-        return self
-
-    def __exit__(
-        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
-    ) -> None:
-        self.close()
-
     @check_not_closed
     def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
@@ -377,3 +361,7 @@ class Cursor(BaseCursor):
             if row is None:
                 return
             yield row
+
+    @check_not_closed
+    def __enter__(self) -> Cursor:
+        return self

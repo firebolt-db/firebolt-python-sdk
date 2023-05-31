@@ -20,6 +20,27 @@ if TYPE_CHECKING:
 ENGINE_STATUS_RUNNING = "Running"
 
 
+async def is_db_available(connection: Connection, database_name: str) -> bool:
+    """
+    Verify that the database exists.
+
+    Args:
+        connection (firebolt.async_db.connection.Connection)
+        database_name (str): Name of a database
+    """
+    system_engine = connection._system_engine_connection or connection
+    with system_engine.cursor() as cursor:
+        return (
+            await cursor.execute(
+                """
+                SELECT 1 FROM information_schema.databases WHERE database_name=?
+                """,
+                [database_name],
+            )
+            > 0
+        )
+
+
 async def is_engine_running(connection: Connection, engine_url: str) -> bool:
     """
     Verify that the engine is running.
@@ -69,16 +90,16 @@ async def _get_system_engine_url(
 async def _get_engine_url_status_db(
     system_engine: Connection, engine_name: str
 ) -> Tuple[str, str, str]:
-    cursor = system_engine.cursor()
-    await cursor.execute(
-        """
-        SELECT url, attached_to, status FROM information_schema.engines
-        WHERE engine_name=?
-        """,
-        [engine_name],
-    )
-    row = await cursor.fetchone()
-    if row is None:
-        raise FireboltEngineError(f"Engine with name {engine_name} doesn't exist")
-    engine_url, database, status = row
-    return str(engine_url), str(status), str(database)  # Mypy check
+    with system_engine.cursor() as cursor:
+        await cursor.execute(
+            """
+            SELECT url, attached_to, status FROM information_schema.engines
+            WHERE engine_name=?
+            """,
+            [engine_name],
+        )
+        row = await cursor.fetchone()
+        if row is None:
+            raise FireboltEngineError(f"Engine with name {engine_name} doesn't exist")
+        engine_url, database, status = row
+        return str(engine_url), str(status), str(database)  # Mypy check
