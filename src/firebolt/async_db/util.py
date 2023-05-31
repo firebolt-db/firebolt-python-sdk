@@ -7,7 +7,11 @@ from httpx import URL, Timeout, codes
 from firebolt.client import AsyncClient
 from firebolt.client.auth import Auth
 from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
-from firebolt.utils.exception import InterfaceError
+from firebolt.utils.exception import (
+    AccountNotFoundError,
+    FireboltEngineError,
+    InterfaceError,
+)
 from firebolt.utils.urls import DYNAMIC_QUERY, GATEWAY_HOST_BY_ACCOUNT_NAME
 
 if TYPE_CHECKING:
@@ -52,6 +56,8 @@ async def _get_system_engine_url(
         #       return "https://api.us-east-1.dev.firebolt.io/dynamic"
         url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
         response = await client.get(url=url)
+        if response.status_code == codes.NOT_FOUND:
+            raise AccountNotFoundError(account_name)
         if response.status_code != codes.OK:
             raise InterfaceError(
                 f"Unable to retrieve system engine endpoint {url}: "
@@ -73,6 +79,6 @@ async def _get_engine_url_status_db(
     )
     row = await cursor.fetchone()
     if row is None:
-        raise InterfaceError(f"Engine with name {engine_name} doesn't exist")
+        raise FireboltEngineError(f"Engine with name {engine_name} doesn't exist")
     engine_url, database, status = row
     return str(engine_url), str(status), str(database)  # Mypy check

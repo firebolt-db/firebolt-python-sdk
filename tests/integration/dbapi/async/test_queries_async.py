@@ -98,8 +98,8 @@ async def status_loop(
     ), f"Failed {query}. Got {status} rather than {final_status}."
 
 
-async def test_connect_engine_name(
-    connection_engine_name: Connection,
+async def test_connect_no_db(
+    connection_no_db: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
@@ -107,24 +107,7 @@ async def test_connect_engine_name(
 ) -> None:
     """Connecting with engine name is handled properly."""
     await test_select(
-        connection_engine_name,
-        all_types_query,
-        all_types_query_description,
-        all_types_query_response,
-        timezone_name,
-    )
-
-
-async def test_connect_no_engine(
-    connection_no_engine: Connection,
-    all_types_query: str,
-    all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
-    timezone_name: str,
-) -> None:
-    """Connecting with engine name is handled properly."""
-    await test_select(
-        connection_no_engine,
+        connection_no_db,
         all_types_query,
         all_types_query_description,
         all_types_query_response,
@@ -198,20 +181,18 @@ async def test_long_query(
 async def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
-    async def test_query(c: Cursor, query: str) -> None:
+    async def test_query(c: Cursor, query: str, empty_response=True) -> None:
         await c.execute(query)
         assert c.description == None
-        assert c.rowcount == -1
+        assert c.rowcount == (-1 if empty_response else 0)
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        await c.execute("DROP JOIN INDEX IF EXISTS test_drop_create_async_db_join_idx")
-        await c.execute(
-            "DROP AGGREGATING INDEX IF EXISTS test_drop_create_async_db_agg_idx"
-        )
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_tb")
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_tb_dim")
+        await c.execute("DROP JOIN INDEX IF EXISTS test_db_join_idx")
+        await c.execute("DROP AGGREGATING INDEX IF EXISTS test_db_agg_idx")
+        await c.execute("DROP TABLE IF EXISTS test_drop_create_async")
+        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_dim")
 
         # Fact table
         await test_query(
@@ -239,6 +220,7 @@ async def test_drop_create(connection: Connection) -> None:
             c,
             "CREATE AGGREGATING INDEX test_db_agg_idx ON "
             "test_drop_create_async(id, sum(f), count(dt))",
+            empty_response=False,
         )
 
         # Drop join index
@@ -506,3 +488,56 @@ async def test_bytea_roundtrip(
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
+
+
+async def test_system_engine(
+    connection_system_engine: Connection,
+    all_types_query: str,
+    all_types_query_description: List[Column],
+    all_types_query_system_engine_response: List[ColType],
+    timezone_name: str,
+) -> None:
+    """Connecting with engine name is handled properly."""
+    with connection_system_engine.cursor() as c:
+        assert await c.execute(all_types_query) == 1, "Invalid row count returned"
+        assert c.rowcount == 1, "Invalid rowcount value"
+        data = await c.fetchall()
+        assert len(data) == c.rowcount, "Invalid data length"
+        assert_deep_eq(data, all_types_query_system_engine_response, "Invalid data")
+        assert c.description == all_types_query_description, "Invalid description value"
+        assert len(data[0]) == len(c.description), "Invalid description length"
+        assert len(await c.fetchall()) == 0, "Redundant data returned by fetchall"
+
+        # Different fetch types
+        await c.execute(all_types_query)
+        assert (
+            await c.fetchone() == all_types_query_system_engine_response[0]
+        ), "Invalid fetchone data"
+        assert await c.fetchone() is None, "Redundant data returned by fetchone"
+
+        await c.execute(all_types_query)
+        assert len(await c.fetchmany(0)) == 0, "Invalid data size returned by fetchmany"
+        data = await c.fetchmany()
+        assert len(data) == 1, "Invalid data size returned by fetchmany"
+        assert_deep_eq(
+            data,
+            all_types_query_system_engine_response,
+            "Invalid data returned by fetchmany",
+        )
+
+
+async def test_system_engine_no_db(
+    connection_system_engine_no_db: Connection,
+    all_types_query: str,
+    all_types_query_description: List[Column],
+    all_types_query_system_engine_response: List[ColType],
+    timezone_name: str,
+) -> None:
+    """Connecting with engine name is handled properly."""
+    await test_system_engine(
+        connection_system_engine_no_db,
+        all_types_query,
+        all_types_query_description,
+        all_types_query_system_engine_response,
+        timezone_name,
+    )

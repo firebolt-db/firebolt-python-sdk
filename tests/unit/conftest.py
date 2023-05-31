@@ -27,7 +27,6 @@ from firebolt.utils.urls import (
     ACCOUNT_BY_NAME_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
-    ACCOUNT_URL,
     AUTH_SERVICE_ACCOUNT_URL,
     DATABASES_URL,
     ENGINES_URL,
@@ -175,12 +174,12 @@ def db_description() -> str:
 
 
 @fixture
-def account_id_url(settings: Settings) -> Pattern:
-    base = f"https://{settings.server}{ACCOUNT_BY_NAME_URL}?account_name="
-    default_base = f"https://{settings.server}{ACCOUNT_URL}"
+def account_id_url(settings: Settings, account_name: str) -> Pattern:
+    account_name_re = r"[^\\\\]*"
+    base = f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
-    default_base = default_base.replace("/", "\\/").replace("?", "\\?")
-    return compile(f"(?:{base}.*|{default_base})")
+    base = base.format(account_name=account_name_re)
+    return compile(base)
 
 
 @fixture
@@ -192,14 +191,9 @@ def account_id_callback(
         request: Request,
         **kwargs,
     ) -> Response:
-        if "account_name" not in request.url.params:
-            return Response(
-                status_code=httpx.codes.OK, json={"account": {"id": account_id}}
-            )
-        # In this case, an account_name *should* be specified.
-        if request.url.params["account_name"] != settings.account_name:
-            raise AccountNotFoundError(request.url.params["account_name"])
-        return Response(status_code=httpx.codes.OK, json={"account_id": account_id})
+        if request.url.path.split("/")[-2] != settings.account_name:
+            raise AccountNotFoundError(request.url.path.split("/")[-2])
+        return Response(status_code=httpx.codes.OK, json={"id": account_id})
 
     return do_mock
 

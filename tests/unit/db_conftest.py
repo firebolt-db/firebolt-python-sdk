@@ -354,9 +354,10 @@ def _get_engine_url_callback(server: str, db_name: str, status="Running") -> Cal
     def do_query(request: Request, **kwargs) -> Response:
         set_parameters = request.url.params
         assert (
-            len(set_parameters) == 2
+            len(set_parameters) == 3
             and "output_format" in set_parameters
             and "database" in set_parameters
+            and "account_id" in set_parameters
         )
         data = [[server, db_name, status]]
         query_response = {
@@ -435,13 +436,15 @@ def system_engine_url() -> str:
 
 
 @fixture
-def system_engine_query_url(system_engine_url: str, db_name: str) -> str:
-    return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}"
+def system_engine_query_url(
+    system_engine_url: str, db_name: str, account_id: str
+) -> str:
+    return f"{system_engine_url}/dynamic/query?output_format=JSON_Compact&database={db_name}&account_id={account_id}"
 
 
 @fixture
-def system_engine_no_db_query_url(system_engine_url: str) -> str:
-    return f"{system_engine_url}/?output_format=JSON_Compact"
+def system_engine_no_db_query_url(system_engine_url: str, account_id: str) -> str:
+    return f"{system_engine_url}/dynamic/query?output_format=JSON_Compact&account_id={account_id}"
 
 
 @fixture
@@ -478,11 +481,14 @@ def mock_connection_flow(
     get_system_engine_callback: Callable,
     system_engine_query_url: str,
     get_engine_url_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ) -> Callable:
     def inner() -> None:
         httpx_mock.add_callback(check_credentials_callback, url=auth_url)
         httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
         httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
+        httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     return inner
 

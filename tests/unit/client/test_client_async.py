@@ -15,13 +15,14 @@ from firebolt.utils.util import fix_url_schema
 async def test_client_retry(
     httpx_mock: HTTPXMock,
     auth: Auth,
+    account_name: str,
     access_token: str,
 ):
     """
     Client retries with new auth token
     if first attempt fails with unauthorized error.
     """
-    async with AsyncClient(auth=auth) as client:
+    async with AsyncClient(account_name=account_name, auth=auth) as client:
         # auth get token
         httpx_mock.add_response(
             status_code=codes.OK,
@@ -54,6 +55,7 @@ async def test_client_different_auths(
     check_credentials_callback: Callable,
     check_token_callback: Callable,
     auth: Auth,
+    account_name: str,
     auth_server: str,
     server: str,
 ):
@@ -72,16 +74,15 @@ async def test_client_different_auths(
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    async with AsyncClient(auth=auth, api_endpoint=server) as client:
+    async with AsyncClient(
+        account_name=account_name, auth=auth, api_endpoint=server
+    ) as client:
         await client.get("https://url")
 
-    # client accepts None auth, but authorization fails
-    with raises(AssertionError) as excinfo:
-        async with AsyncClient(auth=None, api_endpoint=server) as client:
-            await client.get("https://url")
-
     with raises(TypeError) as excinfo:
-        async with AsyncClient(auth=lambda r: r, api_endpoint=server):
+        async with AsyncClient(
+            account_name=account_name, auth=lambda r: r, api_endpoint=server
+        ):
             await client.get("https://url")
 
     assert str(excinfo.value).startswith(
@@ -92,6 +93,7 @@ async def test_client_different_auths(
 async def test_client_account_id(
     httpx_mock: HTTPXMock,
     auth: Auth,
+    account_name: str,
     account_id: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
@@ -103,6 +105,7 @@ async def test_client_account_id(
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     async with AsyncClient(
+        account_name=account_name,
         auth=auth,
         base_url=fix_url_schema(settings.server),
         api_endpoint=settings.server,

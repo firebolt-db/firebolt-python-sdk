@@ -36,7 +36,7 @@ async def test_invalid_account(
 async def test_engine_name_not_exists(
     engine_name: str,
     database_name: str,
-    password_auth: ClientCredentials,
+    auth: ClientCredentials,
     account_name: str,
     api_endpoint: str,
 ) -> None:

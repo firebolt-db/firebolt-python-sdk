@@ -43,6 +43,7 @@ def test_rm_token_cache(
     check_credentials_callback: Callable,
     settings: Settings,
     auth_url: str,
+    account_name: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
     provider_callback: Callable,
@@ -59,6 +60,7 @@ def test_rm_token_cache(
 
     with Patcher():
         local_settings = Settings(
+            account_name=account_name,
             auth=ClientCredentials(
                 settings.auth.client_id,
                 settings.auth.client_secret,
@@ -76,6 +78,7 @@ def test_rm_token_cache(
     # Do the same, but with use_token_cache=False
     with Patcher():
         local_settings = Settings(
+            account_name=account_name,
             auth=ClientCredentials(
                 settings.auth.client_id,
                 settings.auth.client_secret,

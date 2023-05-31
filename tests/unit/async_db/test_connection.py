@@ -90,11 +90,14 @@ async def test_connect_engine_name(
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
     get_engine_url_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ):
     """connect properly handles engine_name"""
 
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     mock_query()
 
@@ -139,10 +142,13 @@ async def test_connect_database(
     system_engine_no_db_query_url: str,
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ):
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(query_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
     async with await connect(
         database=None,
         auth=auth,
@@ -154,6 +160,7 @@ async def test_connect_database(
     httpx_mock.reset(True)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(query_callback, url=system_engine_query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     async with await connect(
         database=db_name,

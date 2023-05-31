@@ -18,13 +18,14 @@ from firebolt.utils.util import fix_url_schema
 def test_client_retry(
     httpx_mock: HTTPXMock,
     auth: Auth,
+    account_name: str,
     access_token: str,
 ):
     """
     Client retries with new auth token
     if first attempt fails with unauthorized error.
     """
-    with Client(auth=auth) as client:
+    with Client(account_name=account_name, auth=auth) as client:
 
         # auth get token
         httpx_mock.add_response(
@@ -58,6 +59,7 @@ def test_client_different_auths(
     check_credentials_callback: Callable,
     check_token_callback: Callable,
     auth: Auth,
+    account_name: str,
     auth_server: str,
     server: str,
 ):
@@ -75,14 +77,10 @@ def test_client_different_auths(
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    Client(auth=auth, api_endpoint=server).get("https://url")
-
-    # client accepts None auth, but authorization fails
-    with raises(AssertionError) as excinfo:
-        Client(auth=None).get("https://url")
+    Client(account_name=account_name, auth=auth, api_endpoint=server).get("https://url")
 
     with raises(TypeError) as excinfo:
-        Client(auth=lambda r: r).get("https://url")
+        Client(account_name=account_name, auth=lambda r: r).get("https://url")
 
     assert str(excinfo.value).startswith(
         'Invalid "auth" argument'
@@ -92,6 +90,7 @@ def test_client_different_auths(
 def test_client_account_id(
     httpx_mock: HTTPXMock,
     auth: Auth,
+    account_name: str,
     account_id: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
@@ -103,6 +102,7 @@ def test_client_account_id(
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     with Client(
+        account_name=account_name,
         auth=auth,
         base_url=fix_url_schema(settings.server),
         api_endpoint=settings.server,
@@ -114,6 +114,7 @@ def test_client_account_id(
 def test_refresh_with_hooks(
     fs: FakeFilesystem,
     httpx_mock: HTTPXMock,
+    account_name: str,
     client_id: str,
     client_secret: str,
     access_token: str,
@@ -126,6 +127,7 @@ def test_refresh_with_hooks(
     tss.cache_token(access_token, 2**32)
 
     client = Client(
+        account_name=account_name,
         auth=ClientCredentials(client_id, client_secret),
         event_hooks={
             "response": [raise_on_4xx_5xx],
