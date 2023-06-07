@@ -14,6 +14,7 @@ from firebolt.db import Connection, connect
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
+    EngineNotRunningError,
     InterfaceError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
@@ -101,12 +102,12 @@ def test_connect_engine_name(
 
     mock_query()
 
-    for callback in (
-        get_engine_url_invalid_db_callback,
-        get_engine_url_not_running_callback,
+    for callback, err_cls in (
+        (get_engine_url_invalid_db_callback, InterfaceError),
+        (get_engine_url_not_running_callback, EngineNotRunningError),
     ):
         httpx_mock.add_callback(callback, url=system_engine_query_url)
-        with raises(InterfaceError):
+        with raises(err_cls):
             c = connect(
                 database=db_name,
                 auth=auth,
