@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, List
+from typing import List
 
 from pytest import mark, raises
 
@@ -13,66 +13,12 @@ from firebolt.async_db import (
 )
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.common._types import ColType, Column
+from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT_2}"
-
-CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS ex_lineitem (
-  l_orderkey              LONG,
-  l_partkey               LONG,
-  l_suppkey               LONG,
-  l_linenumber            INT,
-  l_quantity              LONG,
-  l_extendedprice         LONG,
-  l_discount              LONG,
-  l_tax                   LONG,
-  l_returnflag            TEXT,
-  l_linestatus            TEXT,
-  l_shipdate              TEXT,
-  l_commitdate            TEXT,
-  l_receiptdate           TEXT,
-  l_shipinstruct          TEXT,
-  l_shipmode              TEXT,
-  l_comment               TEXT
-)
-URL = 's3://firebolt-publishing-public/samples/tpc-h/parquet/lineitem/'
-OBJECT_PATTERN = '*.parquet'
-TYPE = (PARQUET);"""
-
-CREATE_FACT_TABLE = """CREATE FACT TABLE IF NOT EXISTS lineitem (
--- In this example, these fact table columns
--- map directly to the external table columns.
-  l_orderkey              LONG,
-  l_partkey               LONG,
-  l_suppkey               LONG,
-  l_linenumber            INT,
-  l_quantity              LONG,
-  l_extendedprice         LONG,
-  l_discount              LONG,
-  l_tax                   LONG,
-  l_returnflag            TEXT,
-  l_linestatus            TEXT,
-  l_shipdate              TEXT,
-  l_commitdate            TEXT,
-  l_receiptdate           TEXT,
-  l_shipinstruct          TEXT,
-  l_shipmode              TEXT,
-  l_comment               TEXT
-)
-PRIMARY INDEX
-  l_orderkey,
-  l_linenumber;
-"""
-
-
-def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
-    if type(got) == list and type(expected) == list:
-        all([assert_deep_eq(f, s, msg) for f, s in zip(got, expected)])
-    assert (
-        type(got) == type(expected) and got == expected
-    ), f"{msg}: {got}(got) != {expected}(expected)"
 
 
 async def status_loop(
@@ -488,56 +434,3 @@ async def test_bytea_roundtrip(
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
-
-
-async def test_system_engine(
-    connection_system_engine: Connection,
-    all_types_query: str,
-    all_types_query_description: List[Column],
-    all_types_query_system_engine_response: List[ColType],
-    timezone_name: str,
-) -> None:
-    """Connecting with engine name is handled properly."""
-    with connection_system_engine.cursor() as c:
-        assert await c.execute(all_types_query) == 1, "Invalid row count returned"
-        assert c.rowcount == 1, "Invalid rowcount value"
-        data = await c.fetchall()
-        assert len(data) == c.rowcount, "Invalid data length"
-        assert_deep_eq(data, all_types_query_system_engine_response, "Invalid data")
-        assert c.description == all_types_query_description, "Invalid description value"
-        assert len(data[0]) == len(c.description), "Invalid description length"
-        assert len(await c.fetchall()) == 0, "Redundant data returned by fetchall"
-
-        # Different fetch types
-        await c.execute(all_types_query)
-        assert (
-            await c.fetchone() == all_types_query_system_engine_response[0]
-        ), "Invalid fetchone data"
-        assert await c.fetchone() is None, "Redundant data returned by fetchone"
-
-        await c.execute(all_types_query)
-        assert len(await c.fetchmany(0)) == 0, "Invalid data size returned by fetchmany"
-        data = await c.fetchmany()
-        assert len(data) == 1, "Invalid data size returned by fetchmany"
-        assert_deep_eq(
-            data,
-            all_types_query_system_engine_response,
-            "Invalid data returned by fetchmany",
-        )
-
-
-async def test_system_engine_no_db(
-    connection_system_engine_no_db: Connection,
-    all_types_query: str,
-    all_types_query_description: List[Column],
-    all_types_query_system_engine_response: List[ColType],
-    timezone_name: str,
-) -> None:
-    """Connecting with engine name is handled properly."""
-    await test_system_engine(
-        connection_system_engine_no_db,
-        all_types_query,
-        all_types_query_description,
-        all_types_query_system_engine_response,
-        timezone_name,
-    )

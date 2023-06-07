@@ -24,8 +24,9 @@ def must_env(var_name: str) -> str:
 
 
 @fixture(scope="session")
-def rm_settings(api_endpoint, auth) -> Settings:
+def rm_settings(api_endpoint, auth, account_name) -> Settings:
     return Settings(
+        account_name=account_name,
         server=api_endpoint,
         auth=auth,
         default_region="us-east-1",
@@ -67,6 +68,6 @@ def service_secret() -> str:
     return must_env(SERVICE_SECRET_ENV)
 
 
-@fixture
+@fixture(scope="session")
 def auth(service_id, service_secret) -> ClientCredentials:
     return ClientCredentials(service_id, service_secret)

@@ -25,6 +25,7 @@ from firebolt.common.settings import (
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
+    EngineNotRunningError,
     InterfaceError,
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
@@ -236,7 +237,7 @@ async def connect(
             )
 
             if status != "Running":
-                raise InterfaceError(f"Engine {engine_name} is not running")
+                raise EngineNotRunningError(engine_name)
 
             if database is not None and database != attached_db:
                 raise InterfaceError(

@@ -4,6 +4,7 @@ from firebolt.async_db import Connection, connect
 from firebolt.client.auth import ClientCredentials
 from firebolt.utils.exception import (
     AccountNotFoundError,
+    EngineNotRunningError,
     FireboltEngineError,
     InterfaceError,
     OperationalError,
@@ -60,7 +61,7 @@ async def test_engine_stopped(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
-    with raises(InterfaceError):
+    with raises(EngineNotRunningError):
         async with await connect(
             engine_name=stopped_engine_name,
             database=database_name,

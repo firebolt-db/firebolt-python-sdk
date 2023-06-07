@@ -5,91 +5,64 @@ from firebolt.db import Connection, connect
 
 
 @fixture
-def username_password_connection(
-    engine_url: str,
-    database_name: str,
-    password_auth: Auth,
-    account_name: str,
-    api_endpoint: str,
-) -> Connection:
-    connection = connect(
-        engine_url=engine_url,
-        database=database_name,
-        auth=password_auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    )
-    yield connection
-    connection.close()
-
-
-@fixture
-async def connection(
-    engine_url: str,
-    database_name: str,
-    password_auth: Auth,
-    account_name: str,
-    api_endpoint: str,
-) -> Connection:
-    connection = connect(
-        engine_url=engine_url,
-        database=database_name,
-        auth=password_auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    )
-    yield connection
-    connection.close()
-
-
-@fixture
-def connection_engine_name(
+def connection(
     engine_name: str,
     database_name: str,
-    password_auth: Auth,
+    auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
-    connection = connect(
+    with connect(
         engine_name=engine_name,
         database=database_name,
-        auth=password_auth,
+        auth=auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
-    )
-    yield connection
-    connection.close()
+    ) as connection:
+        yield connection
 
 
 @fixture
-def connection_no_engine(
-    database_name: str,
-    password_auth: Auth,
+def connection_no_db(
+    engine_name: str,
+    auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
-    connection = connect(
-        database=database_name,
-        auth=password_auth,
+    with connect(
+        engine_name=engine_name,
+        auth=auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
-    )
-    yield connection
-    connection.close()
+    ) as connection:
+        yield connection
 
 
-@fixture(scope="session")
+@fixture
 def connection_system_engine(
-    password_auth: Auth,
+    database_name: str,
+    auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Connection:
-    connection = connect(
-        database="dummy",
-        engine_name="system",
-        auth=password_auth,
+    with connect(
+        database=database_name,
+        auth=auth,
         account_name=account_name,
         api_endpoint=api_endpoint,
-    )
-    yield connection
-    connection.close()
+    ) as connection:
+        yield connection
+
+
+@fixture
+def connection_system_engine_no_db(
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> Connection:
+    with connect(
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        yield connection

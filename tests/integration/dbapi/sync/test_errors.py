@@ -1,4 +1,3 @@
-from httpx import ConnectError
 from pytest import mark, raises
 
 from firebolt.client.auth import ClientCredentials
@@ -35,32 +34,17 @@ def test_invalid_account(
         ), "Invalid account error message."
 
 
-def test_engine_url_not_exists(
-    engine_url: str,
-    database_name: str,
-    auth: ClientCredentials,
-    api_endpoint: str,
-) -> None:
-    """Connection properly reacts to invalid engine url error."""
-    with connect(
-        engine_url=engine_url + "_",
-        database=database_name,
-        auth=auth,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        with raises(ConnectError):
-            connection.cursor().execute("show tables")
-
-
 def test_engine_name_not_exists(
     engine_name: str,
     database_name: str,
     auth: ClientCredentials,
+    account_name: str,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
     with raises(FireboltEngineError):
         with connect(
+            account_name=account_name,
             engine_name=engine_name + "_________",
             database=database_name,
             auth=auth,
@@ -70,15 +54,17 @@ def test_engine_name_not_exists(
 
 
 def test_engine_stopped(
-    stopped_engine_url: str,
+    stopped_engine_name: str,
     database_name: str,
     auth: ClientCredentials,
+    account_name: str,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to engine not running error."""
     with raises(EngineNotRunningError):
         with connect(
-            engine_url=stopped_engine_url,
+            account_name=account_name,
+            engine_name=stopped_engine_name,
             database=database_name,
             auth=auth,
             api_endpoint=api_endpoint,
@@ -91,11 +77,13 @@ def test_database_not_exists(
     engine_url: str,
     database_name: str,
     auth: ClientCredentials,
+    account_name: str,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid database error."""
     new_db_name = database_name + "_"
     with connect(
+        account_name=account_name,
         engine_url=engine_url,
         database=new_db_name,
         auth=auth,

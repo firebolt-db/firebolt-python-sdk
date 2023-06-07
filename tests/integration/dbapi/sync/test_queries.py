@@ -16,6 +16,7 @@ from firebolt.db import (
     OperationalError,
     connect,
 )
+from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
@@ -52,8 +53,8 @@ def status_loop(
     ), f"Failed {query}. Got {status} rather than {final_status}."
 
 
-def test_connect_engine_name(
-    connection_engine_name: Connection,
+def test_connect_no_db(
+    connection_no_db: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
@@ -61,24 +62,7 @@ def test_connect_engine_name(
 ) -> None:
     """Connecting with engine name is handled properly."""
     test_select(
-        connection_engine_name,
-        all_types_query,
-        all_types_query_description,
-        all_types_query_response,
-        timezone_name,
-    )
-
-
-def test_connect_no_engine(
-    connection_no_engine: Connection,
-    all_types_query: str,
-    all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
-    timezone_name: str,
-) -> None:
-    """Connecting with engine name is handled properly."""
-    test_select(
-        connection_no_engine,
+        connection_no_db,
         all_types_query,
         all_types_query_description,
         all_types_query_response,
@@ -149,10 +133,10 @@ def test_long_query(
 def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
-    def test_query(c: Cursor, query: str) -> None:
+    def test_query(c: Cursor, query: str, empty_response=True) -> None:
         c.execute(query)
         assert c.description == None
-        assert c.rowcount == -1
+        assert c.rowcount == (-1 if empty_response else 0)
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
@@ -188,6 +172,7 @@ def test_drop_create(connection: Connection) -> None:
             c,
             "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
             "test_drop_create_tb(id, sum(f), count(dt))",
+            empty_response=False,
         )
 
         # Drop join index
@@ -378,9 +363,9 @@ def test_set_invalid_parameter(connection: Connection):
 # Run test multiple times since the issue is flaky
 @mark.parametrize("_", range(5))
 def test_anyio_backend_import_issue(
-    engine_url: str,
+    engine_name: str,
     database_name: str,
-    password_auth: Auth,
+    auth: Auth,
     account_name: str,
     api_endpoint: str,
     _: int,
@@ -391,13 +376,13 @@ def test_anyio_backend_import_issue(
     exceptions = []
 
     def run_query(idx: int):
-        nonlocal password_auth, database_name, engine_url, account_name, api_endpoint
+        nonlocal auth, database_name, engine_name, account_name, api_endpoint
         try:
             with connect(
-                auth=password_auth,
+                auth=auth,
                 database=database_name,
                 account_name=account_name,
-                engine_url=engine_url,
+                engine_name=engine_name,
                 api_endpoint=api_endpoint,
             ) as c:
                 cursor = c.cursor()
@@ -468,9 +453,9 @@ async def test_server_side_async_execution_get_status(
 
 
 def test_multi_thread_connection_sharing(
-    engine_url: str,
+    engine_name: str,
     database_name: str,
-    password_auth: Auth,
+    auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> None:
@@ -484,10 +469,10 @@ def test_multi_thread_connection_sharing(
     exceptions = []
 
     connection = connect(
-        auth=password_auth,
+        auth=auth,
         database=database_name,
         account_name=account_name,
-        engine_url=engine_url,
+        engine_name=engine_name,
         api_endpoint=api_endpoint,
     )
 
