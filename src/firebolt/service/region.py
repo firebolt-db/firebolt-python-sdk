@@ -41,11 +41,11 @@ class RegionService(BaseService):
     def default_region(self) -> Region:
         """Default AWS region, could be provided from environment."""
 
-        if not self.settings.default_region:
+        if not self._default_region:
             raise ValueError(
                 "The environment variable FIREBOLT_DEFAULT_REGION must be set."
             )
-        return self.get_by_name(name=self.settings.default_region)
+        return self.get_by_name(name=self._default_region)
 
     def get_by_name(self, name: str) -> Region:
         """Get an AWS region by its name (eg. us-east-1)."""
@@ -61,5 +61,5 @@ class RegionService(BaseService):
         """Get an AWS region by region_id."""
 
         return self.get_by_key(
-            RegionKey(provider_id=self.resource_manager.provider_id, region_id=id_)
+            RegionKey(provider_id=self.resource_manager._provider_id, region_id=id_)
         )

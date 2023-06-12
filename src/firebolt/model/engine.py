@@ -197,8 +197,8 @@ class Engine(FireboltBaseModel):
             # we always have firebolt Auth as a client auth
             auth=self._service.client.auth,  # type: ignore
             engine_name=self.name,
-            account_name=self._service.settings.account_name,
-            api_endpoint=self._service.settings.server,
+            account_name=self._service.resource_manager.account_name,
+            api_endpoint=self._service.resource_manager.api_endpoint,
         )
 
     @check_attached_to_database
