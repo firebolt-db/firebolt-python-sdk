@@ -1,4 +1,4 @@
-from re import Pattern, compile
+from re import compile
 from typing import Callable
 
 from pytest_httpx import HTTPXMock
@@ -10,24 +10,19 @@ from firebolt.service.manager import ResourceManager
 
 def test_database_create(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     region_callback: Callable,
     region_url: str,
     settings: Settings,
-    account_id_callback: Callable,
-    account_id_url: Pattern,
     create_databases_callback: Callable,
     databases_url: str,
     db_name: str,
     db_description: str,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(create_databases_callback, url=databases_url, method="POST")
 
@@ -40,24 +35,18 @@ def test_database_create(
 
 def test_database_get_by_name(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     settings: Settings,
-    account_id_callback: Callable,
-    account_id_url: Pattern,
     database_get_by_name_callback: Callable,
     database_get_by_name_url: str,
     database_get_callback: Callable,
     database_get_url: str,
     mock_database: Database,
+    mock_system_engine_connection_flow: Callable,
 ):
-
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(database_get_by_name_callback, url=database_get_by_name_url)
     httpx_mock.add_callback(database_get_callback, url=database_get_url)
 
@@ -69,24 +58,18 @@ def test_database_get_by_name(
 
 def test_database_get_many(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     settings: Settings,
-    account_id_callback: Callable,
-    account_id_url: Pattern,
     database_get_by_name_callback: Callable,
     database_get_by_name_url: str,
     databases_get_callback: Callable,
     databases_url: str,
     mock_database: Database,
+    mock_system_engine_connection_flow: Callable,
 ):
-
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
         databases_get_callback,
         url=compile(databases_url + "?[a-zA-Z0-9=&]*"),
@@ -106,26 +89,22 @@ def test_database_get_many(
 
 def test_database_update(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     settings: Settings,
-    account_id_callback: Callable,
-    account_id_url: Pattern,
     database_update_callback: Callable,
     database_url: str,
     mock_database: Database,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     httpx_mock.add_callback(database_update_callback, url=database_url, method="PATCH")
 
     manager = ResourceManager(settings=settings)
 
-    mock_database._service = manager
+    mock_database._service = manager.databases
     database = mock_database.update(description="new description")
 
     assert database.description == "new description"

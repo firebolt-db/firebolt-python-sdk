@@ -16,8 +16,6 @@ from firebolt.utils.exception import FireboltError, NoAttachedDatabaseError
 
 def test_engine_create(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_region_1_callback: Callable,
@@ -33,14 +31,13 @@ def test_engine_create(
     account_id_url: Pattern,
     engine_callback: Callable,
     engine_url: str,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(engine_callback, url=engine_url, method="POST")
 
@@ -52,8 +49,6 @@ def test_engine_create(
 
 def test_engine_create_with_kwargs(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_region_1_callback: Callable,
@@ -69,14 +64,13 @@ def test_engine_create_with_kwargs(
     engine_url: str,
     account_id: str,
     mock_engine_revision: EngineRevision,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     # Setting to manager.engines.create defaults
     mock_engine.key = None
@@ -111,8 +105,6 @@ def test_engine_create_with_kwargs(
 
 def test_engine_create_with_kwargs_fail(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_region_1_callback: Callable,
@@ -123,14 +115,13 @@ def test_engine_create_with_kwargs_fail(
     engine_name: str,
     account_id_callback: Callable,
     account_id_url: Pattern,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
 
     manager = ResourceManager(settings=settings)
@@ -149,8 +140,6 @@ def test_engine_create_with_kwargs_fail(
 
 def test_engine_create_no_available_types(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_empty_callback: Callable,
@@ -162,14 +151,13 @@ def test_engine_create_no_available_types(
     account_id_url: Pattern,
     engine_url: str,
     region_2: Region,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_empty_callback, url=instance_type_region_2_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
 
     manager = ResourceManager(settings=settings)
 
@@ -179,8 +167,6 @@ def test_engine_create_no_available_types(
 
 def test_engine_no_attached_database(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_region_1_callback: Callable,
@@ -202,14 +188,13 @@ def test_engine_no_attached_database(
     database_url: str,
     no_bindings_callback: Callable,
     bindings_url: str,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(engine_callback, url=engine_url, method="POST")
     httpx_mock.add_callback(no_bindings_callback, url=bindings_url)
@@ -223,8 +208,6 @@ def test_engine_no_attached_database(
 
 def test_engine_start_binding_to_missing_database(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_region_1_callback: Callable,
@@ -244,14 +227,13 @@ def test_engine_start_binding_to_missing_database(
     database_url: str,
     bindings_callback: Callable,
     bindings_url: str,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(engine_callback, url=engine_url, method="POST")
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
@@ -266,8 +248,6 @@ def test_engine_start_binding_to_missing_database(
 
 def test_get_connection(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_region_1_callback: Callable,
@@ -294,7 +274,6 @@ def test_get_connection(
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(engine_callback, url=engine_url, method="POST")
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
@@ -311,8 +290,6 @@ def test_get_connection(
 
 def test_attach_to_database(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     region_callback: Callable,
@@ -336,14 +313,13 @@ def test_attach_to_database(
     create_binding_url: str,
     bindings_callback: Callable,
     bindings_url: str,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
     httpx_mock.add_callback(create_databases_callback, url=databases_url, method="POST")
     httpx_mock.add_callback(database_not_found_callback, url=database_url, method="GET")
@@ -369,8 +345,6 @@ def test_attach_to_database(
 
 def test_engine_update(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_region_1_callback: Callable,
@@ -388,14 +362,10 @@ def test_engine_update(
     engine_url: str,
     account_engine_url: str,
     account_engine_callback: Callable,
+    mock_system_engine_connection_flow: Callable,
 ):
-
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
-
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    #
     httpx_mock.add_callback(
         account_engine_callback, url=account_engine_url, method="PATCH"
     )
@@ -412,8 +382,6 @@ def test_engine_update(
 
 def test_engine_restart(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     settings: Settings,
@@ -426,12 +394,10 @@ def test_engine_restart(
     bindings_url: str,
     database_callback: Callable,
     database_url: str,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
-
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
 
     httpx_mock.add_callback(
         engine_callback, url=f"{account_engine_url}:restart", method="POST"

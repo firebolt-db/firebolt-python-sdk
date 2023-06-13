@@ -10,6 +10,7 @@ from firebolt.common.settings import Settings
 from firebolt.service.manager import ResourceManager
 from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
 
 def test_rm_credentials(
@@ -23,17 +24,17 @@ def test_rm_credentials(
     provider_callback: Callable,
     provider_url: str,
     access_token: str,
+    mock_system_engine_connection_flow: Callable,
 ) -> None:
     """Credentials, that are passed to rm are processed properly."""
     url = "https://url"
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(check_token_callback, url=url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     rm = ResourceManager(settings)
-    rm.client.get(url)
+    rm._client.get(url)
 
 
 @mark.nofakefs
@@ -49,14 +50,14 @@ def test_rm_token_cache(
     provider_callback: Callable,
     provider_url: str,
     access_token: str,
+    mock_system_engine_connection_flow: Callable,
 ) -> None:
     """Credentials, that are passed to rm are cached properly."""
     url = "https://url"
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(check_token_callback, url=url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     with Patcher():
         local_settings = Settings(
@@ -70,7 +71,7 @@ def test_rm_token_cache(
             default_region=settings.default_region,
         )
         rm = ResourceManager(local_settings)
-        rm.client.get(url)
+        rm._client.get(url)
 
         ts = TokenSecureStorage(settings.auth.client_id, settings.auth.client_secret)
         assert ts.get_cached_token() == access_token, "Invalid token value cached"
@@ -88,7 +89,7 @@ def test_rm_token_cache(
             default_region=settings.default_region,
         )
         rm = ResourceManager(local_settings)
-        rm.client.get(url)
+        rm._client.get(url)
 
         ts = TokenSecureStorage(settings.auth.client_id, settings.auth.client_secret)
         assert (
@@ -99,22 +100,28 @@ def test_rm_token_cache(
 def test_rm_invalid_account_name(
     httpx_mock: HTTPXMock,
     auth: Auth,
-    settings: Settings,
-    check_credentials_callback: Callable,
+    server: str,
+    region_1: str,
     auth_url: str,
+    check_credentials_callback: Callable,
     account_id_url: Pattern,
     account_id_callback: Callable,
+    get_system_engine_callback: Callable,
 ) -> None:
     """Resource manager raises an error on invalid account name."""
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-
-    local_settings = Settings(
-        auth=auth,
-        account_name="invalid",
-        server=settings.server,
-        default_region=settings.default_region,
+    get_system_engine_url = (
+        f"https://{server}"
+        f"{GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name='invalid')}"
     )
 
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+
     with raises(AccountNotFoundError):
-        ResourceManager(local_settings)
+        ResourceManager(
+            auth=auth,
+            account_name="invalid",
+            api_endpoint=server,
+            default_region=region_1,
+        )

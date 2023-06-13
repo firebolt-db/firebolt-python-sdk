@@ -45,10 +45,14 @@ def test_is_db_not_available(
 
 
 def test_is_engine_running_system(
+    httpx_mock: HTTPXMock,
     system_connection: Connection,
 ):
     # System engine is always running
     assert is_engine_running(system_connection, "dummy") == True
+
+    # We haven't used account id endpoint since we didn't run any query, ignoring it
+    httpx_mock.reset(False)
 
 
 def test_is_engine_running(

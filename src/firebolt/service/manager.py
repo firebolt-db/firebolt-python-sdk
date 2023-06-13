@@ -138,3 +138,9 @@ class ResourceManager:
         self.engines = EngineService(resource_manager=self)
         self.engine_revisions = EngineRevisionService(resource_manager=self)
         self.bindings = BindingService(resource_manager=self)
+
+    def __del__(self) -> None:
+        if hasattr(self, "_client"):
+            self._client.close()
+        if hasattr(self, "_connection"):
+            self._connection.close()

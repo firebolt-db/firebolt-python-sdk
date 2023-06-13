@@ -1,4 +1,3 @@
-from re import Pattern
 from typing import Callable, List
 
 from pytest_httpx import HTTPXMock
@@ -11,8 +10,6 @@ from firebolt.service.manager import ResourceManager
 
 def test_instance_type(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     provider_callback: Callable,
     provider_url: str,
     instance_type_callback: Callable,
@@ -21,17 +18,15 @@ def test_instance_type(
     instance_type_url: str,
     instance_type_region_1_url: str,
     instance_type_region_2_url: str,
-    account_id_callback: Callable,
-    account_id_url: Pattern,
     settings: Settings,
     mock_instance_types: List[InstanceType],
     cheapest_instance: InstanceType,
     region_1: Region,
     region_2: Region,
+    mock_system_engine_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    mock_system_engine_connection_flow()
     httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
@@ -39,7 +34,6 @@ def test_instance_type(
     httpx_mock.add_callback(
         instance_type_empty_callback, url=instance_type_region_2_url
     )
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     manager = ResourceManager(settings=settings)
     assert manager.instance_types.instance_types == mock_instance_types
