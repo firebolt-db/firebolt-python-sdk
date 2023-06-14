@@ -23,7 +23,7 @@ class InstanceTypeService(BaseService):
             url=ACCOUNT_INSTANCE_TYPES_URL.format(account_id=self.account_id),
             params={"page.first": 5000},
         )
-        return [InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]]
+        return [InstanceType._from_dict(i["node"]) for i in response.json()["edges"]]
 
     @cached_property
     def instance_types_by_key(self) -> Dict[InstanceTypeKey, InstanceType]:
@@ -54,7 +54,7 @@ class InstanceTypeService(BaseService):
         )
 
         instance_list = [
-            InstanceType.parse_obj(i["node"]) for i in response.json()["edges"]
+            InstanceType._from_dict(i["node"]) for i in response.json()["edges"]
         ]
 
         # Filter out instances without storage

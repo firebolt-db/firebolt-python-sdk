@@ -13,6 +13,20 @@ class EngineNotRunningError(FireboltEngineError):
         super().__init__(f"Engine {engine_name} is not running")
 
 
+class EngineNotFoundError(FireboltEngineError):
+    """Engine with provided name was not found."""
+
+    def __init__(self, engine_name: str):
+        super().__init__(f"Engine with name {engine_name} was not found")
+
+
+class DatabaseNotFoundError(FireboltError):
+    """Database with provided name was not found."""
+
+    def __init__(self, database_name: str):
+        super().__init__(f"Database with name {database_name} was not found")
+
+
 class NoAttachedDatabaseError(FireboltEngineError):
     """Engine that's being accessed is not running.
 

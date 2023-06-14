@@ -6,5 +6,5 @@ from firebolt.utils.urls import PROVIDERS_URL
 def get_provider_id(client: Client) -> str:
     """Get the AWS provider_id."""
     response = client.get(url=PROVIDERS_URL)
-    providers = [Provider.parse_obj(i["node"]) for i in response.json()["edges"]]
+    providers = [Provider._from_dict(i["node"]) for i in response.json()["edges"]]
     return providers[0].provider_id

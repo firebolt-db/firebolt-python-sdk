@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
@@ -6,7 +7,8 @@ from pydantic import Field
 from firebolt.model import FireboltBaseModel
 
 
-class RegionKey(FireboltBaseModel, frozen=True):  # type: ignore
+@dataclass
+class RegionKey:
     provider_id: str
     region_id: str
 

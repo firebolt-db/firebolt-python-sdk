@@ -1,24 +1,28 @@
 import json
-from typing import Any
+from dataclasses import dataclass, field, fields
+from typing import ClassVar, Dict, Optional, Type, TypeVar
 
-from pydantic import BaseModel
+from firebolt.service.base import BaseService
+
+Model = TypeVar("Model", bound="FireboltBaseModel")
 
 
-class FireboltBaseModel(BaseModel):
-    class Config:
-        allow_population_by_field_name = True
-        extra = "forbid"
+@dataclass
+class FireboltBaseModel:
+    _service: BaseService = field()
 
-    def jsonable_dict(self, *args: Any, **kwargs: Any) -> dict:
-        """
-        Generate a dictionary representation of the service that contains serialized
-        primitive types, and is therefore JSON-ready.
+    @classmethod
+    def _get_field_overrides(cls) -> Dict[str, str]:
+        return {
+            f.metadata["db_name"]: f.name
+            for f in fields(cls)
+            if "db_name" in f.metadata
+        }
 
-        This could be replaced with something native once this issue is resolved:
-        https://github.com/samuelcolvin/pydantic/issues/1409
-
-        This function is intended to improve the compatibility with HTTPX, which
-        expects to take in a dictionary of primitives as input to the JSON parameter
-        of its request function. See: https://www.python-httpx.org/api/#helper-functions
-        """
-        return json.loads(self.json(*args, **kwargs))
+    @classmethod
+    def _from_dict(
+        cls: Type[Model], data: dict, service: Optional[BaseService] = None
+    ) -> Model:
+        data["_service"] = service
+        field_name_overrides = cls._get_field_overrides()
+        return cls(**{field_name_overrides.get(k, k): v for k, v in data.items()})

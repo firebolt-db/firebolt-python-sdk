@@ -6,7 +6,7 @@ from pydantic import Field
 from firebolt.model import FireboltBaseModel
 
 
-class InstanceTypeKey(FireboltBaseModel, frozen=True):  # type: ignore
+class InstanceTypeKey(FireboltBaseModel):  # type: ignore
     provider_id: str
     region_id: str
     instance_type_id: str

@@ -23,7 +23,7 @@ class RegionService(BaseService):
         """List of available AWS regions on Firebolt."""
 
         response = self.client.get(url=REGIONS_URL, params={"page.first": 5000})
-        return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
+        return [Region._from_dict(i["node"], self) for i in response.json()["edges"]]
 
     @cached_property
     def regions_by_name(self) -> Dict[str, Region]:

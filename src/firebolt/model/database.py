@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, List, Optional, Sequence
+from typing import TYPE_CHECKING, List, Optional, Sequence
 
-from pydantic import Field, PrivateAttr
+from pydantic import Field
 
 from firebolt.model import FireboltBaseModel
 from firebolt.model.region import RegionKey
-from firebolt.service.types import EngineStatusSummary
+from firebolt.service.types import EngineStatus
 from firebolt.utils.exception import AttachedEngineInUseError
 from firebolt.utils.urls import ACCOUNT_DATABASE_URL
 
@@ -20,15 +21,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class DatabaseKey(FireboltBaseModel):
+@dataclass
+class DatabaseKey:
     account_id: str
     database_id: str
 
 
-class FieldMask(FireboltBaseModel):
+@dataclass
+class FieldMask:
     paths: Sequence[str] = Field(alias="paths")
 
 
+@dataclass
 class Database(FireboltBaseModel):
     """
     A Firebolt database.
@@ -38,35 +42,27 @@ class Database(FireboltBaseModel):
     """
 
     # internal
-    _service: DatabaseService = PrivateAttr()
+    _service: DatabaseService = field()
 
     # required
-    name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
-    compute_region_key: RegionKey = Field(alias="compute_region_id")
+    name: str = field(metadata={"db_name": "database_name"})
+    description: str = field()
+    compute_region_key: RegionKey = field()
 
     # optional
-    database_key: Optional[DatabaseKey] = Field(None, alias="id")
-    description: Optional[str] = Field(None, max_length=255)
-    emoji: Optional[str] = Field(None, max_length=255)
-    current_status: Optional[str]
-    health_status: Optional[str]
-    data_size_full: Optional[int]
-    data_size_compressed: Optional[int]
-    is_system_database: Optional[bool]
-    storage_bucket_name: Optional[str]
-    create_time: Optional[datetime]
-    create_actor: Optional[str]
-    last_update_time: Optional[datetime]
-    last_update_actor: Optional[str]
-    desired_status: Optional[str]
-
-    @classmethod
-    def parse_obj_with_service(
-        cls, obj: Any, database_service: DatabaseService
-    ) -> Database:
-        database = cls.parse_obj(obj)
-        database._service = database_service
-        return database
+    database_key: Optional[DatabaseKey] = field(default=None)
+    emoji: Optional[str] = field(default=None)
+    current_status: Optional[str] = field(default=None)
+    health_status: Optional[str] = field(default=None)
+    data_size_full: Optional[int] = field(default=None)
+    data_size_compressed: Optional[int] = field(default=None)
+    is_system_database: Optional[bool] = field(default=None)
+    storage_bucket_name: Optional[str] = field(default=None)
+    create_time: Optional[datetime] = field(default=None)
+    create_actor: Optional[str] = field(default=None)
+    last_update_time: Optional[datetime] = field(default=None)
+    last_update_actor: Optional[str] = field(default=None)
+    desired_status: Optional[str] = field(default=None)
 
     @property
     def database_id(self) -> Optional[str]:
@@ -107,9 +103,9 @@ class Database(FireboltBaseModel):
         """
 
         for engine in self.get_attached_engines():
-            if engine.current_status_summary in {
-                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STARTING,
-                EngineStatusSummary.ENGINE_STATUS_SUMMARY_STOPPING,
+            if engine.current_status in {
+                EngineStatus.STARTING,
+                EngineStatus.STOPPING,
             }:
                 raise AttachedEngineInUseError(method_name="delete")
 
@@ -122,22 +118,21 @@ class Database(FireboltBaseModel):
             ),
             headers={"Content-type": "application/json"},
         )
-        return Database.parse_obj_with_service(
-            response.json()["database"], self._service
-        )
+        return Database._from_dict(response.json()["database"], self._service)
 
     def update(self, description: str) -> Database:
         """
         Updates a database description.
         """
 
-        class _DatabaseUpdateRequest(FireboltBaseModel):
+        @dataclass
+        class _DatabaseUpdateRequest:
             """Helper model for sending Database creation requests."""
 
-            account_id: str
-            database: Database
-            database_id: str
-            update_mask: FieldMask
+            account_id: str = field()
+            database: Database = field()
+            database_id: Optional[str] = field()
+            update_mask: FieldMask = field()
 
         self.description = description
 
@@ -146,12 +141,14 @@ class Database(FireboltBaseModel):
             f"name={self.name}, description={self.description})"
         )
 
-        payload = _DatabaseUpdateRequest(
-            account_id=self._service.account_id,
-            database=self,
-            database_id=self.database_id,
-            update_mask=FieldMask(paths=["description"]),
-        ).jsonable_dict(by_alias=True)
+        payload = asdict(
+            _DatabaseUpdateRequest(
+                account_id=self._service.account_id,
+                database=self,
+                database_id=self.database_id,
+                update_mask=FieldMask(paths=["description"]),
+            )
+        )
 
         response = self._service.client.patch(
             url=ACCOUNT_DATABASE_URL.format(
@@ -161,9 +158,7 @@ class Database(FireboltBaseModel):
             json=payload,
         )
 
-        return Database.parse_obj_with_service(
-            response.json()["database"], self._service
-        )
+        return Database._from_dict(response.json()["database"], self._service)
 
     def get_default_engine(self) -> Optional[Engine]:
         """
