@@ -2,11 +2,10 @@ import typing
 
 import pytest
 from httpx import StreamError, codes
-from pytest import mark
 from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
-from firebolt.client.auth import Auth, ServiceAccount, UsernamePassword
+from firebolt.client.auth import ClientCredentials
 from firebolt.utils.exception import AuthenticationError
 from tests.unit.util import execute_generator_requests
 
@@ -14,44 +13,25 @@ from tests.unit.util import execute_generator_requests
 def test_auth_service_account(
     httpx_mock: HTTPXMock,
     mocker: MockerFixture,
-    check_service_credentials_callback: typing.Callable,
-    mock_service_id: str,
-    mock_service_secret: str,
-    test_token: str,
-):
-    """Auth can retrieve token and expiration values."""
-    httpx_mock.add_callback(check_service_credentials_callback)
-
-    mocker.patch("firebolt.client.auth.request_auth_base.time", return_value=0)
-    auth = ServiceAccount(mock_service_id, mock_service_secret)
-    execute_generator_requests(auth.get_new_token_generator())
-    assert auth.token == test_token, "invalid access token"
-    assert auth._expires == 2**32, "invalid expiration value"
-
-
-def test_auth_username_password(
-    httpx_mock: HTTPXMock,
-    mocker: MockerFixture,
     check_credentials_callback: typing.Callable,
-    test_username,
-    test_password,
-    test_token,
+    client_id: str,
+    client_secret: str,
+    access_token: str,
 ):
     """Auth can retrieve token and expiration values."""
     httpx_mock.add_callback(check_credentials_callback)
 
     mocker.patch("firebolt.client.auth.request_auth_base.time", return_value=0)
-    auth = UsernamePassword(test_username, test_password)
+    auth = ClientCredentials(client_id, client_secret)
     execute_generator_requests(auth.get_new_token_generator())
-    assert auth.token == test_token, "invalid access token"
+    assert auth.token == access_token, "invalid access token"
     assert auth._expires == 2**32, "invalid expiration value"
 
 
-@mark.parametrize("auth_class", [UsernamePassword, ServiceAccount])
-def test_auth_error_handling(httpx_mock: HTTPXMock, auth_class: Auth):
+def test_auth_error_handling(httpx_mock: HTTPXMock, client_id: str, client_secret: str):
     """Auth handles various errors properly."""
     for api_endpoint in ("https://host", "host"):
-        auth = auth_class("user", "password", use_token_cache=False)
+        auth = ClientCredentials(client_id, client_secret, use_token_cache=False)
 
         # Internal httpx error
         def http_error(*args, **kwargs):

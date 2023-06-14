@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, List
+from typing import List
 
 from pytest import mark, raises
 
@@ -13,66 +13,12 @@ from firebolt.async_db import (
 )
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.common._types import ColType, Column
+from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT_2}"
-
-CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS ex_lineitem (
-  l_orderkey              LONG,
-  l_partkey               LONG,
-  l_suppkey               LONG,
-  l_linenumber            INT,
-  l_quantity              LONG,
-  l_extendedprice         LONG,
-  l_discount              LONG,
-  l_tax                   LONG,
-  l_returnflag            TEXT,
-  l_linestatus            TEXT,
-  l_shipdate              TEXT,
-  l_commitdate            TEXT,
-  l_receiptdate           TEXT,
-  l_shipinstruct          TEXT,
-  l_shipmode              TEXT,
-  l_comment               TEXT
-)
-URL = 's3://firebolt-publishing-public/samples/tpc-h/parquet/lineitem/'
-OBJECT_PATTERN = '*.parquet'
-TYPE = (PARQUET);"""
-
-CREATE_FACT_TABLE = """CREATE FACT TABLE IF NOT EXISTS lineitem (
--- In this example, these fact table columns
--- map directly to the external table columns.
-  l_orderkey              LONG,
-  l_partkey               LONG,
-  l_suppkey               LONG,
-  l_linenumber            INT,
-  l_quantity              LONG,
-  l_extendedprice         LONG,
-  l_discount              LONG,
-  l_tax                   LONG,
-  l_returnflag            TEXT,
-  l_linestatus            TEXT,
-  l_shipdate              TEXT,
-  l_commitdate            TEXT,
-  l_receiptdate           TEXT,
-  l_shipinstruct          TEXT,
-  l_shipmode              TEXT,
-  l_comment               TEXT
-)
-PRIMARY INDEX
-  l_orderkey,
-  l_linenumber;
-"""
-
-
-def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
-    if type(got) == list and type(expected) == list:
-        all([assert_deep_eq(f, s, msg) for f, s in zip(got, expected)])
-    assert (
-        type(got) == type(expected) and got == expected
-    ), f"{msg}: {got}(got) != {expected}(expected)"
 
 
 async def status_loop(
@@ -98,8 +44,8 @@ async def status_loop(
     ), f"Failed {query}. Got {status} rather than {final_status}."
 
 
-async def test_connect_engine_name(
-    connection_engine_name: Connection,
+async def test_connect_no_db(
+    connection_no_db: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
     all_types_query_response: List[ColType],
@@ -107,24 +53,7 @@ async def test_connect_engine_name(
 ) -> None:
     """Connecting with engine name is handled properly."""
     await test_select(
-        connection_engine_name,
-        all_types_query,
-        all_types_query_description,
-        all_types_query_response,
-        timezone_name,
-    )
-
-
-async def test_connect_no_engine(
-    connection_no_engine: Connection,
-    all_types_query: str,
-    all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
-    timezone_name: str,
-) -> None:
-    """Connecting with engine name is handled properly."""
-    await test_select(
-        connection_no_engine,
+        connection_no_db,
         all_types_query,
         all_types_query_description,
         all_types_query_response,
@@ -198,21 +127,18 @@ async def test_long_query(
 async def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
-    async def test_query(c: Cursor, query: str) -> None:
+    async def test_query(c: Cursor, query: str, empty_response=True) -> None:
         await c.execute(query)
         assert c.description == None
-        # This is inconsistent, commenting for now
-        # assert c.rowcount == -1
+        assert c.rowcount == (-1 if empty_response else 0)
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        await c.execute("DROP JOIN INDEX IF EXISTS test_drop_create_async_db_join_idx")
-        await c.execute(
-            "DROP AGGREGATING INDEX IF EXISTS test_drop_create_async_db_agg_idx"
-        )
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_tb")
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_tb_dim")
+        await c.execute("DROP JOIN INDEX IF EXISTS test_db_join_idx")
+        await c.execute("DROP AGGREGATING INDEX IF EXISTS test_db_agg_idx")
+        await c.execute("DROP TABLE IF EXISTS test_drop_create_async")
+        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_dim")
 
         # Fact table
         await test_query(
@@ -240,6 +166,7 @@ async def test_drop_create(connection: Connection) -> None:
             c,
             "CREATE AGGREGATING INDEX test_db_agg_idx ON "
             "test_drop_create_async(id, sum(f), count(dt))",
+            empty_response=False,
         )
 
         # Drop join index

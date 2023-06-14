@@ -288,19 +288,19 @@ def test_get_connection(
     database_url: str,
     bindings_callback: Callable,
     bindings_url: str,
+    mock_connection_flow: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(
         instance_type_region_1_callback, url=instance_type_region_1_url
     )
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(engine_callback, url=engine_url, method="POST")
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
 
     httpx_mock.add_callback(database_callback, url=database_url)
+    mock_connection_flow()
 
     manager = ResourceManager(settings=settings)
     engine = manager.engines.create(name=engine_name)

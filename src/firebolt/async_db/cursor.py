@@ -8,7 +8,6 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Iterator,
     List,
     Optional,
@@ -17,10 +16,11 @@ from typing import (
     Union,
 )
 
-from aiorwlock import RWLock
 from httpx import Response, codes
+from tricycle import RWLock
 
 from firebolt.async_db.util import is_db_available, is_engine_running
+from firebolt.client import AsyncClient
 from firebolt.common._types import (
     ColType,
     Column,
@@ -30,57 +30,27 @@ from firebolt.common._types import (
     split_format_sql,
 )
 from firebolt.common.base_cursor import (
+    JSON_OUTPUT_FORMAT,
     BaseCursor,
     CursorState,
     QueryStatus,
     Statistics,
+    check_not_closed,
+    check_query_executed,
 )
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
-    CursorClosedError,
     EngineNotRunningError,
     FireboltDatabaseError,
     OperationalError,
     ProgrammingError,
-    QueryNotRunError,
 )
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from httpx import AsyncClient as AsyncHttpxClient
 
 logger = logging.getLogger(__name__)
-
-
-JSON_OUTPUT_FORMAT = "JSON_Compact"
-
-
-def check_not_closed(func: Callable) -> Callable:
-    """(Decorator) ensure cursor is not closed before calling method."""
-
-    @wraps(func)
-    def inner(self: Cursor, *args: Any, **kwargs: Any) -> Any:
-        if self.closed:
-            raise CursorClosedError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
-
-
-def check_query_executed(func: Callable) -> Callable:
-    """
-    (Decorator) ensure that some query has been executed before
-    calling cursor method.
-    """
-
-    @wraps(func)
-    def inner(self: Cursor, *args: Any, **kwargs: Any) -> Any:
-        if self._state == CursorState.NONE:
-            raise QueryNotRunError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
 
 
 class Cursor(BaseCursor):
@@ -103,7 +73,7 @@ class Cursor(BaseCursor):
     def __init__(
         self,
         *args: Any,
-        client: AsyncHttpxClient,
+        client: AsyncClient,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
@@ -119,7 +89,9 @@ class Cursor(BaseCursor):
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            if not await is_db_available(self.connection, self.connection.database):
+            if self.connection.database and not await is_db_available(
+                self.connection, self.connection.database
+            ):
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
                 )
@@ -137,10 +109,10 @@ class Cursor(BaseCursor):
 
     async def _api_request(
         self,
-        query: Optional[str] = "",
-        parameters: Optional[dict[str, Any]] = {},
-        path: Optional[str] = "",
-        use_set_parameters: Optional[bool] = True,
+        query: str = "",
+        parameters: dict[str, Any] = {},
+        path: str = "",
+        use_set_parameters: bool = True,
     ) -> Response:
         """
         Query API, return Response object.
@@ -159,13 +131,14 @@ class Cursor(BaseCursor):
         """
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        if self.connection.database:
+            parameters["database"] = self.connection.database
+        if self.connection._is_system:
+            parameters["account_id"] = await self._client.account_id
         return await self._client.request(
-            url=f"/{path}",
+            url=f"/{path}" if path else "",
             method="POST",
-            params={
-                "database": self.connection.database,
-                **(parameters or dict()),
-            },
+            params=parameters,
             content=query,
         )
 
@@ -350,24 +323,6 @@ class Cursor(BaseCursor):
     def __aiter__(self) -> Cursor:
         return self
 
-    def close(self) -> None:
-        """Terminate an ongoing query (if any) and mark connection as closed."""
-        self._state = CursorState.CLOSED
-        self.connection._remove_cursor(self)
-
-    def __del__(self) -> None:
-        self.close()
-
-    # Context manager support
-    @check_not_closed
-    def __enter__(self) -> Cursor:
-        return self
-
-    def __exit__(
-        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
-    ) -> None:
-        self.close()
-
     # TODO: figure out how to implement __aenter__ and __await__
     @check_not_closed
     def __aenter__(self) -> Cursor:
@@ -429,13 +384,13 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             """Fetch the next row of a query result set."""
             return super().fetchone()
 
     @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             """
             Fetch the next set of rows of a query result;
             size is cursor.arraysize by default.
@@ -444,11 +399,15 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             """Fetch all remaining rows of a query result."""
             return super().fetchall()
 
     @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:
-        async with self._async_query_lock.reader:
+        async with self._async_query_lock.read_locked():
             return super().nextset()
+
+    @check_not_closed
+    def __enter__(self) -> Cursor:
+        return self

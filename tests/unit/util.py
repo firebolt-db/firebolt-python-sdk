@@ -3,6 +3,7 @@ from typing import AsyncGenerator, Dict, Generator, List
 from httpx import Request, Response
 
 from firebolt.client import AsyncClient, Client
+from firebolt.client.auth import Auth
 from firebolt.model import FireboltBaseModel
 
 
@@ -15,7 +16,10 @@ def execute_generator_requests(
 ) -> None:
     request = next(requests)
 
-    with Client(api_endpoint=api_endpoint) as client:
+    with Client(
+        account_name="account", auth=Auth(), api_endpoint=api_endpoint
+    ) as client:
+        client._auth = None
         while True:
             response = client.send(request)
             try:
@@ -30,7 +34,10 @@ async def async_execute_generator_requests(
 ) -> None:
     request = await requests.__anext__()
 
-    async with AsyncClient(api_endpoint=api_endpoint) as client:
+    async with AsyncClient(
+        account_name="account", auth=Auth(), api_endpoint=api_endpoint
+    ) as client:
+        client._auth = None
         while True:
             response = await client.send(request)
             try:

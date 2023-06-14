@@ -66,16 +66,14 @@ def all_types_query() -> str:
         "1.2345678901234 as float64, "
         "'text' as \"string\", "
         "CAST('2021-03-28' AS DATE) as \"date\", "
-        "CAST('1860-03-04' AS DATE_EXT) as \"date32\","
         "pgdate '0001-01-01' as \"pgdate\", "
         "CAST('2019-07-31 01:01:01' AS DATETIME) as \"datetime\", "
-        "CAST('2019-07-31 01:01:01.1234' AS TIMESTAMP_EXT(4)) as \"datetime64\", "
         "CAST('1111-01-05 17:04:42.123456' as timestampntz) as \"timestampntz\", "
         "'1111-01-05 17:04:42.123456'::timestamptz as \"timestamptz\", "
         'true as "boolean", '
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
-        'cast(null as  int) as "nullable", '
+        'null as "nullable", '
         "'abc123'::bytea as \"bytea\""
     )
 
@@ -95,16 +93,14 @@ def all_types_query_description() -> List[Column]:
         Column("float64", float, None, None, None, None, None),
         Column("string", str, None, None, None, None, None),
         Column("date", date, None, None, None, None, None),
-        Column("date32", date, None, None, None, None, None),
         Column("pgdate", date, None, None, None, None, None),
         Column("datetime", datetime, None, None, None, None, None),
-        Column("datetime64", datetime, None, None, None, None, None),
         Column("timestampntz", datetime, None, None, None, None, None),
         Column("timestamptz", datetime, None, None, None, None, None),
         Column("boolean", bool, None, None, None, None, None),
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(38, 30), None, None, None, None, None),
-        Column("nullable", int, None, None, None, None, None),
+        Column("nullable", str, None, None, None, None, None),
         Column("bytea", bytes, None, None, None, None, None),
     ]
 
@@ -122,13 +118,11 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
             30000000000,
             -30000000000,
             1.23,
-            1.23456789012,
+            1.2345678901234,
             "text",
             date(2021, 3, 28),
-            date(1860, 3, 4),
             date(1, 1, 1),
             datetime(2019, 7, 31, 1, 1, 1),
-            datetime(2019, 7, 31, 1, 1, 1, 123400),
             datetime(1111, 1, 5, 17, 4, 42, 123456),
             datetime(
                 1111,
@@ -140,6 +134,37 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
                 123456,
                 tzinfo=timezone(timedelta(seconds=timezone_offset_seconds)),
             ),
+            True,
+            [1, 2, 3, 4],
+            Decimal("1231232.123459999990457054844258706536"),
+            None,
+            b"abc123",
+        ]
+    ]
+
+
+@fixture
+def all_types_query_system_engine_response(
+    timezone_offset_seconds: int,
+) -> List[ColType]:
+    return [
+        [
+            1,
+            -1,
+            257,
+            -257,
+            80000,
+            -80000,
+            30000000000,
+            -30000000000,
+            1.23,
+            1.23456789012,
+            "text",
+            date(2021, 3, 28),
+            date(1, 1, 1),
+            datetime(2019, 7, 31, 1, 1, 1),
+            datetime(1111, 1, 5, 17, 4, 42, 123456),
+            datetime(1111, 1, 5, 17, 4, 42, 123456, tzinfo=timezone.utc),
             True,
             [1, 2, 3, 4],
             Decimal("1231232.123459999990457054844258706536"),

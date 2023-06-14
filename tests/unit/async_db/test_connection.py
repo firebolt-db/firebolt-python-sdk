@@ -1,24 +1,21 @@
-from re import Pattern
 from typing import Callable, List
 from unittest.mock import patch
 
-from httpx import codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.connection import Connection, connect
-from firebolt.client.auth import Auth, Token, UsernamePassword
+from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common._types import ColType
 from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
-    AccountNotFoundError,
     ConfigurationError,
     ConnectionClosedError,
-    FireboltEngineError,
+    EngineNotRunningError,
+    InterfaceError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
 
 
 async def test_closed_connection(connection: Connection) -> None:
@@ -52,194 +49,125 @@ async def test_cursors_closed_on_close(connection: Connection) -> None:
 
 async def test_cursor_initialized(
     settings: Settings,
-    db_name: str,
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
+    mock_query: Callable,
+    connection: Connection,
     python_query_data: List[List[ColType]],
 ) -> None:
     """Connection initialized its cursors properly."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_query()
 
-    for url in (settings.server, f"https://{settings.server}"):
-        async with (
-            await connect(
-                engine_url=url,
-                database=db_name,
-                username="u",
-                password="p",
-                api_endpoint=settings.server,
-            )
-        ) as connection:
-            cursor = connection.cursor()
-            assert (
-                cursor.connection == connection
-            ), "Invalid cursor connection attribute."
-            assert (
-                cursor._client == connection._client
-            ), "Invalid cursor _client attribute"
+    cursor = connection.cursor()
+    assert cursor.connection == connection, "Invalid cursor connection attribute."
+    assert cursor._client == connection._client, "Invalid cursor _client attribute"
 
-            assert await cursor.execute("select*") == len(python_query_data)
+    assert await cursor.execute("select*") == len(python_query_data)
 
-            cursor.close()
-            assert (
-                cursor not in connection._cursors
-            ), "Cursor wasn't removed from connection after close."
+    cursor.close()
+    assert (
+        cursor not in connection._cursors
+    ), "Cursor wasn't removed from connection after close."
 
 
 async def test_connect_empty_parameters():
     with raises(ConfigurationError):
-        async with await connect(engine_url="engine_url"):
-            pass
-
-
-async def test_connect_access_token(
-    settings: Settings,
-    db_name: str,
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    check_token_callback: Callable,
-    query_url: str,
-    python_query_data: List[List[ColType]],
-    access_token: str,
-):
-    httpx_mock.add_callback(check_token_callback, url=query_url)
-    async with (
-        await connect(
-            engine_url=settings.server,
-            database=db_name,
-            access_token=access_token,
-            api_endpoint=settings.server,
-        )
-    ) as connection:
-        cursor = connection.cursor()
-        assert await cursor.execute("select*") == -1
-
-    with raises(ConfigurationError):
-        async with await connect(engine_url="engine_url", database="database"):
-            pass
-
-    with raises(ConfigurationError):
-        async with await connect(
-            engine_url="engine_url",
-            database="database",
-            username="username",
-            password="password",
-            access_token="access_token",
-        ):
+        async with await connect(engine_name="engine_name"):
             pass
 
 
 async def test_connect_engine_name(
-    settings: Settings,
     db_name: str,
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-    engine_id: str,
-    get_engine_url_by_id_url: str,
-    get_engine_url_by_id_callback: Callable,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    server: str,
     python_query_data: List[List[ColType]],
-    account_id: str,
+    httpx_mock: HTTPXMock,
+    mock_query: Callable,
+    system_engine_query_url: str,
+    get_engine_url_not_running_callback: Callable,
+    get_engine_url_invalid_db_callback: Callable,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    get_engine_url_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ):
     """connect properly handles engine_name"""
 
-    with raises(ConfigurationError):
-        async with await connect(
-            engine_url="engine_url",
-            engine_name="engine_name",
-            database="db",
-            username="username",
-            password="password",
-            account_name="account_name",
-        ):
-            pass
-
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
 
-    engine_name = settings.server.split(".")[0]
+    mock_query()
 
-    # Mock engine id lookup error
-    httpx_mock.add_response(
-        url=f"https://{settings.server}"
-        + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-        + f"?engine_name={engine_name}",
-        status_code=codes.NOT_FOUND,
-    )
+    for callback, err_cls in (
+        (get_engine_url_invalid_db_callback, InterfaceError),
+        (get_engine_url_not_running_callback, EngineNotRunningError),
+    ):
+        httpx_mock.add_callback(callback, url=system_engine_query_url)
+        with raises(err_cls):
+            async with await connect(
+                database=db_name,
+                auth=auth,
+                engine_name=engine_name,
+                account_name=account_name,
+                api_endpoint=server,
+            ):
+                pass
 
-    with raises(FireboltEngineError):
-        async with await connect(
-            database="db",
-            username="username",
-            password="password",
-            engine_name=engine_name,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
-        ):
-            pass
-
-    # Mock engine id lookup by name
-    httpx_mock.add_response(
-        url=f"https://{settings.server}"
-        + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-        + f"?engine_name={engine_name}",
-        status_code=codes.OK,
-        json={"engine_id": {"engine_id": engine_id}},
-    )
+    httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
 
     async with await connect(
         engine_name=engine_name,
         database=db_name,
-        username="u",
-        password="p",
-        account_name=settings.account_name,
-        api_endpoint=settings.server,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=server,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
 
-async def test_connect_default_engine(
-    settings: Settings,
+async def test_connect_database(
     db_name: str,
-    httpx_mock: HTTPXMock,
-    auth_callback: Callable,
     auth_url: str,
-    query_callback: Callable,
-    query_url: str,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-    engine_by_db_url: str,
+    server: str,
+    auth: Auth,
+    account_name: str,
     python_query_data: List[List[ColType]],
+    httpx_mock: HTTPXMock,
+    query_callback: str,
+    check_credentials_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(query_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    engine_by_db_url = f"{engine_by_db_url}?database_name={db_name}"
+    async with await connect(
+        database=None,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=server,
+    ) as connection:
+        await connection.cursor().execute("select*")
 
-    httpx_mock.add_response(
-        url=engine_by_db_url,
-        status_code=codes.OK,
-        json={
-            "engine_url": settings.server,
-        },
-    )
+    httpx_mock.reset(True)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(query_callback, url=system_engine_query_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+
     async with await connect(
         database=db_name,
-        username="u",
-        password="p",
-        account_name=settings.account_name,
-        api_endpoint=settings.server,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=server,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
@@ -255,129 +183,67 @@ async def test_connection_commit(connection: Connection):
 
 @mark.nofakefs
 async def test_connection_token_caching(
-    settings: Settings,
     db_name: str,
-    httpx_mock: HTTPXMock,
-    check_credentials_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
-    python_query_data: List[List[ColType]],
+    server: str,
     access_token: str,
+    client_id: str,
+    client_secret: str,
+    engine_name: str,
+    account_name: str,
+    python_query_data: List[List[ColType]],
+    mock_connection_flow: Callable,
+    mock_query: Callable,
 ) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    mock_connection_flow()
+    mock_query()
 
     with Patcher():
         async with await connect(
             database=db_name,
-            username=settings.user,
-            password=settings.password,
-            engine_url=settings.server,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
-            use_token_cache=True,
+            auth=ClientCredentials(client_id, client_secret, use_token_cache=True),
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=server,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
             )
-        ts = TokenSecureStorage(username=settings.user, password=settings.password)
+        ts = TokenSecureStorage(username=client_id, password=client_secret)
         assert ts.get_cached_token() == access_token, "Invalid token value cached"
 
     # Do the same, but with use_token_cache=False
     with Patcher():
         async with await connect(
             database=db_name,
-            username=settings.user,
-            password=settings.password,
-            engine_url=settings.server,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
-            use_token_cache=False,
+            auth=ClientCredentials(client_id, client_secret, use_token_cache=False),
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=server,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
             )
-        ts = TokenSecureStorage(username=settings.user, password=settings.password)
+        ts = TokenSecureStorage(username=client_id, password=client_secret)
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"
 
 
-async def test_connect_with_auth(
-    httpx_mock: HTTPXMock,
-    settings: Settings,
-    db_name: str,
-    check_credentials_callback: Callable,
-    auth_url: str,
-    query_callback: Callable,
-    query_url: str,
-    access_token: str,
-) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-
-    for auth in (
-        UsernamePassword(
-            settings.user,
-            settings.password,
-            use_token_cache=False,
-        ),
-        Token(access_token),
-    ):
-        async with await connect(
-            auth=auth,
-            database=db_name,
-            engine_url=settings.server,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
-        ) as connection:
-            await connection.cursor().execute("select*")
-
-
-async def test_connect_account_name(
-    httpx_mock: HTTPXMock,
-    auth: Auth,
-    settings: Settings,
-    db_name: str,
-    auth_url: str,
-    check_credentials_callback: Callable,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-
-    with raises(AccountNotFoundError):
-        async with await connect(
-            auth=auth,
-            database=db_name,
-            engine_url=settings.server,
-            account_name="invalid",
-            api_endpoint=settings.server,
-        ):
-            pass
-
-    async with await connect(
-        auth=auth,
-        database=db_name,
-        engine_url=settings.server,
-        account_name=settings.account_name,
-        api_endpoint=settings.server,
-    ):
-        pass
-
-
 async def test_connect_with_user_agent(
-    httpx_mock: HTTPXMock,
-    settings: Settings,
+    engine_name: str,
+    account_name: str,
+    server: str,
     db_name: str,
+    auth: Auth,
+    access_token: str,
+    httpx_mock: HTTPXMock,
     query_callback: Callable,
     query_url: str,
-    access_token: str,
+    mock_connection_flow: Callable,
 ) -> None:
     with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
         ut.return_value = "MyConnector/1.0 DriverA/1.1"
+        mock_connection_flow()
         httpx_mock.add_callback(
             query_callback,
             url=query_url,
@@ -385,40 +251,45 @@ async def test_connect_with_user_agent(
         )
 
         async with await connect(
-            auth=Token(access_token),
+            auth=auth,
             database=db_name,
-            engine_url=settings.server,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=server,
             additional_parameters={
                 "user_clients": [("MyConnector", "1.0")],
                 "user_drivers": [("DriverA", "1.1")],
             },
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([("DriverA", "1.1")], [("MyConnector", "1.0")])
+        ut.assert_called_with([("DriverA", "1.1")], [("MyConnector", "1.0")])
 
 
 async def test_connect_no_user_agent(
-    httpx_mock: HTTPXMock,
-    settings: Settings,
+    engine_name: str,
+    account_name: str,
+    server: str,
     db_name: str,
+    auth: Auth,
+    access_token: str,
+    httpx_mock: HTTPXMock,
     query_callback: Callable,
     query_url: str,
-    access_token: str,
+    mock_connection_flow: Callable,
 ) -> None:
     with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
         ut.return_value = "Python/3.0"
+        mock_connection_flow()
         httpx_mock.add_callback(
             query_callback, url=query_url, match_headers={"User-Agent": "Python/3.0"}
         )
 
         async with await connect(
-            auth=Token(access_token),
+            auth=auth,
             database=db_name,
-            engine_url=settings.server,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=server,
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([], [])
+        ut.assert_called_with([], [])

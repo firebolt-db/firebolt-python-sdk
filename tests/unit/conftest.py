@@ -1,4 +1,3 @@
-from json import loads
 from re import Pattern, compile
 from typing import Callable, List
 
@@ -7,7 +6,7 @@ from httpx import Request, Response
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.client.auth import Auth, UsernamePassword
+from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common.settings import Settings
 from firebolt.model.provider import Provider
 from firebolt.model.region import Region, RegionKey
@@ -28,9 +27,7 @@ from firebolt.utils.urls import (
     ACCOUNT_BY_NAME_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
-    ACCOUNT_ENGINE_URL_BY_DATABASE_NAME,
-    ACCOUNT_URL,
-    AUTH_URL,
+    AUTH_SERVICE_ACCOUNT_URL,
     DATABASES_URL,
     ENGINES_URL,
 )
@@ -52,13 +49,13 @@ def global_fake_fs(request) -> None:
 
 
 @fixture
-def username() -> str:
-    return "email@domain.com"
+def client_id() -> str:
+    return "client_id"
 
 
 @fixture
-def password() -> str:
-    return "*****"
+def client_secret() -> str:
+    return "client_secret"
 
 
 @fixture
@@ -67,13 +64,28 @@ def server() -> str:
 
 
 @fixture
+def auth_server() -> str:
+    return "id.mock.firebolt.io"
+
+
+@fixture
 def account_id() -> str:
     return "mock_account_id"
 
 
 @fixture
+def account_name() -> str:
+    return "mock_account_name"
+
+
+@fixture
 def access_token() -> str:
     return "mock_access_token"
+
+
+@fixture
+def access_token_2() -> str:
+    return "mock_access_token_2"
 
 
 @fixture
@@ -117,19 +129,18 @@ def mock_regions(region_1, region_2) -> List[Region]:
 
 
 @fixture
-def settings(server: str, region_1: str, username: str, password: str) -> Settings:
-    return Settings(
-        server=server,
-        user=username,
-        password=password,
-        default_region=region_1.name,
-        account_name=None,
-    )
+def auth(client_id: str, client_secret: str) -> Auth:
+    return ClientCredentials(client_id, client_secret)
 
 
 @fixture
-def auth(username: str, password: str) -> Auth:
-    return UsernamePassword(username, password)
+def settings(server: str, region_1: str, auth: Auth, account_name: str) -> Settings:
+    return Settings(
+        server=server,
+        auth=auth,
+        default_region=region_1.name,
+        account_name=account_name,
+    )
 
 
 @fixture
@@ -148,8 +159,8 @@ def auth_callback(auth_url: str) -> Callable:
 
 
 @fixture
-def auth_url(settings: Settings) -> str:
-    return f"https://{settings.server}{AUTH_URL}"
+def auth_url(auth_server: str) -> str:
+    return f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}"
 
 
 @fixture
@@ -163,12 +174,12 @@ def db_description() -> str:
 
 
 @fixture
-def account_id_url(settings: Settings) -> Pattern:
-    base = f"https://{settings.server}{ACCOUNT_BY_NAME_URL}?account_name="
-    default_base = f"https://{settings.server}{ACCOUNT_URL}"
+def account_id_url(settings: Settings, account_name: str) -> Pattern:
+    account_name_re = r"[^\\\\]*"
+    base = f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
-    default_base = default_base.replace("/", "\\/").replace("?", "\\?")
-    return compile(f"(?:{base}.*|{default_base})")
+    base = base.format(account_name=account_name_re)
+    return compile(base)
 
 
 @fixture
@@ -180,14 +191,9 @@ def account_id_callback(
         request: Request,
         **kwargs,
     ) -> Response:
-        if "account_name" not in request.url.params:
-            return Response(
-                status_code=httpx.codes.OK, json={"account": {"id": account_id}}
-            )
-        # In this case, an account_name *should* be specified.
-        if request.url.params["account_name"] != settings.account_name:
-            raise AccountNotFoundError(request.url.params["account_name"])
-        return Response(status_code=httpx.codes.OK, json={"account_id": account_id})
+        if request.url.path.split("/")[-2] != settings.account_name:
+            raise AccountNotFoundError(request.url.path.split("/")[-2])
+        return Response(status_code=httpx.codes.OK, json={"id": account_id})
 
     return do_mock
 
@@ -214,48 +220,6 @@ def get_engine_name_by_id_url(
     return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
-
-
-@fixture
-def get_engine_url_by_id_url(
-    settings: Settings, account_id: str, engine_id: str
-) -> str:
-    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
-        account_id=account_id, engine_id=engine_id
-    )
-
-
-@fixture
-def get_engine_url_by_id_callback(
-    get_engine_url_by_id_url: str, engine_id: str, settings: Settings
-) -> Callable:
-    def do_mock(
-        request: Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == get_engine_url_by_id_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json={
-                "engine": {
-                    "name": "name",
-                    "compute_region_id": {
-                        "provider_id": "provider",
-                        "region_id": "region",
-                    },
-                    "settings": {
-                        "preset": "",
-                        "auto_stop_delay_duration": "1s",
-                        "minimum_logging_level": "",
-                        "is_read_only": False,
-                        "warm_up": "",
-                    },
-                    "endpoint": f"https://{settings.server}",
-                }
-            },
-        )
-
-    return do_mock
 
 
 @fixture
@@ -302,14 +266,6 @@ def database_by_name_callback(account_id: str, database_id: str) -> str:
 
 
 @fixture
-def engine_by_db_url(settings: Settings, account_id: str) -> str:
-    return (
-        f"https://{settings.server}"
-        f"{ACCOUNT_ENGINE_URL_BY_DATABASE_NAME.format(account_id=account_id)}"
-    )
-
-
-@fixture
 def db_api_exceptions():
     exceptions = {
         "DatabaseError": DatabaseError,
@@ -343,17 +299,21 @@ def check_token_callback(access_token: str) -> Callable:
 
 
 @fixture
-def check_credentials_callback(settings: Settings, access_token: str) -> Callable:
+def check_credentials_callback(
+    client_id: str, client_secret: str, access_token: str
+) -> Callable:
     def check_credentials(
-        request: Request = None,
+        request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request, "empty request"
-        body = loads(request.read())
-        assert "username" in body, "Missing username"
-        assert body["username"] == settings.user, "Invalid username"
-        assert "password" in body, "Missing password"
-        assert body["password"] == settings.password, "Invalid password"
+        body = request.read().decode("utf-8")
+        assert "client_id" in body, "Missing id"
+        assert f"client_id={client_id}" in body, "Invalid id"
+        assert "client_secret" in body, "Missing secret"
+        assert f"client_secret={client_secret}" in body, "Invalid secret"
+        assert "grant_type" in body, "Missing grant_type"
+        assert "grant_type=client_credentials" in body, "Invalid grant_type"
 
         return Response(
             status_code=httpx.codes.OK,

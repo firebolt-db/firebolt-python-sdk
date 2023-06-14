@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from functools import wraps
+from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from httpx import Response
@@ -363,3 +364,16 @@ class BaseCursor:
     @check_not_closed
     def setoutputsize(self, size: int, column: Optional[int] = None) -> None:
         """Set a column buffer size for fetches of large columns (does nothing)."""
+
+    def close(self) -> None:
+        """Terminate an ongoing query (if any) and mark connection as closed."""
+        self._state = CursorState.CLOSED
+        self.connection._remove_cursor(self)  # type:ignore
+
+    def __del__(self) -> None:
+        self.close()
+
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()

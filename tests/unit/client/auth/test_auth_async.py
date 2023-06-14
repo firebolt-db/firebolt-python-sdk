@@ -12,7 +12,7 @@ from tests.unit.util import async_execute_generator_requests
 
 
 async def test_auth_refresh_on_expiration(
-    httpx_mock: HTTPXMock, test_token: str, test_token2: str
+    httpx_mock: HTTPXMock, access_token: str, access_token_2: str
 ) -> None:
     """Auth refreshes the token on expiration."""
     url = "https://host"
@@ -29,19 +29,19 @@ async def test_auth_refresh_on_expiration(
 
     auth = Auth(use_token_cache=False)
     # Get token for the first time
-    auth.get_new_token_generator = MethodType(set_token(test_token), auth)
+    auth.get_new_token_generator = MethodType(set_token(access_token), auth)
     await async_execute_generator_requests(auth.async_auth_flow(Request("GET", url)))
-    assert auth.token == test_token, "invalid access token"
+    assert auth.token == access_token, "invalid access token"
     assert auth.expired
 
     # Refresh token
-    auth.get_new_token_generator = MethodType(set_token(test_token2), auth)
+    auth.get_new_token_generator = MethodType(set_token(access_token_2), auth)
     await async_execute_generator_requests(auth.async_auth_flow(Request("GET", url)))
-    assert auth.token == test_token2, "expired access token was not updated"
+    assert auth.token == access_token_2, "expired access token was not updated"
 
 
 async def test_auth_uses_same_token_if_valid(
-    httpx_mock: HTTPXMock, test_token: str, test_token2: str
+    httpx_mock: HTTPXMock, access_token: str, access_token_2: str
 ) -> None:
     """Auth reuses the token until it's expired."""
     url = "https://host"
@@ -58,40 +58,40 @@ async def test_auth_uses_same_token_if_valid(
 
     auth = Auth(use_token_cache=False)
     # Get token for the first time
-    auth.get_new_token_generator = MethodType(set_token(test_token), auth)
+    auth.get_new_token_generator = MethodType(set_token(access_token), auth)
     await async_execute_generator_requests(
         auth.async_auth_flow(Request("GET", "https://host"))
     )
-    assert auth.token == test_token, "invalid access token"
+    assert auth.token == access_token, "invalid access token"
     assert not auth.expired
 
-    auth.get_new_token_generator = MethodType(set_token(test_token2), auth)
+    auth.get_new_token_generator = MethodType(set_token(access_token_2), auth)
     await async_execute_generator_requests(
         auth.async_auth_flow(Request("GET", "https://host"))
     )
-    assert auth.token == test_token, "shoud not update token until it expires"
+    assert auth.token == access_token, "shoud not update token until it expires"
 
 
-async def test_auth_adds_header(test_token: str) -> None:
+async def test_auth_adds_header(access_token: str) -> None:
     """Auth adds required authentication headers to httpx.Request."""
     auth = Auth(use_token_cache=False)
-    auth._token = test_token
+    auth._token = access_token
     auth._expires = 2**32
     flow = auth.async_auth_flow(Request("get", ""))
     request = await flow.__anext__()
 
     assert "authorization" in request.headers, "missing authorization header"
     assert (
-        request.headers["authorization"] == f"Bearer {test_token}"
+        request.headers["authorization"] == f"Bearer {access_token}"
     ), "missing authorization header"
 
 
 @mark.nofakefs
 async def test_auth_token_storage(
     httpx_mock: HTTPXMock,
-    test_username: str,
-    test_password: str,
-    test_token,
+    client_id: str,
+    client_secret: str,
+    access_token,
 ) -> None:
     # Mock auth flow
     def set_token(token: str) -> callable:
@@ -107,30 +107,30 @@ async def test_auth_token_storage(
     with Patcher(), patch(
         "firebolt.client.auth.base.Auth._token_storage",
         new_callable=PropertyMock,
-        return_value=TokenSecureStorage(test_username, test_password),
+        return_value=TokenSecureStorage(client_id, client_secret),
     ):
         auth = Auth(use_token_cache=True)
         # Get token
-        auth.get_new_token_generator = MethodType(set_token(test_token), auth)
+        auth.get_new_token_generator = MethodType(set_token(access_token), auth)
         await async_execute_generator_requests(
             auth.async_auth_flow(Request("GET", url))
         )
 
-        st = TokenSecureStorage(test_username, test_password)
-        assert st.get_cached_token() == test_token, "Invalid token value cached"
+        st = TokenSecureStorage(client_id, client_secret)
+        assert st.get_cached_token() == access_token, "Invalid token value cached"
 
     with Patcher(), patch(
         "firebolt.client.auth.base.Auth._token_storage",
         new_callable=PropertyMock,
-        return_value=TokenSecureStorage(test_username, test_password),
+        return_value=TokenSecureStorage(client_id, client_secret),
     ):
         auth = Auth(use_token_cache=False)
         # Get token
-        auth.get_new_token_generator = MethodType(set_token(test_token), auth)
+        auth.get_new_token_generator = MethodType(set_token(access_token), auth)
         await async_execute_generator_requests(
             auth.async_auth_flow(Request("GET", url))
         )
-        st = TokenSecureStorage(test_username, test_password)
+        st = TokenSecureStorage(client_id, client_secret)
         assert (
             st.get_cached_token() is None
         ), "Token cached even though caching is disabled"

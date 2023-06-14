@@ -5,10 +5,12 @@ from typing import Any, Callable, Dict, List
 
 from httpx import URL, Request, Response, codes
 from pytest import fixture
+from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.common.settings import Settings
 from firebolt.db import ARRAY, DECIMAL
+from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
 QUERY_ROW_COUNT: int = 10
 
@@ -332,8 +334,8 @@ def set_params() -> Dict:
 @fixture
 def query_url(settings: Settings, db_name: str) -> str:
     return URL(
-        f"https://{settings.server}/?database={db_name}"
-        f"&output_format={JSON_OUTPUT_FORMAT}"
+        f"https://{settings.server}/",
+        params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name},
     )
 
 
@@ -346,3 +348,170 @@ def set_query_url(settings: Settings, db_name: str) -> str:
 def query_with_params_url(query_url: str, set_params: str) -> str:
     params_encoded = "&".join([f"{k}={encode_param(v)}" for k, v in set_params.items()])
     query_url = f"{query_url}&{params_encoded}"
+
+
+def _get_engine_url_callback(server: str, db_name: str, status="Running") -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        set_parameters = request.url.params
+        assert (
+            len(set_parameters) == 3
+            and "output_format" in set_parameters
+            and "database" in set_parameters
+            and "account_id" in set_parameters
+        )
+        data = [[server, db_name, status]]
+        query_response = {
+            "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
+            "data": data,
+            "rows": len(data),
+            # Real example of statistics field value, not used by our code
+            "statistics": {
+                "elapsed": 0.002983335,
+                "time_before_execution": 0.002729331,
+                "time_to_execute": 0.000215215,
+                "rows_read": 1,
+                "bytes_read": 1,
+                "scanned_bytes_cache": 0,
+                "scanned_bytes_storage": 0,
+            },
+        }
+        return Response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
+def get_engine_url_callback(server: str, db_name: str, status="Running") -> Callable:
+    return _get_engine_url_callback(server, db_name)
+
+
+@fixture
+def get_engine_url_not_running_callback(engine_name, db_name) -> Callable:
+    return _get_engine_url_callback(engine_name, db_name, "Stopped")
+
+
+@fixture
+def get_engine_url_invalid_db_callback(engine_name, db_name) -> Callable:
+    return _get_engine_url_callback(engine_name, "not_" + db_name)
+
+
+def _get_default_db_engine_callback(server: str, status="Running") -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        set_parameters = request.url.params
+        assert len(set_parameters) == 1 and "output_format" in set_parameters
+        data = [[server, status]]
+        query_response = {
+            "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
+            "data": data,
+            "rows": len(data),
+            # Real example of statistics field value, not used by our code
+            "statistics": {
+                "elapsed": 0.002983335,
+                "time_before_execution": 0.002729331,
+                "time_to_execute": 0.000215215,
+                "rows_read": 1,
+                "bytes_read": 1,
+                "scanned_bytes_cache": 0,
+                "scanned_bytes_storage": 0,
+            },
+        }
+        return Response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
+def get_default_db_engine_callback(server: str) -> Callable:
+    return _get_default_db_engine_callback(server)
+
+
+@fixture
+def get_default_db_engine_not_running_callback(server: str) -> Callable:
+    return _get_default_db_engine_callback(server, "Failed")
+
+
+@fixture
+def system_engine_url() -> str:
+    return "https://bravo.a.eu-west-1.aws.mock.firebolt.io"
+
+
+@fixture
+def system_engine_query_url(
+    system_engine_url: str, db_name: str, account_id: str
+) -> str:
+    return f"{system_engine_url}/dynamic/query?output_format=JSON_Compact&database={db_name}&account_id={account_id}"
+
+
+@fixture
+def system_engine_no_db_query_url(system_engine_url: str, account_id: str) -> str:
+    return f"{system_engine_url}/dynamic/query?output_format=JSON_Compact&account_id={account_id}"
+
+
+@fixture
+def get_system_engine_url(server: str, account_name: str) -> str:
+    return URL(
+        f"https://{server}"
+        f"{GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)}"
+    )
+
+
+@fixture
+def get_system_engine_callback(system_engine_url: str) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "GET", "invalid request method"
+
+        return Response(
+            status_code=codes.OK,
+            json={"engineUrl": system_engine_url},
+        )
+
+    return inner
+
+
+@fixture
+def mock_connection_flow(
+    httpx_mock: HTTPXMock,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    get_engine_url_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
+) -> Callable:
+    def inner() -> None:
+        httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+        httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+        httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
+        httpx_mock.add_callback(account_id_callback, url=account_id_url)
+
+    return inner
+
+
+@fixture
+def mock_query(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_callback: Callable,
+) -> Callable:
+    def inner() -> None:
+        httpx_mock.add_callback(query_callback, url=query_url)
+
+    return inner
+
+
+@fixture
+def mock_insert_query(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    insert_query_callback: Callable,
+) -> Callable:
+    def inner() -> None:
+        httpx_mock.add_callback(insert_query_callback, url=query_url)
+
+    return inner
