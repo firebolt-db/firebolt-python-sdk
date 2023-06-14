@@ -1,8 +1,5 @@
 import os
-from typing import Tuple
 from unittest.mock import Mock, patch
-
-from pytest import mark, raises
 
 from firebolt.client.auth import Auth
 from firebolt.common.settings import Settings
@@ -36,4 +33,6 @@ def test_no_deprecation_warning_with_env(logger_mock: Mock):
         assert s.server == "dummy.firebolt.io"
         assert s.auth is not None, "Settings.auth wasn't populated from env variables"
         assert s.auth.client_id == "client_id", "Invalid username in Settings.auth"
-        assert s.auth.client_secret == "client_secret", "Invalid password in Settings.auth"
+        assert (
+            s.auth.client_secret == "client_secret"
+        ), "Invalid password in Settings.auth"
