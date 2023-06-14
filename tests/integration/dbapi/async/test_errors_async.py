@@ -1,4 +1,4 @@
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.async_db import Connection, connect
 from firebolt.client.auth import ClientCredentials
@@ -72,7 +72,6 @@ async def test_engine_stopped(
             await connection.cursor().execute("show tables")
 
 
-@mark.skip(reason="Behaviour is different in prod vs dev")
 async def test_database_not_exists(
     engine_name: str,
     database_name: str,

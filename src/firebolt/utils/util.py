@@ -1,11 +1,7 @@
-from contextlib import contextmanager
-from functools import lru_cache, partial, wraps
-from typing import TYPE_CHECKING, Any, Callable, Generator, Type, TypeVar
+from functools import lru_cache
+from typing import TYPE_CHECKING, Callable, Type, TypeVar
 
-import trio
 from httpx import URL
-
-from firebolt.utils.exception import ConfigurationError
 
 T = TypeVar("T")
 
@@ -85,56 +81,6 @@ def get_auth_endpoint(api_endpoint: URL) -> URL:
     return api_endpoint.copy_with(
         host=".".join(["id"] + api_endpoint.host.split(".")[1:])
     )
-
-
-@contextmanager
-def nested_loop() -> Generator:
-    from trio._core._run import GLOBAL_RUN_CONTEXT  # type: ignore
-
-    s = object()
-    task, runner, _dict = s, s, s
-    if hasattr(GLOBAL_RUN_CONTEXT, "__dict__"):
-        _dict = GLOBAL_RUN_CONTEXT.__dict__
-    if hasattr(GLOBAL_RUN_CONTEXT, "task"):
-        task = GLOBAL_RUN_CONTEXT.task
-        del GLOBAL_RUN_CONTEXT.task
-    if hasattr(GLOBAL_RUN_CONTEXT, "runner"):
-        runner = GLOBAL_RUN_CONTEXT.runner
-        del GLOBAL_RUN_CONTEXT.runner
-
-    try:
-        yield
-    finally:
-        if task is not s:
-            GLOBAL_RUN_CONTEXT.task = task
-        elif hasattr(GLOBAL_RUN_CONTEXT, "task"):
-            del GLOBAL_RUN_CONTEXT.task
-
-        if runner is not s:
-            GLOBAL_RUN_CONTEXT.runner = runner
-        elif hasattr(GLOBAL_RUN_CONTEXT, "runner"):
-            del GLOBAL_RUN_CONTEXT.runner
-
-        if _dict is not s:
-            GLOBAL_RUN_CONTEXT.__dict__.update(_dict)
-
-
-def async_to_sync(f: Callable) -> Callable:
-    """Convert async function to sync.
-
-    Args:
-        f (Callable): function to convert
-
-    Returns:
-        Callable: regular function, which can be executed synchronously
-    """
-
-    @wraps(f)
-    def sync(*args: Any, **kwargs: Any) -> Any:
-        with nested_loop():
-            return trio.run(partial(f, *args, **kwargs))
-
-    return sync
 
 
 def merge_urls(base: URL, merge: URL) -> URL:

@@ -194,7 +194,6 @@ async def connect(
         `database` (str): Name of the database to connect
         `engine_name` (Optional[str]): Name of the engine to connect to
         `account_name` (Optional[str]): For customers with multiple accounts;
-                                      if none, default is used
         `api_endpoint` (str): Firebolt API endpoint. Used for authentication
         `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
                                 arguments for connection

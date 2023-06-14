@@ -87,6 +87,15 @@ async def test_system_engine(
             "Invalid data returned by fetchmany",
         )
 
+        if connection_system_engine.database:
+            await c.execute("show tables")
+            with raises(OperationalError):
+                await c.execute("create table test(id int) primary index id")
+        else:
+            await c.execute("show databases")
+            with raises(OperationalError):
+                await c.execute("show tables")
+
 
 async def test_system_engine_no_db(
     connection_system_engine_no_db: Connection,
