@@ -3,7 +3,6 @@ from typing import Optional
 from httpx import Timeout
 
 from firebolt.client import Client, log_request, log_response, raise_on_4xx_5xx
-from firebolt.client.auth import Token, UsernamePassword
 from firebolt.common import Settings
 from firebolt.service.provider import get_provider_id
 from firebolt.utils.util import fix_url_schema
@@ -28,25 +27,8 @@ class ResourceManager:
 
     def __init__(self, settings: Optional[Settings] = None):
         self.settings = settings or Settings()
-
-        auth = self.settings.auth
-
-        # Deprecated: we shouldn't support passing credentials after 1.0 release
-        if auth is None:
-            if self.settings.access_token:
-                auth = Token(self.settings.access_token)
-            else:
-                # mypy checks
-                assert self.settings.user
-                assert self.settings.password
-                auth = UsernamePassword(
-                    self.settings.user,
-                    self.settings.password,
-                    self.settings.use_token_cache,
-                )
-
         self.client = Client(
-            auth=auth,
+            auth=self.settings.auth,
             base_url=fix_url_schema(self.settings.server),
             account_name=self.settings.account_name,
             api_endpoint=self.settings.server,

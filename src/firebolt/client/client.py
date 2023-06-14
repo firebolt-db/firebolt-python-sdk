@@ -1,6 +1,7 @@
 from typing import Any, Optional
 
 from anyio._core._eventloop import get_asynclib
+from async_property import async_cached_property  # type: ignore
 from httpx import URL
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
@@ -12,10 +13,11 @@ from firebolt.client.auth import Auth
 from firebolt.client.auth.base import AuthRequest
 from firebolt.client.constants import DEFAULT_API_URL
 from firebolt.utils.exception import AccountNotFoundError
-from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
+from firebolt.utils.urls import ACCOUNT_BY_NAME_URL
 from firebolt.utils.util import (
     cached_property,
     fix_url_schema,
+    get_auth_endpoint,
     merge_urls,
     mixin_for,
 )
@@ -38,16 +40,17 @@ class FireboltClientMixin(FireboltClientMixinBase):
     def __init__(
         self,
         *args: Any,
-        account_name: Optional[str] = None,
+        account_name: str,
+        auth: Auth,
         api_endpoint: str = DEFAULT_API_URL,
-        auth: Optional[Auth] = None,
         **kwargs: Any,
     ):
         self.account_name = account_name
         self._api_endpoint = URL(fix_url_schema(api_endpoint))
+        self._auth_endpoint = get_auth_endpoint(self._api_endpoint)
         super().__init__(*args, auth=auth, **kwargs)
 
-    def _build_auth(self, auth: Optional[AuthTypes]) -> Optional[Auth]:
+    def _build_auth(self, auth: Optional[AuthTypes]) -> Auth:
         """Create Auth object based on auth provided.
 
         Overrides ``httpx.Client._build_auth``
@@ -61,15 +64,20 @@ class FireboltClientMixin(FireboltClientMixinBase):
         Raises:
             TypeError: Auth argument has unsupported type
         """
-        if auth is None or isinstance(auth, Auth):
-            return auth
-        raise TypeError(f'Invalid "auth" argument: {auth!r}')
+        if not (auth is None or isinstance(auth, Auth)):
+            raise TypeError(f'Invalid "auth" argument: {auth!r}')
+        assert auth is not None  # type check
+        return auth
 
     def _merge_auth_request(self, request: Request) -> Request:
         if isinstance(request, AuthRequest):
-            request.url = merge_urls(self._api_endpoint, request.url)
+            request.url = merge_urls(self._auth_endpoint, request.url)
             request._prepare(dict(request.headers))
         return request
+
+    def _enforce_trailing_slash(self, url: URL) -> URL:
+        """Don't automatically append trailing slach to a base url"""
+        return url
 
 
 class Client(FireboltClientMixin, HttpxClient):
@@ -93,18 +101,16 @@ class Client(FireboltClientMixin, HttpxClient):
         Raises:
             AccountNotFoundError: No account found with provided name
         """
-        if self.account_name:
-            response = self.get(
-                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+        response = self.get(
+            url=self._api_endpoint.copy_with(
+                path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
             )
-            if response.status_code == HttpxCodes.NOT_FOUND:
-                raise AccountNotFoundError(self.account_name)
-            # process all other status codes
-            response.raise_for_status()
-            return response.json()["account_id"]
-
-        # account_name isn't set, use the default account.
-        return self.get(url=ACCOUNT_URL).json()["account"]["id"]
+        )
+        if response.status_code == HttpxCodes.NOT_FOUND:
+            raise AccountNotFoundError(self.account_name)
+        # process all other status codes
+        response.raise_for_status()
+        return response.json()["id"]
 
     def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any
@@ -122,7 +128,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     FireboltAuth instance.
     """
 
-    @cached_property
+    @async_cached_property
     async def account_id(self) -> str:
         """User account id.
 
@@ -135,18 +141,16 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
         Raises:
             AccountNotFoundError: No account found with provided name
         """
-        if self.account_name:
-            response = await self.get(
-                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+        response = await self.get(
+            url=self._api_endpoint.copy_with(
+                path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
             )
-            if response.status_code == HttpxCodes.NOT_FOUND:
-                raise AccountNotFoundError(self.account_name)
-            # process all other status codes
-            response.raise_for_status()
-            return response.json()["account_id"]
-
-        # account_name isn't set; use the default account.
-        return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
+        )
+        if response.status_code == HttpxCodes.NOT_FOUND:
+            raise AccountNotFoundError(self.account_name)
+        # process all other status codes
+        response.raise_for_status()
+        return response.json()["id"]
 
     async def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any

@@ -1,9 +1,9 @@
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
-from firebolt.client.auth import Auth, UsernamePassword
+from firebolt.client.auth import Auth, ClientCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -12,20 +12,8 @@ KEEPALIVE_FLAG: int = 1
 KEEPIDLE_RATE: int = 60  # seconds
 DEFAULT_TIMEOUT_SECONDS: int = 60
 
-AUTH_CREDENTIALS_DEPRECATION_MESSAGE = """ Passing connection credentials directly in Settings is deprecated.
- Use Auth object instead.
- Examples:
-  >>> from firebolt.client.auth import UsernamePassword
-  >>> ...
-  >>> settings = Settings(auth=UsernamePassword(username, password), ...)
- or
-  >>> from firebolt.client.auth import Token
-  >>> ...
-  >>> settings = Settings(auth=Token(access_token), ...)"""
-
-USERNAME_ENV = "FIREBOLT_USER"
-PASSWORD_ENV = "FIREBOLT_PASSWORD"
-AUTH_TOKEN_ENV = "FIREBOLT_AUTH_TOKEN"
+CLIENT_ID_ENV = "FIREBOLT_CLIENT_ID"
+CLIENT_SECRET_ENV = "FIREBOLT_CLIENT_SECRET"
 ACCOUNT_ENV = "FIREBOLT_ACCOUNT"
 SERVER_ENV = "FIREBOLT_SERVER"
 DEFAULT_REGION_ENV = "FIREBOLT_DEFAULT_REGION"
@@ -38,12 +26,12 @@ def from_env(var_name: str, default: Any = None) -> Callable:
     return inner
 
 
-def auth_from_env() -> Optional[Auth]:
-    username = os.environ.get(USERNAME_ENV, None)
-    password = os.environ.get(PASSWORD_ENV, None)
-    if username and password:
-        return UsernamePassword(username, password)
-    return None
+def auth_from_env() -> Auth:
+    client_id = os.environ.get(CLIENT_ID_ENV, None)
+    client_secret = os.environ.get(CLIENT_SECRET_ENV, None)
+    if client_id and client_secret:
+        return ClientCredentials(client_id, client_secret)
+    raise ValueError("Auth not provided")
 
 
 @dataclass
@@ -62,41 +50,8 @@ class Settings:
         default_region (str): Default region for provisioning
     """
 
-    auth: Optional[Auth] = field(default_factory=auth_from_env)
-    # Authorization
-    user: Optional[str] = field(default=None)
-    password: Optional[str] = field(default=None)
-    # Or
-    access_token: Optional[str] = field(default_factory=from_env(AUTH_TOKEN_ENV))
+    auth: Auth = field(default_factory=auth_from_env)
 
-    account_name: Optional[str] = field(default_factory=from_env(ACCOUNT_ENV))
+    account_name: str = field(default_factory=from_env(ACCOUNT_ENV))
     server: str = field(default_factory=from_env(SERVER_ENV))
     default_region: str = field(default_factory=from_env(DEFAULT_REGION_ENV))
-    use_token_cache: bool = field(default=True)
-
-    def __post_init__(self) -> None:
-        """Validate that either creds or token is provided.
-
-        Args:
-            values (dict): settings initial values
-
-        Returns:
-            dict: Validated settings values
-
-        Raises:
-            ValueError: Either both or none of credentials and token are provided
-        """
-
-        params_present = (
-            self.user is not None or self.password is not None,
-            self.access_token is not None,
-            self.auth is not None,
-        )
-        if sum(params_present) == 0:
-            raise ValueError(
-                "Provide at least one of auth, user/password or access_token."
-            )
-        if sum(params_present) > 1:
-            raise ValueError("Provide only one of auth, user/password or access_token")
-        if any((self.user, self.password, self.access_token)):
-            logger.warning(AUTH_CREDENTIALS_DEPRECATION_MESSAGE)

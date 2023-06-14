@@ -1,10 +1,7 @@
-from functools import lru_cache, partial, wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, Type, TypeVar
+from functools import lru_cache
+from typing import TYPE_CHECKING, Callable, Type, TypeVar
 
-import trio
 from httpx import URL
-
-from firebolt.utils.exception import ConfigurationError
 
 T = TypeVar("T")
 
@@ -72,21 +69,18 @@ def fix_url_schema(url: str) -> str:
     return url if url.startswith("http") else f"https://{url}"
 
 
-def async_to_sync(f: Callable) -> Callable:
-    """Convert async function to sync.
+def get_auth_endpoint(api_endpoint: URL) -> URL:
+    """Create auth endpoint from api endpoint.
 
     Args:
-        f (Callable): function to convert
+        api_endpoint (URL): provided API endpoint
 
     Returns:
-        Callable: regular function, which can be executed synchronously
+        URL: authentication endpoint
     """
-
-    @wraps(f)
-    def sync(*args: Any, **kwargs: Any) -> Any:
-        return trio.run(partial(f, *args, **kwargs))
-
-    return sync
+    return api_endpoint.copy_with(
+        host=".".join(["id"] + api_endpoint.host.split(".")[1:])
+    )
 
 
 def merge_urls(base: URL, merge: URL) -> URL:
@@ -105,12 +99,3 @@ def merge_urls(base: URL, merge: URL) -> URL:
         merge_raw_path = base.raw_path + merge.raw_path.lstrip(b"/")
         return base.copy_with(raw_path=merge_raw_path)
     return merge
-
-
-def validate_engine_name_and_url(
-    engine_name: Optional[str], engine_url: Optional[str]
-) -> None:
-    if engine_name and engine_url:
-        raise ConfigurationError(
-            "Both engine_name and engine_url are provided. Provide only one to connect."
-        )

@@ -9,6 +9,9 @@ class FireboltEngineError(FireboltError):
 class EngineNotRunningError(FireboltEngineError):
     """Engine that's being queried is not running."""
 
+    def __init__(self, engine_name: str):
+        super().__init__(f"Engine {engine_name} is not running")
+
 
 class NoAttachedDatabaseError(FireboltEngineError):
     """Engine that's being accessed is not running.
