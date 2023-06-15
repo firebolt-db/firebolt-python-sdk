@@ -1,8 +1,8 @@
 name: v0.x Nightly code check
 on:
   workflow_dispatch:
-  # schedule:
-  #   - cron: '0 3 * * *' # 3 am UTC every day
+  schedule:
+    - cron: '0 3 * * *' # 3 am UTC every day
 jobs:
   code-check:
     uses: ./.github/workflows/nightly-workflow.yml
