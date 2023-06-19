@@ -11,7 +11,7 @@ logger = getLogger(__name__)
 
 
 class EngineService(BaseService):
-    ENGINE_DB_FIELDS = (
+    DB_FIELDS = (
         "engine_name",
         "region",
         "spec",
@@ -25,11 +25,12 @@ class EngineService(BaseService):
         "type",
         "provisioning",
     )
-    GET_SQL = f"SELECT {', '.join(ENGINE_DB_FIELDS)} FROM information_schema.engines"
+    GET_SQL = f"SELECT {', '.join(DB_FIELDS)} FROM information_schema.engines"
     GET_BY_NAME_SQL = GET_SQL + " WHERE engine_name=?"
     GET_WHERE_SQL = " WHERE "
 
-    CREATE_PREFIX_SQL = "CREATE ENGINE {}"
+    CREATE_PREFIX_SQL = "CREATE ENGINE {}{}"
+    IF_NOT_EXISTS_SQL = "IF NOT EXISTS "
     CREATE_WITH_SQL = " WITH "
     CREATE_PARAMETER_NAMES = (
         "REGION",
@@ -53,8 +54,7 @@ class EngineService(BaseService):
 
     def get(self, name: str) -> Engine:
         """Get an engine from Firebolt by its name."""
-        engine_dict = self._get_dict(name)
-        return Engine._from_dict(engine_dict, self)
+        return Engine._from_dict(self._get_dict(name), self)
 
     def get_many(
         self,
@@ -71,7 +71,6 @@ class EngineService(BaseService):
             current_status_eq: Filter for engines with this status
             current_status_not_eq: Filter for engines that do not have this status
             region_eq: Filter for engines by region
-            order_by: Method by which to order the results. See [EngineOrder]
 
         Returns:
             A list of engines matching the filters
@@ -96,13 +95,11 @@ class EngineService(BaseService):
 
         with self._connection.cursor() as c:
             c.execute(sql, parameters)
-            engine_dicts = [
-                {column.name: value for column, value in zip(c.description, engine_row)}
-                for engine_row in c.fetchall()
+            dicts = [
+                {column.name: value for column, value in zip(c.description, row)}
+                for row in c.fetchall()
             ]
-            return [
-                Engine._from_dict(engine_dict, self) for engine_dict in engine_dicts
-            ]
+            return [Engine._from_dict(_dict, self) for _dict in dicts]
 
     def create(
         self,
@@ -113,6 +110,7 @@ class EngineService(BaseService):
         scale: Optional[int] = None,
         auto_stop: Optional[int] = None,
         warmup: Union[str, WarmupMethod, None] = None,
+        fail_if_exists: bool = True,
     ) -> Engine:
         """
         Create a new engine.
@@ -135,6 +133,7 @@ class EngineService(BaseService):
 
                 `PRELOAD_ALL_DATA` - Full data auto-load
                 (both indexes and table data - full warmup)
+            fail_if_exists: Fail is an engine with provided name already exists
 
         Returns:
             Engine with the specified settings
@@ -142,7 +141,9 @@ class EngineService(BaseService):
 
         logger.info(f"Creating engine {name}")
 
-        sql = self.CREATE_PREFIX_SQL.format(name)
+        sql = self.CREATE_PREFIX_SQL.format(
+            ("" if fail_if_exists else self.IF_NOT_EXISTS_SQL), name
+        )
         parameters = []
         if any((region, engine_type, spec, scale, auto_stop, warmup)):
             sql += self.CREATE_WITH_SQL
