@@ -210,16 +210,15 @@ async def test_connection_token_caching(
     with Patcher():
         async with await connect(
             database=db_name,
-            username=settings.user,
-            password=settings.password,
-            engine_url=settings.server,
-            account_name=settings.account_name,
-            api_endpoint=settings.server,
+            auth=ClientCredentials(client_id, client_secret, use_token_cache=True),
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=server,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
             )
-        ts = TokenSecureStorage(username=settings.user, password=settings.password)
+        ts = TokenSecureStorage(username=client_id, password=client_secret)
         assert ts.get_cached_token() == access_token, "Invalid token value cached"
 
     with Patcher():

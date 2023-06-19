@@ -137,10 +137,26 @@ def server_side_async_id() -> str:
 
 
 @fixture
-def server_side_async_cancel_callback(server_side_async_id) -> Response:
+def query_statistics() -> Dict[str, Any]:
+    # Just some dummy statistics to have in query response
+    return {
+        "elapsed": 0.116907717,
+        "rows_read": 1,
+        "bytes_read": 61,
+        "time_before_execution": 0.012180623,
+        "time_to_execute": 0.104614307,
+        "scanned_bytes_cache": 0,
+        "scanned_bytes_storage": 0,
+    }
+
+
+@fixture
+def server_side_async_cancel_callback(
+    server_side_async_id, query_statistics: Dict[str, Any]
+) -> Response:
     def do_query(request: Request, **kwargs) -> Response:
         # Make sure no set parameters are added
-        assert list(request.url.params.keys()) == [
+        assert sorted(list(request.url.params.keys())) == [
             "database",
             "query_id",
         ], "invalid query params for async cancel"
@@ -158,15 +174,7 @@ def server_side_async_cancel_callback(server_side_async_id) -> Response:
             ],
             "data": [["node1.node.consul", 9000, 0, "", 0, 0]],
             "rows": 1,
-            "statistics": {
-                "elapsed": 0.116907717,
-                "rows_read": 1,
-                "bytes_read": 61,
-                "time_before_execution": 0.012180623,
-                "time_to_execute": 0.104614307,
-                "scanned_bytes_cache": 0,
-                "scanned_bytes_storage": 0,
-            },
+            "statistics": query_statistics,
         }
         return Response(status_code=codes.OK, json=query_response)
 
@@ -241,7 +249,9 @@ def server_side_async_missing_query_id_error(server_side_async_id) -> Response:
 
 @fixture
 def query_callback(
-    query_description: List[Column], query_data: List[List[ColType]]
+    query_description: List[Column],
+    query_data: List[List[ColType]],
+    query_statistics: Dict[str, Any],
 ) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         assert request.read() != b""
@@ -251,15 +261,7 @@ def query_callback(
             "meta": [{"name": c.name, "type": c.type_code} for c in query_description],
             "data": query_data,
             "rows": len(query_data),
-            "statistics": {
-                "elapsed": 0.002983335,
-                "time_before_execution": 0.002729331,
-                "time_to_execute": 0.000215215,
-                "rows_read": 1,
-                "bytes_read": 1,
-                "scanned_bytes_cache": 0,
-                "scanned_bytes_storage": 0,
-            },
+            "statistics": query_statistics,
         }
         return Response(status_code=codes.OK, json=query_response)
 
@@ -296,6 +298,7 @@ def query_with_params_callback(
     query_description: List[Column],
     query_data: List[List[ColType]],
     set_params: Dict,
+    query_statistics: Dict[str, Any],
 ) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         set_parameters = request.url.params
@@ -307,16 +310,7 @@ def query_with_params_callback(
             "meta": [{"name": c.name, "type": c.type_code} for c in query_description],
             "data": query_data,
             "rows": len(query_data),
-            # Real example of statistics field value, not used by our code
-            "statistics": {
-                "elapsed": 0.002983335,
-                "time_before_execution": 0.002729331,
-                "time_to_execute": 0.000215215,
-                "rows_read": 1,
-                "bytes_read": 1,
-                "scanned_bytes_cache": 0,
-                "scanned_bytes_storage": 0,
-            },
+            "statistics": query_statistics,
         }
         return Response(status_code=codes.OK, json=query_response)
 
@@ -361,7 +355,9 @@ def query_with_params_url(query_url: str, set_params: str) -> str:
     query_url = f"{query_url}&{params_encoded}"
 
 
-def _get_engine_url_callback(server: str, db_name: str, status="Running") -> Callable:
+def _get_engine_url_callback(
+    server: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
+) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         set_parameters = request.url.params
         assert (
@@ -375,16 +371,7 @@ def _get_engine_url_callback(server: str, db_name: str, status="Running") -> Cal
             "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
             "data": data,
             "rows": len(data),
-            # Real example of statistics field value, not used by our code
-            "statistics": {
-                "elapsed": 0.002983335,
-                "time_before_execution": 0.002729331,
-                "time_to_execute": 0.000215215,
-                "rows_read": 1,
-                "bytes_read": 1,
-                "scanned_bytes_cache": 0,
-                "scanned_bytes_storage": 0,
-            },
+            "statistics": query_statistics,
         }
         return Response(status_code=codes.OK, json=query_response)
 
@@ -392,21 +379,31 @@ def _get_engine_url_callback(server: str, db_name: str, status="Running") -> Cal
 
 
 @fixture
-def get_engine_url_callback(server: str, db_name: str, status="Running") -> Callable:
-    return _get_engine_url_callback(server, db_name)
+def get_engine_url_callback(
+    server: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
+) -> Callable:
+    return _get_engine_url_callback(server, db_name, query_statistics)
 
 
 @fixture
-def get_engine_url_not_running_callback(engine_name, db_name) -> Callable:
-    return _get_engine_url_callback(engine_name, db_name, "Stopped")
+def get_engine_url_not_running_callback(
+    engine_name, db_name, query_statistics: Dict[str, Any]
+) -> Callable:
+    return _get_engine_url_callback(engine_name, db_name, query_statistics, "Stopped")
 
 
 @fixture
-def get_engine_url_invalid_db_callback(engine_name, db_name) -> Callable:
-    return _get_engine_url_callback(engine_name, "not_" + db_name)
+def get_engine_url_invalid_db_callback(
+    engine_name,
+    db_name,
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    return _get_engine_url_callback(engine_name, "not_" + db_name, query_statistics)
 
 
-def _get_default_db_engine_callback(server: str, status="Running") -> Callable:
+def _get_default_db_engine_callback(
+    server: str, query_statistics: Dict[str, Any], status="Running"
+) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         set_parameters = request.url.params
         assert len(set_parameters) == 1 and "output_format" in set_parameters
@@ -416,15 +413,7 @@ def _get_default_db_engine_callback(server: str, status="Running") -> Callable:
             "data": data,
             "rows": len(data),
             # Real example of statistics field value, not used by our code
-            "statistics": {
-                "elapsed": 0.002983335,
-                "time_before_execution": 0.002729331,
-                "time_to_execute": 0.000215215,
-                "rows_read": 1,
-                "bytes_read": 1,
-                "scanned_bytes_cache": 0,
-                "scanned_bytes_storage": 0,
-            },
+            "statistics": query_statistics,
         }
         return Response(status_code=codes.OK, json=query_response)
 
@@ -500,6 +489,21 @@ def mock_connection_flow(
         httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
         httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
         httpx_mock.add_callback(account_id_callback, url=account_id_url)
+
+    return inner
+
+
+@fixture
+def mock_system_connection_flow(
+    httpx_mock: HTTPXMock,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+) -> Callable:
+    def inner() -> None:
+        httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+        httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
 
     return inner
 

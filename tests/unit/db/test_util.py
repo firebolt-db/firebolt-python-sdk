@@ -1,25 +1,26 @@
-from typing import Callable
+from typing import Any, Dict
 
 from pytest_httpx import HTTPXMock
 
-from firebolt.common.settings import Settings
 from firebolt.db.connection import Connection
 from firebolt.db.util import is_db_available, is_engine_running
-from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 
 
 def test_is_db_available(
     connection: Connection,
     httpx_mock: HTTPXMock,
-    settings: Settings,
-    auth_url: str,
-    auth_callback: Callable,
+    query_statistics: Dict[str, Any],
+    system_engine_query_url: str,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_response(
-        url=f"https://{settings.server}{DATABASES_URL}?filter.name_contains=dummy",
-        method="GET",
-        json={"edges": ["one"]},
+        url=system_engine_query_url,
+        method="POST",
+        json={
+            "rows": "1",
+            "data": ["my_db"],
+            "meta": [],
+            "statistics": query_statistics,
+        },
     )
     assert is_db_available(connection, "dummy") == True
 
@@ -27,46 +28,72 @@ def test_is_db_available(
 def test_is_db_not_available(
     connection: Connection,
     httpx_mock: HTTPXMock,
-    settings: Settings,
-    auth_url: str,
-    auth_callback: Callable,
+    system_engine_query_url: str,
+    query_statistics: Dict[str, Any],
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_response(
-        url=f"https://{settings.server}{DATABASES_URL}?filter.name_contains=dummy",
-        method="GET",
-        json={"edges": []},
+        url=system_engine_query_url,
+        method="POST",
+        json={
+            "rows": "0",
+            "data": [],
+            "meta": [],
+            "statistics": query_statistics,
+        },
     )
     assert is_db_available(connection, "dummy") == False
+
+
+def test_is_engine_running_system(
+    system_connection: Connection,
+):
+    # System engine is always running
+    assert is_engine_running(system_connection, "dummy") == True
 
 
 def test_is_engine_running(
     connection: Connection,
     httpx_mock: HTTPXMock,
-    settings: Settings,
-    auth_url: str,
-    auth_callback: Callable,
+    system_engine_query_url: str,
+    query_statistics: Dict[str, Any],
+    get_engines_url: str,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_response(
-        url=f"https://{settings.server}{ENGINES_URL}?filter.name_contains=my_engine&filter.current_status_eq=ENGINE_STATUS_RUNNING_REVISION_SERVING",
-        method="GET",
-        json={"edges": ["one"]},
+        url=system_engine_query_url,
+        method="POST",
+        json={
+            "rows": "1",
+            "data": [[get_engines_url, "my_db", "Running"]],
+            "meta": [
+                {"name": "url", "type": "text"},
+                {"name": "attached_to", "type": "text"},
+                {"name": "status", "type": "text"},
+            ],
+            "statistics": query_statistics,
+        },
     )
-    assert is_engine_running(connection, "https://my-engine.dev.firebolt.io") == True
+    assert is_engine_running(connection, get_engines_url) == True
 
 
 def test_is_engine_not_running(
     connection: Connection,
     httpx_mock: HTTPXMock,
-    settings: Settings,
-    auth_url: str,
-    auth_callback: Callable,
+    system_engine_query_url: str,
+    query_statistics: Dict[str, Any],
+    get_engines_url: str,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_response(
-        url=f"https://{settings.server}{ENGINES_URL}?filter.name_contains=my_engine&filter.current_status_eq=ENGINE_STATUS_RUNNING_REVISION_SERVING",
-        method="GET",
-        json={"edges": []},
+        url=system_engine_query_url,
+        method="POST",
+        json={
+            "rows": "1",
+            "data": [[get_engines_url, "my_db", "Stopped"]],
+            "meta": [
+                {"name": "url", "type": "text"},
+                {"name": "attached_to", "type": "text"},
+                {"name": "status", "type": "text"},
+            ],
+            "statistics": query_statistics,
+        },
     )
-    assert is_engine_running(connection, "https://my-engine.dev.firebolt.io") == False
+    assert is_engine_running(connection, get_engines_url) == False

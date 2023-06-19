@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 from unittest.mock import patch
 
 from httpx import HTTPStatusError, StreamError, codes
@@ -15,6 +15,7 @@ from firebolt.utils.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
+    FireboltEngineError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -195,9 +196,8 @@ async def test_cursor_execute_error(
     get_engines_url: str,
     settings: Settings,
     db_name: str,
-    get_databases_url: str,
+    query_statistics: Dict[str, Any],
     cursor: Cursor,
-    get_engine_url_not_running_callback: Callable,
     system_engine_query_url: str,
 ):
     """Cursor handles all types of errors properly."""
@@ -252,10 +252,17 @@ async def test_cursor_execute_error(
             status_code=codes.FORBIDDEN,
             content="Query error message",
             url=query_url,
+            match_content=b"select * from t",
         )
         httpx_mock.add_response(
-            json={"edges": []},
-            url=get_databases_url + "?filter.name_contains=database",
+            url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "0",
+                "data": [],
+                "meta": [],
+                "statistics": query_statistics,
+            },
         )
         with raises(FireboltDatabaseError) as excinfo:
             await query()
@@ -268,10 +275,17 @@ async def test_cursor_execute_error(
             status_code=codes.FORBIDDEN,
             content=error_message,
             url=query_url,
+            match_content=b"select * from t",
         )
         httpx_mock.add_response(
-            json={"edges": ["my_db"]},
-            url=get_databases_url + "?filter.name_contains=database",
+            url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "1",
+                "data": ["my_db"],
+                "meta": [],
+                "statistics": query_statistics,
+            },
         )
         with raises(ProgrammingError) as excinfo:
             await query()
@@ -284,14 +298,44 @@ async def test_cursor_execute_error(
             content="Query error message",
             url=query_url,
         )
-        httpx_mock.add_callback(
-            get_engine_url_not_running_callback,
+        httpx_mock.add_response(
             url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "1",
+                "data": [[get_engines_url, "my_db", "Stopped"]],
+                "meta": [
+                    {"name": "url", "type": "text"},
+                    {"name": "attached_to", "type": "text"},
+                    {"name": "status", "type": "text"},
+                ],
+                "statistics": query_statistics,
+            },
         )
         with raises(EngineNotRunningError) as excinfo:
             await query()
         assert cursor._state == CursorState.ERROR
         assert settings.server in str(excinfo)
+
+        # Engine does not exist
+        httpx_mock.add_response(
+            status_code=codes.SERVICE_UNAVAILABLE,
+            content="Query error message",
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "0",
+                "data": [],
+                "meta": [],
+                "statistics": query_statistics,
+            },
+        )
+        with raises(FireboltEngineError) as excinfo:
+            await query()
+        assert cursor._state == CursorState.ERROR
 
         httpx_mock.reset(True)
 
@@ -526,11 +570,11 @@ async def test_cursor_multi_statement(
     for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
         assert desc == exp, f"Invalid column description at position {i}"
 
-    assert cursor.statistics.elapsed == 0.002983335
-    assert cursor.statistics.time_before_execution == 0.002729331
-    assert cursor.statistics.time_to_execute == 0.000215215
+    assert cursor.statistics.elapsed == 0.116907717
+    assert cursor.statistics.time_before_execution == 0.012180623
+    assert cursor.statistics.time_to_execute == 0.104614307
     assert cursor.statistics.rows_read == 1
-    assert cursor.statistics.bytes_read == 1
+    assert cursor.statistics.bytes_read == 61
     assert cursor.statistics.scanned_bytes_cache == 0
     assert cursor.statistics.scanned_bytes_storage == 0
 
@@ -774,8 +818,6 @@ async def test_cursor_server_side_async_get_status_error(
 
 async def test_cursor_iterate(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     query_callback: Callable,
     query_url: str,
     cursor: Cursor,
@@ -783,7 +825,6 @@ async def test_cursor_iterate(
 ):
     """Cursor is able to execute query, all fields are populated properly."""
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
     with raises(QueryNotRunError):

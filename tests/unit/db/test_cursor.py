@@ -1,4 +1,4 @@
-from typing import Callable, Dict, List
+from typing import Any, Callable, Dict, List
 from unittest.mock import patch
 
 from httpx import HTTPStatusError, StreamError, codes
@@ -13,6 +13,7 @@ from firebolt.utils.exception import (
     DataError,
     EngineNotRunningError,
     FireboltDatabaseError,
+    FireboltEngineError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -186,14 +187,13 @@ def test_cursor_execute(
 
 def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     get_engines_url: str,
     settings: Settings,
     db_name: str,
     query_url: str,
-    get_databases_url: str,
+    query_statistics: Dict[str, Any],
     cursor: Cursor,
+    system_engine_query_url: str,
 ):
     """Cursor handles all types of errors properly."""
     for query, message in (
@@ -249,8 +249,14 @@ def test_cursor_execute_error(
             url=query_url,
         )
         httpx_mock.add_response(
-            json={"edges": []},
-            url=get_databases_url + "?filter.name_contains=database",
+            url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "0",
+                "data": [],
+                "meta": [],
+                "statistics": query_statistics,
+            },
         )
         with raises(FireboltDatabaseError) as excinfo:
             query()
@@ -263,10 +269,17 @@ def test_cursor_execute_error(
             status_code=codes.FORBIDDEN,
             content=error_message,
             url=query_url,
+            match_content=b"select * from t",
         )
         httpx_mock.add_response(
-            json={"edges": ["my_db"]},
-            url=get_databases_url + "?filter.name_contains=database",
+            url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "1",
+                "data": ["my_db"],
+                "meta": [],
+                "statistics": query_statistics,
+            },
         )
         with raises(ProgrammingError) as excinfo:
             query()
@@ -280,16 +293,43 @@ def test_cursor_execute_error(
             url=query_url,
         )
         httpx_mock.add_response(
-            json={"edges": []},
-            url=(
-                get_engines_url + "?filter.name_contains=api_dev"
-                "&filter.current_status_eq=ENGINE_STATUS_RUNNING_REVISION_SERVING"
-            ),
+            url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "1",
+                "data": [[get_engines_url, "my_db", "Stopped"]],
+                "meta": [
+                    {"name": "url", "type": "text"},
+                    {"name": "attached_to", "type": "text"},
+                    {"name": "status", "type": "text"},
+                ],
+                "statistics": query_statistics,
+            },
         )
         with raises(EngineNotRunningError) as excinfo:
             query()
         assert cursor._state == CursorState.ERROR
         assert settings.server in str(excinfo)
+
+        # Engine does not exist
+        httpx_mock.add_response(
+            status_code=codes.SERVICE_UNAVAILABLE,
+            content="Query error message",
+            url=query_url,
+        )
+        httpx_mock.add_response(
+            url=system_engine_query_url,
+            method="POST",
+            json={
+                "rows": "0",
+                "data": [],
+                "meta": [],
+                "statistics": query_statistics,
+            },
+        )
+        with raises(FireboltEngineError) as excinfo:
+            query()
+        assert cursor._state == CursorState.ERROR
 
         httpx_mock.reset(True)
 
@@ -683,8 +723,6 @@ def test_cursor_server_side_async_get_status_error(
 
 def test_cursor_iterate(
     httpx_mock: HTTPXMock,
-    auth_callback: Callable,
-    auth_url: str,
     query_callback: Callable,
     query_url: str,
     cursor: Cursor,
@@ -692,7 +730,6 @@ def test_cursor_iterate(
 ):
     """Cursor is able to execute query, all fields are populated properly."""
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
     with raises(QueryNotRunError):
