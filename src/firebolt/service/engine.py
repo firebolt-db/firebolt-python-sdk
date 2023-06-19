@@ -62,6 +62,7 @@ class EngineService(BaseService):
         current_status_eq: Union[str, EngineStatus, None] = None,
         current_status_not_eq: Union[str, EngineStatus, None] = None,
         region_eq: Union[str, Region, None] = None,
+        database_name: Optional[str] = None,
     ) -> List[Engine]:
         """
         Get a list of engines on Firebolt.
@@ -77,7 +78,15 @@ class EngineService(BaseService):
         """
         sql = self.GET_SQL
         parameters = []
-        if any((name_contains, current_status_eq, current_status_not_eq, region_eq)):
+        if any(
+            (
+                name_contains,
+                current_status_eq,
+                current_status_not_eq,
+                region_eq,
+                database_name,
+            )
+        ):
             condition = []
             if name_contains:
                 condition.append("engine_name like ?")
@@ -91,6 +100,9 @@ class EngineService(BaseService):
             if region_eq:
                 condition.append("region = ?")
                 parameters.append(str(region_eq))
+            if database_name:
+                condition.append("attached_to = ?")
+                parameters.append(database_name)
             sql += self.GET_WHERE_SQL + " AND ".join(condition)
 
         with self._connection.cursor() as c:
