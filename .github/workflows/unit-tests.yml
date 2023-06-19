@@ -25,7 +25,7 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
       with:
-        ref: ${{ github.event.inputs.branch }}
+        ref: ${{ inputs.branch }}
     
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
