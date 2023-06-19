@@ -25,7 +25,7 @@ class Database(FireboltBaseModel):
     but otherwise are not configurable.
     """
 
-    ALTER_SQL: ClassVar[str] = "ALTER DATABASE {} SET DESCRIPTION = ?"
+    ALTER_SQL: ClassVar[str] = "ALTER DATABASE {} WITH DESCRIPTION = ?"
 
     DROP_SQL: ClassVar[str] = "DROP DATABASE {}"
 
@@ -36,10 +36,11 @@ class Database(FireboltBaseModel):
     name: str = field(metadata={"db_name": "database_name"})
     description: str = field()
     region: str = field()
+    _status: str = field(metadata={"db_name": "status"})
     data_size_full: int = field()
     data_size_compressed: int = field()
     _attached_engine_names: List[str] = field(metadata={"db_name": "attached_engines"})
-    create_time: datetime = field(metadata={"db_name": "created_at"})
+    create_time: datetime = field(metadata={"db_name": "created_on"})
     create_actor: str = field(metadata={"db_name": "created_by"})
     _errors: str = field(metadata={"db_name": "errors"})
 
@@ -72,8 +73,9 @@ class Database(FireboltBaseModel):
             }:
                 raise AttachedEngineInUseError(method_name="update")
 
+        sql = self.ALTER_SQL.format(self.name)
         with self._service._connection.cursor() as c:
-            c.execute(self.ALTER_SQL, (description,))
+            c.execute(sql, (description,))
         self.description = description
         return self
 

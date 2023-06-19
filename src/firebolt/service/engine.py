@@ -159,12 +159,12 @@ class EngineService(BaseService):
         parameters = []
         if any((region, engine_type, spec, scale, auto_stop, warmup)):
             sql += self.CREATE_WITH_SQL
-            for name, value in zip(
+            for param, value in zip(
                 self.CREATE_PARAMETER_NAMES,
                 (region, engine_type, spec, scale, auto_stop, warmup),
             ):
                 if value:
-                    sql += f"{name} = ? "
+                    sql += f"{param} = ? "
                     parameters.append(value)
         with self._connection.cursor() as c:
             c.execute(sql, parameters)

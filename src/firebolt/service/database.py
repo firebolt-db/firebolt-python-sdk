@@ -26,7 +26,7 @@ class DatabaseService(BaseService):
     GET_BY_NAME_SQL = GET_SQL + " WHERE database_name=?"
     GET_WHERE_SQL = " WHERE "
 
-    CREATE_PREFIX_SQL = "CREATE DATABASE {}"
+    CREATE_PREFIX_SQL = "CREATE DATABASE {}{}"
     CREATE_WITH_SQL = " WITH "
     IF_NOT_EXISTS_SQL = "IF NOT EXISTS "
     CREATE_PARAMETER_NAMES = (
@@ -128,7 +128,7 @@ class DatabaseService(BaseService):
             The newly created database
         """
 
-        logger.info(f"Creating Database (name={name})")
+        logger.info(f"Creating database {name}")
 
         sql = self.CREATE_PREFIX_SQL.format(
             ("" if fail_if_exists else self.IF_NOT_EXISTS_SQL), name
@@ -136,12 +136,12 @@ class DatabaseService(BaseService):
         parameters = []
         if any((region, attached_engines, description)):
             sql += self.CREATE_WITH_SQL
-            for name, value in zip(
+            for param, value in zip(
                 self.CREATE_PARAMETER_NAMES,
                 (region, attached_engines, description),
             ):
                 if value:
-                    sql += f"{name} = ? "
+                    sql += f"{param} = ? "
                     # Convert list of engines to a list of their names
                     if (
                         isinstance(value, list)

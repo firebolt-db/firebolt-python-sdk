@@ -201,28 +201,16 @@ class Engine(FireboltBaseModel):
 
         sql = self.ALTER_PREFIX_SQL.format(self.name)
         parameters = []
-        for name, value in zip(
+        for param, value in zip(
             self.ALTER_PARAMETER_NAMES, (scale, spec, auto_stop, name, warmup)
         ):
             if value:
-                sql += f"{name} = ? "
+                sql += f"{param} = ? "
                 parameters.append(value)
 
         with self._service._connection.cursor() as c:
             c.execute(sql, parameters)
         self.refresh()
-        return self
-
-    @check_attached_to_database
-    def restart(self) -> Engine:
-        """
-        Restart an engine.
-
-        Returns:
-            The updated engine from Firebolt.
-        """
-        self.stop()
-        self.start()
         return self
 
     def delete(self) -> None:

@@ -121,10 +121,8 @@ class ResourceManager:
 
     def _init_services(self) -> None:
         # avoid circular import
-        from firebolt.service.binding import BindingService
         from firebolt.service.database import DatabaseService
         from firebolt.service.engine import EngineService
-        from firebolt.service.engine_revision import EngineRevisionService
         from firebolt.service.instance_type import InstanceTypeService
         from firebolt.service.region import RegionService
 
@@ -136,8 +134,6 @@ class ResourceManager:
         # Firebolt Resources
         self.databases = DatabaseService(resource_manager=self)
         self.engines = EngineService(resource_manager=self)
-        self.engine_revisions = EngineRevisionService(resource_manager=self)
-        self.bindings = BindingService(resource_manager=self)
 
     def __del__(self) -> None:
         if hasattr(self, "_client"):
