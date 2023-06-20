@@ -3,7 +3,6 @@ from __future__ import annotations
 import logging
 import re
 import time
-from threading import Lock
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -16,7 +15,6 @@ from typing import (
 )
 
 from httpx import Response, codes
-from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import Client
 from firebolt.common._types import (
@@ -65,17 +63,10 @@ class Cursor(BaseCursor):
             with the :py:func:`fetchmany` method
     """
 
-    __slots__ = BaseCursor.__slots__ + (
-        "_query_lock",
-        "_idx_lock",
-    )
-
     def __init__(
         self, *args: Any, client: Client, connection: Connection, **kwargs: Any
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._query_lock = RWLockWrite()
-        self._idx_lock = Lock()
         self._client = client
         self.connection = connection
 
@@ -100,7 +91,7 @@ class Cursor(BaseCursor):
             if not is_engine_running(self.connection, self.connection.engine_url):
                 raise EngineNotRunningError(
                     f"Firebolt engine {self.connection.engine_url} "
-                    "needs to be running to run queries against it."
+                    "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
                 )
         resp.raise_for_status()
 
