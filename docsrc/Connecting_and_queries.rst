@@ -72,7 +72,7 @@ To get started, follow the steps below:
     					database=database_name,
     					auth=UsernamePassword(username, password),
 				) as connection:
-				cursor = connection.cursor()
+					cursor = connection.cursor()
 
 
 		* **Use an .env file**
@@ -110,7 +110,7 @@ To get started, follow the steps below:
 				    engine_name=os.getenv('FIREBOLT_ENGINE'),
 				    database=os.getenv('FIREBOLT_DB')
 				) as connection:
-				cursor = connection.cursor()
+					cursor = connection.cursor()
 
 **3. Execute commands using the cursor**
 
