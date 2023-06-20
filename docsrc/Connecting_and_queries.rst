@@ -26,6 +26,7 @@ To get started, follow the steps below:
 
 		from firebolt.db import connect
 		from firebolt.client import DEFAULT_API_URL
+		from firebolt.client.auth import UsernamePassword
 
 
 .. _connecting_with_credentials_example:
@@ -66,14 +67,12 @@ To get started, follow the steps below:
 				engine_name = "your_engine"
 				database_name = "your_database"
 
-				connection = connect(
-					engine_name=engine_name,
-					database=database_name,
-					username=username,
-					password=password,
-				)
-
-				cursor = connection.cursor()
+				with connect(
+    					engine_name=engine_name,
+    					database=database_name,
+    					auth=UsernamePassword(username, password),
+				) as connection:
+					cursor = connection.cursor()
 
 
 		* **Use an .env file**
@@ -103,15 +102,15 @@ To get started, follow the steps below:
 
 				load_dotenv()
 
-				connection = connect(
-				    username=os.getenv('FIREBOLT_USER'),
-				    password=os.getenv('FIREBOLT_PASSWORD'),
+				with connect(
+				    auth=UsernamePassword(
+				        os.getenv("FIREBOLT_USER"),
+				        os.getenv("FIREBOLT_PASSWORD")
+				    )
 				    engine_name=os.getenv('FIREBOLT_ENGINE'),
 				    database=os.getenv('FIREBOLT_DB')
-				)
-
-				cursor = connection.cursor()
-
+				) as connection:
+					cursor = connection.cursor()
 
 **3. Execute commands using the cursor**
 
