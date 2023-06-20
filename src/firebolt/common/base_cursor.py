@@ -103,7 +103,6 @@ class BaseCursor:
         "_rowcount",
         "_rows",
         "_idx",
-        "_idx_lock",
         "_row_sets",
         "_next_set_idx",
         "_set_parameters",

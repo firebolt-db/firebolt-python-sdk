@@ -139,7 +139,9 @@ class Connection(BaseConnection):
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
-            raise ConnectionClosedError("Unable to create cursor: connection closed.")
+            raise ConnectionClosedError(
+                "Unable to create cursor: connection closed."  # pragma: no mutate
+            )
 
         with self._closing_lock.gen_rlock():
             c = Cursor(client=self._client, connection=self, **kwargs)
@@ -168,7 +170,9 @@ class Connection(BaseConnection):
     # Context manager support
     def __enter__(self) -> Connection:
         if self.closed:
-            raise ConnectionClosedError("Connection is already closed.")
+            raise ConnectionClosedError(
+                "Connection is already closed."  # pragma: no mutate
+            )
         return self
 
     def __exit__(
