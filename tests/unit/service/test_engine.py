@@ -6,10 +6,8 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.common import Settings
-from firebolt.model.engine import Engine, _EngineCreateRequest
-from firebolt.model.engine_revision import EngineRevision
+from firebolt.model.engine import Engine
 from firebolt.model.instance_type import InstanceType
-from firebolt.model.region import Region
 from firebolt.service.manager import ResourceManager
 from firebolt.utils.exception import FireboltError, NoAttachedDatabaseError
 

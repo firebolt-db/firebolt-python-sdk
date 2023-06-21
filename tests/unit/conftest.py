@@ -1,5 +1,5 @@
 from re import Pattern, compile
-from typing import Callable, List
+from typing import Callable
 
 import httpx
 from httpx import Request, Response
@@ -7,9 +7,6 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials
-from firebolt.common.settings import Settings
-from firebolt.model.provider import Provider
-from firebolt.model.region import Region, RegionKey
 from firebolt.utils.exception import (
     AccountNotFoundError,
     DatabaseError,
@@ -89,58 +86,8 @@ def access_token_2() -> str:
 
 
 @fixture
-def provider() -> Provider:
-    return Provider(
-        provider_id="mock_provider_id",
-        name="mock_provider_name",
-    )
-
-
-@fixture
-def mock_providers(provider) -> List[Provider]:
-    return [provider]
-
-
-@fixture
-def region_1(provider) -> Region:
-    return Region(
-        key=RegionKey(
-            provider_id=provider.provider_id,
-            region_id="mock_region_id_1",
-        ),
-        name="mock_region_1",
-    )
-
-
-@fixture
-def region_2(provider) -> Region:
-    return Region(
-        key=RegionKey(
-            provider_id=provider.provider_id,
-            region_id="mock_region_id_2",
-        ),
-        name="mock_region_2",
-    )
-
-
-@fixture
-def mock_regions(region_1, region_2) -> List[Region]:
-    return [region_1, region_2]
-
-
-@fixture
 def auth(client_id: str, client_secret: str) -> Auth:
     return ClientCredentials(client_id, client_secret)
-
-
-@fixture
-def settings(server: str, region_1: str, auth: Auth, account_name: str) -> Settings:
-    return Settings(
-        server=server,
-        auth=auth,
-        default_region=region_1.name,
-        account_name=account_name,
-    )
 
 
 @fixture
@@ -174,9 +121,9 @@ def db_description() -> str:
 
 
 @fixture
-def account_id_url(settings: Settings, account_name: str) -> Pattern:
+def account_id_url(server: str, account_name: str) -> Pattern:
     account_name_re = r"[^\\\\]*"
-    base = f"https://{settings.server}{ACCOUNT_BY_NAME_URL}"
+    base = f"https://{server}{ACCOUNT_BY_NAME_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     base = base.format(account_name=account_name_re)
     return compile(base)
@@ -185,13 +132,13 @@ def account_id_url(settings: Settings, account_name: str) -> Pattern:
 @fixture
 def account_id_callback(
     account_id: str,
-    settings: Settings,
+    account_name: str,
 ) -> Callable:
     def do_mock(
         request: Request,
         **kwargs,
     ) -> Response:
-        if request.url.path.split("/")[-2] != settings.account_name:
+        if request.url.path.split("/")[-2] != account_name:
             raise AccountNotFoundError(request.url.path.split("/")[-2])
         return Response(status_code=httpx.codes.OK, json={"id": account_id})
 
@@ -214,22 +161,20 @@ def engine_name() -> str:
 
 
 @fixture
-def get_engine_name_by_id_url(
-    settings: Settings, account_id: str, engine_id: str
-) -> str:
-    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
+def get_engine_name_by_id_url(server: str, account_id: str, engine_id: str) -> str:
+    return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
 @fixture
-def get_engines_url(settings: Settings) -> str:
-    return f"https://{settings.server}{ENGINES_URL}"
+def get_engines_url(server: str) -> str:
+    return f"https://{server}{ENGINES_URL}"
 
 
 @fixture
-def get_databases_url(settings: Settings) -> str:
-    return f"https://{settings.server}{DATABASES_URL}"
+def get_databases_url(server: str) -> str:
+    return f"https://{server}{DATABASES_URL}"
 
 
 @fixture
@@ -238,9 +183,9 @@ def database_id() -> str:
 
 
 @fixture
-def database_by_name_url(settings: Settings, account_id: str, db_name: str) -> str:
+def database_by_name_url(server: str, account_id: str, db_name: str) -> str:
     return (
-        f"https://{settings.server}"
+        f"https://{server}"
         f"{ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)}"
         f"?database_name={db_name}"
     )

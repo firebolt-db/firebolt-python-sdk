@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from typing import Callable, List
 from urllib.parse import urlparse
 
@@ -6,27 +7,16 @@ import httpx
 from httpx import Response
 from pytest import fixture
 
-from firebolt.common.settings import Settings
-from firebolt.model.binding import Binding, BindingKey
-from firebolt.model.database import Database, DatabaseKey
-from firebolt.model.engine import Engine, EngineKey, EngineSettings
-from firebolt.model.engine_revision import (
-    EngineRevision,
-    EngineRevisionSpecification,
-)
-from firebolt.model.instance_type import InstanceType, InstanceTypeKey
-from firebolt.model.region import Region
+from firebolt.model.database import Database
+from firebolt.model.engine import Engine
+from firebolt.model.instance_type import InstanceType
 from firebolt.utils.urls import (
-    ACCOUNT_BINDINGS_URL,
-    ACCOUNT_DATABASE_BINDING_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_DATABASE_URL,
     ACCOUNT_DATABASES_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_INSTANCE_TYPES_URL,
     ACCOUNT_LIST_ENGINES_URL,
-    PROVIDERS_URL,
-    REGIONS_URL,
 )
 from tests.unit.util import list_to_paginated_response
 
@@ -42,76 +32,61 @@ def engine_scale() -> int:
 
 
 @fixture
-def engine_settings() -> EngineSettings:
-    return EngineSettings.default()
-
-
-@fixture
-def mock_engine(engine_name, region_1, engine_settings, account_id, settings) -> Engine:
+def mock_engine(engine_name, region_1, engine_settings, account_id, server) -> Engine:
     return Engine(
         name=engine_name,
         compute_region_key=region_1.key,
         settings=engine_settings,
         key=EngineKey(account_id=account_id, engine_id="mock_engine_id_1"),
-        endpoint=f"https://{settings.server}",
+        endpoint=f"https://{server}",
     )
 
 
 @fixture
-def mock_engine_revision_spec(
-    instance_type_2, engine_scale
-) -> EngineRevisionSpecification:
-    return EngineRevisionSpecification(
-        db_compute_instances_type_key=instance_type_2.key,
-        db_compute_instances_count=engine_scale,
-        proxy_instances_type_key=instance_type_2.key,
-    )
-
-
-@fixture
-def mock_engine_revision(mock_engine_revision_spec) -> EngineRevision:
-    return EngineRevision(specification=mock_engine_revision_spec)
-
-
-@fixture
-def instance_type_1(provider, region_1) -> InstanceType:
+def instance_type_1() -> InstanceType:
     return InstanceType(
-        key=InstanceTypeKey(
-            provider_id=provider.provider_id,
-            region_id=region_1.key.region_id,
-            instance_type_id="instance_type_id_1",
-        ),
         name="B1",
-        price_per_hour_cents=10,
+        price_per_hour_cents=40,
         storage_size_bytes=0,
+        is_spot_available=True,
+        cpu_virtual_cores_count=0,
+        memory_size_bytes=0,
+        create_time=datetime.now().isoformat(),
+        last_update_time=datetime.now().isoformat(),
+        _key={},
+        _service=None,
     )
 
 
 @fixture
-def instance_type_2(provider, region_2) -> InstanceType:
+def instance_type_2() -> InstanceType:
     return InstanceType(
-        key=InstanceTypeKey(
-            provider_id=provider.provider_id,
-            region_id=region_2.key.region_id,
-            instance_type_id="instance_type_id_2",
-        ),
         name="B2",
         price_per_hour_cents=20,
         storage_size_bytes=500,
+        is_spot_available=True,
+        cpu_virtual_cores_count=0,
+        memory_size_bytes=0,
+        create_time=datetime.now().isoformat(),
+        last_update_time=datetime.now().isoformat(),
+        _key={},
+        _service=None,
     )
 
 
 @fixture
-def instance_type_3(provider, region_2) -> InstanceType:
+def instance_type_3() -> InstanceType:
     return InstanceType(
-        key=InstanceTypeKey(
-            provider_id=provider.provider_id,
-            region_id=region_2.key.region_id,
-            instance_type_id="instance_type_id_2",
-        ),
-        name="B2",
+        name="B3",
         price_per_hour_cents=30,
         storage_size_bytes=500,
+        is_spot_available=True,
+        cpu_virtual_cores_count=0,
+        memory_size_bytes=0,
+        create_time=datetime.now().isoformat(),
+        last_update_time=datetime.now().isoformat(),
+        _key={},
+        _service=None,
     )
 
 
@@ -128,69 +103,12 @@ def mock_instance_types(
 
 
 @fixture
-def provider_callback(provider_url: str, mock_providers) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == provider_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response(mock_providers),
-        )
-
-    return do_mock
-
-
-@fixture
-def provider_url(settings: Settings) -> str:
-    return f"https://{settings.server}{PROVIDERS_URL}"
-
-
-@fixture
-def region_callback(region_url: str, mock_regions) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == region_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response(mock_regions),
-        )
-
-    return do_mock
-
-
-@fixture
-def region_url(settings: Settings) -> str:
-    return f"https://{settings.server}{REGIONS_URL}?page.first=5000"
-
-
-@fixture
 def instance_type_callback(instance_type_url: str, mock_instance_types) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
         assert request.url == instance_type_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response(mock_instance_types),
-        )
-
-    return do_mock
-
-
-@fixture
-def instance_type_region_1_callback(
-    instance_type_region_1_url: str, mock_instance_types
-) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == instance_type_region_1_url
         return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_instance_types),
@@ -214,33 +132,11 @@ def instance_type_empty_callback() -> Callable:
 
 
 @fixture
-def instance_type_url(settings: Settings, account_id: str) -> str:
+def instance_type_url(server: str, account_id: str) -> str:
     return (
-        f"https://{settings.server}"
+        f"https://{server}"
         + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
         + "?page.first=5000"
-    )
-
-
-@fixture
-def instance_type_region_1_url(
-    settings: Settings, region_1: Region, account_id: str
-) -> str:
-    return (
-        f"https://{settings.server}"
-        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
-        + f"?page.first=5000&filter.id_region_id_eq={region_1.key.region_id}"
-    )
-
-
-@fixture
-def instance_type_region_2_url(
-    settings: Settings, region_2: Region, account_id: str
-) -> str:
-    return (
-        f"https://{settings.server}"
-        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
-        + f"?page.first=5000&filter.id_region_id_eq={region_2.key.region_id}"
     )
 
 
@@ -260,10 +156,8 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
 
 
 @fixture
-def engine_url(settings: Settings, account_id) -> str:
-    return f"https://{settings.server}" + ACCOUNT_LIST_ENGINES_URL.format(
-        account_id=account_id
-    )
+def engine_url(server: str, account_id) -> str:
+    return f"https://{server}" + ACCOUNT_LIST_ENGINES_URL.format(account_id=account_id)
 
 
 @fixture
@@ -282,8 +176,8 @@ def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
 
 
 @fixture
-def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
-    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
+def account_engine_url(server: str, account_id, mock_engine) -> str:
+    return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id,
         engine_id=mock_engine.engine_id,
     )
@@ -334,10 +228,8 @@ def databases_get_callback(databases_url: str, mock_database) -> Callable:
 
 
 @fixture
-def databases_url(settings: Settings, account_id: str) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASES_URL.format(
-        account_id=account_id
-    )
+def databases_url(server: str, account_id: str) -> str:
+    return f"https://{server}" + ACCOUNT_DATABASES_URL.format(account_id=account_id)
 
 
 @fixture
@@ -371,8 +263,8 @@ def database_not_found_callback(database_url: str) -> Callable:
 
 
 @fixture
-def database_url(settings: Settings, account_id: str, mock_database) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
+def database_url(server: str, account_id: str, mock_database) -> str:
+    return f"https://{server}" + ACCOUNT_DATABASE_URL.format(
         account_id=account_id, database_id=mock_database.database_id
     )
 
@@ -393,9 +285,9 @@ def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Ca
 
 
 @fixture
-def database_get_by_name_url(settings: Settings, account_id: str, mock_database) -> str:
+def database_get_by_name_url(server: str, account_id: str, mock_database) -> str:
     return (
-        f"https://{settings.server}"
+        f"https://{server}"
         + ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)
         + f"?database_name={mock_database.name}"
     )
@@ -435,84 +327,7 @@ def database_get_callback(database_get_url, mock_database) -> Callable:
 
 # duplicates database_url
 @fixture
-def database_get_url(settings: Settings, account_id: str, mock_database) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
+def database_get_url(server: str, account_id: str, mock_database) -> str:
+    return f"https://{server}" + ACCOUNT_DATABASE_URL.format(
         account_id=account_id, database_id=mock_database.database_id
-    )
-
-
-@fixture
-def binding(account_id, mock_engine, mock_database) -> Binding:
-    return Binding(
-        binding_key=BindingKey(
-            account_id=account_id,
-            database_id=mock_database.database_id,
-            engine_id=mock_engine.engine_id,
-        ),
-        is_default_engine=True,
-    )
-
-
-@fixture
-def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == bindings_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response([binding]),
-        )
-
-    return do_mock
-
-
-@fixture
-def no_bindings_callback(bindings_url: str) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == bindings_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response([]),
-        )
-
-    return do_mock
-
-
-@fixture
-def bindings_url(settings: Settings, account_id: str, mock_engine: Engine) -> str:
-    return (
-        f"https://{settings.server}"
-        + ACCOUNT_BINDINGS_URL.format(account_id=account_id)
-        + f"?page.first=5000&filter.id_engine_id_eq={mock_engine.engine_id}"
-    )
-
-
-@fixture
-def create_binding_callback(create_binding_url: str, binding) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == create_binding_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json={"binding": binding.dict()},
-        )
-
-    return do_mock
-
-
-@fixture
-def create_binding_url(
-    settings: Settings, account_id: str, mock_database: Database, mock_engine: Engine
-) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASE_BINDING_URL.format(
-        account_id=account_id,
-        database_id=mock_database.database_id,
-        engine_id=mock_engine.engine_id,
     )
