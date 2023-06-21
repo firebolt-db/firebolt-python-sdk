@@ -9,7 +9,7 @@ Model = TypeVar("Model", bound="FireboltBaseModel")
 
 @dataclass
 class FireboltBaseModel:
-    _service: BaseService = field()
+    _service: BaseService = field(repr=False)
 
     @classmethod
     def _get_field_overrides(cls) -> Dict[str, str]:

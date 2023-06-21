@@ -13,7 +13,6 @@ from firebolt.client import (
 )
 from firebolt.common import Settings
 from firebolt.db import connect
-from firebolt.service.provider import get_provider_id
 from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 60 * 2
@@ -24,7 +23,7 @@ SETTINGS_DEPRECATION_MESSAGE = """
 Using Settings objects for ResourceManager intialization is deprecated.
 Please pass parameters directly
 Example:
- >>> rm = ResourceManager(auth=ClientCredentials(..), default_region="us-east-1", ..)
+ >>> rm = ResourceManager(auth=ClientCredentials(..), account_name="my_account", ..)
 """
 
 
@@ -34,12 +33,9 @@ class ResourceManager:
 
     - databases
     - engines
-    - bindings (the bindings between an engine and a database)
-    - engine revisions (versions of an engine)
 
     Also provides listings of:
 
-    - regions (AWS regions in which engines can run)
     - instance types (AWS instance types which engines can use)
     """
 
@@ -47,7 +43,6 @@ class ResourceManager:
         "account_name",
         "account_id",
         "api_endpoint",
-        "default_region",
         "_client",
         "_connection",
         "regions",
@@ -64,30 +59,22 @@ class ResourceManager:
         settings: Optional[Settings] = None,
         auth: Optional[Auth] = None,
         account_name: Optional[str] = None,
-        default_region: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
     ):
         if settings:
             logger.warning(SETTINGS_DEPRECATION_MESSAGE)
-            if (
-                auth
-                or account_name
-                or default_region
-                or (api_endpoint != DEFAULT_API_URL)
-            ):
+            if auth or account_name or (api_endpoint != DEFAULT_API_URL):
                 raise ValueError(
                     "Other ResourceManager parameters are not allowed "
                     "when Settings are provided"
                 )
             auth = settings.auth
             account_name = settings.account_name
-            default_region = settings.default_region
             api_endpoint = settings.server
 
         for param, name in (
             (auth, "auth"),
             (account_name, "account_name"),
-            (default_region, "default_region"),
         ):
             if not param:
                 raise ValueError(f"Missing {name} value")
@@ -95,7 +82,6 @@ class ResourceManager:
         # type checks
         assert auth is not None
         assert account_name is not None
-        assert default_region is not None
 
         self._client = Client(
             auth=auth,
@@ -116,7 +102,6 @@ class ResourceManager:
         self.account_name = account_name
         self.api_endpoint = api_endpoint
         self.account_id = self._client.account_id
-        self.default_region = default_region
         self._init_services()
 
     def _init_services(self) -> None:
@@ -124,12 +109,9 @@ class ResourceManager:
         from firebolt.service.database import DatabaseService
         from firebolt.service.engine import EngineService
         from firebolt.service.instance_type import InstanceTypeService
-        from firebolt.service.region import RegionService
 
         # Cloud Platform Resources (AWS)
-        self.regions = RegionService(resource_manager=self)
         self.instance_types = InstanceTypeService(resource_manager=self)
-        self._provider_id = get_provider_id(client=self._client)
 
         # Firebolt Resources
         self.databases = DatabaseService(resource_manager=self)

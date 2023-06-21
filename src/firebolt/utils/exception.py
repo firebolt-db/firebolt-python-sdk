@@ -27,6 +27,13 @@ class DatabaseNotFoundError(FireboltError):
         super().__init__(f"Database with name {database_name} was not found")
 
 
+class InstanceTypeNotFoundError(FireboltError):
+    """Instance type with provided name was not found."""
+
+    def __init__(self, instance_type_name: str):
+        super().__init__(f"Instance type with name {instance_type_name} was not found")
+
+
 class NoAttachedDatabaseError(FireboltEngineError):
     """Engine that's being accessed is not running.
 

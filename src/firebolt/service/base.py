@@ -20,9 +20,5 @@ class BaseService:
         return self.resource_manager.account_id
 
     @property
-    def _default_region(self) -> str:
-        return self.resource_manager.default_region
-
-    @property
     def _connection(self) -> Connection:
         return self.resource_manager._connection

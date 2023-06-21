@@ -2,7 +2,7 @@ from logging import getLogger
 from typing import List, Optional, Union
 
 from firebolt.model.engine import Engine
-from firebolt.model.region import Region
+from firebolt.model.instance_type import InstanceType
 from firebolt.service.base import BaseService
 from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
 from firebolt.utils.exception import EngineNotFoundError
@@ -61,7 +61,7 @@ class EngineService(BaseService):
         name_contains: Optional[str] = None,
         current_status_eq: Union[str, EngineStatus, None] = None,
         current_status_not_eq: Union[str, EngineStatus, None] = None,
-        region_eq: Union[str, Region, None] = None,
+        region_eq: Optional[str] = None,
         database_name: Optional[str] = None,
     ) -> List[Engine]:
         """
@@ -99,7 +99,7 @@ class EngineService(BaseService):
                 parameters.append(str(current_status_eq))
             if region_eq:
                 condition.append("region = ?")
-                parameters.append(str(region_eq))
+                parameters.append(region_eq)
             if database_name:
                 condition.append("attached_to = ?")
                 parameters.append(database_name)
@@ -116,9 +116,9 @@ class EngineService(BaseService):
     def create(
         self,
         name: str,
-        region: Union[str, Region, None] = None,
+        region: Optional[str] = None,
         engine_type: Union[str, EngineType] = EngineType.GENERAL_PURPOSE,
-        spec: Optional[str] = None,
+        spec: Union[InstanceType, str, None] = None,
         scale: Optional[int] = None,
         auto_stop: Optional[int] = None,
         warmup: Union[str, WarmupMethod, None] = None,
@@ -165,7 +165,9 @@ class EngineService(BaseService):
             ):
                 if value:
                     sql += f"{param} = ? "
-                    parameters.append(value)
+                    if isinstance(value, EngineType):
+                        value = value.value
+                    parameters.append(str(value))
         with self._connection.cursor() as c:
             c.execute(sql, parameters)
         return self.get(name)

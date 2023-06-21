@@ -4,11 +4,20 @@ import functools
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable, ClassVar, Optional, Tuple
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Optional,
+    Tuple,
+    Union,
+)
 
 from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
+from firebolt.model.instance_type import InstanceType
 from firebolt.service.types import EngineStatus, WarmupMethod
 from firebolt.utils.exception import DatabaseNotFoundError
 
@@ -53,14 +62,16 @@ class Engine(FireboltBaseModel):
     )
     DROP_SQL: ClassVar[str] = "DROP ENGINE {}"
 
-    _service: EngineService = field()
+    _service: EngineService = field(repr=False)
 
     name: str = field(metadata={"db_name": "engine_name"})
     region: str = field()
     spec: str = field()
     scale: int = field()
     current_status: str = field(metadata={"db_name": "status"})
-    _database_name: Optional[str] = field(metadata={"db_name": "attached_to"})
+    _database_name: Optional[str] = field(
+        repr=False, metadata={"db_name": "attached_to"}
+    )
     version: str = field()
     endpoint: str = field(metadata={"db_name": "url"})
     warmup: str = field()
@@ -89,7 +100,8 @@ class Engine(FireboltBaseModel):
         Args:
             database: Database to which the engine will be attached
         """
-        return self._service.attach_to_database(self.name, database_name)
+        self._service.attach_to_database(self.name, database_name)
+        self._database_name = database_name
 
     @check_attached_to_database
     def get_connection(self) -> Connection:
@@ -179,7 +191,7 @@ class Engine(FireboltBaseModel):
         self,
         name: Optional[str] = None,
         scale: Optional[int] = None,
-        spec: Optional[str] = None,
+        spec: Union[InstanceType, str, None] = None,
         auto_stop: Optional[int] = None,
         warmup: Optional[WarmupMethod] = None,
     ) -> Engine:
@@ -206,7 +218,7 @@ class Engine(FireboltBaseModel):
         ):
             if value:
                 sql += f"{param} = ? "
-                parameters.append(value)
+                parameters.append(str(value))
 
         with self._service._connection.cursor() as c:
             c.execute(sql, parameters)

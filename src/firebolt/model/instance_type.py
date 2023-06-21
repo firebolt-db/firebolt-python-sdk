@@ -1,26 +1,21 @@
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional
-
-from pydantic import Field
+from typing import Dict
 
 from firebolt.model import FireboltBaseModel
 
 
-class InstanceTypeKey(FireboltBaseModel):  # type: ignore
-    provider_id: str
-    region_id: str
-    instance_type_id: str
-
-
+@dataclass
 class InstanceType(FireboltBaseModel):
-    key: InstanceTypeKey = Field(alias="id")
-    name: str
+    _key: Dict = field(repr=False, metadata={"db_name": "id"})
+    name: str = field()
+    is_spot_available: bool = field()
+    cpu_virtual_cores_count: int = field()
+    memory_size_bytes: int = field()
+    storage_size_bytes: int = field()
+    price_per_hour_cents: float = field()
+    create_time: datetime = field()
+    last_update_time: datetime = field()
 
-    # optional
-    is_spot_available: Optional[bool]
-    cpu_virtual_cores_count: Optional[int]
-    memory_size_bytes: Optional[int]
-    storage_size_bytes: Optional[int]
-    price_per_hour_cents: Optional[float]
-    create_time: Optional[datetime]
-    last_update_time: Optional[datetime]
+    def __str__(self) -> str:
+        return self.name

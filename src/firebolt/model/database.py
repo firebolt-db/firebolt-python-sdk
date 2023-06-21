@@ -30,19 +30,21 @@ class Database(FireboltBaseModel):
     DROP_SQL: ClassVar[str] = "DROP DATABASE {}"
 
     # internal
-    _service: DatabaseService = field()
+    _service: DatabaseService = field(repr=False)
 
     # required
     name: str = field(metadata={"db_name": "database_name"})
     description: str = field()
     region: str = field()
-    _status: str = field(metadata={"db_name": "status"})
+    _status: str = field(repr=False, metadata={"db_name": "status"})
     data_size_full: int = field()
     data_size_compressed: int = field()
-    _attached_engine_names: List[str] = field(metadata={"db_name": "attached_engines"})
+    _attached_engine_names: List[str] = field(
+        repr=False, metadata={"db_name": "attached_engines"}
+    )
     create_time: datetime = field(metadata={"db_name": "created_on"})
     create_actor: str = field(metadata={"db_name": "created_by"})
-    _errors: str = field(metadata={"db_name": "errors"})
+    _errors: str = field(repr=False, metadata={"db_name": "errors"})
 
     def get_attached_engines(self) -> List[Engine]:
         """Get a list of engines that are attached to this database."""
