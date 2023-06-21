@@ -1,4 +1,4 @@
-from dataclasses import dataclass, fields
+from dataclasses import Field, dataclass, fields
 from typing import AsyncGenerator, Dict, Generator, List
 
 from httpx import Request, Response
@@ -8,11 +8,12 @@ from firebolt.client.auth import Auth
 from firebolt.model import FireboltBaseModel
 
 
+def field_name(f: Field) -> str:
+    return (f.metadata or {}).get("db_name", f.name)
+
+
 def to_dict(dc: dataclass) -> Dict:
-    return {
-        (f.metadata or {}).get("db_name", f.name): getattr(dc, f.name)
-        for f in fields(dc)
-    }
+    return {field_name(f): getattr(dc, f.name) for f in fields(dc)}
 
 
 def list_to_paginated_response(items: List[FireboltBaseModel]) -> Dict:

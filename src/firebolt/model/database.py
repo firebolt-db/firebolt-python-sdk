@@ -30,7 +30,7 @@ class Database(FireboltBaseModel):
     DROP_SQL: ClassVar[str] = "DROP DATABASE {}"
 
     # internal
-    _service: DatabaseService = field(repr=False)
+    _service: DatabaseService = field(repr=False, compare=False)
 
     # required
     name: str = field(metadata={"db_name": "database_name"})
@@ -39,7 +39,7 @@ class Database(FireboltBaseModel):
     _status: str = field(repr=False, metadata={"db_name": "status"})
     data_size_full: int = field()
     data_size_compressed: int = field()
-    _attached_engine_names: List[str] = field(
+    _attached_engine_names: str = field(
         repr=False, metadata={"db_name": "attached_engines"}
     )
     create_time: datetime = field(metadata={"db_name": "created_on"})
