@@ -3,6 +3,7 @@ from typing import Callable
 from pytest_httpx import HTTPXMock
 
 from firebolt.model.database import Database
+from firebolt.model.engine import Engine
 from firebolt.service.manager import ResourceManager
 
 
@@ -13,6 +14,7 @@ def test_database_create(
     create_databases_callback: Callable,
     system_engine_no_db_query_url: str,
     mock_database: Database,
+    mock_engine: Engine,
 ):
     httpx_mock.add_callback(
         create_databases_callback, url=system_engine_no_db_query_url, method="POST"
@@ -22,7 +24,10 @@ def test_database_create(
     )
 
     database = resource_manager.databases.create(
-        name=mock_database.name, description=mock_database.description
+        name=mock_database.name,
+        region=mock_database.region,
+        attached_engines=[mock_engine],
+        description=mock_database.description,
     )
 
     assert database == mock_database

@@ -8,7 +8,6 @@ from pytest import fixture
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
-from firebolt.common.settings import Settings
 from firebolt.db import ARRAY, DECIMAL
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
@@ -337,16 +336,16 @@ def set_params() -> Dict:
 
 
 @fixture
-def query_url(settings: Settings, db_name: str) -> str:
+def query_url(server: str, db_name: str) -> str:
     return URL(
-        f"https://{settings.server}/",
+        f"https://{server}/",
         params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name},
     )
 
 
 @fixture
-def set_query_url(settings: Settings, db_name: str) -> str:
-    return URL(f"https://{settings.server}/?database={db_name}")
+def set_query_url(server: str, db_name: str) -> str:
+    return URL(f"https://{server}/?database={db_name}")
 
 
 @fixture
