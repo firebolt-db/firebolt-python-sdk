@@ -1,7 +1,7 @@
 from logging import getLogger
 from typing import List, Optional, Union
 
-from firebolt.model.engine import Engine
+from firebolt.model.engine import Database, Engine
 from firebolt.model.instance_type import InstanceType
 from firebolt.service.base import BaseService
 from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
@@ -165,13 +165,19 @@ class EngineService(BaseService):
             ):
                 if value:
                     sql += f"{param} = ? "
-                    if isinstance(value, EngineType):
-                        value = value.value
                     parameters.append(str(value))
         with self._connection.cursor() as c:
             c.execute(sql, parameters)
         return self.get(name)
 
-    def attach_to_database(self, engine_name: str, database_name: str) -> None:
+    def attach_to_database(
+        self, engine: Union[Engine, str], database: Union[Database, str]
+    ) -> None:
+        engine_name = engine.name if isinstance(engine, Engine) else engine
+        database_name = database.name if isinstance(database, Database) else database
         with self._connection.cursor() as c:
             c.execute(self.ATTACH_TO_DB_SQL.format(engine_name, database_name))
+        if isinstance(engine, Engine):
+            engine._database_name = (
+                database.name if isinstance(database, Database) else database
+            )

@@ -18,8 +18,11 @@ from firebolt.db import Connection, connect
 from firebolt.model import FireboltBaseModel
 from firebolt.model.database import Database
 from firebolt.model.instance_type import InstanceType
-from firebolt.service.types import EngineStatus, WarmupMethod
-from firebolt.utils.exception import DatabaseNotFoundError
+from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.utils.exception import (
+    DatabaseNotFoundError,
+    NoAttachedDatabaseError,
+)
 
 if TYPE_CHECKING:
     from firebolt.service.engine import EngineService
@@ -32,8 +35,8 @@ def check_attached_to_database(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def inner(self: Engine, *args: Any, **kwargs: Any) -> Any:
-        # if self.database is None:
-        #     raise NoAttachedDatabaseError(method_name=func.__name__)
+        if self.database is None:
+            raise NoAttachedDatabaseError(method_name=func.__name__)
         return func(self, *args, **kwargs)
 
     return inner
@@ -43,11 +46,6 @@ def check_attached_to_database(func: Callable) -> Callable:
 class Engine(FireboltBaseModel):
     """
     A Firebolt engine. Responsible for performing work (queries, ingestion).
-
-    Engines are configured in :py:class:`Settings
-    <firebolt.model.engine.EngineSettings>`
-    and in :py:class:`EngineRevisionSpecification
-    <firebolt.model.engine_revision.EngineRevisionSpecification>`.
     """
 
     START_SQL: ClassVar[str] = "START ENGINE {}"
@@ -62,22 +60,34 @@ class Engine(FireboltBaseModel):
     )
     DROP_SQL: ClassVar[str] = "DROP ENGINE {}"
 
-    _service: EngineService = field(repr=False)
+    _service: EngineService = field(repr=False, compare=False)
 
     name: str = field(metadata={"db_name": "engine_name"})
     region: str = field()
-    spec: str = field()
+    spec: InstanceType = field()
     scale: int = field()
-    current_status: str = field(metadata={"db_name": "status"})
-    _database_name: Optional[str] = field(
-        repr=False, metadata={"db_name": "attached_to"}
-    )
+    current_status: EngineStatus = field(metadata={"db_name": "status"})
+    _database_name: str = field(repr=False, metadata={"db_name": "attached_to"})
     version: str = field()
     endpoint: str = field(metadata={"db_name": "url"})
-    warmup: str = field()
+    warmup: WarmupMethod = field()
     auto_stop: int = field()
-    type: str = field()
+    type: EngineType = field()
     provisioning: str = field()
+
+    def __post_init__(self) -> None:
+        if isinstance(self.spec, str) and self.spec:
+            # Resolve engine specification
+            self.spec = self._service.resource_manager.instance_types.get(self.spec)
+        if isinstance(self.current_status, str) and self.current_status:
+            # Resolve engine status
+            self.current_status = EngineStatus(self.current_status)
+        if isinstance(self.warmup, str) and self.warmup:
+            # Resolve warmup method
+            self.warmup = WarmupMethod.from_display_name(self.warmup)
+        if isinstance(self.type, str) and self.type:
+            # Resolve engine type
+            self.type = EngineType.from_display_name(self.type)
 
     @property
     def database(self) -> Optional[Database]:
@@ -90,18 +100,20 @@ class Engine(FireboltBaseModel):
 
     def refresh(self) -> None:
         """Update attributes of the instance from Firebolt."""
+        field_name_overrides = self._get_field_overrides()
         for name, value in self._service._get_dict(self.name).items():
-            setattr(self, name, value)
+            setattr(self, field_name_overrides.get(name, name), value)
 
-    def attach_to_database(self, database_name: str) -> None:
+        self.__post_init__()
+
+    def attach_to_database(self, database: Union[Database, str]) -> None:
         """
         Attach this engine to a database.
 
         Args:
             database: Database to which the engine will be attached
         """
-        self._service.attach_to_database(self.name, database_name)
-        self._database_name = database_name
+        self._service.attach_to_database(self, database)
 
     @check_attached_to_database
     def get_connection(self) -> Connection:
@@ -127,13 +139,13 @@ class Engine(FireboltBaseModel):
         while self.current_status in (EngineStatus.STOPPING, EngineStatus.STARTING):
             logger.info(
                 f"Engine {self.name} is currently "
-                f"{self.current_status.lower()}, waiting"
+                f"{self.current_status.value.lower()}, waiting"
             )
             time.sleep(interval_seconds)
             if time.time() > timeout_time:
                 raise TimeoutError(
                     f"Excedeed timeout of {wait_timeout}s waiting for "
-                    f"an engine in {self.current_status.lower()} state"
+                    f"an engine in {self.current_status.value.lower()} state"
                 )
             logger.info(".[!n]")
             self.refresh()
@@ -155,7 +167,7 @@ class Engine(FireboltBaseModel):
         if self.current_status in (EngineStatus.DROPPING, EngineStatus.REPAIRING):
             raise ValueError(
                 f"Unable to start engine {self.name} because it's "
-                f"in {self.current_status.lower()} state"
+                f"in {self.current_status.value.lower()} state"
             )
 
         logger.info(f"Starting engine {self.name}")
@@ -179,7 +191,7 @@ class Engine(FireboltBaseModel):
         if self.current_status in (EngineStatus.DROPPING, EngineStatus.REPAIRING):
             raise ValueError(
                 f"Unable to stop engine {self.name} because it's "
-                f"in {self.current_status.lower()} state"
+                f"in {self.current_status.value.lower()} state"
             )
         logger.info(f"Stopping engine {self.name}")
         with self._service._connection.cursor() as c:
@@ -204,11 +216,12 @@ class Engine(FireboltBaseModel):
             # Nothing to be updated
             return self
 
+        self.refresh()
         self._wait_for_start_stop()
         if self.current_status in (EngineStatus.DROPPING, EngineStatus.REPAIRING):
             raise ValueError(
                 f"Unable to update engine {self.name} because it's "
-                f"in {self.current_status.lower()} state"
+                f"in {self.current_status.value.lower()} state"
             )
 
         sql = self.ALTER_PREFIX_SQL.format(self.name)

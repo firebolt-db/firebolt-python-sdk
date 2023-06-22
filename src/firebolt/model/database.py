@@ -40,7 +40,7 @@ class Database(FireboltBaseModel):
     data_size_full: int = field()
     data_size_compressed: int = field()
     _attached_engine_names: str = field(
-        repr=False, metadata={"db_name": "attached_engines"}
+        repr=False, metadata={"db_name": "attached_engines"}, compare=False
     )
     create_time: datetime = field(metadata={"db_name": "created_on"})
     create_actor: str = field(metadata={"db_name": "created_by"})

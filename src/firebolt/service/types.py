@@ -12,6 +12,9 @@ class EngineType(Enum):
             "Analytics": cls.DATA_ANALYTICS,
         }[display_name]
 
+    def __str__(self) -> str:
+        return self.value
+
 
 class WarmupMethod(Enum):
     MINIMAL = "MINIMAL"
@@ -25,6 +28,9 @@ class WarmupMethod(Enum):
             "Indexes": cls.PRELOAD_INDEXES,
             "All": cls.PRELOAD_ALL_DATA,
         }[display_name]
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class EngineStatus(Enum):
@@ -41,6 +47,9 @@ class EngineStatus(Enum):
     STOPPED = "Stopped"
     DROPPING = "Dropping"
     REPAIRING = "Repairing"
+
+    def __str__(self) -> str:
+        return self.value
 
 
 class DatabaseOrder(Enum):
