@@ -13,6 +13,7 @@ class FireboltBaseModel:
 
     @classmethod
     def _get_field_overrides(cls) -> Dict[str, str]:
+        """Create a mapping of db field name to class name where they are different."""
         return {
             f.metadata["db_name"]: f.name
             for f in fields(cls)

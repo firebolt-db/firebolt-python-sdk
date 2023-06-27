@@ -69,9 +69,9 @@ class Database(FireboltBaseModel):
             return self
 
         for engine in self.get_attached_engines():
-            if engine.current_status in {
-                EngineStatus.STARTING,
-                EngineStatus.STOPPING,
+            if engine.current_status not in {
+                EngineStatus.RUNNING,
+                EngineStatus.STOPPED,
             }:
                 raise AttachedEngineInUseError(method_name="update")
 

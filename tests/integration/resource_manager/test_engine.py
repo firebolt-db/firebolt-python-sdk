@@ -9,7 +9,6 @@ def make_engine_name(database_name: str, suffix: str) -> str:
     return f"{database_name}_{suffix}"
 
 
-# @pytest.mark.skip(reason="manual test")
 def test_create_start_stop_engine(
     auth: Auth,
     account_name: str,
