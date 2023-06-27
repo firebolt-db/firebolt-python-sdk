@@ -50,6 +50,9 @@ def test_is_engine_running_system(
 ):
     # System engine is always running
     assert is_engine_running(system_connection, "dummy") == True
+    # We didn't resolve account id since since we run no query
+    # We need to skip the mocked endpoint
+    httpx_mock.reset(False)
 
     # We haven't used account id endpoint since we didn't run any query, ignoring it
     httpx_mock.reset(False)

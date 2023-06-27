@@ -129,12 +129,15 @@ def test_attach_to_database(
 def test_engine_update(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
+    instance_type_callback: Callable,
+    instance_type_url: str,
     mock_engine: Engine,
     get_engine_callback: Callable,
     update_engine_callback: Callable,
     system_engine_no_db_query_url: str,
     updated_engine_scale: int,
 ):
+    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(update_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)

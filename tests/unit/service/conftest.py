@@ -200,6 +200,7 @@ def get_objects_from_db_callback(objs: List[dataclass]) -> Callable:
             "InstanceType": _InternalType.Text.value,
             "EngineType": _InternalType.Text.value,
             "EngineStatus": _InternalType.Text.value,
+            "WarmupMethod": _InternalType.Text.value,
         }
         dc_fields = [f for f in fields(objs[0]) if f.name != "_service"]
 
