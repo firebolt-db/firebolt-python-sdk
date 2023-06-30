@@ -112,7 +112,32 @@ To get started, follow the steps below:
 				) as connection:
 					cursor = connection.cursor()
 
-**3. Execute commands using the cursor**
+
+**3. Token management/caching**
+
+	Firebolt allows access by using authentication and refresh tokens.  In order to authenticate, 
+	the SDK issues an http login request to the Firebolt API, providing username and password.  
+	The API returns an authentication token and refresh token.   Authentication tokens are valid 
+	for 12 hours, and can be refreshed using the refresh token.  The SDK uses the authentication 
+	token for all subsequent requests, and includes logic for refreshing the token if it is reported as expired.
+
+	Because a typical script that uses the SDK usually runs for less than a minute and then is closed, 
+	the token is lost because it’s only stored in a process memory.  To avoid that, the SDK by default does token caching.   
+	Token caching is designed to preserve the token in filesystem to later reuse it for requests and save time on 
+	authentication api request. It also helps for workflows that use the SDL in parallel or in sequential scripts 
+	on the same machine, as only a single authentication request is performed.  The caching works by preserving the 
+	token value and it’s expiration timestamp in filesystem, in user data directory. On the authentication, the SDK 
+	first tries to find a token cache file and, if it exists, checks that token is not yet expired. If the token 
+	is valid, it’s used for further authorization. The token value itself is encrypted with PBKDF2 algorithm, 
+	the encryption key is a combination of user credentials.
+
+	Token caching can be disabled if desired.  If the server the SDK is running on has a read only 
+	filesystem (when using AWS Lambda, for example), then the SDK will not be able to store the token.  
+	The caching is disabled by adding ``use_token_cache=False`` to the auth object.  From the examples above, 
+	it would look like: ``auth=UsernamePassword(username, password,use_token_cache=False),``
+
+
+**4. Execute commands using the cursor**
 
 	The ``cursor`` object can be used to send queries and commands to your Firebolt
 	database and engine. See below for examples of functions using the ``cursor`` object.
