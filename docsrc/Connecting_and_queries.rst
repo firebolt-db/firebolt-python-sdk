@@ -189,7 +189,7 @@ queries. For help, see :ref:`managing_resources:starting an engine`.
 	For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
 
 
-Fetching query results
+Fetching query results 
 -----------------------
 
 After running a query, you can fetch the results using a ``cursor`` object. The examples
@@ -198,23 +198,69 @@ below use the data queried from ``test_table`` created in the
 
 .. _fetch_example:
 
-::
+	::
+	
+		print(cursor.fetchone())
+	
+	**Returns**: ``[2, 'world']``
+	
+	::
+	
+		print(cursor.fetchmany(2))
+	
+	**Returns**: ``[[1, 'hello'], [3, '!']]``
+	
+	::
+	
+		print(cursor.fetchall())
+	
+	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
+	
+	::
+	
+		print(cursor.fetchall())
+	
+	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
-	print(cursor.fetchone())
+Fetching query result information
+-----------------------
 
-**Returns**: ``[2, 'world']``
+After running a query, you can fetch information about the results using the same ``cursor`` object. The examples
+below are from the last SELECT query in :ref:`connecting_and_queries:Inserting and selecting data`.
 
-::
+.. _result_information_example:
 
-	print(cursor.fetchmany(2))
+**rowcount**
 
-**Returns**: ``[[1, 'hello'], [3, '!']]``
+	- For a SELECT query, rowcount is the number of rows selected.  
+	- For An INSERT query, it is always -1.
+	- For DDL (CREATE/DROP), it is always 1
 
-::
+	::
+	
+		print("Rowcount: ", cursor.rowcount)
 
-	print(cursor.fetchall())
+	**Returns**: ``Rowcount:  3``
 
-**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
+
+**description**
+	
+	description is a list of Column objects, each one responsible for a single column in a result set. Only name and type_code fields get populated, all others are always empty.
+	
+	- name is the name of the column.	
+	- type_code is the data type of the column.  It can be:
+
+		- a python type (int, float, str, date, datetime)
+		- an ARRAY object, that signifies a list of some type. The inner type can is stored in ``.subtype`` field
+		- a DECIMAL object, that signifies a decimal value. It’s precision and scale are stored in ``.precision`` and ``.scale`` fields
+		- a DATETIME64 object, that signifies a datetime value with an extended precision. The precision is stored in ``.precision``
+
+	::
+	
+		print("Description: ", cursor.description)
+
+	**Returns**: ``Description:  [Column(name='id', type_code=<class 'int'>, display_size=None, internal_size=None, precision=None, scale=None, null_ok=None), Column(name='name', type_code=<class 'str'>, display_size=None, internal_size=None, precision=None, scale=None, null_ok=None)]``
+
 
 
 Executing parameterized queries
