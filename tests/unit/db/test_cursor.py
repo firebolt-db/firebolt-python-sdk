@@ -5,7 +5,6 @@ from httpx import HTTPStatusError, StreamError, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.common.settings import Settings
 from firebolt.db import Cursor
 from firebolt.db.cursor import ColType, Column, CursorState, QueryStatus
 from firebolt.utils.exception import (
@@ -188,7 +187,7 @@ def test_cursor_execute(
 def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
     get_engines_url: str,
-    settings: Settings,
+    server: str,
     db_name: str,
     query_url: str,
     query_statistics: Dict[str, Any],
@@ -309,7 +308,7 @@ def test_cursor_execute_error(
         with raises(EngineNotRunningError) as excinfo:
             query()
         assert cursor._state == CursorState.ERROR
-        assert settings.server in str(excinfo)
+        assert server in str(excinfo)
 
         # Engine does not exist
         httpx_mock.add_response(
