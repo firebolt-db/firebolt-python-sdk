@@ -7,7 +7,6 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client import AsyncClient
 from firebolt.client.auth import Auth
-from firebolt.common import Settings
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from firebolt.utils.util import fix_url_schema
 
@@ -99,7 +98,7 @@ async def test_client_account_id(
     account_id_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    settings: Settings,
+    server: str,
 ):
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -107,7 +106,7 @@ async def test_client_account_id(
     async with AsyncClient(
         account_name=account_name,
         auth=auth,
-        base_url=fix_url_schema(settings.server),
-        api_endpoint=settings.server,
+        base_url=fix_url_schema(server),
+        api_endpoint=server,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."

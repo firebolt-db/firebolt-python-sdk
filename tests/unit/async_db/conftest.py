@@ -5,7 +5,6 @@ from pytest import fixture
 
 from firebolt.async_db import ARRAY, DECIMAL, Connection, Cursor, connect
 from firebolt.client.auth import Auth
-from firebolt.common.settings import Settings
 from tests.unit.db_conftest import *  # noqa
 
 
@@ -32,7 +31,7 @@ async def connection(
 
 
 @fixture
-async def cursor(connection: Connection, settings: Settings) -> Cursor:
+async def cursor(connection: Connection) -> Cursor:
     return connection.cursor()
 
 

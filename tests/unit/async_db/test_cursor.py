@@ -8,7 +8,6 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db import Cursor
 from firebolt.common._types import Column
 from firebolt.common.base_cursor import ColType, CursorState, QueryStatus
-from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     CursorClosedError,
@@ -192,9 +191,9 @@ async def test_cursor_execute(
 
 async def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
+    server: str,
     query_url: str,
     get_engines_url: str,
-    settings: Settings,
     db_name: str,
     query_statistics: Dict[str, Any],
     cursor: Cursor,
@@ -315,7 +314,7 @@ async def test_cursor_execute_error(
         with raises(EngineNotRunningError) as excinfo:
             await query()
         assert cursor._state == CursorState.ERROR
-        assert settings.server in str(excinfo)
+        assert server in str(excinfo)
 
         # Engine does not exist
         httpx_mock.add_response(

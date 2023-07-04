@@ -9,7 +9,6 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common._types import ColType
-from firebolt.common.settings import Settings
 from firebolt.db import Connection, connect
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -58,7 +57,6 @@ def test_cursors_closed_on_close(connection: Connection) -> None:
 
 
 def test_cursor_initialized(
-    settings: Settings,
     mock_query: Callable,
     connection: Connection,
     python_query_data: List[List[ColType]],

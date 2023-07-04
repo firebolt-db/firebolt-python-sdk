@@ -32,9 +32,9 @@ def system_connection(
     db_name: str,
     auth: Auth,
     account_name: str,
-    mock_system_connection_flow: Callable,
+    mock_system_engine_connection_flow: Callable,
 ) -> Connection:
-    mock_system_connection_flow()
+    mock_system_engine_connection_flow()
     with connect(
         database=db_name,
         auth=auth,
