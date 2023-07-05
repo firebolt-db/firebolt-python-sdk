@@ -164,11 +164,9 @@ class _InternalType(Enum):
     Text = "text"
 
     Date = "date"
-    DateExt = "date_ext"
     PGDate = "pgdate"
 
     Timestamp = "timestamp"
-    TimestampExt = "timestamp_ext"
     TimestampNtz = "timestampntz"
     TimestampTz = "timestamptz"
 
@@ -188,10 +186,8 @@ class _InternalType(Enum):
             _InternalType.Double: float,
             _InternalType.Text: str,
             _InternalType.Date: date,
-            _InternalType.DateExt: date,
             _InternalType.PGDate: date,
             _InternalType.Timestamp: datetime,
-            _InternalType.TimestampExt: datetime,
             _InternalType.TimestampNtz: datetime,
             _InternalType.TimestampTz: datetime,
             _InternalType.Boolean: bool,
