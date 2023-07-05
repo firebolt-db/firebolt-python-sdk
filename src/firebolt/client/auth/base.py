@@ -7,7 +7,7 @@ from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.util import cached_property
+from firebolt.utils.util import Timer, cached_property
 
 logger = getLogger(__name__)
 
@@ -111,27 +111,20 @@ class Auth(HttpxAuth):
         Yields:
             Request: Request required for auth flow
         """
-        timerStart = time()
-        if not self.token or self.expired:
-            yield from self.get_new_token_generator()
-            self._cache_token()
+        with Timer() as runTime:
+            if not self.token or self.expired:
+                yield from self.get_new_token_generator()
+                self._cache_token()
 
-        request.headers["Authorization"] = f"Bearer {self.token}"
-
-        response = yield request
-
-        if response.status_code == codes.UNAUTHORIZED:
-            yield from self.get_new_token_generator()
             request.headers["Authorization"] = f"Bearer {self.token}"
-            yield request
 
-        timerEnd = time()
-        envVar = "0"
-        try:
-            envVar = environ["FIREBOLT_SDK_PERFORMANCE_DEBUG"]
-        except Exception:
-            pass
+            response = yield request
 
+            if response.status_code == codes.UNAUTHORIZED:
+                yield from self.get_new_token_generator()
+                request.headers["Authorization"] = f"Bearer {self.token}"
+                yield request
+
+        envVar = environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0")
         if envVar == "1":
-            totalTime = "{:.2f}".format(round((timerEnd - timerStart), 2))
-            logger.debug(f"[PERFORMANCE] Authentication {totalTime}s")
+            logger.debug(f"[PERFORMANCE] Authentication {runTime}s")

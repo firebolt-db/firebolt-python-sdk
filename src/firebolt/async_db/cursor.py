@@ -50,6 +50,7 @@ from firebolt.utils.exception import (
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
+from firebolt.utils.util import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -201,28 +202,19 @@ class Cursor(BaseCursor):
                         async_execution,
                     )
 
-                    timerStart = time.time()
-                    response = await self._api_request(
-                        query,
-                        {
-                            "async_execution": 1,
-                            "advanced_mode": 1,
-                            "output_format": JSON_OUTPUT_FORMAT,
-                        },
-                    )
-
-                    timerEnd = time.time()
-                    envVar = "0"
-                    try:
-                        envVar = environ["FIREBOLT_SDK_PERFORMANCE_DEBUG"]
-                    except Exception:
-                        pass
-
-                    if envVar == "1":
-                        totalTime = "{:.2f}".format(round((timerEnd - timerStart), 2))
-                        logger.debug(
-                            f"[PERFORMANCE] Running query {query} {totalTime}s"
+                    with Timer() as runTime:
+                        response = await self._api_request(
+                            query,
+                            {
+                                "async_execution": 1,
+                                "advanced_mode": 1,
+                                "output_format": JSON_OUTPUT_FORMAT,
+                            },
                         )
+
+                    envVar = environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0")
+                    if envVar == "1":
+                        logger.debug(f"[PERFORMANCE] Running query {query} {runTime}s")
 
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":

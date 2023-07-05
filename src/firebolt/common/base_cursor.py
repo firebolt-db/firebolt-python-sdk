@@ -5,7 +5,6 @@ from dataclasses import dataclass, fields
 from enum import Enum
 from functools import wraps
 from os import environ
-from time import time
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -26,6 +25,7 @@ from firebolt.utils.exception import (
     DataError,
     QueryNotRunError,
 )
+from firebolt.utils.util import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -370,17 +370,11 @@ class BaseCursor:
         assert self._rows is not None
         rows = self._rows[left:right]
 
-        timerStart = time()
-        result = [self._parse_row(row) for row in rows]
-        timerEnd = time()
-        envVar = "0"
-        try:
-            envVar = environ["FIREBOLT_SDK_PERFORMANCE_DEBUG"]
-        except Exception:
-            pass
+        with Timer() as tTime:
+            result = [self._parse_row(row) for row in rows]
 
+        envVar = environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0")
         if envVar == "1":
-            tTime = "{:.2f}".format(round((timerEnd - timerStart), 2))
             logger.debug(
                 f"[PERFORMANCE] Parsing query output into native Python types {tTime}s"
             )
