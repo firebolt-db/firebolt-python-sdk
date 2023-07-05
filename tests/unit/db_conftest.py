@@ -8,7 +8,6 @@ from pytest import fixture
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
-from firebolt.common.settings import Settings
 from firebolt.db import ARRAY, DECIMAL
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
@@ -337,16 +336,16 @@ def set_params() -> Dict:
 
 
 @fixture
-def query_url(settings: Settings, db_name: str) -> str:
+def query_url(server: str, db_name: str) -> str:
     return URL(
-        f"https://{settings.server}/",
+        f"https://{server}/",
         params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name},
     )
 
 
 @fixture
-def set_query_url(settings: Settings, db_name: str) -> str:
-    return URL(f"https://{settings.server}/?database={db_name}")
+def set_query_url(server: str, db_name: str) -> str:
+    return URL(f"https://{server}/?database={db_name}")
 
 
 @fixture
@@ -494,16 +493,19 @@ def mock_connection_flow(
 
 
 @fixture
-def mock_system_connection_flow(
+def mock_system_engine_connection_flow(
     httpx_mock: HTTPXMock,
     auth_url: str,
     check_credentials_callback: Callable,
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
 ) -> Callable:
     def inner() -> None:
         httpx_mock.add_callback(check_credentials_callback, url=auth_url)
         httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+        httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     return inner
 

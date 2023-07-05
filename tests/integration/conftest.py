@@ -4,7 +4,6 @@ from os import environ
 from pytest import fixture
 
 from firebolt.client.auth import ClientCredentials
-from firebolt.service.manager import Settings
 
 LOGGER = getLogger(__name__)
 
@@ -21,16 +20,6 @@ def must_env(var_name: str) -> str:
     assert var_name in environ, f"Expected {var_name} to be provided in environment"
     LOGGER.info(f"{var_name}: {environ[var_name]}")
     return environ[var_name]
-
-
-@fixture(scope="session")
-def rm_settings(api_endpoint, auth, account_name) -> Settings:
-    return Settings(
-        account_name=account_name,
-        server=api_endpoint,
-        auth=auth,
-        default_region="us-east-1",
-    )
 
 
 @fixture(scope="session")
