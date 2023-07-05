@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import socket
+from os import environ
+from time import time
 from types import TracebackType
 from typing import Any, Dict, List, Optional
 
@@ -231,9 +233,21 @@ async def connect(
 
     else:
         try:
+            timerStart = time()
             engine_url, status, attached_db = await _get_engine_url_status_db(
                 system_engine_connection, engine_name
             )
+
+            teimerEnd = time()
+            envVar = "0"
+            try:
+                envVar = environ["FIREBOLT_SDK_PERFORMANCE_DEBUG"]
+            except Exception:
+                pass
+
+            if envVar == "1":
+                totalTime = "{:.2f}".format(round((teimerEnd - timerStart), 2))
+                logger.debug(f"[PERFORMANCE] Resolving engine name {totalTime}s")
 
             if status != "Running":
                 raise EngineNotRunningError(engine_name)

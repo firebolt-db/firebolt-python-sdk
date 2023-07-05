@@ -4,6 +4,7 @@ import logging
 import re
 import time
 from functools import wraps
+from os import environ
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -199,6 +200,8 @@ class Cursor(BaseCursor):
                         skip_parsing,
                         async_execution,
                     )
+
+                    timerStart = time.time()
                     response = await self._api_request(
                         query,
                         {
@@ -207,6 +210,20 @@ class Cursor(BaseCursor):
                             "output_format": JSON_OUTPUT_FORMAT,
                         },
                     )
+
+                    timerEnd = time.time()
+                    envVar = "0"
+                    try:
+                        envVar = environ["FIREBOLT_SDK_PERFORMANCE_DEBUG"]
+                    except Exception:
+                        pass
+
+                    if envVar == "1":
+                        totalTime = "{:.2f}".format(round((timerEnd - timerStart), 2))
+                        logger.debug(
+                            f"[PERFORMANCE] Running query {query} {totalTime}s"
+                        )
+
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":
                         raise OperationalError("No response to asynchronous query.")

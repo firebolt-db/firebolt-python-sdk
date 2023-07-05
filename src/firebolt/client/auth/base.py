@@ -1,3 +1,5 @@
+from logging import getLogger
+from os import environ
 from time import time
 from typing import Generator, Optional
 
@@ -6,6 +8,8 @@ from httpx import Request, Response, codes
 
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.util import cached_property
+
+logger = getLogger(__name__)
 
 
 class AuthRequest(Request):
@@ -107,6 +111,7 @@ class Auth(HttpxAuth):
         Yields:
             Request: Request required for auth flow
         """
+        timerStart = time()
         if not self.token or self.expired:
             yield from self.get_new_token_generator()
             self._cache_token()
@@ -119,3 +124,14 @@ class Auth(HttpxAuth):
             yield from self.get_new_token_generator()
             request.headers["Authorization"] = f"Bearer {self.token}"
             yield request
+
+        timerEnd = time()
+        envVar = "0"
+        try:
+            envVar = environ["FIREBOLT_SDK_PERFORMANCE_DEBUG"]
+        except Exception:
+            pass
+
+        if envVar == "1":
+            totalTime = "{:.2f}".format(round((timerEnd - timerStart), 2))
+            logger.debug(f"[PERFORMANCE] Authentication {totalTime}s")

@@ -4,6 +4,8 @@ import logging
 from dataclasses import dataclass, fields
 from enum import Enum
 from functools import wraps
+from os import environ
+from time import time
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -367,7 +369,22 @@ class BaseCursor:
         left, right = self._get_next_range(self.rowcount)
         assert self._rows is not None
         rows = self._rows[left:right]
-        return [self._parse_row(row) for row in rows]
+
+        timerStart = time()
+        result = [self._parse_row(row) for row in rows]
+        timerEnd = time()
+        envVar = "0"
+        try:
+            envVar = environ["FIREBOLT_SDK_PERFORMANCE_DEBUG"]
+        except Exception:
+            pass
+
+        if envVar == "1":
+            tTime = "{:.2f}".format(round((timerEnd - timerStart), 2))
+            logger.debug(
+                f"[PERFORMANCE] Parsing query output into native Python types {tTime}s"
+            )
+        return result
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:
