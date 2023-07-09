@@ -214,7 +214,9 @@ class Cursor(BaseCursor):
 
                     envVar = environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0")
                     if envVar == "1":
-                        logger.debug(f"[PERFORMANCE] Running query {query} {runTime}s")
+                        logger.debug(
+                            f"[PERFORMANCE] Running query {query[:50]} ... {runTime}s"
+                        )
 
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":
