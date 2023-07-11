@@ -120,7 +120,7 @@ class Timer:
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
-        self.elapsed_time = "{:.2f}".format(round((time() - self._start_time), 2))
+        self.elapsed_time: str = "{:.2f}".format(round((time() - self._start_time), 2))
         if (
             environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0") == "1"
             and self._message != ""
