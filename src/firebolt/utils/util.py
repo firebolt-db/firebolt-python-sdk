@@ -1,4 +1,6 @@
+import logging
 from functools import lru_cache
+from os import environ
 from time import time
 from types import TracebackType
 from typing import TYPE_CHECKING, Callable, Type, TypeVar
@@ -6,6 +8,7 @@ from typing import TYPE_CHECKING, Callable, Type, TypeVar
 from httpx import URL
 
 T = TypeVar("T")
+logger = logging.getLogger(__name__)
 
 
 def cached_property(func: Callable[..., T]) -> T:
@@ -104,8 +107,11 @@ def merge_urls(base: URL, merge: URL) -> URL:
 
 
 class Timer:
+    def __init__(self, message: str = ""):
+        self._message = message
+
     def __enter__(self) -> "Timer":
-        self.start_time: float = time()
+        self._start_time: float = time()
         return self
 
     def __exit__(
@@ -114,4 +120,10 @@ class Timer:
         exc_val: BaseException,
         exc_tb: TracebackType,
     ) -> None:
-        self.elapsed_time: str = "{:.2f}".format(round((time() - self.start_time), 2))
+        self.elapsed_time = "{:.2f}".format(round((time() - self._start_time), 2))
+        if (
+            environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0") == "1"
+            and self._message != ""
+        ):
+            log_message = self._message + self.elapsed_time + "s"
+            logger.debug(log_message)

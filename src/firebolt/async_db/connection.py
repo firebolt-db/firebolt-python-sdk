@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import logging
 import socket
-from os import environ
 from types import TracebackType
 from typing import Any, Dict, List, Optional
 
@@ -31,8 +29,6 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import Timer, fix_url_schema
-
-logger = logging.getLogger(__name__)
 
 
 class OverriddenHttpBackend(AutoBackend):
@@ -232,14 +228,10 @@ async def connect(
 
     else:
         try:
-            with Timer() as runTime:
+            with Timer("[PERFORMANCE] Resolving engine name "):
                 engine_url, status, attached_db = await _get_engine_url_status_db(
                     system_engine_connection, engine_name
                 )
-
-            envVar = environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0")
-            if envVar == "1":
-                logger.debug(f"[PERFORMANCE] Resolving engine name {runTime}s")
 
             if status != "Running":
                 raise EngineNotRunningError(engine_name)

@@ -4,7 +4,6 @@ import logging
 import re
 import time
 from functools import wraps
-from os import environ
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -202,7 +201,10 @@ class Cursor(BaseCursor):
                         async_execution,
                     )
 
-                    with Timer() as runTime:
+                    with Timer(
+                        f"[PERFORMANCE] Running query {query[:50]} "
+                        f"{'... ' if len(query) > 50 else ''}"
+                    ):
                         response = await self._api_request(
                             query,
                             {
@@ -210,12 +212,6 @@ class Cursor(BaseCursor):
                                 "advanced_mode": 1,
                                 "output_format": JSON_OUTPUT_FORMAT,
                             },
-                        )
-
-                    envVar = environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0")
-                    if envVar == "1":
-                        logger.debug(
-                            f"[PERFORMANCE] Running query {query[:50]} ... {runTime}s"
                         )
 
                     await self._raise_if_error(response)

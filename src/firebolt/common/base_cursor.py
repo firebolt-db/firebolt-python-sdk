@@ -4,7 +4,6 @@ import logging
 from dataclasses import dataclass, fields
 from enum import Enum
 from functools import wraps
-from os import environ
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
@@ -370,14 +369,9 @@ class BaseCursor:
         assert self._rows is not None
         rows = self._rows[left:right]
 
-        with Timer() as tTime:
+        with Timer("[PERFORMANCE] Parsing query output into native Python types "):
             result = [self._parse_row(row) for row in rows]
 
-        envVar = environ.get("FIREBOLT_SDK_PERFORMANCE_DEBUG", "0")
-        if envVar == "1":
-            logger.debug(
-                f"[PERFORMANCE] Parsing query output into native Python types {tTime}s"
-            )
         return result
 
     @check_not_closed
