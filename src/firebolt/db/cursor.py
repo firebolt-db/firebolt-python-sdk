@@ -152,7 +152,7 @@ class Cursor(BaseCursor):
         self._raise_if_error(resp)
 
         # set parameter passed validation
-        self._set_parameters[parameter.name] = parameter.value
+        self._set_parameters[parameter.nam] = parameter.value
 
     def _do_execute(
         self,
