@@ -42,7 +42,6 @@ from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
     FireboltDatabaseError,
-    FireboltError,
     OperationalError,
     ProgrammingError,
 )
@@ -107,7 +106,7 @@ class Cursor(BaseCursor):
             and "Content-Length" in resp.headers
             and int(resp.headers["Content-Length"]) > 0
         ):
-            raise FireboltError(f"Something went wrong: {resp.read().decode('utf-8')}")
+            logger.debug(f"Something went wrong: {resp.read().decode('utf-8')}")
         resp.raise_for_status()
 
     def _api_request(
