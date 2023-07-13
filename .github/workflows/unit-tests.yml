@@ -39,7 +39,7 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest -lf --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
+        pytest --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
     
     - name: Get Allure history
       uses: actions/checkout@v2
