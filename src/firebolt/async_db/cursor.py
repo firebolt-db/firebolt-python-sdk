@@ -49,6 +49,7 @@ from firebolt.utils.exception import (
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
+from firebolt.utils.util import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -199,14 +200,20 @@ class Cursor(BaseCursor):
                         skip_parsing,
                         async_execution,
                     )
-                    response = await self._api_request(
-                        query,
-                        {
-                            "async_execution": 1,
-                            "advanced_mode": 1,
-                            "output_format": JSON_OUTPUT_FORMAT,
-                        },
-                    )
+
+                    with Timer(
+                        f"[PERFORMANCE] Running query {query[:50]} "
+                        f"{'... ' if len(query) > 50 else ''}"
+                    ):
+                        response = await self._api_request(
+                            query,
+                            {
+                                "async_execution": 1,
+                                "advanced_mode": 1,
+                                "output_format": JSON_OUTPUT_FORMAT,
+                            },
+                        )
+
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":
                         raise OperationalError("No response to asynchronous query.")

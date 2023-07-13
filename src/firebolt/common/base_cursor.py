@@ -24,6 +24,7 @@ from firebolt.utils.exception import (
     DataError,
     QueryNotRunError,
 )
+from firebolt.utils.util import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -345,7 +346,9 @@ class BaseCursor:
             # We are out of elements
             return None
         assert self._rows is not None
-        return self._parse_row(self._rows[left])
+        with Timer("[PERFORMANCE] Parsing query output into native Python types "):
+            result = self._parse_row(self._rows[left])
+        return result
 
     @check_not_closed
     @check_query_executed
@@ -358,7 +361,9 @@ class BaseCursor:
         left, right = self._get_next_range(size)
         assert self._rows is not None
         rows = self._rows[left:right]
-        return [self._parse_row(row) for row in rows]
+        with Timer("[PERFORMANCE] Parsing query output into native Python types "):
+            result = [self._parse_row(row) for row in rows]
+        return result
 
     @check_not_closed
     @check_query_executed
@@ -367,7 +372,9 @@ class BaseCursor:
         left, right = self._get_next_range(self.rowcount)
         assert self._rows is not None
         rows = self._rows[left:right]
-        return [self._parse_row(row) for row in rows]
+        with Timer("[PERFORMANCE] Parsing query output into native Python types "):
+            result = [self._parse_row(row) for row in rows]
+        return result
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:

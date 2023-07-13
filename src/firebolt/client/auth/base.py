@@ -5,7 +5,7 @@ from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.util import cached_property
+from firebolt.utils.util import Timer, cached_property
 
 
 class AuthRequest(Request):
@@ -107,15 +107,16 @@ class Auth(HttpxAuth):
         Yields:
             Request: Request required for auth flow
         """
-        if not self.token or self.expired:
-            yield from self.get_new_token_generator()
-            self._cache_token()
+        with Timer("[PERFORMANCE] Authentication "):
+            if not self.token or self.expired:
+                yield from self.get_new_token_generator()
+                self._cache_token()
 
-        request.headers["Authorization"] = f"Bearer {self.token}"
-
-        response = yield request
-
-        if response.status_code == codes.UNAUTHORIZED:
-            yield from self.get_new_token_generator()
             request.headers["Authorization"] = f"Bearer {self.token}"
-            yield request
+
+            response = yield request
+
+            if response.status_code == codes.UNAUTHORIZED:
+                yield from self.get_new_token_generator()
+                request.headers["Authorization"] = f"Bearer {self.token}"
+                yield request
