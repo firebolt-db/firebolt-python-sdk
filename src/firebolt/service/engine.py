@@ -22,8 +22,7 @@ class EngineService(BaseService):
         "url",
         "warmup",
         "auto_stop",
-        "type",
-        "provisioning",
+        "engine_type",
     )
     GET_SQL = f"SELECT {', '.join(DB_FIELDS)} FROM information_schema.engines"
     GET_BY_NAME_SQL = GET_SQL + " WHERE engine_name=?"
