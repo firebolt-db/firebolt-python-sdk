@@ -35,7 +35,6 @@ def mock_engine(region: str, server: str, instance_type_1: InstanceType) -> Engi
         warmup=WarmupMethod.MINIMAL,
         auto_stop=7200,
         type=EngineType.GENERAL_PURPOSE,
-        provisioning="Finished",
         _database_name="database",
         _service=None,
     )
@@ -111,7 +110,6 @@ def mock_database(region: str) -> Database:
         data_size_compressed=0,
         create_time=datetime.now().isoformat(),
         create_actor="",
-        _status="",
         _attached_engine_names="-",
         _errors="",
         _service=None,
@@ -128,7 +126,6 @@ def mock_database_2(region: str) -> Database:
         data_size_compressed=0,
         create_time=datetime.now().isoformat(),
         create_actor="",
-        _status="",
         _attached_engine_names="-",
         _errors="",
         _service=None,
