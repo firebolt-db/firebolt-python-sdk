@@ -36,9 +36,8 @@ class Database(FireboltBaseModel):
     name: str = field(metadata={"db_name": "database_name"})
     description: str = field()
     region: str = field()
-    _status: str = field(repr=False, metadata={"db_name": "status"})
-    data_size_full: int = field()
-    data_size_compressed: int = field()
+    data_size_full: int = field(metadata={"db_name": "uncompressed_size"})
+    data_size_compressed: int = field(metadata={"db_name": "compressed_size"})
     _attached_engine_names: str = field(
         repr=False, metadata={"db_name": "attached_engines"}, compare=False
     )

@@ -72,8 +72,7 @@ class Engine(FireboltBaseModel):
     endpoint: str = field(metadata={"db_name": "url"})
     warmup: WarmupMethod = field()
     auto_stop: int = field()
-    type: EngineType = field()
-    provisioning: str = field()
+    type: EngineType = field(metadata={"db_name": "engine_type"})
 
     def __post_init__(self) -> None:
         if isinstance(self.spec, str) and self.spec:
