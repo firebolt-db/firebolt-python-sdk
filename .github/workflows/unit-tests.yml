@@ -27,12 +27,13 @@ jobs:
       with:
         ref: ${{ github.event.inputs.branch }}
     
-    - name: Cache Test Results
-      id: cache-tests
-      uses: actions/cache@v3
+    - name: Restore cached failed tests
+      id: cache-tests-restore
+      uses: actions/cache/restore@v3
       with:
-        path: .pytest_cache
-        key: ${{ runner.os }}-pytest-failed-${{ github.ref }}
+        path: |
+          ../../.pytest_cache/v/cache/lastfailed
+        key: pytest-restore-failed-${{ github.ref }}
     
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
@@ -46,7 +47,15 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results -d .pytest_cache
+        pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
+    
+    - name: Save tailed tests
+      id: cache-tests-save
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          ../../.pytest_cache/v/cache/lastfailed
+        key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}
     
     - name: Get Allure history
       uses: actions/checkout@v2
