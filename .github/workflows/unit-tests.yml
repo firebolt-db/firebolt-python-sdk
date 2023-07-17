@@ -46,7 +46,7 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
+        pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results --cache-dir=.pytest_cache
     
     - name: Get Allure history
       uses: actions/checkout@v2
