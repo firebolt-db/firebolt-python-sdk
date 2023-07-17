@@ -27,6 +27,13 @@ jobs:
       with:
         ref: ${{ github.event.inputs.branch }}
     
+    - name: Cache Test Results
+      id: cache-tests
+      uses: actions/cache@v3
+      with:
+        path: .pytest_cache
+        key: ${{ runner.os }}-pytest-failed-${{ github.ref }}
+    
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
       with:
