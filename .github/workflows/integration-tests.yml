@@ -62,14 +62,14 @@ jobs:
              echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET }}" >> "$GITHUB_ENV"
           fi
 
-      - name: Setup database and engine
-        id: setup
-        uses: firebolt-db/integration-testing-setup@v1
-        with:
-          firebolt-username: ${{ env.USERNAME }}
-          firebolt-password: ${{ env.PASSWORD }}
-          api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
-          region: "us-east-1"
+#      - name: Setup database and engine
+ #       id: setup
+  #      uses: firebolt-db/integration-testing-setup@v1
+   #     with:
+    #      firebolt-username: ${{ env.USERNAME }}
+     #     firebolt-password: ${{ env.PASSWORD }}
+      #    api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
+       #   region: "us-east-1"
 
       - name: Run integration tests
         env:
@@ -85,7 +85,7 @@ jobs:
           API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
           ACCOUNT_NAME: "firebolt"
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration --alluredir=allure-results
+          pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration --alluredir=allure-results
 
       - name: Get Allure history
         uses: actions/checkout@v2
