@@ -64,7 +64,7 @@ jobs:
         with:
           firebolt-client-id: ${{ env.CLIENT_ID }}
           firebolt-client-secret: ${{ env.CLIENT_SECRET }}
-          account: "integration"
+          account: "developer"
           api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
 
       - name: Run integration tests
@@ -75,7 +75,7 @@ jobs:
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
           API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
-          ACCOUNT_NAME: "integration"
+          ACCOUNT_NAME: "developer"
         run: |
           pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration --alluredir=allure-results
 
