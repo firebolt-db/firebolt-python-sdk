@@ -55,7 +55,7 @@ jobs:
       with:
         path: |
           .pytest_cache/v/cache/lastfailed
-        key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}
+        key: pytest-restore-failed-${{ github.ref }}
       
     - name: Get Allure history
       uses: actions/checkout@v2
