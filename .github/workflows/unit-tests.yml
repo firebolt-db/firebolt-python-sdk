@@ -32,7 +32,7 @@ jobs:
       uses: actions/cache/restore@v3
       with:
         path: |
-          ../../.pytest_cache/v/cache/lastfailed
+          .pytest_cache/v/cache/lastfailed
         key: pytest-restore-failed-${{ github.ref }}
     
     - name: Set up Python 3.7
@@ -49,6 +49,14 @@ jobs:
       run: |
         pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
     
+    - name: Save failed tests
+      id: cache-tests-save
+      uses: actions/cache/save@v3
+      with:
+        path: |
+          .pytest_cache/v/cache/lastfailed
+        key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}
+      
     - name: Get Allure history
       uses: actions/checkout@v2
       if: always()
@@ -56,14 +64,6 @@ jobs:
       with:
         ref: gh-pages
         path: gh-pages
-
-    - name: Save failed tests
-      id: cache-tests-save
-      uses: actions/cache/save@v3
-      with:
-        path: |
-          ../../.pytest_cache/v/cache/lastfailed
-        key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}
     
     - name: Allure Report
       uses: firebolt-db/action-allure-report@v1
