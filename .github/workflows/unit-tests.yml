@@ -43,7 +43,7 @@ jobs:
       with:
         path: |
           .pytest_cache/v/cache/lastfailed
-        key: pytest-restore-failed-${{ github.ref }}
+        key: ${{ runner.os }}-pytest-restore-failed-${{ github.ref }}-${{ github.sha }}
     
     - name: Run unit tests
       run: |
