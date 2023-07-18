@@ -52,6 +52,7 @@ jobs:
     - name: Save failed tests
       id: cache-tests-save
       uses: actions/cache/save@v3
+      if: always()
       with:
         path: ${{ steps.test-with-cache.outputs.cache-directory }}
         key: pytest-failed-${{ github.ref }}
