@@ -31,9 +31,8 @@ jobs:
       id: cache-tests-restore
       uses: actions/cache/restore@v3
       with:
-        path: |
-          .pytest_cache/v/cache/lastfailed
-        key: pytest-restore-failed-${{ github.ref }}
+        path: .pytest_cache
+        key: pytest-failed-${{ github.ref }}
     
     - name: Set up Python 3.7
       uses: actions/setup-python@v2
@@ -46,21 +45,16 @@ jobs:
         pip install -e ".[dev]"
 
     - name: Run unit tests
-      uses: actions/cache/save@v3
-      with:
-        path: |
-          .pytest_cache/v/cache/lastfailed
-        key: pytest-restore-failed-${{ github.ref }}
+      id: test-with-cache
       run: |
         pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
     
-#    - name: Save failed tests
- #     id: cache-tests-save
-  #    uses: actions/cache/save@v3
-   #   with:
-    #    path: |
-     #     .pytest_cache/v/cache/lastfailed
-      #  key: pytest-restore-failed-${{ github.ref }}
+    - name: Save failed tests
+      id: cache-tests-save
+      uses: actions/cache/save@v3
+      with:
+        path: ${{ steps.test-with-cache.outputs.cache-directory }}
+        key: pytest-failed-${{ github.ref }}
       
     - name: Get Allure history
       uses: actions/checkout@v2
