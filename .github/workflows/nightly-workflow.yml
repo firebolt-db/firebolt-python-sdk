@@ -67,6 +67,14 @@ jobs:
           region: "us-east-1"
           db_suffix: ${{ format('{0}_{1}', matrix.os, matrix.python-version) }}
 
+      - name: Restore cached failed tests
+        id: cache-tests-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            .pytest_cache/v/cache/lastfailed
+          key: pytest-restore-failed-${{ github.ref }}
+      
       - name: Run integration tests
         env:
           USER_NAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
@@ -81,8 +89,17 @@ jobs:
           ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO --junit-xml=report/junit.xml tests/integration
+          pytest --last-failed --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO --junit-xml=report/junit.xml tests/integration
 
+      - name: Save failed tests
+        id: cache-tests-save
+        uses: actions/cache/save@v3
+        if: always()
+        with:
+          path: |
+            .pytest_cache/v/cache/lastfailed
+          key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}
+      
       - name: Foresight Test / Coverage Results
         uses: runforesight/foresight-test-kit-action@v1
         if: success() || failure()
