@@ -46,16 +46,21 @@ jobs:
         pip install -e ".[dev]"
 
     - name: Run unit tests
-      run: |
-        pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
-    
-    - name: Save failed tests
-      id: cache-tests-save
       uses: actions/cache/save@v3
       with:
         path: |
           .pytest_cache/v/cache/lastfailed
         key: pytest-restore-failed-${{ github.ref }}
+      run: |
+        pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
+    
+#    - name: Save failed tests
+ #     id: cache-tests-save
+  #    uses: actions/cache/save@v3
+   #   with:
+    #    path: |
+     #     .pytest_cache/v/cache/lastfailed
+      #  key: pytest-restore-failed-${{ github.ref }}
       
     - name: Get Allure history
       uses: actions/checkout@v2
