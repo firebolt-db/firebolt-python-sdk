@@ -62,14 +62,14 @@ jobs:
              echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET }}" >> "$GITHUB_ENV"
           fi
 
-#      - name: Setup database and engine
- #       id: setup
-  #      uses: firebolt-db/integration-testing-setup@v1
-   #     with:
-    #      firebolt-username: ${{ env.USERNAME }}
-     #     firebolt-password: ${{ env.PASSWORD }}
-      #    api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
-       #   region: "us-east-1"
+      - name: Setup database and engine
+        id: setup
+        uses: firebolt-db/integration-testing-setup@v1
+        with:
+          firebolt-username: ${{ env.USERNAME }}
+          firebolt-password: ${{ env.PASSWORD }}
+          api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
+          region: "us-east-1"
 
       - name: Restore cached failed tests
         id: cache-tests-restore
