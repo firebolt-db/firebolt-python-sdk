@@ -51,8 +51,8 @@ jobs:
       - name: Determine env variables
         run: |
           if [ "${{ inputs.environment }}" == 'staging' ]; then
-             echo "CLIENT_ID=${{ secrets.SERVICE_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
-             echo "CLIENT_SECRET=${{ secrets.SERVICE_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
           else
              echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
              echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
