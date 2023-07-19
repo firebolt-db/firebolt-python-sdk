@@ -21,8 +21,8 @@ class RegionService(BaseService):
     @cached_property
     def regions(self) -> List[Region]:
         """List of available AWS regions on Firebolt."""
-
-        response = self.client.get(url=REGIONS_URL, params={"page.first": 5000})
+        
+        response = self.client.get(url=REGIONS_URL.format(account_id=self.account_id), params={"page.first": 5000})
         return [Region.parse_obj(i["node"]) for i in response.json()["edges"]]
 
     @cached_property
