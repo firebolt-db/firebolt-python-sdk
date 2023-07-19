@@ -36,11 +36,11 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
-    
+
     - name: Run unit tests
       run: |
         pytest --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
-      
+    
     - name: Get Allure history
       uses: actions/checkout@v2
       if: always()
@@ -48,7 +48,7 @@ jobs:
       with:
         ref: gh-pages
         path: gh-pages
-    
+
     - name: Allure Report
       uses: firebolt-db/action-allure-report@v1
       if: always()
