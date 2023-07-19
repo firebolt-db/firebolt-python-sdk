@@ -28,4 +28,3 @@ PROVIDERS_URL = "/compute/v1/providers"
 REGIONS_URL = "/compute/v1/regions"
 
 GATEWAY_HOST_BY_ACCOUNT_NAME = "/web/v3/account/{account_name}/engineUrl"
-DYNAMIC_QUERY = "/dynamic/query"
