@@ -21,13 +21,13 @@ on:
         type: string
         description: 'Branch to run on'
     secrets:
-      FIREBOLT_USERNAME:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
-      FIREBOLT_PASSWORD:
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
-      SERVICE_ID:
+      FIREBOLT_CLIENT_ID_NEW_IDN:
         required: true
-      SERVICE_SECRET:
+      FIREBOLT_CLIENT_SECRET_NEW_IDN:
         required: true
 jobs:
   tests:
