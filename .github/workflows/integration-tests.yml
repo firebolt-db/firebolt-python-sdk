@@ -98,7 +98,7 @@ jobs:
       - name: Save failed tests
         id: cache-tests-save
         uses: actions/cache/save@v3
-        if: always()
+        if: failure()
         with:
           path: |
             .pytest_cache/v/cache/lastfailed

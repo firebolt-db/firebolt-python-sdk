@@ -36,27 +36,10 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
-
-    - name: Restore cached failed tests
-      id: cache-tests-restore
-      uses: actions/cache/restore@v3
-      with:
-        path: |
-          .pytest_cache/v/cache/lastfailed
-        key: ${{ runner.os }}-pytest-restore-failed-${{ github.ref }}-${{ github.sha }}
     
     - name: Run unit tests
       run: |
-        pytest --last-failed --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
-    
-    - name: Save failed tests
-      id: cache-tests-save
-      uses: actions/cache/save@v3
-      if: always()
-      with:
-        path: |
-          .pytest_cache/v/cache/lastfailed
-        key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}
+        pytest --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
       
     - name: Get Allure history
       uses: actions/checkout@v2
