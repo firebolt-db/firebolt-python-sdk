@@ -12,7 +12,7 @@ from firebolt.utils.exception import (
     FireboltEngineError,
     InterfaceError,
 )
-from firebolt.utils.urls import DYNAMIC_QUERY, GATEWAY_HOST_BY_ACCOUNT_NAME
+from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -74,7 +74,6 @@ def _get_system_engine_url(
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
     ) as client:
-        #       return "https://api.us-east-1.dev.firebolt.io/dynamic"
         url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
         response = client.get(url=url)
         if response.status_code == codes.NOT_FOUND:
@@ -84,7 +83,7 @@ def _get_system_engine_url(
                 f"Unable to retrieve system engine endpoint {url}: "
                 f"{response.status_code} {response.content}"
             )
-        return response.json()["engineUrl"] + DYNAMIC_QUERY
+        return response.json()["engineUrl"]
 
 
 def _get_engine_url_status_db(

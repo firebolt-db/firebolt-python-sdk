@@ -438,12 +438,12 @@ def system_engine_url() -> str:
 def system_engine_query_url(
     system_engine_url: str, db_name: str, account_id: str
 ) -> str:
-    return f"{system_engine_url}/dynamic/query?output_format=JSON_Compact&database={db_name}&account_id={account_id}"
+    return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}&account_id={account_id}"
 
 
 @fixture
 def system_engine_no_db_query_url(system_engine_url: str, account_id: str) -> str:
-    return f"{system_engine_url}/dynamic/query?output_format=JSON_Compact&account_id={account_id}"
+    return f"{system_engine_url}/?output_format=JSON_Compact&account_id={account_id}"
 
 
 @fixture
