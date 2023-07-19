@@ -163,8 +163,8 @@ def region_callback(region_url: str, mock_regions) -> Callable:
 
 
 @fixture
-def region_url(settings: Settings) -> str:
-    return f"https://{settings.server}{REGIONS_URL}?page.first=5000"
+def region_url(settings: Settings, account_id: str) -> str:
+    return f"https://{settings.server}{REGIONS_URL}?page.first=5000&filter.enabled_for_account_id={account_id}"
 
 
 @fixture
