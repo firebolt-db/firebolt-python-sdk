@@ -55,26 +55,22 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@v1
+        uses: firebolt-db/integration-testing-setup@v2
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
-          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+          firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           api-endpoint: "api.staging.firebolt.io"
-          region: "us-east-1"
+          account: "developer"
           db_suffix: ${{ format('{0}_{1}', matrix.os, matrix.python-version) }}
 
       - name: Run integration tests
         env:
-          USER_NAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
-          PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
-          SERVICE_ID: ${{ secrets.SERVICE_ID_STG }}
-          SERVICE_SECRET: ${{ secrets.SERVICE_SECRET_STG }}
+          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
-          ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
-          STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
-          ACCOUNT_NAME: "firebolt"
+          ACCOUNT_NAME: "developer"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO --junit-xml=report/junit.xml tests/integration
