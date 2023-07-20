@@ -73,7 +73,7 @@ jobs:
         with:
           path: |
             .pytest_cache/v/cache/lastfailed
-          key: ${{ runner.label }}-pytest-restore-failed-${{ github.ref }}-${{ github.sha }}
+          key: ${{ runner.os }}-pytest-restore-failed-${{ github.ref }}-${{ github.sha }}
       
       - name: Run integration tests
         env:
