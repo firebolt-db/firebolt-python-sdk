@@ -94,7 +94,7 @@ def test_database_not_exists(
 
         assert (
             str(exc_info.value)
-            == f"Engine {engine_name} is not attached to {new_db_name}, but to {database_name}"
+            == f"Engine {engine_name} is attached to {database_name} instead of {new_db_name}"
         ), "Invalid database name error message"
 
 
