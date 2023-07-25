@@ -337,6 +337,10 @@ class BaseCursor:
         self._idx = right
         return left, right
 
+    _performance_log_message = (
+        "[PERFORMANCE] Parsing query output into native Python types"
+    )
+
     @check_not_closed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
@@ -346,7 +350,7 @@ class BaseCursor:
             # We are out of elements
             return None
         assert self._rows is not None
-        with Timer("[PERFORMANCE] Parsing query output into native Python types "):
+        with Timer(self._performance_log_message):
             result = self._parse_row(self._rows[left])
         return result
 
@@ -361,7 +365,7 @@ class BaseCursor:
         left, right = self._get_next_range(size)
         assert self._rows is not None
         rows = self._rows[left:right]
-        with Timer("[PERFORMANCE] Parsing query output into native Python types "):
+        with Timer(self._performance_log_message):
             result = [self._parse_row(row) for row in rows]
         return result
 
@@ -372,7 +376,7 @@ class BaseCursor:
         left, right = self._get_next_range(self.rowcount)
         assert self._rows is not None
         rows = self._rows[left:right]
-        with Timer("[PERFORMANCE] Parsing query output into native Python types "):
+        with Timer(self._performance_log_message):
             result = [self._parse_row(row) for row in rows]
         return result
 

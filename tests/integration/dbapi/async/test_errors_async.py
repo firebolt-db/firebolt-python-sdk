@@ -92,7 +92,8 @@ async def test_database_not_exists(
             await connection.cursor().execute("show tables")
 
     assert (
-        str(exc_info.value) == f"Database {new_db_name} does not exist"
+        str(exc_info.value)
+        == f"Engine {engine_name} is attached to {database_name} instead of {new_db_name}"
     ), "Invalid database name error message."
 
 

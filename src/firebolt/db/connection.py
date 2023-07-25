@@ -247,8 +247,8 @@ def connect(
 
             if database is not None and database != attached_db:
                 raise InterfaceError(
-                    f"Engine {engine_name} is not attached to {database}, "
-                    f"but to {attached_db}"
+                    f"Engine {engine_name} is attached to {attached_db} "
+                    f"instead of {database}"
                 )
             elif database is None:
                 database = attached_db

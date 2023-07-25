@@ -133,10 +133,10 @@ def test_long_query(
 def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
-    def test_query(c: Cursor, query: str, empty_response=True) -> None:
+    def test_query(c: Cursor, query: str) -> None:
         c.execute(query)
         assert c.description == None
-        assert c.rowcount == (-1 if empty_response else 0)
+        assert c.rowcount == 0
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
@@ -172,7 +172,6 @@ def test_drop_create(connection: Connection) -> None:
             c,
             "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
             "test_drop_create_tb(id, sum(f), count(dt))",
-            empty_response=False,
         )
 
         # Drop join index

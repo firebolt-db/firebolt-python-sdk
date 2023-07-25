@@ -127,10 +127,10 @@ async def test_long_query(
 async def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
-    async def test_query(c: Cursor, query: str, empty_response=True) -> None:
+    async def test_query(c: Cursor, query: str) -> None:
         await c.execute(query)
         assert c.description == None
-        assert c.rowcount == (-1 if empty_response else 0)
+        assert c.rowcount == 0
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
@@ -166,7 +166,6 @@ async def test_drop_create(connection: Connection) -> None:
             c,
             "CREATE AGGREGATING INDEX test_db_agg_idx ON "
             "test_drop_create_async(id, sum(f), count(dt))",
-            empty_response=False,
         )
 
         # Drop join index
