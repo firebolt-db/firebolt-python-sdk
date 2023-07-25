@@ -118,7 +118,7 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
             30000000000,
             -30000000000,
             1.23,
-            1.2345678901234,
+            1.23456789012,
             "text",
             date(2021, 3, 28),
             date(1, 1, 1),
