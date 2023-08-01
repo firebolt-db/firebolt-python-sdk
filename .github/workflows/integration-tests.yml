@@ -93,7 +93,7 @@ jobs:
           API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
           ACCOUNT_NAME: "firebolt"
         run: |
-          pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration --alluredir=allure-results
+          pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration
 
       - name: Save failed tests
         id: cache-tests-save
@@ -103,18 +103,4 @@ jobs:
           path: |
             .pytest_cache/v/cache/lastfailed
           key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}
-      
-      - name: Get Allure history
-        uses: actions/checkout@v2
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
-        if: always()
-        with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
-          test-type: integration
+    
