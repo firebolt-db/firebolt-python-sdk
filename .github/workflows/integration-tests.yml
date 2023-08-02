@@ -60,7 +60,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@new-identity
+        uses: firebolt-db/integration-testing-setup@upgrading_actions_core_v1_10_0
         with:
           firebolt-client-id: ${{ env.CLIENT_ID }}
           firebolt-client-secret: ${{ env.CLIENT_SECRET }}
