@@ -6,6 +6,11 @@ on:
         required: true
         type: string
         description: 'Branch to run on'
+      setup-version:
+        required: false
+        default: 'v2'
+        type: string
+        description: 'Version of setup action to use'
 jobs:
   code-check:
     uses: ./.github/workflows/code-check.yml
@@ -55,7 +60,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@v2
+        uses: firebolt-db/integration-testing-setup@${{ inputs.setup-version }}
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
