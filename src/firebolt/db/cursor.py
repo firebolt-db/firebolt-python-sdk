@@ -18,7 +18,7 @@ from typing import (
 
 from httpx import Client as HttpxClient
 from httpx import Response, codes
-from readerwriterlock.rwlock import RWLockWrite  # type: ignore
+from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.common._types import (
     ColType,

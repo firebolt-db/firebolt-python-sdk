@@ -10,7 +10,7 @@ from warnings import warn
 from httpcore._backends.base import NetworkStream
 from httpcore._backends.sync import SyncBackend
 from httpx import HTTPStatusError, HTTPTransport, RequestError, Timeout
-from readerwriterlock.rwlock import RWLockWrite  # type: ignore
+from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, Client
 from firebolt.client.auth import Auth, _get_auth
