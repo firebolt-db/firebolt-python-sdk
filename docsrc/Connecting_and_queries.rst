@@ -25,8 +25,7 @@ To get started, follow the steps below:
 	::
 
 		from firebolt.db import connect
-		from firebolt.client import DEFAULT_API_URL
-		from firebolt.client.auth import UsernamePassword
+		from firebolt.client.auth import ClientCredentials
 
 
 .. _connecting_with_credentials_example:
@@ -39,13 +38,11 @@ To get started, follow the steps below:
 	A connection requires the following parameters:
 
 	+------------------------------------+-------------------------------------------------------------------+
-	| ``username``                       |  The email address associated with your Firebolt user.            |
-	+------------------------------------+-------------------------------------------------------------------+
-	| ``password``                       |  The password used for connecting to Firebolt.                    |
+	| ``auth``                           |                                                                   |
 	+------------------------------------+-------------------------------------------------------------------+
 	| ``database``                       |  The name of the database you would like to connect to.           |
 	+------------------------------------+-------------------------------------------------------------------+
-	| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.            |
+	| ``engine_name``                    |  The name of the engine to use for SQL queries.                   |
 	|                                    |                                                                   |
 	|                                    |	If the engine is not specified, your default engine is used.     |
 	+------------------------------------+-------------------------------------------------------------------+
@@ -62,15 +59,15 @@ To get started, follow the steps below:
 
 			::
 
-				username = "your_username"
-				password = "your_password"
+				id = "your_service_account_id"
+				secret = "your_service_account_secret"
 				engine_name = "your_engine"
 				database_name = "your_database"
 
 				with connect(
     					engine_name=engine_name,
     					database=database_name,
-    					auth=UsernamePassword(username, password),
+    					auth=ClientCredentials(id, secret),
 				) as connection:
 					cursor = connection.cursor()
 
@@ -83,8 +80,8 @@ To get started, follow the steps below:
 
 			::
 
-				FIREBOLT_USER="your_username"
-				FIREBOLT_PASSWORD="your_password"
+				FIREBOLT_CLIENT_ID="your_service_account_id"
+				FIREBOLT_CLIENT_SECRET="your_service_account_secret"
 				FIREBOLT_ENGINE="your_engine"
 				FIREBOLT_DB="your_database"
 
@@ -103,9 +100,9 @@ To get started, follow the steps below:
 				load_dotenv()
 
 				with connect(
-				    auth=UsernamePassword(
-				        os.getenv("FIREBOLT_USER"),
-				        os.getenv("FIREBOLT_PASSWORD")
+				    auth=ClientCredentials(
+				        os.getenv("FIREBOLT_CLIENT_ID"),
+				        os.getenv("FIREBOLT_CLIENT_SECRET")
 				    )
 				    engine_name=os.getenv('FIREBOLT_ENGINE'),
 				    database=os.getenv('FIREBOLT_DB')

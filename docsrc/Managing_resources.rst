@@ -25,6 +25,7 @@ To get started, follow the steps below:
 
 		from firebolt.service.manager import ResourceManager
 		from firebolt.common import Settings
+		from firebolt.client.auth import ClientCredentials
 
 
 **2. Initialize a Settings object**
@@ -35,9 +36,7 @@ To get started, follow the steps below:
 	The Settings object uses the following parameters:
 
 	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
-	| ``user``            |  The email address associated with your Firebolt user profile.                                                              |
-	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
-	| ``password``        |  The password used for connecting to Firebolt.                                                                              |
+	| ``auth``            |                                                                                                                             |
 	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
 	| ``server``          |  The API hostname for logging in. Defaults to ``api.app.firebolt.io`` if not included.                                      |
 	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
@@ -55,8 +54,7 @@ To get started, follow the steps below:
 			::
 
 				settings = Settings(
-				    user="your_username",
-				    password="your_password",
+				    auth=ClientCredentials("your_service_account_id", "your_service_account_secret"),
 				    server="api.app.firebolt.io"
 				    default_region="your_region"
 				)
@@ -65,8 +63,8 @@ To get started, follow the steps below:
 
 			::
 
-				FIREBOLT_USER="your_username",
-				FIREBOLT_PASSWORD="your_password",
+				FIREBOLT_CLIENT_ID="your_service_account_id",
+				FIREBOLT_CLIENT_SECRET="your_service_account_secret",
 				FIREBOLT_SERVER="api.app.firebolt.io"
 				FIREBOLT_DEFAULT_REGION="your_region"
 
