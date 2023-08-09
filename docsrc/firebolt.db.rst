@@ -18,6 +18,7 @@ Connection
 .. automodule:: firebolt.db.connection
    :members:
    :inherited-members:
+   :exclude-members: BaseConnection, async_connect_factory, OverriddenHttpBackend, connect
    :undoc-members:
    :show-inheritance:
 
