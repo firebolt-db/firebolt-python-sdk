@@ -27,6 +27,7 @@ print(rm.regions.default_region) # see your default region
 Or you can configure settings manually:
 
 ```python
+from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import UsernamePassword
 from firebolt.service.manager import ResourceManager
 from firebolt.common.settings import Settings
@@ -34,7 +35,7 @@ from firebolt.common.settings import Settings
 rm = ResourceManager(settings=Settings(
     auth=UsernamePassword("email@domain.com", "*****")
     account_name="account", # Necessary if you have multiple accounts.
-    server="api.app.firebolt.io",
+    server=DEFAULT_API_URL,
     default_region="us-east-1",
 ))
 print(rm.client.account_id) # see your account id
