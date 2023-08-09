@@ -1,7 +1,6 @@
-from functools import lru_cache, partial, wraps
-from typing import TYPE_CHECKING, Any, Callable, Optional, Type, TypeVar
+from functools import lru_cache
+from typing import TYPE_CHECKING, Callable, Optional, Type, TypeVar
 
-import trio
 from httpx import URL
 
 from firebolt.utils.exception import ConfigurationError
@@ -70,23 +69,6 @@ def fix_url_schema(url: str) -> str:
 
     """
     return url if url.startswith("http") else f"https://{url}"
-
-
-def async_to_sync(f: Callable) -> Callable:
-    """Convert async function to sync.
-
-    Args:
-        f (Callable): function to convert
-
-    Returns:
-        Callable: regular function, which can be executed synchronously
-    """
-
-    @wraps(f)
-    def sync(*args: Any, **kwargs: Any) -> Any:
-        return trio.run(partial(f, *args, **kwargs))
-
-    return sync
 
 
 def merge_urls(base: URL, merge: URL) -> URL:
