@@ -14,20 +14,29 @@
 
 ## Documentation
 
-For reference and tutorials, see the [Firebolt Python SDK reference](https://python-sdk.docs.firebolt.io/).
+For reference and tutorials, see the [Firebolt Python SDK reference](https://python-sdk.docs.firebolt.io/en/0.x/).
 
 ## Connection parameters
 These parameters are used to connect to a Firebolt database:
-- **engine_url** - url for an engine to make requests to. Can be retrieved from Web UI, or from [engine](https://github.com/firebolt-db/firebolt-sdk/tree/main/src/firebolt/model/engine.py) attribute `endpoint`
+- Username/Password authentication
+  - **username** - account username
+  - **password** - account password
+- Service Account authentication
+  - **client_id** - service account client id
+  - **client_secret** - service account client secret
 - **database** - name of the database to make queries to
-- **username** - account username
-- **password** - account password
+- **engine_url** - url for an engine to make requests to. Can be retrieved from Web UI, or from [engine](https://github.com/firebolt-db/firebolt-sdk/tree/0.x/src/firebolt/model/engine.py) attribute `endpoint`   
+  (Mutually exclusive with **engine_name**)
+- **engine_name** - name of an engine to make requests to. Can be retrieved from Web UI, or from [engine](https://github.com/firebolt-db/firebolt-sdk/tree/0.x/src/firebolt/model/engine.py) attribute `name`   
+  (Mutually exclusive with **engine_url**)
 
 Optional parameters
+- **account_name** - name of a Firebolt account to use. Default account is used if it's not provided
+- **use_token_cache** - whether to store obtained authentication tokens in cache file. Defaults to True
 - **api_endpoint** - api hostname for logging in. Defaults to `api.app.firebolt.io`.
 
 ## Examples
-See [PEP-249](https://www.python.org/dev/peps/pep-0249) for the DB API reference and specifications. An example [jupyter notebook](https://github.com/firebolt-db/firebolt-sdk/tree/main/examples/dbapi.ipynb) is included to illustrate the use of the Firebolt API.
+See [PEP-249](https://www.python.org/dev/peps/pep-0249) for the DB API reference and specifications. An example [jupyter notebook](https://github.com/firebolt-db/firebolt-sdk/tree/0.x/examples/dbapi.ipynb) is included to illustrate the use of the Firebolt API.
 
 ## Special considerations
 ### Cursor objects should not be shared between threads
@@ -39,7 +48,7 @@ By default, firebolt-sdk uses `datetime` module to parse date and datetime value
 
 ## Contributing
 
-See: [CONTRIBUTING.MD](https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD)
+See: [CONTRIBUTING.MD](https://github.com/firebolt-db/firebolt-sdk/tree/0.x/CONTRIBUTING.MD)
 
 ## License
-The Firebolt DB API is licensed under the [Apache License Version 2.0](https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE) software license.
+The Firebolt DB API is licensed under the [Apache License Version 2.0](https://github.com/firebolt-db/firebolt-sdk/tree/0.x/LICENSE) software license.

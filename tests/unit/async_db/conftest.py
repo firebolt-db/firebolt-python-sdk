@@ -2,14 +2,13 @@ from datetime import date, datetime
 from typing import Dict
 
 from pytest import fixture
-from pytest_asyncio import fixture as asyncio_fixture
 
 from firebolt.async_db import ARRAY, DECIMAL, Connection, Cursor, connect
 from firebolt.common.settings import Settings
 from tests.unit.db_conftest import *  # noqa
 
 
-@asyncio_fixture
+@fixture
 async def connection(settings: Settings, db_name: str) -> Connection:
     async with (
         await connect(
@@ -24,7 +23,7 @@ async def connection(settings: Settings, db_name: str) -> Connection:
         yield connection
 
 
-@asyncio_fixture
+@fixture
 async def cursor(connection: Connection, settings: Settings) -> Cursor:
     return connection.cursor()
 
