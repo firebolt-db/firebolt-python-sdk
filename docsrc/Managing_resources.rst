@@ -23,9 +23,10 @@ To get started, follow the steps below:
 
 	::
 
-		from firebolt.service.manager import ResourceManager
-		from firebolt.common import Settings
+		from firebolt.client import DEFAULT_API_URL
 		from firebolt.client.auth import ClientCredentials
+		from firebolt.common import Settings
+		from firebolt.service.manager import ResourceManager
 
 
 **2. Initialize a Settings object**
@@ -36,7 +37,7 @@ To get started, follow the steps below:
 	The Settings object uses the following parameters:
 
 	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
-	| ``auth``            |                                                                                                                             |
+	| ``auth``            |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.                         |
 	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
 	| ``server``          |  The API hostname for logging in. Defaults to ``api.app.firebolt.io`` if not included.                                      |
 	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
@@ -45,6 +46,13 @@ To get started, follow the steps below:
 	|                     |  For more information, see `Available AWS Regions <https://docs.firebolt.io/general-reference/available-regions.html>`_.    |
 	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
 
+
+	.. note::
+		If you specify ``engine_name`` but not the ``database`` Python SDK will automatically resolve the database for you behind the scenes.
+
+		If an ``engine_name`` is not specified the SDK will connect to a system engine. In this case, if no ``database`` is specified for a system engine
+		you can still connect, but queries are limited to database and engine management queries e.g. ``CREATE DATABASE``, ``START ENGINE``, etc.
+		To interact with tables in a database you have to provide the ``database`` parameter when connecting with no engine.
 
 
 	A ``Settings`` object can be configured with parameters by multiple methods.
@@ -55,7 +63,7 @@ To get started, follow the steps below:
 
 				settings = Settings(
 				    auth=ClientCredentials("your_service_account_id", "your_service_account_secret"),
-				    server="api.app.firebolt.io"
+				    server=DEFAULT_API_URL,
 				    default_region="your_region"
 				)
 
@@ -65,7 +73,7 @@ To get started, follow the steps below:
 
 				FIREBOLT_CLIENT_ID="your_service_account_id",
 				FIREBOLT_CLIENT_SECRET="your_service_account_secret",
-				FIREBOLT_SERVER="api.app.firebolt.io"
+				FIREBOLT_SERVER="api.app.firebolt.io",
 				FIREBOLT_DEFAULT_REGION="your_region"
 
 			In your application file, the ``Settings`` object can read the values from the
@@ -155,25 +163,17 @@ A newly created database uses the default region from your Settings unless you s
 Locating a database
 ---------------------
 
-Find a specific Firebolt database by using its name or ID. These functions are useful as
+Find a specific Firebolt database by using its name. This function is useful as
 a starting point to create a ``database`` object that can be called in other database functions.
 
-In the examples below, replace the values for ``database_name`` and ``database_id`` with
-your database name or ID.
-
+In the example below, replace the values for ``database_name`` with your database name.
 
 
 	**Locating by name**
 
 		::
 
-			database = rm.databases.get_by_name(name="database_name")
-
-	**Locating by ID**
-
-		::
-
-			database = rm.databases.get_by_id(id="database_id")
+			database = rm.databases.get(name="database_name")
 
 
 Getting database status
@@ -263,23 +263,16 @@ List out the names of all engines under your account by using the ``get_many`` f
 Locating an engine
 --------------------
 
-Find a specific Firebolt engine by using its name or ID. These functions are useful as a
+Find a specific Firebolt engine by using its name. This function is useful as a
 starting point to create an ``engine`` object that can be called in other engine functions.
 
-In the examples below, replace the values for ``engine_name`` and ``engine_id`` with your
-engine name or ID.
+In the example below, replace the value for ``engine_name`` with your engine name.
 
 	**Locating by name**
 
 		::
 
-			engine = rm.engines.get_by_name(name="engine_name")
-
-	**Locating by ID**
-
-		::
-
-			engine = rm.engines.get_by_id(name="engine_id")
+			engine = rm.engines.get(name="engine_name")
 
 
 Attaching an engine
@@ -290,9 +283,9 @@ it can run SQL commands or queries.
 
 	::
 
-		engine = rm.engines.get_by_name(name="engine_name")
+		engine = rm.engines.get(name="engine_name")
 		engine.attach_to_database(
-		    database=rm.databases.get_by_name(name="database_name")
+		    database=rm.databases.get(name="database_name")
 		)
 
 

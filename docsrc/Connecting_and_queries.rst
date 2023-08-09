@@ -37,15 +37,20 @@ To get started, follow the steps below:
 
 	A connection requires the following parameters:
 
-	+------------------------------------+-------------------------------------------------------------------+
-	| ``auth``                           |                                                                   |
-	+------------------------------------+-------------------------------------------------------------------+
-	| ``database``                       |  The name of the database you would like to connect to.           |
-	+------------------------------------+-------------------------------------------------------------------+
-	| ``engine_name``                    |  The name of the engine to use for SQL queries.                   |
-	|                                    |                                                                   |
-	|                                    |	If the engine is not specified, your default engine is used.     |
-	+------------------------------------+-------------------------------------------------------------------+
+	+------------------------------------+-----------------------------------------------------------------------------------------------------+
+	| ``auth``                           |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details. |
+	+------------------------------------+-----------------------------------------------------------------------------------------------------+
+	| ``database``                       |  Optional. The name of the database you would like to connect to.                                   |
+	+------------------------------------+-----------------------------------------------------------------------------------------------------+
+	| ``engine_name``                    |  Optional. The name of the engine to use for SQL queries.                                           |
+	+------------------------------------+-----------------------------------------------------------------------------------------------------+
+
+	.. note::
+		If you specify ``engine_name`` but not the ``database`` Python SDK will automatically resolve the database for you behind the scenes.
+
+		If an ``engine_name`` is not specified the SDK will connect to a system engine. In this case, if no ``database`` is specified for a system engine
+		you can still connect, but queries are limited to database and engine management queries e.g. ``CREATE DATABASE``, ``START ENGINE``, etc.
+		To interact with tables in a database you have to provide the ``database`` parameter when connecting with no engine.
 
 	This information can be provided in multiple ways.
 
