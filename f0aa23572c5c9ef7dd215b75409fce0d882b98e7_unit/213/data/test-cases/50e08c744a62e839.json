@@ -1,0 +1,92 @@
+{
+  "uid" : "50e08c744a62e839",
+  "name" : "test_detect_connectors[stack11-map11-expected11]",
+  "fullName" : "tests.unit.utils.test_usage_tracker#test_detect_connectors",
+  "historyId" : "d97a24bf6065b6738634fe69832721b2",
+  "time" : {
+    "start" : 1691572162925,
+    "stop" : 1691572162926,
+    "duration" : 1
+  },
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1691572162922,
+      "stop" : 1691572162924,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1691572162928,
+      "stop" : 1691572162929,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.utils"
+  }, {
+    "name" : "suite",
+    "value" : "test_usage_tracker"
+  }, {
+    "name" : "host",
+    "value" : "fv-az254-511"
+  }, {
+    "name" : "thread",
+    "value" : "2233-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.utils.test_usage_tracker"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "expected",
+    "value" : "{'Redash': '0.2.2'}"
+  }, {
+    "name" : "map",
+    "value" : "[('Airflow', 'get_conn', PosixPath('firebolt_provider/hooks/firebolt.py'), 'firebolt_provider'), ('AirbyteDestination', 'establish_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteDestination', 'establish_async_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteSource', 'establish_connection', PosixPath('source_firebolt/source.py'), ''), ('AirbyteSource', 'establish_async_connection', PosixPath('source_firebolt/source.py'), ''), ('FireboltCLI', 'create_connection', PosixPath('firebolt_cli/utils.py'), 'firebolt_cli'), ('DBT', 'open', PosixPath('dbt/adapters/firebolt/connections.py'), 'dbt.adapters.firebolt'), ('Superset', '', PosixPath('superset/models/core.py'), ''), ('Redash', 'run_query', PosixPath('redash/query_runner/firebolt.py'), 'redash'), ('Prefect', 'run', PosixPath('prefect/tasks/firebolt/firebolt.py'), 'prefect')]"
+  }, {
+    "name" : "stack",
+    "value" : "[StackItem(function='run_query', filename='my_redash/redash/query_runner/firebolt.py')]"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "tags" : [ ]
+  },
+  "source" : "50e08c744a62e839.json",
+  "parameterValues" : [ "{'Redash': '0.2.2'}", "[('Airflow', 'get_conn', PosixPath('firebolt_provider/hooks/firebolt.py'), 'firebolt_provider'), ('AirbyteDestination', 'establish_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteDestination', 'establish_async_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteSource', 'establish_connection', PosixPath('source_firebolt/source.py'), ''), ('AirbyteSource', 'establish_async_connection', PosixPath('source_firebolt/source.py'), ''), ('FireboltCLI', 'create_connection', PosixPath('firebolt_cli/utils.py'), 'firebolt_cli'), ('DBT', 'open', PosixPath('dbt/adapters/firebolt/connections.py'), 'dbt.adapters.firebolt'), ('Superset', '', PosixPath('superset/models/core.py'), ''), ('Redash', 'run_query', PosixPath('redash/query_runner/firebolt.py'), 'redash'), ('Prefect', 'run', PosixPath('prefect/tasks/firebolt/firebolt.py'), 'prefect')]", "[StackItem(function='run_query', filename='my_redash/redash/query_runner/firebolt.py')]" ]
+}
