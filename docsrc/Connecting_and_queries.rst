@@ -17,15 +17,15 @@ To get started, follow the steps below:
 
 **1. Import modules**
 
-	The Firebolt Python SDK requires you to import the following modules before making
-	any command or query requests to your Firebolt database.
+    The Firebolt Python SDK requires you to import the following modules before making
+    any command or query requests to your Firebolt database.
 
 .. _required_connection_imports:
 
-	::
+    ::
 
-		from firebolt.db import connect
-		from firebolt.client.auth import ClientCredentials
+        from firebolt.db import connect
+        from firebolt.client.auth import ClientCredentials
 
 
 .. _connecting_with_credentials_example:
@@ -33,91 +33,93 @@ To get started, follow the steps below:
 **2. Connect to your database and engine**
 
 
-	Your account information can be provided as parameters in a ``connection()`` function.
+    Your account information can be provided as parameters in a ``connection()`` function.
 
-	A connection requires the following parameters:
+    A connection requires the following parameters:
 
-	+------------------------------------+-----------------------------------------------------------------------------------------------------+
-	| ``auth``                           |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details. |
-	+------------------------------------+-----------------------------------------------------------------------------------------------------+
-	| ``database``                       |  Optional. The name of the database you would like to connect to.                                   |
-	+------------------------------------+-----------------------------------------------------------------------------------------------------+
-	| ``engine_name``                    |  Optional. The name of the engine to use for SQL queries.                                           |
-	+------------------------------------+-----------------------------------------------------------------------------------------------------+
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``auth``                           |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.           |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``account_name``                   |  The name of the account you're using to connect to Firebolt. Must be specified in order to authenticate.     |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``database``                       |  Optional. The name of the database you would like to connect to.                                             |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``engine_name``                    |  Optional. The name of the engine to use for SQL queries.                                                     |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
-	.. note::
-		If you specify ``engine_name`` but not the ``database`` Python SDK will automatically resolve the database for you behind the scenes.
+    .. note::
+        If you specify ``engine_name`` but not the ``database`` Python SDK will automatically resolve the database for you behind the scenes.
 
-		If an ``engine_name`` is not specified the SDK will connect to a system engine. In this case, if no ``database`` is specified for a system engine
-		you can still connect, but queries are limited to database and engine management queries e.g. ``CREATE DATABASE``, ``START ENGINE``, etc.
-		To interact with tables in a database you have to provide the ``database`` parameter when connecting with no engine.
+        If an ``engine_name`` is not specified the SDK will not be bound to any engine. In this case, if also no ``database`` is specified
+        you can still connect, but queries are limited to database and engine management queries e.g. ``CREATE DATABASE``, ``START ENGINE``, etc.
+        To interact with tables in a database you have to provide the ``database`` parameter when connecting with no engine.
 
-	This information can be provided in multiple ways.
+    This information can be provided in multiple ways.
 
-		* **Set credentials manually**
+        * **Set credentials manually**
 
-			You can manually include your account information in a connection object in
-			your code for any queries you want to request.
+            You can manually include your account information in a connection object in
+            your code for any queries you want to request.
 
-			Replace the values in the example code below with your Firebolt account
-			credentials as appropriate.
+            Replace the values in the example code below with your Firebolt account
+            credentials as appropriate.
 
-			::
+            ::
 
-				id = "your_service_account_id"
-				secret = "your_service_account_secret"
-				engine_name = "your_engine"
-				database_name = "your_database"
+                id = "your_service_account_id"
+                secret = "your_service_account_secret"
+                engine_name = "your_engine"
+                database_name = "your_database"
 
-				with connect(
-    					engine_name=engine_name,
-    					database=database_name,
-    					auth=ClientCredentials(id, secret),
-				) as connection:
-					cursor = connection.cursor()
+                with connect(
+                        engine_name=engine_name,
+                        database=database_name,
+                        auth=ClientCredentials(id, secret),
+                ) as connection:
+                    cursor = connection.cursor()
 
 
-		* **Use an .env file**
+        * **Use an .env file**
 
-			Consolidating all of your Firebolt credentials into a ``.env`` file can help
-			protect sensitive information from exposure. Create an ``.env`` file with the
-			following key-value pairs, and replace the values with your information.
+            Consolidating all of your Firebolt credentials into a ``.env`` file can help
+            protect sensitive information from exposure. Create an ``.env`` file with the
+            following key-value pairs, and replace the values with your information.
 
-			::
+            ::
 
-				FIREBOLT_CLIENT_ID="your_service_account_id"
-				FIREBOLT_CLIENT_SECRET="your_service_account_secret"
-				FIREBOLT_ENGINE="your_engine"
-				FIREBOLT_DB="your_database"
+                FIREBOLT_CLIENT_ID="your_service_account_id"
+                FIREBOLT_CLIENT_SECRET="your_service_account_secret"
+                FIREBOLT_ENGINE="your_engine"
+                FIREBOLT_DB="your_database"
 
-			Be sure to place this ``.env`` file into your root directory.
+            Be sure to place this ``.env`` file into your root directory.
 
-			Your connection script can load these environmental variables from the ``.env``
-			file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_
-			package. Note that the example below imports the ``os`` and ``dotenv`` modules
-			in order to load the environmental variables.
+            Your connection script can load these environmental variables from the ``.env``
+            file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_
+            package. Note that the example below imports the ``os`` and ``dotenv`` modules
+            in order to load the environmental variables.
 
-			::
+            ::
 
-				import os
-				from dotenv import load_dotenv
+                import os
+                from dotenv import load_dotenv
 
-				load_dotenv()
+                load_dotenv()
 
-				with connect(
-				    auth=ClientCredentials(
-				        os.getenv("FIREBOLT_CLIENT_ID"),
-				        os.getenv("FIREBOLT_CLIENT_SECRET")
-				    )
-				    engine_name=os.getenv('FIREBOLT_ENGINE'),
-				    database=os.getenv('FIREBOLT_DB')
-				) as connection:
-					cursor = connection.cursor()
+                with connect(
+                    auth=ClientCredentials(
+                        os.getenv("FIREBOLT_CLIENT_ID"),
+                        os.getenv("FIREBOLT_CLIENT_SECRET")
+                    )
+                    engine_name=os.getenv('FIREBOLT_ENGINE'),
+                    database=os.getenv('FIREBOLT_DB')
+                ) as connection:
+                    cursor = connection.cursor()
 
 **3. Execute commands using the cursor**
 
-	The ``cursor`` object can be used to send queries and commands to your Firebolt
-	database and engine. See below for examples of functions using the ``cursor`` object.
+    The ``cursor`` object can be used to send queries and commands to your Firebolt
+    database and engine. See below for examples of functions using the ``cursor`` object.
 
 Synchronous command and query examples
 ==================================================
@@ -138,32 +140,32 @@ queries. For help, see :ref:`managing_resources:starting an engine`.
 
 ::
 
-	cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table (
-	        id INT,
-	        name TEXT
-	    )
-	    PRIMARY INDEX id;
-	    """
-	)
+    cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table (
+            id INT,
+            name TEXT
+        )
+        PRIMARY INDEX id;
+        """
+    )
 
-	cursor.execute(
-	    """
-	    INSERT INTO test_table VALUES
-	    (1, 'hello'),
-	    (2, 'world'),
-	    (3, '!');
-	    """
-	)
+    cursor.execute(
+        """
+        INSERT INTO test_table VALUES
+        (1, 'hello'),
+        (2, 'world'),
+        (3, '!');
+        """
+    )
 
-	cursor.execute("SELECT * FROM test_table;")
+    cursor.execute("SELECT * FROM test_table;")
 
-	cursor.close()
+    cursor.close()
 
 .. note::
 
-	For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
+    For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
 
 
 Fetching query results
@@ -177,19 +179,19 @@ below use the data queried from ``test_table`` created in the
 
 ::
 
-	print(cursor.fetchone())
+    print(cursor.fetchone())
 
 **Returns**: ``[2, 'world']``
 
 ::
 
-	print(cursor.fetchmany(2))
+    print(cursor.fetchmany(2))
 
 **Returns**: ``[[1, 'hello'], [3, '!']]``
 
 ::
 
-	print(cursor.fetchall())
+    print(cursor.fetchall())
 
 **Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
@@ -211,25 +213,25 @@ parameters equal in length to the  number of ``?`` in the statement.
 
 ::
 
-	cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table2 (
-		    id INT,
-		    name TEXT,
-		    date_value DATE
-	    )
-		PRIMARY INDEX id;"""
-	)
+    cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table2 (
+            id INT,
+            name TEXT,
+            date_value DATE
+        )
+        PRIMARY INDEX id;"""
+    )
 
 
 ::
 
-	cursor.execute(
-	    "INSERT INTO test_table2 VALUES (?, ?, ?)",
-	    (1, "apple", "2018-01-01"),
-	)
+    cursor.execute(
+        "INSERT INTO test_table2 VALUES (?, ?, ?)",
+        (1, "apple", "2018-01-01"),
+    )
 
-	cursor.close()
+    cursor.close()
 
 .. _parameterized_query_executemany_example:
 
@@ -239,16 +241,16 @@ as values in the second argument.
 
 ::
 
-	cursor.executemany(
-	    "INSERT INTO test_table2 VALUES (?, ?, ?)",
-	    (
-	        (2, "banana", "2019-01-01"),
-	        (3, "carrot", "2020-01-01"),
-	        (4, "donut", "2021-01-01")
-	    )
-	)
+    cursor.executemany(
+        "INSERT INTO test_table2 VALUES (?, ?, ?)",
+        (
+            (2, "banana", "2019-01-01"),
+            (3, "carrot", "2020-01-01"),
+            (4, "donut", "2021-01-01")
+        )
+    )
 
-	cursor.close()
+    cursor.close()
 
 
 
@@ -261,32 +263,32 @@ SQL statements in the Firebolt UI.
 
 ::
 
-	cursor.execute(
-	    """
-	    SELECT * FROM test_table WHERE id < 4;
-	    SELECT * FROM test_table WHERE id > 2;
-	    """
-	)
-	print("First query: ", cursor.fetchall())
-	assert cursor.nextset()
-	print("Second query: ", cursor.fetchall())
-	assert cursor.nextset() is None
+    cursor.execute(
+        """
+        SELECT * FROM test_table WHERE id < 4;
+        SELECT * FROM test_table WHERE id > 2;
+        """
+    )
+    print("First query: ", cursor.fetchall())
+    assert cursor.nextset()
+    print("Second query: ", cursor.fetchall())
+    assert cursor.nextset() is None
 
-	cursor.close()
+    cursor.close()
 
 **Returns**:
 
 ::
 
-	First query: [[2, 'banana', datetime.date(2019, 1, 1)],
-	              [3, 'carrot', datetime.date(2020, 1, 1)],
-	              [1, 'apple', datetime.date(2018, 1, 1)]]
-	Second query: [[3, 'carrot', datetime.date(2020, 1, 1)],
-	               [4, 'donut', datetime.date(2021, 1, 1)]]
+    First query: [[2, 'banana', datetime.date(2019, 1, 1)],
+                  [3, 'carrot', datetime.date(2020, 1, 1)],
+                  [1, 'apple', datetime.date(2018, 1, 1)]]
+    Second query: [[3, 'carrot', datetime.date(2020, 1, 1)],
+                   [4, 'donut', datetime.date(2021, 1, 1)]]
 
 .. note::
 
-	Multiple statement queries are not able to use placeholder values for parameterized queries.
+    Multiple statement queries are not able to use placeholder values for parameterized queries.
 
 
 
@@ -312,36 +314,36 @@ It can be extended to run alongside of other operations.
 
 ::
 
-	from asyncio import run
-	from firebolt.async_db import connect as async_connect
-	from firebolt.client.auth import ClientCredentials
+    from asyncio import run
+    from firebolt.async_db import connect as async_connect
+    from firebolt.client.auth import ClientCredentials
 
 
-	async def run_query():
-		id = "your_service_account_id"
-		secret = "your_service_account_secret"
-		engine_name = "your_engine"
-		database_name = "your_database"
+    async def run_query():
+        id = "your_service_account_id"
+        secret = "your_service_account_secret"
+        engine_name = "your_engine"
+        database_name = "your_database"
 
-		query = "select * from my_table"
+        query = "select * from my_table"
 
-		async with await async_connect(
-			engine_name=engine_name,
-			database=database_name,
-			auth=ClientCredentials(id, secret),
-		) as connection:
-			cursor = connection.cursor()
+        async with await async_connect(
+            engine_name=engine_name,
+            database=database_name,
+            auth=ClientCredentials(id, secret),
+        ) as connection:
+            cursor = connection.cursor()
 
-			# Asyncronously execute a query
-			rowcount = await cursor.execute(query)
+            # Asyncronously execute a query
+            rowcount = await cursor.execute(query)
 
-			# Asyncronously fetch a result
-			single_row = await cursor.fetchone()
-			multiple_rows = await cursor.fetchmany(5)
-			all_remaining_rows = await cursor.fetchall()
+            # Asyncronously fetch a result
+            single_row = await cursor.fetchone()
+            multiple_rows = await cursor.fetchmany(5)
+            all_remaining_rows = await cursor.fetchall()
 
-	# Run async `run_query` from the synchronous context of your script
-	run(run_query())
+    # Run async `run_query` from the synchronous context of your script
+    run(run_query())
 
 
 Running multiple queries in parallel
@@ -353,55 +355,55 @@ at the same time.
 
 ::
 
-	from asyncio import gather, run
-	from firebolt.async_db import connect as async_connect
-	from firebolt.client.auth import ClientCredentials
+    from asyncio import gather, run
+    from firebolt.async_db import connect as async_connect
+    from firebolt.client.auth import ClientCredentials
 
 
-	async def execute_sql(connection, query):
-		# Create a new cursor for every query
-		cursor = connection.cursor()
-		# Wait for cursor to execute a query
-		await cursor.execute(query)
-		# Return full query result
-		return await cursor.fetchall()
+    async def execute_sql(connection, query):
+        # Create a new cursor for every query
+        cursor = connection.cursor()
+        # Wait for cursor to execute a query
+        await cursor.execute(query)
+        # Return full query result
+        return await cursor.fetchall()
 
 
-	async def run_multiple_queries():
-		id = "your_service_account_id"
-		secret = "your_service_account_secret"
-		engine_name = "your_engine"
-		database_name = "your_database"
+    async def run_multiple_queries():
+        id = "your_service_account_id"
+        secret = "your_service_account_secret"
+        engine_name = "your_engine"
+        database_name = "your_database"
 
-		queries = [
-			"select * from table_1",
-			"select * from table_2",
-			"select * from table_3",
-		]
+        queries = [
+            "select * from table_1",
+            "select * from table_2",
+            "select * from table_3",
+        ]
 
-		async with await async_connect(
-			engine_name=engine_name,
-			database=database_name,
-			auth=ClientCredentials(id, secret),
-		) as connection:
-			# Create async tasks for every query
-			tasks = [execute_sql(connection, query) for query in queries]
-			# Execute tasks concurently
-			results = await gather(*tasks)
-			# Print query results
-			for i, result in enumerate(results):
-				print(f"Query {i}: {result}")
+        async with await async_connect(
+            engine_name=engine_name,
+            database=database_name,
+            auth=ClientCredentials(id, secret),
+        ) as connection:
+            # Create async tasks for every query
+            tasks = [execute_sql(connection, query) for query in queries]
+            # Execute tasks concurently
+            results = await gather(*tasks)
+            # Print query results
+            for i, result in enumerate(results):
+                print(f"Query {i}: {result}")
 
 
-	run(run_multiple_queries())
+    run(run_multiple_queries())
 
 .. note::
-	This will run all queries specified in ``queries`` list at the same time. With heavy queries you
-	have to be mindful of the engine capability here. Excessive parallelisations can lead to degraded
-	performance. You should also make sure the machine running this code has enough RAM to store all
-	the results you're fetching.
+    This will run all queries specified in ``queries`` list at the same time. With heavy queries you
+    have to be mindful of the engine capability here. Excessive parallelisations can lead to degraded
+    performance. You should also make sure the machine running this code has enough RAM to store all
+    the results you're fetching.
 
-	:ref:`concurrent limit` suggests a way to avoid this.
+    :ref:`concurrent limit` suggests a way to avoid this.
 
 
 .. _Concurrent limit:
@@ -415,60 +417,60 @@ load on both server and client machines can be controlled. A suggested way is to
 
 ::
 
-	from asyncio import gather, run, Semaphore
-	from firebolt.async_db import connect as async_connect
-	from firebolt.client.auth import ClientCredentials
+    from asyncio import gather, run, Semaphore
+    from firebolt.async_db import connect as async_connect
+    from firebolt.client.auth import ClientCredentials
 
 
-	MAX_PARALLEL = 2
+    MAX_PARALLEL = 2
 
 
-	async def gather_limited(tasks, max_parallel):
-		sem = Semaphore(max_parallel)
+    async def gather_limited(tasks, max_parallel):
+        sem = Semaphore(max_parallel)
 
-		async def limited_task(task):
-			async with sem:
-				await task
+        async def limited_task(task):
+            async with sem:
+                await task
 
-		await gather(*[limited_task(t) for t in tasks])
-
-
-	async def execute_sql(connection, query):
-		# Create a new cursor for every query
-		cursor = connection.cursor()
-		# Wait for cursor to execute a query
-		await cursor.execute(query)
-		# Return full query result
-		return await cursor.fetchall()
+        await gather(*[limited_task(t) for t in tasks])
 
 
-	async def run_multiple_queries():
-		id = "your_service_account_id"
-		secret = "your_service_account_secret"
-		engine_name = "your_engine"
-		database_name = "your_database"
-
-		queries = [
-			"select * from table_1",
-			"select * from table_2",
-			"select * from table_3",
-		]
-
-		async with await async_connect(
-			engine_name=engine_name,
-			database=database_name,
-			auth=ClientCredentials(id, secret),
-		) as connection:
-			# Create async tasks for every query
-			tasks = [execute_sql(connection, query) for query in queries]
-			# Execute tasks concurently, limiting the parallelism
-			results = await gather_limited(*tasks, MAX_PARALLEL)
-			# Print query results
-			for i, result in enumerate(results):
-				print(f"Query {i}: {result}")
+    async def execute_sql(connection, query):
+        # Create a new cursor for every query
+        cursor = connection.cursor()
+        # Wait for cursor to execute a query
+        await cursor.execute(query)
+        # Return full query result
+        return await cursor.fetchall()
 
 
-	run(run_multiple_queries())
+    async def run_multiple_queries():
+        id = "your_service_account_id"
+        secret = "your_service_account_secret"
+        engine_name = "your_engine"
+        database_name = "your_database"
+
+        queries = [
+            "select * from table_1",
+            "select * from table_2",
+            "select * from table_3",
+        ]
+
+        async with await async_connect(
+            engine_name=engine_name,
+            database=database_name,
+            auth=ClientCredentials(id, secret),
+        ) as connection:
+            # Create async tasks for every query
+            tasks = [execute_sql(connection, query) for query in queries]
+            # Execute tasks concurently, limiting the parallelism
+            results = await gather_limited(*tasks, MAX_PARALLEL)
+            # Print query results
+            for i, result in enumerate(results):
+                print(f"Query {i}: {result}")
+
+
+    run(run_multiple_queries())
 
 .. _Server-side async:
 
@@ -500,71 +502,71 @@ be used to check the query status.
 
 ::
 
-	query_id = cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table (
-	        id INT,
-	        name TEXT
-	    )
-	    PRIMARY INDEX id;
-	    """,
-	    async_execution=True
-	)
+    query_id = cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table (
+            id INT,
+            name TEXT
+        )
+        PRIMARY INDEX id;
+        """,
+        async_execution=True
+    )
 
 
 To check the status of a query, send the query ID to ```get_status()``` to receive a
 QueryStatus enumeration object. Possible statuses are:
 
 
-	* ``RUNNING``
-	* ``ENDED_SUCCESSFULLY``
-	* ``ENDED_UNSUCCESSFULLY``
-	* ``NOT_READY``
-	* ``STARTED_EXECUTION``
-	* ``PARSE_ERROR``
-	* ``CANCELED_EXECUTION``
-	* ``EXECUTION_ERROR``
+    * ``RUNNING``
+    * ``ENDED_SUCCESSFULLY``
+    * ``ENDED_UNSUCCESSFULLY``
+    * ``NOT_READY``
+    * ``STARTED_EXECUTION``
+    * ``PARSE_ERROR``
+    * ``CANCELED_EXECUTION``
+    * ``EXECUTION_ERROR``
 
 
 Once the status of the table creation is ``ENDED_SUCCESSFULLY``, data can be inserted into it:
 
 ::
 
-	from firebolt.async_db.cursor import QueryStatus
+    from firebolt.async_db.cursor import QueryStatus
 
-	query_status = cursor.get_status(query_id)
+    query_status = cursor.get_status(query_id)
 
-	if query_status == QueryStatus.ENDED_SUCCESSFULLY:
-	    cursor.execute(
-	        """
-	        INSERT INTO test_table VALUES
-	            (1, 'hello'),
-	            (2, 'world'),
-	            (3, '!');
-	        """
-		)
+    if query_status == QueryStatus.ENDED_SUCCESSFULLY:
+        cursor.execute(
+            """
+            INSERT INTO test_table VALUES
+                (1, 'hello'),
+                (2, 'world'),
+                (3, '!');
+            """
+        )
 
 
 In addition, server-side asynchronous queries can be cancelled calling ``cancel()``.
 
 ::
 
-	query_id = cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table (
-	        id INT,
-	        name TEXT
-	    )
-	    PRIMARY INDEX id;
-	    """,
-	    async_execution=True
-	)
+    query_id = cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table (
+            id INT,
+            name TEXT
+        )
+        PRIMARY INDEX id;
+        """,
+        async_execution=True
+    )
 
-	cursor.cancel(query_id)
+    cursor.cancel(query_id)
 
-	query_status = cursor.get_status(query_id)
+    query_status = cursor.get_status(query_id)
 
-	print(query_status)
+    print(query_status)
 
 **Returns**: ``CANCELED_EXECUTION``
 
@@ -588,5 +590,5 @@ You can import this module as follows:
 
 ::
 
-	from datetime import datetime
+    from datetime import datetime
 
