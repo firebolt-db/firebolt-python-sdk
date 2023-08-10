@@ -119,7 +119,7 @@ To get started, follow the steps below:
 	The ``cursor`` object can be used to send queries and commands to your Firebolt
 	database and engine. See below for examples of functions using the ``cursor`` object.
 
-Server-side synchronous command and query examples
+Synchronous command and query examples
 ==================================================
 
 This section includes Python examples of various SQL commands and queries.
@@ -289,6 +289,188 @@ SQL statements in the Firebolt UI.
 	Multiple statement queries are not able to use placeholder values for parameterized queries.
 
 
+
+Asynchronous query execution
+==========================================
+
+Not to be confused with :ref:`Server-side async`. Asynchronous Python SDK
+functionality is used to write concurrent code. Unlike in a synchronous approach, when executing
+a query is a blocking operation, this approach allows doing other processing or queries while the
+original query is waiting on the network or the server to respond. This is especially useful when
+executing slower queries.
+
+Make sure you're familiar with the `Asyncio approach <https://docs.python.org/3/library/asyncio.html>`_
+before using asynchronous Python SDK, as it requires special async/await syntax.
+
+
+Simple asynchronous example
+---------------------------
+
+This example illustrates a simple query execution via the async Python SDK. It does not have any
+performance benefits, but rather shows the difference in syntax from the synchronous version.
+It can be extended to run alongside of other operations.
+
+::
+
+	from asyncio import run
+	from firebolt.async_db import connect as async_connect
+	from firebolt.client.auth import ClientCredentials
+
+
+	async def run_query():
+		id = "your_service_account_id"
+		secret = "your_service_account_secret"
+		engine_name = "your_engine"
+		database_name = "your_database"
+
+		query = "select * from my_table"
+
+		async with await async_connect(
+			engine_name=engine_name,
+			database=database_name,
+			auth=ClientCredentials(id, secret),
+		) as connection:
+			cursor = connection.cursor()
+
+			# Asyncronously execute a query
+			rowcount = await cursor.execute(query)
+
+			# Asyncronously fetch a result
+			single_row = await cursor.fetchone()
+			multiple_rows = await cursor.fetchmany(5)
+			all_remaining_rows = await cursor.fetchall()
+
+	# Run async `run_query` from the synchronous context of your script
+	run(run_query())
+
+
+Running multiple queries in parallel
+------------------------------------
+
+Building up on the previous example, we can execute several queries concurently.
+This is especially useful when queries do not depend on each other and can be run
+at the same time.
+
+::
+
+	from asyncio import gather, run
+	from firebolt.async_db import connect as async_connect
+	from firebolt.client.auth import ClientCredentials
+
+
+	async def execute_sql(connection, query):
+		# Create a new cursor for every query
+		cursor = connection.cursor()
+		# Wait for cursor to execute a query
+		await cursor.execute(query)
+		# Return full query result
+		return await cursor.fetchall()
+
+
+	async def run_multiple_queries():
+		id = "your_service_account_id"
+		secret = "your_service_account_secret"
+		engine_name = "your_engine"
+		database_name = "your_database"
+
+		queries = [
+			"select * from table_1",
+			"select * from table_2",
+			"select * from table_3",
+		]
+
+		async with await async_connect(
+			engine_name=engine_name,
+			database=database_name,
+			auth=ClientCredentials(id, secret),
+		) as connection:
+			# Create async tasks for every query
+			tasks = [execute_sql(connection, query) for query in queries]
+			# Execute tasks concurently
+			results = await gather(*tasks)
+			# Print query results
+			for i, result in enumerate(results):
+				print(f"Query {i}: {result}")
+
+
+	run(run_multiple_queries())
+
+.. note::
+	This will run all queries specified in ``queries`` list at the same time. With heavy queries you
+	have to be mindful of the engine capability here. Excessive parallelisations can lead to degraded
+	performance. You should also make sure the machine running this code has enough RAM to store all
+	the results you're fetching.
+
+	:ref:`concurrent limit` suggests a way to avoid this.
+
+
+.. _Concurrent limit:
+
+Limiting number of conccurent queries
+-------------------------------------
+
+It's generally a good practice to limit a number of queries running at the same time. It ensures a
+load on both server and client machines can be controlled. A suggested way is to use the
+`Semaphore <https://docs.python.org/3/library/asyncio-sync.html#semaphore>`_.
+
+::
+
+	from asyncio import gather, run, Semaphore
+	from firebolt.async_db import connect as async_connect
+	from firebolt.client.auth import ClientCredentials
+
+
+	MAX_PARALLEL = 2
+
+
+	async def gather_limited(tasks, max_parallel):
+		sem = Semaphore(max_parallel)
+
+		async def limited_task(task):
+			async with sem:
+				await task
+
+		await gather(*[limited_task(t) for t in tasks])
+
+
+	async def execute_sql(connection, query):
+		# Create a new cursor for every query
+		cursor = connection.cursor()
+		# Wait for cursor to execute a query
+		await cursor.execute(query)
+		# Return full query result
+		return await cursor.fetchall()
+
+
+	async def run_multiple_queries():
+		id = "your_service_account_id"
+		secret = "your_service_account_secret"
+		engine_name = "your_engine"
+		database_name = "your_database"
+
+		queries = [
+			"select * from table_1",
+			"select * from table_2",
+			"select * from table_3",
+		]
+
+		async with await async_connect(
+			engine_name=engine_name,
+			database=database_name,
+			auth=ClientCredentials(id, secret),
+		) as connection:
+			# Create async tasks for every query
+			tasks = [execute_sql(connection, query) for query in queries]
+			# Execute tasks concurently, limiting the parallelism
+			results = await gather_limited(*tasks, MAX_PARALLEL)
+			# Print query results
+			for i, result in enumerate(results):
+				print(f"Query {i}: {result}")
+
+
+	run(run_multiple_queries())
+
+.. _Server-side async:
 
 Server-side asynchronous query execution
 ==========================================
