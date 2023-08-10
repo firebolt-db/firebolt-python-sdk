@@ -241,7 +241,7 @@ it can run SQL commands or queries.
 
         engine = rm.engines.get("engine_name")
         engine.attach_to_database(
-            database=rm.databases.get("database_name")
+            rm.databases.get("database_name")
         )
 
 
