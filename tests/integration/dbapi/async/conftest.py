@@ -1,4 +1,4 @@
-from pytest_asyncio import fixture as async_fixture
+from pytest_trio import trio_fixture as async_fixture
 
 from firebolt.async_db import Connection, connect
 from firebolt.client.auth.base import Auth

@@ -2,7 +2,7 @@ from logging import getLogger
 from os import environ
 
 from pytest import fixture
-from pytest_asyncio import fixture as async_fixture
+from pytest_trio import trio_fixture as async_fixture
 
 from firebolt.client.auth import ServiceAccount, UsernamePassword
 from firebolt.service.manager import Settings
