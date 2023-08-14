@@ -18,13 +18,11 @@ For reference and tutorials, see the [Firebolt Python SDK reference](https://pyt
 
 ## Connection parameters
 These parameters are used to connect to a Firebolt database:
-- **engine_url** - url for an engine to make requests to. Can be retrieved from Web UI, or from [engine](https://github.com/firebolt-db/firebolt-sdk/tree/main/src/firebolt/model/engine.py) attribute `endpoint`
-- **database** - name of the database to make queries to
-- **username** - account username
-- **password** - account password
-
-Optional parameters
-- **api_endpoint** - api hostname for logging in. Defaults to `api.app.firebolt.io`.
+- **account_name** - name of firebolt account
+- **client_id** - credentials client id
+- **cliend_secret** - credentials client secret
+- **database [Optional]** - name of the database to connect to
+- **engine_name [Optional]** - name of the engine to connect to
 
 ## Examples
 See [PEP-249](https://www.python.org/dev/peps/pep-0249) for the DB API reference and specifications. An example [jupyter notebook](https://github.com/firebolt-db/firebolt-sdk/tree/main/examples/dbapi.ipynb) is included to illustrate the use of the Firebolt API.
