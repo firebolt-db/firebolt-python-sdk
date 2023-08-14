@@ -24,7 +24,7 @@ def username_password_connection(
 
 
 @fixture
-async def connection(
+def connection(
     engine_url: str,
     database_name: str,
     password_auth: Auth,

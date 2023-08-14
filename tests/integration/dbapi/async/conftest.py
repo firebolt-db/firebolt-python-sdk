@@ -1,10 +1,10 @@
-from pytest_asyncio import fixture as async_fixture
+from pytest import fixture
 
 from firebolt.async_db import Connection, connect
 from firebolt.client.auth.base import Auth
 
 
-@async_fixture
+@fixture
 async def username_password_connection(
     engine_url: str,
     database_name: str,
@@ -22,7 +22,7 @@ async def username_password_connection(
         yield connection
 
 
-@async_fixture
+@fixture
 async def connection(
     engine_url: str,
     database_name: str,
@@ -40,7 +40,7 @@ async def connection(
         yield connection
 
 
-@async_fixture
+@fixture
 async def connection_engine_name(
     engine_name: str,
     database_name: str,
@@ -59,7 +59,7 @@ async def connection_engine_name(
         yield connection
 
 
-@async_fixture
+@fixture
 async def connection_no_engine(
     database_name: str,
     password_auth: Auth,
