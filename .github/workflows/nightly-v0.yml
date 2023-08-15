@@ -54,15 +54,15 @@ jobs:
         id: setup
         uses: firebolt-db/integration-testing-setup@v1
         with:
-          firebolt-username: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
-          firebolt-password: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
+          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
 
       - name: Run integration tests
         env:
-          USER_NAME: ${{ secrets.FIREBOLT_USERNAME_STAGING }}
-          PASSWORD: ${{ secrets.FIREBOLT_PASSWORD_STAGING }}
+          USER_NAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
+          PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
