@@ -1,0 +1,272 @@
+{
+  "uid" : "a14f4084cb33d1d6",
+  "name" : "test_auth_refresh_on_expiration",
+  "fullName" : "tests.unit.client.auth.test_auth_async#test_auth_refresh_on_expiration",
+  "historyId" : "3fccee0421ef0b52a53087681428b196",
+  "time" : {
+    "start" : 1692414181828,
+    "stop" : 1692414181995,
+    "duration" : 167
+  },
+  "description" : "Auth refreshes the token on expiration.",
+  "descriptionHtml" : "<p>Auth refreshes the token on expiration.</p>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1692414181826,
+      "stop" : 1692414181826,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1692414181827,
+      "stop" : 1692414181827,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1692414181826,
+      "stop" : 1692414181826,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1692414181750,
+      "stop" : 1692414181826,
+      "duration" : 76
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "access_token_2",
+    "time" : {
+      "start" : 1692414181827,
+      "stop" : 1692414181827,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1692414181827,
+      "stop" : 1692414181827,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "access_token",
+    "time" : {
+      "start" : 1692414181827,
+      "stop" : 1692414181827,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  } ],
+  "testStage" : {
+    "description" : "Auth refreshes the token on expiration.",
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ {
+      "uid" : "812d6fb34b62f7f0",
+      "name" : "stdout",
+      "source" : "812d6fb34b62f7f0.txt",
+      "type" : "text/plain",
+      "size" : 19
+    } ],
+    "parameters" : [ ],
+    "attachmentsCount" : 1,
+    "shouldDisplayMessage" : false,
+    "hasContent" : true,
+    "stepsCount" : 0
+  },
+  "afterStages" : [ {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1692414181999,
+      "stop" : 1692414181999,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1692414181997,
+      "stop" : 1692414181997,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1692414182000,
+      "stop" : 1692414182001,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7f7d73b31950>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.client.auth"
+  }, {
+    "name" : "suite",
+    "value" : "test_auth_async"
+  }, {
+    "name" : "host",
+    "value" : "fv-az169-139"
+  }, {
+    "name" : "thread",
+    "value" : "2461-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.client.auth.test_auth_async"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 5,
+        "unknown" : 0,
+        "total" : 5
+      },
+      "items" : [ {
+        "uid" : "56036f1b3109057e",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/549e12bb2dd93ce3c0f25a898dec34c62919a036_unit/151//#testresult/56036f1b3109057e",
+        "status" : "passed",
+        "time" : {
+          "start" : 1692414125666,
+          "stop" : 1692414125806,
+          "duration" : 140
+        }
+      }, {
+        "uid" : "778e1871dde6cab9",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/549e12bb2dd93ce3c0f25a898dec34c62919a036_unit/627//#testresult/778e1871dde6cab9",
+        "status" : "passed",
+        "time" : {
+          "start" : 1692327792072,
+          "stop" : 1692327792263,
+          "duration" : 191
+        }
+      }, {
+        "uid" : "d50e4b688e07ee1c",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/549e12bb2dd93ce3c0f25a898dec34c62919a036_unit/150//#testresult/d50e4b688e07ee1c",
+        "status" : "passed",
+        "time" : {
+          "start" : 1692327737667,
+          "stop" : 1692327737807,
+          "duration" : 140
+        }
+      }, {
+        "uid" : "97ac4372c14653f",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/549e12bb2dd93ce3c0f25a898dec34c62919a036_unit/222//#testresult/97ac4372c14653f",
+        "status" : "passed",
+        "time" : {
+          "start" : 1692263354168,
+          "stop" : 1692263354331,
+          "duration" : 163
+        }
+      } ]
+    },
+    "tags" : [ "trio(run=<function run at 0x7f7d73b31950>)" ]
+  },
+  "source" : "a14f4084cb33d1d6.json",
+  "parameterValues" : [ ]
+}
