@@ -64,7 +64,7 @@ class Database(FireboltBaseModel):
         """
         Updates a database description.
         """
-        if not description:
+        if description is None:
             return self
 
         for engine in self.get_attached_engines():
