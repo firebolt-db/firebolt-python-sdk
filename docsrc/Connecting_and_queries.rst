@@ -349,6 +349,8 @@ It can be extended to run alongside of other operations.
 Running multiple queries in parallel
 ------------------------------------
 
+.. _Running multiple queries in parallel:
+
 Building up on the previous example, we can execute several queries concurently.
 This is especially useful when queries do not depend on each other and can be run
 at the same time.
