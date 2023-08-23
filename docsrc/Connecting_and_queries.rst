@@ -582,7 +582,7 @@ Thread safety is set to 2, meaning it's safe to share the module and
 by calling ``connection.cursor()`` within a thread and should not be shared across different threads.
 Similarly, in an asynchronous context the Cursor obejct should not be shared across tasks
 as it will lead to a nondeterministic data returned. Follow the best practice from the
-:ref:`Running multiple queries in parallel <_running_multiple_queries_in_parallel>`.
+:ref:`connecting_and_queries:Running multiple queries in parallel`.
 
 
 Using DATE and DATETIME values
