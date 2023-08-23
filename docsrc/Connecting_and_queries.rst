@@ -349,7 +349,7 @@ It can be extended to run alongside of other operations.
 Running multiple queries in parallel
 ------------------------------------
 
-.. _Running multiple queries in parallel:
+.. _running_multiple_queries_in_parallel:
 
 Building up on the previous example, we can execute several queries concurently.
 This is especially useful when queries do not depend on each other and can be run
@@ -582,7 +582,7 @@ Thread safety is set to 2, meaning it's safe to share the module and
 by calling ``connection.cursor()`` within a thread and should not be shared across different threads.
 Similarly, in an asynchronous context the Cursor obejct should not be shared across tasks
 as it will lead to a nondeterministic data returned. Follow the best practice from the
-:ref:`Running multiple queries in parallel`.
+:ref:`Running multiple queries in parallel <_running_multiple_queries_in_parallel>`.
 
 
 Using DATE and DATETIME values
