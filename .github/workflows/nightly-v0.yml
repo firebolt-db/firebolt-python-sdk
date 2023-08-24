@@ -73,7 +73,7 @@ jobs:
           ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO --junit-xml=report/junit.xml tests/integration
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration
 
       - name: Slack Notify of failure
         if: failure()
