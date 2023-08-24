@@ -60,7 +60,7 @@ jobs:
           region: "us-east-1"
 
       - name: Run integration tests
-        env:          
+        env:
           USER_NAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
           PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
           SERVICE_ID: ${{ secrets.SERVICE_ID_STG }}
