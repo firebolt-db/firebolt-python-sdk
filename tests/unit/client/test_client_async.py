@@ -1,10 +1,11 @@
 from re import Pattern, compile
-from typing import Callable
+from types import MethodType
+from typing import Any, Callable
 
 from httpx import Request, Response, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
-from trio import open_nursery
+from trio import open_nursery, sleep
 
 from firebolt.client import AsyncClient
 from firebolt.client.auth import Auth, ClientCredentials
@@ -128,6 +129,11 @@ async def test_concurent_auth_lock(
 
     checked_creds_times = 0
 
+    async def mock_send_handling_redirects(self, *args: Any, **kwargs: Any) -> Response:
+        # simulate network delay so the context switches
+        await sleep(0.01)
+        return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
+
     def check_credentials(
         request: Request = None,
         **kwargs,
@@ -147,6 +153,7 @@ async def test_concurent_auth_lock(
         api_endpoint=server,
         account_name=account_name,
     ) as c:
+        c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
         urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
         async with open_nursery() as nursery:
             for url in urls:
