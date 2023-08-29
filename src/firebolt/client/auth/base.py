@@ -1,8 +1,9 @@
 from time import time
-from typing import Generator, Optional
+from typing import AsyncGenerator, Generator, Optional
 
 from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
+from trio import Lock
 
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.util import cached_property
@@ -35,6 +36,7 @@ class Auth(HttpxAuth):
         self._use_token_cache = use_token_cache
         self._token: Optional[str] = self._get_cached_token()
         self._expires: Optional[int] = None
+        self._lock = Lock()
 
     def copy(self) -> "Auth":
         """Make another auth object with same credentials.
@@ -119,3 +121,30 @@ class Auth(HttpxAuth):
             yield from self.get_new_token_generator()
             request.headers["Authorization"] = f"Bearer {self.token}"
             yield request
+
+    async def async_auth_flow(
+        self, request: Request
+    ) -> AsyncGenerator[Request, Response]:
+        """
+        Execute the authentication flow asynchronously.
+
+        Overridden in order to lock and ensure no more than
+        one authentication request is sent at a time. This
+        avoids excessive load on the auth server.
+        """
+        if self.requires_request_body:
+            await request.aread()
+
+        async with self._lock:
+            flow = self.auth_flow(request)
+            request = next(flow)
+
+            while True:
+                response = yield request
+                if self.requires_response_body:
+                    await response.aread()
+
+                try:
+                    request = flow.send(response)
+                except StopIteration:
+                    break

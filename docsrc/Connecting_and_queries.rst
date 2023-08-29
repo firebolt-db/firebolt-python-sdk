@@ -386,6 +386,17 @@ In addition, server-side asynchronous queries can be cancelled calling ``cancel(
 **Returns**: ``CANCELED_EXECUTION``
 
 
+Thread safety
+==============================
+
+Thread safety is set to 2, meaning it's safe to share the module and
+:ref:`Connection <firebolt.db:Connection>` object across threads.
+:ref:`Cursor <firebolt.db:Cursor>` is a lightweight object that should be instantiated
+by calling ``connection.cursor()`` within a thread and should not be shared across different threads.
+Similarly, in an asynchronous context the Cursor obejct should not be shared across tasks
+as it will lead to a nondeterministic data returned. Follow the best practice from the
+:ref:`connecting_and_queries:Running multiple queries in parallel`.
+
 
 Using DATE and DATETIME values
 ==============================
