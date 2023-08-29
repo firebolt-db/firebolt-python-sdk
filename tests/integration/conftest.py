@@ -21,6 +21,26 @@ SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
 
 
+class Secret:
+    """
+    Class to hold sensitive data in testing. This prevents passwords
+    and such to be printed in logs or any other reports.
+    More info: https://github.com/pytest-dev/pytest/issues/8613
+
+    NOTE: be careful, assert Secret("") == "" would still print
+    on failure
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return "Secret(********)"
+
+    def __str___(self):
+        return "*******"
+
+
 def must_env(var_name: str) -> str:
     assert var_name in environ, f"Expected {var_name} to be provided in environment"
     LOGGER.info(f"{var_name}: {environ[var_name]}")
@@ -28,11 +48,11 @@ def must_env(var_name: str) -> str:
 
 
 @fixture(scope="session")
-def rm_settings(api_endpoint, username, password) -> Settings:
+def rm_settings(api_endpoint, username: str, password: Secret) -> Settings:
     return Settings(
         server=api_endpoint,
         user=username,
-        password=password,
+        password=password.value,
         default_region="us-east-1",
     )
 
@@ -69,7 +89,7 @@ def username() -> str:
 
 @fixture(scope="session")
 def password() -> str:
-    return must_env(PASSWORD_ENV)
+    return Secret(must_env(PASSWORD_ENV))
 
 
 @fixture(scope="session")
@@ -89,14 +109,14 @@ def service_id() -> str:
 
 @fixture(scope="session")
 def service_secret() -> str:
-    return must_env(SERVICE_SECRET_ENV)
+    return Secret(must_env(SERVICE_SECRET_ENV))
 
 
 @fixture
-def service_auth(service_id, service_secret) -> ServiceAccount:
-    return ServiceAccount(service_id, service_secret)
+def service_auth(service_id: str, service_secret: Secret) -> ServiceAccount:
+    return ServiceAccount(service_id, service_secret.value)
 
 
 @fixture(scope="session")
-def password_auth(username, password) -> UsernamePassword:
-    return UsernamePassword(username, password)
+def password_auth(username: str, password: Secret) -> UsernamePassword:
+    return UsernamePassword(username, password.value)
