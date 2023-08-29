@@ -63,13 +63,17 @@ jobs:
         env:
           USER_NAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
           PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+          SERVICE_ID: ${{ secrets.SERVICE_ID_STG }}
+          SERVICE_SECRET: ${{ secrets.SERVICE_SECRET_STG }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
+          ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
+          STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
           ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=INFO --junit-xml=report/junit.xml tests/integration
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration
 
       - name: Slack Notify of failure
         if: failure()
