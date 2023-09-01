@@ -205,10 +205,15 @@ def get_objects_from_db_callback(objs: List[dataclass]) -> Callable:
             value = getattr(obj, f.name)
             if isinstance(value, (InstanceType, EngineStatus)):
                 return str(value)
-            if isinstance(value, (EngineType, WarmupMethod)):
+            if isinstance(value, WarmupMethod):
                 return " ".join(
                     map(lambda s: s.capitalize(), str(value).lower().split("_"))
                 )
+            if isinstance(value, EngineType):
+                return {
+                    EngineType.GENERAL_PURPOSE: "General Purpose",
+                    EngineType.DATA_ANALYTICS: "Analytics",
+                }[value]
             return value
 
         query_response = {
@@ -273,10 +278,16 @@ def updated_engine_scale() -> int:
 
 
 @fixture
+def updated_engine_type() -> EngineType:
+    return EngineType.DATA_ANALYTICS
+
+
+@fixture
 def update_engine_callback(
     system_engine_no_db_query_url: str,
     mock_engine: Engine,
     updated_engine_scale: int,
+    updated_engine_type: EngineType,
 ) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -284,6 +295,7 @@ def update_engine_callback(
     ) -> Response:
         assert request.url == system_engine_no_db_query_url
         mock_engine.scale = updated_engine_scale
+        mock_engine.type = updated_engine_type
         return Response(
             status_code=httpx.codes.OK,
             json=empty_response,
