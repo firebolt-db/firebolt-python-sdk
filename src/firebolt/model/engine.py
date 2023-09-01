@@ -57,6 +57,7 @@ class Engine(FireboltBaseModel):
         "AUTO_STOP",
         "RENAME_TO",
         "WARMUP",
+        "ENGINE_TYPE",
     )
     DROP_SQL: ClassVar[str] = "DROP ENGINE {}"
 
@@ -201,6 +202,7 @@ class Engine(FireboltBaseModel):
     def update(
         self,
         name: Optional[str] = None,
+        engine_type: Union[EngineType, str, None] = None,
         scale: Optional[int] = None,
         spec: Union[InstanceType, str, None] = None,
         auto_stop: Optional[int] = None,
@@ -211,7 +213,7 @@ class Engine(FireboltBaseModel):
         parameters are set to None, old engine parameter values remain.
         """
 
-        if not any((name, scale, spec, auto_stop, warmup)):
+        if not any((name, scale, spec, auto_stop, warmup, type)):
             # Nothing to be updated
             return self
 
@@ -226,7 +228,7 @@ class Engine(FireboltBaseModel):
         sql = self.ALTER_PREFIX_SQL.format(self.name)
         parameters = []
         for param, value in zip(
-            self.ALTER_PARAMETER_NAMES, (scale, spec, auto_stop, name, warmup)
+            self.ALTER_PARAMETER_NAMES, (scale, spec, auto_stop, name, warmup, type)
         ):
             if value:
                 sql += f"{param} = ? "
