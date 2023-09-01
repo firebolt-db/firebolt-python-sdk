@@ -213,7 +213,7 @@ class Engine(FireboltBaseModel):
         parameters are set to None, old engine parameter values remain.
         """
 
-        if not any((name, scale, spec, auto_stop, warmup, type)):
+        if not any((name, scale, spec, auto_stop, warmup, engine_type)):
             # Nothing to be updated
             return self
 
@@ -228,7 +228,8 @@ class Engine(FireboltBaseModel):
         sql = self.ALTER_PREFIX_SQL.format(self.name)
         parameters = []
         for param, value in zip(
-            self.ALTER_PARAMETER_NAMES, (scale, spec, auto_stop, name, warmup, type)
+            self.ALTER_PARAMETER_NAMES,
+            (scale, spec, auto_stop, name, warmup, engine_type),
         ):
             if value:
                 sql += f"{param} = ? "
