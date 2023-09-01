@@ -42,7 +42,7 @@ def test_create_start_stop_engine(
 ParamValue = namedtuple("ParamValue", "set expected")
 ENGINE_UPDATE_PARAMS = {
     # commented parameters are not available yet
-    "scale": ParamValue(23, 23),
+    "scale": ParamValue(3, 3),
     "spec": ParamValue("B1", "B1"),
     "auto_stop": ParamValue(123, 7380),
     "warmup": ParamValue(WarmupMethod.PRELOAD_ALL_DATA, WarmupMethod.PRELOAD_ALL_DATA),
