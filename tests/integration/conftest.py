@@ -16,6 +16,25 @@ SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
 
 
+class Secret:
+    """
+    Class to hold sensitive data in testing. This prevents passwords
+    and such to be printed in logs or any other reports.
+    More info: https://github.com/pytest-dev/pytest/issues/8613
+    NOTE: be careful, assert Secret("") == "" would still print
+    on failure
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return "Secret(********)"
+
+    def __str___(self):
+        return "*******"
+
+
 def must_env(var_name: str) -> str:
     assert var_name in environ, f"Expected {var_name} to be provided in environment"
     LOGGER.info(f"{var_name}: {environ[var_name]}")
@@ -53,10 +72,10 @@ def service_id() -> str:
 
 
 @fixture(scope="session")
-def service_secret() -> str:
-    return must_env(SERVICE_SECRET_ENV)
+def service_secret() -> Secret:
+    return Secret(must_env(SERVICE_SECRET_ENV))
 
 
 @fixture(scope="session")
-def auth(service_id, service_secret) -> ClientCredentials:
-    return ClientCredentials(service_id, service_secret)
+def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
+    return ClientCredentials(service_id, service_secret.value)
