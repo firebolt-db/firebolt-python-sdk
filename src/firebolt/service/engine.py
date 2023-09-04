@@ -156,13 +156,15 @@ class EngineService(BaseService):
             ("" if fail_if_exists else self.IF_NOT_EXISTS_SQL), name
         )
         parameters = []
-        if any((region, engine_type, spec, scale, auto_stop, warmup)):
+        if any(
+            x is not None for x in (region, engine_type, spec, scale, auto_stop, warmup)
+        ):
             sql += self.CREATE_WITH_SQL
             for param, value in zip(
                 self.CREATE_PARAMETER_NAMES,
                 (region, engine_type, spec, scale, auto_stop, warmup),
             ):
-                if value:
+                if value is not None:
                     sql += f"{param} = ? "
                     parameters.append(str(value))
         with self._connection.cursor() as c:
