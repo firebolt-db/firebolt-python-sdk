@@ -308,11 +308,17 @@ def updated_engine_type() -> EngineType:
 
 
 @fixture
+def updated_auto_stop() -> EngineType:
+    return 0
+
+
+@fixture
 def update_engine_callback(
     system_engine_no_db_query_url: str,
     mock_engine: Engine,
     updated_engine_scale: int,
     updated_engine_type: EngineType,
+    updated_auto_stop: int,
 ) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -321,6 +327,7 @@ def update_engine_callback(
         assert request.url == system_engine_no_db_query_url
         mock_engine.scale = updated_engine_scale
         mock_engine.type = updated_engine_type
+        mock_engine.auto_stop = updated_auto_stop
         return Response(
             status_code=httpx.codes.OK,
             json=empty_response,

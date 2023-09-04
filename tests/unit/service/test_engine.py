@@ -149,3 +149,32 @@ def test_engine_update(
 
     assert mock_engine.scale == updated_engine_scale
     assert mock_engine.type == updated_engine_type
+
+    mock_engine.update(scale=updated_engine_scale, engine_type=updated_engine_type)
+
+    assert mock_engine.scale == updated_engine_scale
+    assert mock_engine.type == updated_engine_type
+
+
+def test_engine_update_auto_stop_zero(
+    httpx_mock: HTTPXMock,
+    resource_manager: ResourceManager,
+    instance_type_callback: Callable,
+    instance_type_url: str,
+    mock_engine: Engine,
+    get_engine_callback: Callable,
+    update_engine_callback: Callable,
+    system_engine_no_db_query_url: str,
+    updated_auto_stop: int,
+):
+    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(update_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+
+    mock_engine.auto_stop = updated_auto_stop + 100
+    # auto_stop = 0 is not considered an empty parameter value
+    mock_engine._service = resource_manager.engines
+    mock_engine.update(auto_stop=0)
+
+    assert mock_engine.auto_stop == updated_auto_stop
