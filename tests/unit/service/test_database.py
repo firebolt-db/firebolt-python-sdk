@@ -93,6 +93,7 @@ def test_database_update(
 
     assert database.description == "new description"
 
+
 def test_database_delete(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
@@ -105,11 +106,13 @@ def test_database_delete(
         database_delete_callback, url=system_engine_no_db_query_url, method="POST"
     )
     httpx_mock.add_callback(
-        get_database_not_found_callback, url=system_engine_no_db_query_url, method="POST"
+        get_database_not_found_callback,
+        url=system_engine_no_db_query_url,
+        method="POST",
     )
-    
+
     mock_database._service = resource_manager.databases
     mock_database.delete()
-    
+
     with raises(DatabaseNotFoundError):
         resource_manager.databases.get("invalid name")

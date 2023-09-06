@@ -13,7 +13,6 @@ from firebolt.model.engine import Engine
 from firebolt.model.instance_type import InstanceType
 from firebolt.service.manager import ResourceManager
 from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
-from firebolt.utils.exception import DatabaseNotFoundError
 from firebolt.utils.urls import ACCOUNT_INSTANCE_TYPES_URL
 from tests.unit.util import list_to_paginated_response
 
@@ -356,6 +355,7 @@ def database_update_callback() -> Callable:
 
     return do_mock
 
+
 @fixture
 def database_delete_callback() -> Callable:
     def do_mock(
@@ -369,6 +369,7 @@ def database_delete_callback() -> Callable:
 
     return do_mock
 
+
 @fixture
 def get_database_not_found_callback(mock_database: Database) -> Callable:
     def do_mock(
@@ -381,6 +382,7 @@ def get_database_not_found_callback(mock_database: Database) -> Callable:
         )
 
     return do_mock
+
 
 @fixture
 def database_get_callback(mock_database) -> Callable:
