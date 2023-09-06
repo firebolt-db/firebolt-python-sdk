@@ -26,14 +26,6 @@ Engine
    :undoc-members:
    :show-inheritance:
 
-Engine revision
---------------------------------------
-
-.. automodule:: firebolt.model.engine_revision
-   :members:
-   :exclude-members: EngineRevisionKey
-   :undoc-members:
-   :show-inheritance:
 
 Instance type
 ------------------------------------
@@ -41,22 +33,5 @@ Instance type
 .. automodule:: firebolt.model.instance_type
    :members:
    :exclude-members: InstanceTypeKey
-   :undoc-members:
-   :show-inheritance:
-
-Provider
-------------------------------
-
-.. automodule:: firebolt.model.provider
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Region
-----------------------------
-
-.. automodule:: firebolt.model.region
-   :members:
-   :exclude-members: RegionKey
    :undoc-members:
    :show-inheritance:

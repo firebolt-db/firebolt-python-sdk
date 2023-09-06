@@ -17,7 +17,6 @@ from typing import (
 )
 
 from httpx import Response, codes
-from tricycle import RWLock
 
 from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.client import AsyncClient
@@ -69,8 +68,6 @@ class Cursor(BaseCursor):
 
     """
 
-    __slots__ = BaseCursor.__slots__ + ("_async_query_lock",)
-
     def __init__(
         self,
         *args: Any,
@@ -79,7 +76,6 @@ class Cursor(BaseCursor):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._async_query_lock = RWLock()
         self._client = client
         self.connection = connection
 
@@ -392,29 +388,25 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
-        async with self._async_query_lock.read_locked():
-            """Fetch the next row of a query result set."""
-            return super().fetchone()
+        """Fetch the next row of a query result set."""
+        return super().fetchone()
 
     @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        async with self._async_query_lock.read_locked():
-            """
-            Fetch the next set of rows of a query result;
-            size is cursor.arraysize by default.
-            """
-            return super().fetchmany(size)
+        """
+        Fetch the next set of rows of a query result;
+        size is cursor.arraysize by default.
+        """
+        return super().fetchmany(size)
 
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
-        async with self._async_query_lock.read_locked():
-            """Fetch all remaining rows of a query result."""
-            return super().fetchall()
+        """Fetch all remaining rows of a query result."""
+        return super().fetchall()
 
     @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:
-        async with self._async_query_lock.read_locked():
-            return super().nextset()
+        return super().nextset()
 
     @check_not_closed
     def __enter__(self) -> Cursor:

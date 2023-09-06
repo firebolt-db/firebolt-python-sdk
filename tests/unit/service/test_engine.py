@@ -6,6 +6,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
 from firebolt.service.manager import ResourceManager
+from firebolt.service.types import EngineType
 from firebolt.utils.exception import (
     EngineNotFoundError,
     NoAttachedDatabaseError,
@@ -136,6 +137,7 @@ def test_engine_update(
     update_engine_callback: Callable,
     system_engine_no_db_query_url: str,
     updated_engine_scale: int,
+    updated_engine_type: EngineType,
 ):
     httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
@@ -143,6 +145,7 @@ def test_engine_update(
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
 
     mock_engine._service = resource_manager.engines
-    mock_engine.update(scale=updated_engine_scale)
+    mock_engine.update(scale=updated_engine_scale, engine_type=updated_engine_type)
 
     assert mock_engine.scale == updated_engine_scale
+    assert mock_engine.type == updated_engine_type

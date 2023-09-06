@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from firebolt.client.auth import Auth
 from firebolt.service.manager import ResourceManager
-from firebolt.service.types import EngineStatus
+from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
 
 
 def make_engine_name(database_name: str, suffix: str) -> str:
@@ -41,11 +41,11 @@ def test_create_start_stop_engine(
 
 ParamValue = namedtuple("ParamValue", "set expected")
 ENGINE_UPDATE_PARAMS = {
-    # commented parameters are not available yet
-    #    "scale": ParamValue(23, 23),
-    #    "spec": ParamValue("B1", "B1"),
+    "scale": ParamValue(3, 3),
+    "spec": ParamValue("B1", "B1"),
     "auto_stop": ParamValue(123, 7380),
-    #    "warmup": ParamValue(WarmupMethod.PRELOAD_ALL_DATA, WarmupMethod.PRELOAD_ALL_DATA),
+    "warmup": ParamValue(WarmupMethod.PRELOAD_ALL_DATA, WarmupMethod.PRELOAD_ALL_DATA),
+    "engine_type": ParamValue(EngineType.DATA_ANALYTICS, EngineType.DATA_ANALYTICS),
 }
 
 
@@ -69,7 +69,13 @@ def test_engine_update_single_parameter(
         engine.update(**{param: value.set})
 
         engine_new = rm.engines.get(name)
-        assert getattr(engine_new, param) == value.expected, f"Invalid {param} value"
+        if param == "spec":
+            current_value = engine_new.spec.name
+        elif param == "engine_type":
+            current_value = engine_new.type
+        else:
+            current_value = getattr(engine_new, param)
+        assert current_value == value.expected, f"Invalid {param} value"
 
     engine.delete()
 
@@ -97,6 +103,12 @@ def test_engine_update_multiple_parameters(
     engine_new = rm.engines.get(name)
 
     for param, value in ENGINE_UPDATE_PARAMS.items():
-        assert getattr(engine_new, param) == value.expected, f"Invalid {param} value"
+        if param == "spec":
+            current_value = engine_new.spec.name
+        elif param == "engine_type":
+            current_value = engine_new.type
+        else:
+            current_value = getattr(engine_new, param)
+        assert current_value == value.expected, f"Invalid {param} value"
 
     engine.delete()
