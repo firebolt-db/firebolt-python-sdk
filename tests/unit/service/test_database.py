@@ -1,10 +1,12 @@
 from typing import Callable
 
+from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.model.database import Database
 from firebolt.model.engine import Engine
 from firebolt.service.manager import ResourceManager
+from firebolt.utils.exception import DatabaseNotFoundError
 
 
 def test_database_create(
@@ -90,3 +92,24 @@ def test_database_update(
     database = mock_database.update(description="new description")
 
     assert database.description == "new description"
+
+def test_database_delete(
+    httpx_mock: HTTPXMock,
+    resource_manager: ResourceManager,
+    database_delete_callback: Callable,
+    get_database_not_found_callback: Callable,
+    system_engine_no_db_query_url: str,
+    mock_database: Database,
+):
+    httpx_mock.add_callback(
+        database_delete_callback, url=system_engine_no_db_query_url, method="POST"
+    )
+    httpx_mock.add_callback(
+        get_database_not_found_callback, url=system_engine_no_db_query_url, method="POST"
+    )
+    
+    mock_database._service = resource_manager.databases
+    mock_database.delete()
+    
+    with raises(DatabaseNotFoundError):
+        resource_manager.databases.get("invalid name")
