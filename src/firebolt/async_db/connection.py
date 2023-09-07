@@ -6,8 +6,8 @@ from json import JSONDecodeError
 from types import TracebackType
 from typing import Any, Dict, List, Optional
 
-from httpcore._backends.auto import AutoBackend
-from httpcore._backends.base import AsyncNetworkStream
+from httpcore._backends.auto import AutoBackend  # type: ignore
+from httpcore._backends.base import AsyncNetworkStream  # type: ignore
 from httpx import AsyncHTTPTransport, HTTPStatusError, RequestError, Timeout
 
 from firebolt.async_db.cursor import Cursor

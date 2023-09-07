@@ -7,8 +7,8 @@ from types import TracebackType
 from typing import Any, Dict, List, Optional
 from warnings import warn
 
-from httpcore._backends.base import NetworkStream
-from httpcore._backends.sync import SyncBackend
+from httpcore._backends.base import NetworkStream  # type: ignore
+from httpcore._backends.sync import SyncBackend  # type: ignore
 from httpx import HTTPStatusError, HTTPTransport, RequestError, Timeout
 from readerwriterlock.rwlock import RWLockWrite
 
