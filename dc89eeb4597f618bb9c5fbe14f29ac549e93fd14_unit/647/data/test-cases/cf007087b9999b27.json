@@ -1,0 +1,378 @@
+{
+  "uid" : "cf007087b9999b27",
+  "name" : "test_client_different_auths",
+  "fullName" : "tests.unit.client.test_client_async#test_client_different_auths",
+  "historyId" : "29f331fcfed8eb0897725f9cbade2583",
+  "time" : {
+    "start" : 1694055776606,
+    "stop" : 1694055776705,
+    "duration" : 99
+  },
+  "description" : "\n    Client properly handles such auth types:\n    - tuple(username, password)\n    - Auth\n    - None\n    All other types should raise TypeError.\n    ",
+  "descriptionHtml" : "<pre><code>Client properly handles such auth types:\n- tuple(username, password)\n- Auth\n- None\nAll other types should raise TypeError.\n</code></pre>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "server",
+    "time" : {
+      "start" : 1694055776605,
+      "stop" : 1694055776605,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "check_credentials_callback",
+    "time" : {
+      "start" : 1694055776529,
+      "stop" : 1694055776529,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth",
+    "time" : {
+      "start" : 1694055776530,
+      "stop" : 1694055776604,
+      "duration" : 74
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "check_token_callback",
+    "time" : {
+      "start" : 1694055776529,
+      "stop" : 1694055776529,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_server",
+    "time" : {
+      "start" : 1694055776605,
+      "stop" : 1694055776605,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1694055776528,
+      "stop" : 1694055776528,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1694055776523,
+      "stop" : 1694055776526,
+      "duration" : 3
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1694055776527,
+      "stop" : 1694055776527,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_name",
+    "time" : {
+      "start" : 1694055776604,
+      "stop" : 1694055776605,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1694055776527,
+      "stop" : 1694055776527,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "access_token",
+    "time" : {
+      "start" : 1694055776529,
+      "stop" : 1694055776529,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "client_secret",
+    "time" : {
+      "start" : 1694055776528,
+      "stop" : 1694055776528,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1694055776527,
+      "stop" : 1694055776527,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "client_id",
+    "time" : {
+      "start" : 1694055776528,
+      "stop" : 1694055776528,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1694055776711,
+      "stop" : 1694055776712,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1694055776714,
+      "stop" : 1694055776716,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1694055776714,
+      "stop" : 1694055776714,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7f7488995b00>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.client"
+  }, {
+    "name" : "suite",
+    "value" : "test_client_async"
+  }, {
+    "name" : "host",
+    "value" : "fv-az337-514"
+  }, {
+    "name" : "thread",
+    "value" : "2175-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.client.test_client_async"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 7,
+        "unknown" : 0,
+        "total" : 7
+      },
+      "items" : [ {
+        "uid" : "f577d4d26621db90",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/dc89eeb4597f618bb9c5fbe14f29ac549e93fd14_unit/173//#testresult/f577d4d26621db90",
+        "status" : "passed",
+        "time" : {
+          "start" : 1694055722749,
+          "stop" : 1694055723040,
+          "duration" : 291
+        }
+      }, {
+        "uid" : "47e7fd3e49f52dc1",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/dc89eeb4597f618bb9c5fbe14f29ac549e93fd14_unit/646//#testresult/47e7fd3e49f52dc1",
+        "status" : "passed",
+        "time" : {
+          "start" : 1693969383220,
+          "stop" : 1693969383309,
+          "duration" : 89
+        }
+      }, {
+        "uid" : "7febc04596ba2110",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/dc89eeb4597f618bb9c5fbe14f29ac549e93fd14_unit/172//#testresult/7febc04596ba2110",
+        "status" : "passed",
+        "time" : {
+          "start" : 1693969332742,
+          "stop" : 1693969333062,
+          "duration" : 320
+        }
+      }, {
+        "uid" : "dcb195a0ea28cf10",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/dc89eeb4597f618bb9c5fbe14f29ac549e93fd14_unit/645//#testresult/dcb195a0ea28cf10",
+        "status" : "passed",
+        "time" : {
+          "start" : 1693882994810,
+          "stop" : 1693882994884,
+          "duration" : 74
+        }
+      }, {
+        "uid" : "9f7b67eb751dcde5",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/dc89eeb4597f618bb9c5fbe14f29ac549e93fd14_unit/171//#testresult/9f7b67eb751dcde5",
+        "status" : "passed",
+        "time" : {
+          "start" : 1693882943854,
+          "stop" : 1693882944225,
+          "duration" : 371
+        }
+      }, {
+        "uid" : "b99db475a8b7a8f6",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/dc89eeb4597f618bb9c5fbe14f29ac549e93fd14_unit/231//#testresult/b99db475a8b7a8f6",
+        "status" : "passed",
+        "time" : {
+          "start" : 1693812766839,
+          "stop" : 1693812766932,
+          "duration" : 93
+        }
+      } ]
+    },
+    "tags" : [ "trio(run=<function run at 0x7f7488995b00>)" ]
+  },
+  "source" : "cf007087b9999b27.json",
+  "parameterValues" : [ ]
+}
