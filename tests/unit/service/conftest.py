@@ -41,6 +41,26 @@ def mock_engine(region: str, server: str, instance_type_1: InstanceType) -> Engi
 
 
 @fixture
+def mock_engine_stopping(
+    region: str, server: str, instance_type_1: InstanceType
+) -> Engine:
+    return Engine(
+        name="engine_1",
+        region=region,
+        spec=instance_type_1,
+        scale=2,
+        current_status=EngineStatus.STOPPING,
+        version="",
+        endpoint=server,
+        warmup=WarmupMethod.MINIMAL,
+        auto_stop=7200,
+        type=EngineType.GENERAL_PURPOSE,
+        _database_name="database",
+        _service=None,
+    )
+
+
+@fixture
 def instance_type_1() -> InstanceType:
     return InstanceType(
         name="B1",
@@ -244,6 +264,11 @@ def get_engine_callback(mock_engine: Engine) -> Callable:
 
 
 @fixture
+def get_engine_callback_stopping(mock_engine_stopping: Engine) -> Callable:
+    return get_objects_from_db_callback([mock_engine_stopping])
+
+
+@fixture
 def get_engine_not_found_callback(mock_engine: Engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -344,34 +369,6 @@ def database_not_found_callback() -> Callable:
 
 @fixture
 def database_update_callback() -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        return Response(
-            status_code=httpx.codes.OK,
-            json=empty_response,
-        )
-
-    return do_mock
-
-
-@fixture
-def database_delete_callback() -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        return Response(
-            status_code=httpx.codes.OK,
-            json=empty_response,
-        )
-
-    return do_mock
-
-
-@fixture
-def get_database_not_found_callback(mock_database: Database) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
