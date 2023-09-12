@@ -41,6 +41,26 @@ def mock_engine(region: str, server: str, instance_type_1: InstanceType) -> Engi
 
 
 @fixture
+def mock_engine_stopping(
+    region: str, server: str, instance_type_1: InstanceType
+) -> Engine:
+    return Engine(
+        name="engine_1",
+        region=region,
+        spec=instance_type_1,
+        scale=2,
+        current_status=EngineStatus.STOPPING,
+        version="",
+        endpoint=server,
+        warmup=WarmupMethod.MINIMAL,
+        auto_stop=7200,
+        type=EngineType.GENERAL_PURPOSE,
+        _database_name="database",
+        _service=None,
+    )
+
+
+@fixture
 def instance_type_1() -> InstanceType:
     return InstanceType(
         name="B1",
@@ -241,6 +261,11 @@ def get_objects_from_db_callback(objs: List[dataclass]) -> Callable:
 @fixture
 def get_engine_callback(mock_engine: Engine) -> Callable:
     return get_objects_from_db_callback([mock_engine])
+
+
+@fixture
+def get_engine_callback_stopping(mock_engine_stopping: Engine) -> Callable:
+    return get_objects_from_db_callback([mock_engine_stopping])
 
 
 @fixture

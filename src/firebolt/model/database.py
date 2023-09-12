@@ -88,7 +88,7 @@ class Database(FireboltBaseModel):
         """
 
         for engine in self.get_attached_engines():
-            if engine.current_status not in {
+            if engine.current_status in {
                 EngineStatus.STARTING,
                 EngineStatus.STOPPING,
             }:
