@@ -63,7 +63,7 @@ def all_types_query() -> str:
         "30000000000 as uint64, "
         "-30000000000 as int64, "
         "cast(1.23 AS FLOAT) as float32, "
-        "1.2345678901234 as float64, "
+        "1.23456789012 as float64, "
         "'text' as \"string\", "
         "CAST('2021-03-28' AS DATE) as \"date\", "
         "pgdate '0001-01-01' as \"pgdate\", "
