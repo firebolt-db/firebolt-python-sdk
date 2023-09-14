@@ -48,7 +48,7 @@ class DatabaseService(BaseService):
         return Database._from_dict(self._get_dict(name), self)
 
     def get_by_name(self, name: str) -> Database:
-        return Database._from_dict(self._get_dict(name), self)
+        return self.get(name)
 
     def get_many(
         self,
