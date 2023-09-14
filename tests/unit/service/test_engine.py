@@ -178,3 +178,20 @@ def test_engine_update_auto_stop_zero(
     mock_engine.update(auto_stop=0)
 
     assert mock_engine.auto_stop == updated_auto_stop
+
+
+def test_engine_get_by_name(
+    httpx_mock: HTTPXMock,
+    resource_manager: ResourceManager,
+    instance_type_callback: Callable,
+    instance_type_url: str,
+    get_engine_callback: Callable,
+    system_engine_no_db_query_url: str,
+    mock_engine: Engine,
+):
+    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+
+    engine = resource_manager.engines.get_by_name(mock_engine.name)
+
+    assert engine == mock_engine
