@@ -114,7 +114,7 @@ def test_detach_engine(
 @mark.xdist_group(name="system_engine")
 def test_alter_engine(setup_dbs, connection_system_engine, engine_name):
     with connection_system_engine.cursor() as cursor:
-        cursor.execute(f"ALTER ENGINE {engine_name} SET SPEC = B2")
+        cursor.execute(f"ALTER ENGINE {engine_name} SET SPEC = 'B2'")
 
         cursor.execute("SHOW ENGINES")
         engines = cursor.fetchall()
