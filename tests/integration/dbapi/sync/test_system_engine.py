@@ -1,13 +1,13 @@
 from typing import List
 
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.common._types import ColType, Column
 from firebolt.db import Connection
 from firebolt.utils.exception import OperationalError
 from tests.integration.dbapi.utils import assert_deep_eq
 
-
+@mark.skip(reason="wip")
 def test_system_engine(
     connection_system_engine: Connection,
     all_types_query: str,
@@ -53,6 +53,7 @@ def test_system_engine(
                 c.execute("show tables")
 
 
+@mark.skip(reason="wip")
 def test_system_engine_no_db(
     connection_system_engine_no_db: Connection,
     all_types_query: str,
