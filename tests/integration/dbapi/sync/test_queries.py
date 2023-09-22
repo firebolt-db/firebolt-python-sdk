@@ -8,14 +8,7 @@ from pytest import mark, raises
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType, Column
-from firebolt.db import (
-    Binary,
-    Connection,
-    Cursor,
-    DataError,
-    OperationalError,
-    connect,
-)
+from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
@@ -209,17 +202,12 @@ def test_insert(connection: Connection) -> None:
     """Insert and delete queries are handled properly."""
 
     def test_empty_query(c: Cursor, query: str) -> None:
-        assert c.execute(query) == -1, "Invalid row count returned"
-        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.execute(query) == 0, "Invalid row count returned"
+        assert c.rowcount == 0, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
-        with raises(DataError):
-            c.fetchone()
-
-        with raises(DataError):
-            c.fetchmany()
-
-        with raises(DataError):
-            c.fetchall()
+        assert c.fetchone() is None
+        assert len(c.fetchmany()) == 0
+        assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
         c.execute("DROP TABLE IF EXISTS test_insert_tb")
@@ -259,17 +247,12 @@ def test_parameterized_query(connection: Connection) -> None:
     """Query parameters are handled properly."""
 
     def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
-        assert c.execute(query, params) == -1, "Invalid row count returned"
-        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.execute(query, params) == 0, "Invalid row count returned"
+        assert c.rowcount == 0, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
-        with raises(DataError):
-            c.fetchone()
-
-        with raises(DataError):
-            c.fetchmany()
-
-        with raises(DataError):
-            c.fetchall()
+        assert c.fetchone() is None
+        assert len(c.fetchmany()) == 0
+        assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
         c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
