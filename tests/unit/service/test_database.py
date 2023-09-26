@@ -35,6 +35,22 @@ def test_database_create(
     assert database == mock_database
 
 
+def test_database_get_by_name(
+    httpx_mock: HTTPXMock,
+    resource_manager: ResourceManager,
+    database_get_callback: Callable,
+    system_engine_no_db_query_url: str,
+    mock_database: Database,
+):
+    httpx_mock.add_callback(
+        database_get_callback, url=system_engine_no_db_query_url, method="POST"
+    )
+
+    database = resource_manager.databases.get_by_name(mock_database.name)
+
+    assert database == mock_database
+
+
 def test_database_get(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,

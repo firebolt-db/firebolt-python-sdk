@@ -55,6 +55,9 @@ class EngineService(BaseService):
         """Get an engine from Firebolt by its name."""
         return Engine._from_dict(self._get_dict(name), self)
 
+    def get_by_name(self, name: str) -> Engine:
+        return self.get(name)
+
     def get_many(
         self,
         name_contains: Optional[str] = None,

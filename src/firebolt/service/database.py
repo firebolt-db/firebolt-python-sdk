@@ -47,6 +47,9 @@ class DatabaseService(BaseService):
         """Get a Database from Firebolt by its name."""
         return Database._from_dict(self._get_dict(name), self)
 
+    def get_by_name(self, name: str) -> Database:
+        return self.get(name)
+
     def get_many(
         self,
         name_contains: Optional[str] = None,
