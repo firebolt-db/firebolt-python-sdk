@@ -10,12 +10,6 @@ The service package enables launching and cataloging Firebolt engines and databa
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: firebolt.service.binding
-   :members:
-   :exclude-members: BindingService
-   :undoc-members:
-   :show-inheritance:
-
 .. _service-database:
 
 Database
@@ -36,12 +30,6 @@ Engine
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: firebolt.service.engine_revision
-   :members:
-   :exclude-members: EngineRevisionService
-   :undoc-members:
-   :show-inheritance:
-
 Instance type
 --------------------------------------
 
@@ -55,22 +43,6 @@ Manager
 -------------------------------
 
 .. automodule:: firebolt.service.manager
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-provider
---------------------------------
-
-.. automodule:: firebolt.service.provider
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Region
-------------------------------
-
-.. automodule:: firebolt.service.region
    :members:
    :undoc-members:
    :show-inheritance:

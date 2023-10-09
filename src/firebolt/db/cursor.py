@@ -98,7 +98,7 @@ class Cursor(BaseCursor):
     def _api_request(
         self,
         query: str = "",
-        parameters: dict[str, Any] = {},
+        parameters: Optional[dict[str, Any]] = None,
         path: str = "",
         use_set_parameters: bool = True,
     ) -> Response:
@@ -117,8 +117,9 @@ class Cursor(BaseCursor):
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
         """
+        parameters = parameters or {}
         if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **(parameters or {})}
+            parameters = {**(self._set_parameters or {}), **parameters}
         if self.connection.database:
             parameters["database"] = self.connection.database
         if self.connection._is_system:

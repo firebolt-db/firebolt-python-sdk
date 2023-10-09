@@ -1,7 +1,6 @@
 from collections import namedtuple
 from unittest.mock import MagicMock, patch
 
-from pydantic import ValidationError
 from pytest import mark, raises
 
 from firebolt.utils.usage_tracker import (
@@ -199,5 +198,5 @@ def test_user_agent(drivers, clients, expected_string):
     MagicMock(return_value=("1", "2", "Win", "ciso")),
 )
 def test_incorrect_user_agent(drivers, clients):
-    with raises(ValidationError):
+    with raises(ValueError):
         get_user_agent_header(drivers, clients)

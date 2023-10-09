@@ -21,13 +21,13 @@ on:
         type: string
         description: 'Branch to run on'
     secrets:
-      FIREBOLT_USERNAME:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
-      FIREBOLT_PASSWORD:
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
-      SERVICE_ID:
+      FIREBOLT_CLIENT_ID_NEW_IDN:
         required: true
-      SERVICE_SECRET:
+      FIREBOLT_CLIENT_SECRET_NEW_IDN:
         required: true
 jobs:
   tests:
@@ -51,53 +51,30 @@ jobs:
       - name: Determine env variables
         run: |
           if [ "${{ inputs.environment }}" == 'staging' ]; then
-             echo "USERNAME=${{ secrets.FIREBOLT_STG_USERNAME }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_STG_PASSWORD }}" >> "$GITHUB_ENV"
-             echo "CLIENT_ID=${{ secrets.SERVICE_ID_STG }}" >> "$GITHUB_ENV"
-             echo "CLIENT_SECRET=${{ secrets.SERVICE_SECRET_STG }}" >> "$GITHUB_ENV"
+             echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
           else
-             echo "USERNAME=${{ secrets.FIREBOLT_USERNAME }}" >> "$GITHUB_ENV"
-             echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD }}" >> "$GITHUB_ENV"
-             echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID }}" >> "$GITHUB_ENV"
-             echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET }}" >> "$GITHUB_ENV"
+             echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
           fi
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@v1
+        uses: firebolt-db/integration-testing-setup@v2
         with:
-          firebolt-username: ${{ env.USERNAME }}
-          firebolt-password: ${{ env.PASSWORD }}
+          firebolt-client-id: ${{ env.CLIENT_ID }}
+          firebolt-client-secret: ${{ env.CLIENT_SECRET }}
+          account: "developer"
           api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
-          region: "us-east-1"
 
       - name: Run integration tests
         env:
-          USER_NAME: ${{ env.USERNAME }}
-          PASSWORD: ${{ env.PASSWORD }}
           SERVICE_ID: ${{ env.CLIENT_ID }}
           SERVICE_SECRET: ${{ env.CLIENT_SECRET }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
-          ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
-          STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
           API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
-          ACCOUNT_NAME: "firebolt"
+          ACCOUNT_NAME: "developer"
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration --alluredir=allure-results
-
-      - name: Get Allure history
-        uses: actions/checkout@v2
-        if: always()
-        continue-on-error: true
-        with:
-          ref: gh-pages
-          path: gh-pages
-
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
-        if: always()
-        with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
-          test-type: integration
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration

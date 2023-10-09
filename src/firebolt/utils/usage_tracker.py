@@ -1,23 +1,37 @@
 import inspect
 import logging
+from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from platform import python_version, release, system
 from sys import modules
 from typing import Dict, List, Optional, Tuple
 
-from pydantic import BaseModel
-
 from firebolt import __version__
 
 
-class ConnectorVersions(BaseModel):
+@dataclass
+class ConnectorVersions:
     """
     Verify correct parameter types
     """
 
     clients: List[Tuple[str, str]]
     drivers: List[Tuple[str, str]]
+
+    def __post_init__(self) -> None:
+        if any(
+            [(not isinstance(pair, tuple) or len(pair) != 2) for pair in self.clients]
+        ):
+            raise ValueError("Invalid clients value: expected tuples of length 2")
+        if any([not isinstance(item, str) for pair in self.clients for item in pair]):
+            raise ValueError("Invalid clients value: expected tuples of strings")
+        if any(
+            [(not isinstance(pair, tuple) or len(pair) != 2) for pair in self.drivers]
+        ):
+            raise ValueError("Invalid drivers value: expected tuples of length 2")
+        if any([not isinstance(item, str) for pair in self.drivers for item in pair]):
+            raise ValueError("Invalid drivers value: expected tuples of strings")
 
 
 logger = logging.getLogger(__name__)
@@ -169,8 +183,8 @@ def format_as_user_agent(drivers: Dict[str, str], clients: Dict[str, str]) -> st
 
 
 def get_user_agent_header(
-    user_drivers: Optional[List[Tuple[str, str]]] = [],
-    user_clients: Optional[List[Tuple[str, str]]] = [],
+    user_drivers: Optional[List[Tuple[str, str]]] = None,
+    user_clients: Optional[List[Tuple[str, str]]] = None,
 ) -> str:
     """
     Return a user agent header with connector stack and system information.
@@ -194,7 +208,7 @@ def get_user_agent_header(
         "Detected running with drivers: %s and clients %s ", str(drivers), str(clients)
     )
     # Override auto-detected connectors with info provided manually
-    versions = ConnectorVersions(clients=user_clients, drivers=user_drivers)
+    versions = ConnectorVersions(clients=user_clients or [], drivers=user_drivers or [])
     for name, version in versions.clients:
         clients[name] = version
     for name, version in versions.drivers:

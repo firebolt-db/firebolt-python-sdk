@@ -1,6 +1,5 @@
 from typing import Any, Optional
 
-from anyio._core._eventloop import get_asynclib
 from async_property import async_cached_property  # type: ignore
 from httpx import URL
 from httpx import AsyncClient as HttpxAsyncClient
@@ -21,15 +20,6 @@ from firebolt.utils.util import (
     merge_urls,
     mixin_for,
 )
-
-# Explicitly import all available backend not get into
-# anyio race condition during backend import
-for backend in ("asyncio", "trio"):
-    try:
-        get_asynclib(backend)
-    except ModuleNotFoundError:
-        # Not all backends might be installed
-        pass
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 

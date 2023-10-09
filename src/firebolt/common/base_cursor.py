@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass, fields
 from enum import Enum
 from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from httpx import Response
-from pydantic import BaseModel
 
 from firebolt.common._types import (
     ColType,
@@ -24,6 +24,7 @@ from firebolt.utils.exception import (
     DataError,
     QueryNotRunError,
 )
+from firebolt.utils.util import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,8 @@ class QueryStatus(Enum):
     EXECUTION_ERROR = 8
 
 
-class Statistics(BaseModel):
+@dataclass
+class Statistics:
     """
     Class for query execution statistics.
     """
@@ -61,8 +63,20 @@ class Statistics(BaseModel):
     bytes_read: int
     time_before_execution: float
     time_to_execute: float
-    scanned_bytes_cache: Optional[float]
-    scanned_bytes_storage: Optional[float]
+    scanned_bytes_cache: Optional[float] = None
+    scanned_bytes_storage: Optional[float] = None
+
+    def __post_init__(self) -> None:
+        for field in fields(self):
+            value = getattr(self, field.name)
+            _type = eval(field.type)  # type: ignore
+
+            # Unpack Optional
+            if hasattr(_type, "__args__"):
+                _type = _type.__args__[0]
+            if value is not None and not isinstance(value, _type):
+                # convert values to proper types
+                setattr(self, field.name, _type(value))
 
 
 def check_not_closed(func: Callable) -> Callable:
@@ -323,6 +337,10 @@ class BaseCursor:
         self._idx = right
         return left, right
 
+    _performance_log_message = (
+        "[PERFORMANCE] Parsing query output into native Python types"
+    )
+
     @check_not_closed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
@@ -332,7 +350,9 @@ class BaseCursor:
             # We are out of elements
             return None
         assert self._rows is not None
-        return self._parse_row(self._rows[left])
+        with Timer(self._performance_log_message):
+            result = self._parse_row(self._rows[left])
+        return result
 
     @check_not_closed
     @check_query_executed
@@ -345,7 +365,9 @@ class BaseCursor:
         left, right = self._get_next_range(size)
         assert self._rows is not None
         rows = self._rows[left:right]
-        return [self._parse_row(row) for row in rows]
+        with Timer(self._performance_log_message):
+            result = [self._parse_row(row) for row in rows]
+        return result
 
     @check_not_closed
     @check_query_executed
@@ -354,7 +376,9 @@ class BaseCursor:
         left, right = self._get_next_range(self.rowcount)
         assert self._rows is not None
         rows = self._rows[left:right]
-        return [self._parse_row(row) for row in rows]
+        with Timer(self._performance_log_message):
+            result = [self._parse_row(row) for row in rows]
+        return result
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:

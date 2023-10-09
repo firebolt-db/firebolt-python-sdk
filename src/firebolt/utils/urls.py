@@ -5,7 +5,6 @@ DATABASES_URL = "/core/v1/account/databases"
 ENGINES_URL = "/core/v1/account/engines"
 ENGINES_BY_IDS_URL = "/core/v1/engines:getByIds"
 
-ACCOUNT_URL = "/iam/v2/account"
 ACCOUNT_BY_NAME_URL = "/web/v3/account/{account_name}/resolve"
 
 ACCOUNT_ENGINE_URL = "/core/v1/accounts/{account_id}/engines/{engine_id}"
@@ -15,7 +14,6 @@ ACCOUNT_ENGINE_STOP_URL = ACCOUNT_ENGINE_URL + ":stop"
 ACCOUNT_LIST_ENGINES_URL = "/core/v1/accounts/{account_id}/engines"
 ACCOUNT_ENGINE_ID_BY_NAME_URL = ACCOUNT_LIST_ENGINES_URL + ":getIdByName"
 ACCOUNT_ENGINE_REVISION_URL = ACCOUNT_ENGINE_URL + "/engineRevisions/{revision_id}"
-ACCOUNT_ENGINE_URL_BY_DATABASE_NAME = ACCOUNT_LIST_ENGINES_URL + ":getURLByDatabaseName"
 
 ACCOUNT_DATABASES_URL = "/core/v1/accounts/{account_id}/databases"
 ACCOUNT_DATABASE_URL = "/core/v1/accounts/{account_id}/databases/{database_id}"
@@ -30,4 +28,3 @@ PROVIDERS_URL = "/compute/v1/providers"
 REGIONS_URL = "/compute/v1/regions"
 
 GATEWAY_HOST_BY_ACCOUNT_NAME = "/web/v3/account/{account_name}/engineUrl"
-DYNAMIC_QUERY = "/dynamic/query"

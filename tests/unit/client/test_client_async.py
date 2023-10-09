@@ -1,13 +1,14 @@
-from re import Pattern
-from typing import Callable
+from re import Pattern, compile
+from types import MethodType
+from typing import Any, Callable
 
-from httpx import codes
+from httpx import Request, Response, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
+from trio import open_nursery, sleep
 
 from firebolt.client import AsyncClient
-from firebolt.client.auth import Auth
-from firebolt.common import Settings
+from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from firebolt.utils.util import fix_url_schema
 
@@ -99,7 +100,7 @@ async def test_client_account_id(
     account_id_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    settings: Settings,
+    server: str,
 ):
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -107,7 +108,55 @@ async def test_client_account_id(
     async with AsyncClient(
         account_name=account_name,
         auth=auth,
-        base_url=fix_url_schema(settings.server),
-        api_endpoint=settings.server,
+        base_url=fix_url_schema(server),
+        api_endpoint=server,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
+
+
+async def test_concurent_auth_lock(
+    httpx_mock: HTTPXMock,
+    account_name: str,
+    server: str,
+    client_id: str,
+    client_secret: str,
+    access_token: str,
+    auth_url: str,
+    check_token_callback: Callable,
+) -> None:
+    CONCURENT_COUNT = 10
+    url = "https://url"
+
+    checked_creds_times = 0
+
+    async def mock_send_handling_redirects(self, *args: Any, **kwargs: Any) -> Response:
+        # simulate network delay so the context switches
+        await sleep(0.01)
+        return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
+
+    def check_credentials(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        nonlocal checked_creds_times
+        checked_creds_times += 1
+        return Response(
+            status_code=codes.OK,
+            json={"expires_in": 2**32, "access_token": access_token},
+        )
+
+    httpx_mock.add_callback(check_token_callback, url=compile(f"{url}/."))
+    httpx_mock.add_callback(check_credentials, url=auth_url)
+
+    async with AsyncClient(
+        auth=ClientCredentials(client_id, client_secret),
+        api_endpoint=server,
+        account_name=account_name,
+    ) as c:
+        c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
+        urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
+        async with open_nursery() as nursery:
+            for url in urls:
+                nursery.start_soon(c.get, url)
+
+    assert checked_creds_times == 1

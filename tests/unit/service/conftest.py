@@ -1,117 +1,110 @@
-import json
+from dataclasses import dataclass, fields
+from datetime import datetime
 from typing import Callable, List
-from urllib.parse import urlparse
 
 import httpx
 from httpx import Response
 from pytest import fixture
 
-from firebolt.common.settings import Settings
-from firebolt.model.binding import Binding, BindingKey
-from firebolt.model.database import Database, DatabaseKey
-from firebolt.model.engine import Engine, EngineKey, EngineSettings
-from firebolt.model.engine_revision import (
-    EngineRevision,
-    EngineRevisionSpecification,
-)
-from firebolt.model.instance_type import InstanceType, InstanceTypeKey
-from firebolt.model.region import Region
-from firebolt.utils.urls import (
-    ACCOUNT_BINDINGS_URL,
-    ACCOUNT_DATABASE_BINDING_URL,
-    ACCOUNT_DATABASE_BY_NAME_URL,
-    ACCOUNT_DATABASE_URL,
-    ACCOUNT_DATABASES_URL,
-    ACCOUNT_ENGINE_URL,
-    ACCOUNT_INSTANCE_TYPES_URL,
-    ACCOUNT_LIST_ENGINES_URL,
-    PROVIDERS_URL,
-    REGIONS_URL,
-)
+from firebolt.client.auth import Auth
+from firebolt.common._types import _InternalType
+from firebolt.model.database import Database
+from firebolt.model.engine import Engine
+from firebolt.model.instance_type import InstanceType
+from firebolt.service.manager import ResourceManager
+from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.utils.urls import ACCOUNT_INSTANCE_TYPES_URL
 from tests.unit.util import list_to_paginated_response
 
 
 @fixture
-def engine_name() -> str:
-    return "my_engine"
+def region() -> str:
+    return "us-east-1"
 
 
 @fixture
-def engine_scale() -> int:
-    return 2
-
-
-@fixture
-def engine_settings() -> EngineSettings:
-    return EngineSettings.default()
-
-
-@fixture
-def mock_engine(engine_name, region_1, engine_settings, account_id, settings) -> Engine:
+def mock_engine(region: str, server: str, instance_type_1: InstanceType) -> Engine:
     return Engine(
-        name=engine_name,
-        compute_region_key=region_1.key,
-        settings=engine_settings,
-        key=EngineKey(account_id=account_id, engine_id="mock_engine_id_1"),
-        endpoint=f"https://{settings.server}",
+        name="engine_1",
+        region=region,
+        spec=instance_type_1,
+        scale=2,
+        current_status=EngineStatus.STOPPED,
+        version="",
+        endpoint=server,
+        warmup=WarmupMethod.MINIMAL,
+        auto_stop=7200,
+        type=EngineType.GENERAL_PURPOSE,
+        _database_name="database",
+        _service=None,
     )
 
 
 @fixture
-def mock_engine_revision_spec(
-    instance_type_2, engine_scale
-) -> EngineRevisionSpecification:
-    return EngineRevisionSpecification(
-        db_compute_instances_type_key=instance_type_2.key,
-        db_compute_instances_count=engine_scale,
-        proxy_instances_type_key=instance_type_2.key,
+def mock_engine_stopping(
+    region: str, server: str, instance_type_1: InstanceType
+) -> Engine:
+    return Engine(
+        name="engine_1",
+        region=region,
+        spec=instance_type_1,
+        scale=2,
+        current_status=EngineStatus.STOPPING,
+        version="",
+        endpoint=server,
+        warmup=WarmupMethod.MINIMAL,
+        auto_stop=7200,
+        type=EngineType.GENERAL_PURPOSE,
+        _database_name="database",
+        _service=None,
     )
 
 
 @fixture
-def mock_engine_revision(mock_engine_revision_spec) -> EngineRevision:
-    return EngineRevision(specification=mock_engine_revision_spec)
-
-
-@fixture
-def instance_type_1(provider, region_1) -> InstanceType:
+def instance_type_1() -> InstanceType:
     return InstanceType(
-        key=InstanceTypeKey(
-            provider_id=provider.provider_id,
-            region_id=region_1.key.region_id,
-            instance_type_id="instance_type_id_1",
-        ),
         name="B1",
-        price_per_hour_cents=10,
+        price_per_hour_cents=40,
         storage_size_bytes=0,
+        is_spot_available=True,
+        cpu_virtual_cores_count=0,
+        memory_size_bytes=0,
+        create_time=datetime.now().isoformat(),
+        last_update_time=datetime.now().isoformat(),
+        _key={},
+        _service=None,
     )
 
 
 @fixture
-def instance_type_2(provider, region_2) -> InstanceType:
+def instance_type_2() -> InstanceType:
     return InstanceType(
-        key=InstanceTypeKey(
-            provider_id=provider.provider_id,
-            region_id=region_2.key.region_id,
-            instance_type_id="instance_type_id_2",
-        ),
         name="B2",
         price_per_hour_cents=20,
         storage_size_bytes=500,
+        is_spot_available=True,
+        cpu_virtual_cores_count=0,
+        memory_size_bytes=0,
+        create_time=datetime.now().isoformat(),
+        last_update_time=datetime.now().isoformat(),
+        _key={},
+        _service=None,
     )
 
 
 @fixture
-def instance_type_3(provider, region_2) -> InstanceType:
+def instance_type_3() -> InstanceType:
     return InstanceType(
-        key=InstanceTypeKey(
-            provider_id=provider.provider_id,
-            region_id=region_2.key.region_id,
-            instance_type_id="instance_type_id_2",
-        ),
-        name="B2",
+        name="B3",
         price_per_hour_cents=30,
         storage_size_bytes=500,
+        is_spot_available=True,
+        cpu_virtual_cores_count=0,
+        memory_size_bytes=0,
+        create_time=datetime.now().isoformat(),
+        last_update_time=datetime.now().isoformat(),
+        _key={},
+        _service=None,
     )
 
 
@@ -128,43 +121,35 @@ def mock_instance_types(
 
 
 @fixture
-def provider_callback(provider_url: str, mock_providers) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == provider_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response(mock_providers),
-        )
-
-    return do_mock
-
-
-@fixture
-def provider_url(settings: Settings) -> str:
-    return f"https://{settings.server}{PROVIDERS_URL}"
+def mock_database(region: str) -> Database:
+    return Database(
+        name="database",
+        description="mock_db_description",
+        region=region,
+        data_size_full=0,
+        data_size_compressed=0,
+        create_time=datetime.now().isoformat(),
+        create_actor="",
+        _attached_engine_names="-",
+        _errors="",
+        _service=None,
+    )
 
 
 @fixture
-def region_callback(region_url: str, mock_regions) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == region_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response(mock_regions),
-        )
-
-    return do_mock
-
-
-@fixture
-def region_url(settings: Settings) -> str:
-    return f"https://{settings.server}{REGIONS_URL}?page.first=5000"
+def mock_database_2(region: str) -> Database:
+    return Database(
+        name="database2",
+        description="completely different db",
+        region=region,
+        data_size_full=0,
+        data_size_compressed=0,
+        create_time=datetime.now().isoformat(),
+        create_actor="",
+        _attached_engine_names="-",
+        _errors="",
+        _service=None,
+    )
 
 
 @fixture
@@ -174,23 +159,6 @@ def instance_type_callback(instance_type_url: str, mock_instance_types) -> Calla
         **kwargs,
     ) -> Response:
         assert request.url == instance_type_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response(mock_instance_types),
-        )
-
-    return do_mock
-
-
-@fixture
-def instance_type_region_1_callback(
-    instance_type_region_1_url: str, mock_instance_types
-) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == instance_type_region_1_url
         return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response(mock_instance_types),
@@ -214,305 +182,223 @@ def instance_type_empty_callback() -> Callable:
 
 
 @fixture
-def instance_type_url(settings: Settings, account_id: str) -> str:
+def instance_type_url(server: str, account_id: str) -> str:
     return (
-        f"https://{settings.server}"
+        f"https://{server}"
         + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
         + "?page.first=5000"
     )
 
 
-@fixture
-def instance_type_region_1_url(
-    settings: Settings, region_1: Region, account_id: str
-) -> str:
-    return (
-        f"https://{settings.server}"
-        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
-        + f"?page.first=5000&filter.id_region_id_eq={region_1.key.region_id}"
-    )
+empty_response = {
+    "meta": [],
+    "data": [],
+    "rows": 0,
+    "statistics": {
+        "elapsed": 39635.785423446,
+        "rows_read": 0,
+        "bytes_read": 0,
+        "time_before_execution": 0,
+        "time_to_execute": 0,
+    },
+}
 
 
-@fixture
-def instance_type_region_2_url(
-    settings: Settings, region_2: Region, account_id: str
-) -> str:
-    return (
-        f"https://{settings.server}"
-        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
-        + f"?page.first=5000&filter.id_region_id_eq={region_2.key.region_id}"
-    )
-
-
-@fixture
-def engine_callback(engine_url: str, mock_engine) -> Callable:
+def get_objects_from_db_callback(objs: List[dataclass]) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert urlparse(engine_url).path in request.url.path
+        fieldname = lambda f: (f.metadata or {}).get("db_name", f.name)
+        types = {
+            "int": _InternalType.Long.value,
+            "str": _InternalType.Text.value,
+            "datetime": _InternalType.Text.value,  # we receive datetime as text from db
+            "InstanceType": _InternalType.Text.value,
+            "EngineType": _InternalType.Text.value,
+            "EngineStatus": _InternalType.Text.value,
+            "WarmupMethod": _InternalType.Text.value,
+        }
+        dc_fields = [f for f in fields(objs[0]) if f.name != "_service"]
+
+        def get_obj_field(obj, f):
+            value = getattr(obj, f.name)
+            if isinstance(value, (InstanceType, EngineStatus)):
+                return str(value)
+            if isinstance(value, WarmupMethod):
+                return " ".join(
+                    map(lambda s: s.capitalize(), str(value).lower().split("_"))
+                )
+            if isinstance(value, EngineType):
+                return {
+                    EngineType.GENERAL_PURPOSE: "General Purpose",
+                    EngineType.DATA_ANALYTICS: "Analytics",
+                }[value]
+            return value
+
+        query_response = {
+            "meta": [{"name": fieldname(f), "type": types[f.type]} for f in dc_fields],
+            "data": [[get_obj_field(obj, f) for f in dc_fields] for obj in objs],
+            "rows": len(objs),
+            "statistics": {
+                "elapsed": 0.116907717,
+                "rows_read": 1,
+                "bytes_read": 61,
+                "time_before_execution": 0.012180623,
+                "time_to_execute": 0.104614307,
+                "scanned_bytes_cache": 0,
+                "scanned_bytes_storage": 0,
+            },
+        }
         return Response(
             status_code=httpx.codes.OK,
-            json={"engine": mock_engine.dict()},
+            json=query_response,
         )
 
     return do_mock
 
 
 @fixture
-def engine_url(settings: Settings, account_id) -> str:
-    return f"https://{settings.server}" + ACCOUNT_LIST_ENGINES_URL.format(
-        account_id=account_id
-    )
+def get_engine_callback(mock_engine: Engine) -> Callable:
+    return get_objects_from_db_callback([mock_engine])
 
 
 @fixture
-def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
+def get_engine_callback_stopping(mock_engine_stopping: Engine) -> Callable:
+    return get_objects_from_db_callback([mock_engine_stopping])
+
+
+@fixture
+def get_engine_not_found_callback(mock_engine: Engine) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == account_engine_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"engine": mock_engine.dict()},
+            json=empty_response,
         )
 
     return do_mock
 
 
 @fixture
-def account_engine_url(settings: Settings, account_id, mock_engine) -> str:
-    return f"https://{settings.server}" + ACCOUNT_ENGINE_URL.format(
-        account_id=account_id,
-        engine_id=mock_engine.engine_id,
-    )
-
-
-@fixture
-def mock_database(region_1: str, account_id: str) -> Database:
-    return Database(
-        name="database",
-        description="mock_db_description",
-        compute_region_key=region_1.key,
-        database_key=DatabaseKey(
-            account_id=account_id, database_id="mock_database_id_1"
-        ),
-    )
-
-
-@fixture
-def create_databases_callback(databases_url: str, mock_database) -> Callable:
+def attach_engine_to_db_callback(system_engine_no_db_query_url: str) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        database_properties = json.loads(request.read().decode("utf-8"))["database"]
-
-        mock_database.name = database_properties["name"]
-        mock_database.description = database_properties["description"]
-
-        assert request.url == databases_url
+        assert request.url == system_engine_no_db_query_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"database": mock_database.dict()},
+            json=empty_response,
         )
 
     return do_mock
 
 
 @fixture
-def databases_get_callback(databases_url: str, mock_database) -> Callable:
-    def get_databases_callback_inner(
-        request: httpx.Request = None, **kwargs
-    ) -> Response:
-        return Response(
-            status_code=httpx.codes.OK, json={"edges": [{"node": mock_database.dict()}]}
-        )
-
-    return get_databases_callback_inner
+def updated_engine_scale() -> int:
+    return 10
 
 
 @fixture
-def databases_url(settings: Settings, account_id: str) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASES_URL.format(
-        account_id=account_id
-    )
+def updated_engine_type() -> EngineType:
+    return EngineType.DATA_ANALYTICS
 
 
 @fixture
-def database_callback(database_url: str, mock_database) -> Callable:
+def updated_auto_stop() -> EngineType:
+    return 0
+
+
+@fixture
+def update_engine_callback(
+    system_engine_no_db_query_url: str,
+    mock_engine: Engine,
+    updated_engine_scale: int,
+    updated_engine_type: EngineType,
+    updated_auto_stop: int,
+) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == database_url
+        assert request.url == system_engine_no_db_query_url
+        mock_engine.scale = updated_engine_scale
+        mock_engine.type = updated_engine_type
+        mock_engine.auto_stop = updated_auto_stop
         return Response(
             status_code=httpx.codes.OK,
-            json={"database": mock_database.dict()},
+            json=empty_response,
         )
 
     return do_mock
 
 
 @fixture
-def database_not_found_callback(database_url: str) -> Callable:
+def create_databases_callback(
+    system_engine_no_db_query_url: str, mock_database
+) -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == database_url
+        assert request.url == system_engine_no_db_query_url
         return Response(
             status_code=httpx.codes.OK,
-            json={},
+            json=empty_response,
         )
 
     return do_mock
 
 
 @fixture
-def database_url(settings: Settings, account_id: str, mock_database) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
-        account_id=account_id, database_id=mock_database.database_id
-    )
+def databases_get_callback(
+    mock_database: Database, mock_database_2: Database
+) -> Callable:
+    return get_objects_from_db_callback([mock_database, mock_database_2])
 
 
 @fixture
-def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Callable:
+def database_not_found_callback() -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        assert request.url == database_get_by_name_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"database_id": {"database_id": mock_database.database_id}},
+            json=empty_response,
         )
 
     return do_mock
 
 
 @fixture
-def database_get_by_name_url(settings: Settings, account_id: str, mock_database) -> str:
-    return (
-        f"https://{settings.server}"
-        + ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)
-        + f"?database_name={mock_database.name}"
-    )
-
-
-@fixture
-def database_update_callback(database_get_url, mock_database) -> Callable:
+def database_update_callback() -> Callable:
     def do_mock(
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        database_properties = json.loads(request.read().decode("utf-8"))["database"]
-
-        assert request.url == database_get_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"database": database_properties},
+            json=empty_response,
         )
 
     return do_mock
 
 
 @fixture
-def database_get_callback(database_get_url, mock_database) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == database_get_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json={"database": mock_database.dict()},
-        )
-
-    return do_mock
-
-
-# duplicates database_url
-@fixture
-def database_get_url(settings: Settings, account_id: str, mock_database) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASE_URL.format(
-        account_id=account_id, database_id=mock_database.database_id
-    )
+def database_get_callback(mock_database) -> Callable:
+    return get_objects_from_db_callback([mock_database])
 
 
 @fixture
-def binding(account_id, mock_engine, mock_database) -> Binding:
-    return Binding(
-        binding_key=BindingKey(
-            account_id=account_id,
-            database_id=mock_database.database_id,
-            engine_id=mock_engine.engine_id,
-        ),
-        is_default_engine=True,
-    )
-
-
-@fixture
-def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == bindings_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response([binding]),
-        )
-
-    return do_mock
-
-
-@fixture
-def no_bindings_callback(bindings_url: str) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == bindings_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response([]),
-        )
-
-    return do_mock
-
-
-@fixture
-def bindings_url(settings: Settings, account_id: str, mock_engine: Engine) -> str:
-    return (
-        f"https://{settings.server}"
-        + ACCOUNT_BINDINGS_URL.format(account_id=account_id)
-        + f"?page.first=5000&filter.id_engine_id_eq={mock_engine.engine_id}"
-    )
-
-
-@fixture
-def create_binding_callback(create_binding_url: str, binding) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == create_binding_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json={"binding": binding.dict()},
-        )
-
-    return do_mock
-
-
-@fixture
-def create_binding_url(
-    settings: Settings, account_id: str, mock_database: Database, mock_engine: Engine
-) -> str:
-    return f"https://{settings.server}" + ACCOUNT_DATABASE_BINDING_URL.format(
-        account_id=account_id,
-        database_id=mock_database.database_id,
-        engine_id=mock_engine.engine_id,
-    )
+def resource_manager(
+    auth: Auth,
+    account_name: str,
+    server: str,
+    mock_system_engine_connection_flow: Callable,
+) -> ResourceManager:
+    mock_system_engine_connection_flow()
+    return ResourceManager(auth=auth, account_name=account_name, api_endpoint=server)

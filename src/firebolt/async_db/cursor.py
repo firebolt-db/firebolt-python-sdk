@@ -17,7 +17,6 @@ from typing import (
 )
 
 from httpx import Response, codes
-from tricycle import RWLock
 
 from firebolt.async_db.util import is_db_available, is_engine_running
 from firebolt.client import AsyncClient
@@ -49,6 +48,7 @@ from firebolt.utils.exception import (
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
+from firebolt.utils.util import Timer
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +68,6 @@ class Cursor(BaseCursor):
 
     """
 
-    __slots__ = BaseCursor.__slots__ + ("_async_query_lock",)
-
     def __init__(
         self,
         *args: Any,
@@ -78,7 +76,6 @@ class Cursor(BaseCursor):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._async_query_lock = RWLock()
         self._client = client
         self.connection = connection
 
@@ -110,7 +107,7 @@ class Cursor(BaseCursor):
     async def _api_request(
         self,
         query: str = "",
-        parameters: dict[str, Any] = {},
+        parameters: Optional[dict[str, Any]] = None,
         path: str = "",
         use_set_parameters: bool = True,
     ) -> Response:
@@ -129,8 +126,9 @@ class Cursor(BaseCursor):
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
         """
+        parameters = parameters or {}
         if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **(parameters or {})}
+            parameters = {**(self._set_parameters or {}), **parameters}
         if self.connection.database:
             parameters["database"] = self.connection.database
         if self.connection._is_system:
@@ -199,14 +197,20 @@ class Cursor(BaseCursor):
                         skip_parsing,
                         async_execution,
                     )
-                    response = await self._api_request(
-                        query,
-                        {
-                            "async_execution": 1,
-                            "advanced_mode": 1,
-                            "output_format": JSON_OUTPUT_FORMAT,
-                        },
-                    )
+
+                    with Timer(
+                        f"[PERFORMANCE] Running query {query[:50]} "
+                        f"{'... ' if len(query) > 50 else ''}"
+                    ):
+                        response = await self._api_request(
+                            query,
+                            {
+                                "async_execution": 1,
+                                "advanced_mode": 1,
+                                "output_format": JSON_OUTPUT_FORMAT,
+                            },
+                        )
+
                     await self._raise_if_error(response)
                     if response.headers.get("content-length", "") == "0":
                         raise OperationalError("No response to asynchronous query.")
@@ -384,29 +388,25 @@ class Cursor(BaseCursor):
 
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
-        async with self._async_query_lock.read_locked():
-            """Fetch the next row of a query result set."""
-            return super().fetchone()
+        """Fetch the next row of a query result set."""
+        return super().fetchone()
 
     @wraps(BaseCursor.fetchmany)
     async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        async with self._async_query_lock.read_locked():
-            """
-            Fetch the next set of rows of a query result;
-            size is cursor.arraysize by default.
-            """
-            return super().fetchmany(size)
+        """
+        Fetch the next set of rows of a query result;
+        size is cursor.arraysize by default.
+        """
+        return super().fetchmany(size)
 
     @wraps(BaseCursor.fetchall)
     async def fetchall(self) -> List[List[ColType]]:
-        async with self._async_query_lock.read_locked():
-            """Fetch all remaining rows of a query result."""
-            return super().fetchall()
+        """Fetch all remaining rows of a query result."""
+        return super().fetchall()
 
     @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:
-        async with self._async_query_lock.read_locked():
-            return super().nextset()
+        return super().nextset()
 
     @check_not_closed
     def __enter__(self) -> Cursor:

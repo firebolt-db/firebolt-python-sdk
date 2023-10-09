@@ -8,14 +8,7 @@ from pytest import mark, raises
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType, Column
-from firebolt.db import (
-    Binary,
-    Connection,
-    Cursor,
-    DataError,
-    OperationalError,
-    connect,
-)
+from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
@@ -133,10 +126,10 @@ def test_long_query(
 def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
-    def test_query(c: Cursor, query: str, empty_response=True) -> None:
+    def test_query(c: Cursor, query: str) -> None:
         c.execute(query)
         assert c.description == None
-        assert c.rowcount == (-1 if empty_response else 0)
+        assert c.rowcount == 0
 
     """Create table query is handled properly"""
     with connection.cursor() as c:
@@ -172,7 +165,6 @@ def test_drop_create(connection: Connection) -> None:
             c,
             "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
             "test_drop_create_tb(id, sum(f), count(dt))",
-            empty_response=False,
         )
 
         # Drop join index
@@ -193,17 +185,12 @@ def test_insert(connection: Connection) -> None:
     """Insert and delete queries are handled properly."""
 
     def test_empty_query(c: Cursor, query: str) -> None:
-        assert c.execute(query) == -1, "Invalid row count returned"
-        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.execute(query) == 0, "Invalid row count returned"
+        assert c.rowcount == 0, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
-        with raises(DataError):
-            c.fetchone()
-
-        with raises(DataError):
-            c.fetchmany()
-
-        with raises(DataError):
-            c.fetchall()
+        assert c.fetchone() is None
+        assert len(c.fetchmany()) == 0
+        assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
         c.execute("DROP TABLE IF EXISTS test_insert_tb")
@@ -243,17 +230,12 @@ def test_parameterized_query(connection: Connection) -> None:
     """Query parameters are handled properly."""
 
     def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
-        assert c.execute(query, params) == -1, "Invalid row count returned"
-        assert c.rowcount == -1, "Invalid rowcount value"
+        assert c.execute(query, params) == 0, "Invalid row count returned"
+        assert c.rowcount == 0, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
-        with raises(DataError):
-            c.fetchone()
-
-        with raises(DataError):
-            c.fetchmany()
-
-        with raises(DataError):
-            c.fetchall()
+        assert c.fetchone() is None
+        assert len(c.fetchmany()) == 0
+        assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
         c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
