@@ -116,7 +116,32 @@ To get started, follow the steps below:
                 ) as connection:
                     cursor = connection.cursor()
 
-**3. Execute commands using the cursor**
+
+**3. Token management/caching**
+
+	Firebolt allows access by using authentication and refresh tokens.  In order to authenticate, 
+	the SDK issues an http login request to the Firebolt API, providing username and password.  
+	The API returns an authentication token and refresh token.   Authentication tokens are valid 
+	for 12 hours, and can be refreshed using the refresh token.  The SDK uses the authentication 
+	token for all subsequent requests, and includes logic for refreshing the token if it is reported as expired.
+
+	Because a typical script that uses the SDK usually runs for less than a minute and then is closed, 
+	the token is lost because it’s only stored in a process memory.  To avoid that, the SDK by default does token caching.   
+	Token caching is designed to preserve the token in filesystem to later reuse it for requests and save time on 
+	authentication api request. It also helps for workflows that use the SDL in parallel or in sequential scripts 
+	on the same machine, as only a single authentication request is performed.  The caching works by preserving the 
+	token value and it’s expiration timestamp in filesystem, in user data directory. On the authentication, the SDK 
+	first tries to find a token cache file and, if it exists, checks that token is not yet expired. If the token 
+	is valid, it’s used for further authorization. The token value itself is encrypted with PBKDF2 algorithm, 
+	the encryption key is a combination of user credentials.
+
+	Token caching can be disabled if desired.  If the server the SDK is running on has a read only 
+	filesystem (when using AWS Lambda, for example), then the SDK will not be able to store the token.  
+	The caching is disabled by adding ``use_token_cache=False`` to the auth object.  From the examples above, 
+	it would look like: ``auth=UsernamePassword(username, password,use_token_cache=False),``
+
+
+**4. Execute commands using the cursor**
 
     The ``cursor`` object can be used to send queries and commands to your Firebolt
     database and engine. See below for examples of functions using the ``cursor`` object.
@@ -168,7 +193,7 @@ queries. For help, see :ref:`managing_resources:starting an engine`.
     For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
 
 
-Fetching query results
+Fetching query results 
 -----------------------
 
 After running a query, you can fetch the results using a ``cursor`` object. The examples
@@ -177,23 +202,69 @@ below use the data queried from ``test_table`` created in the
 
 .. _fetch_example:
 
-::
+	::
+	
+		print(cursor.fetchone())
+	
+	**Returns**: ``[2, 'world']``
+	
+	::
+	
+		print(cursor.fetchmany(2))
+	
+	**Returns**: ``[[1, 'hello'], [3, '!']]``
+	
+	::
+	
+		print(cursor.fetchall())
+	
+	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
+	
+	::
+	
+		print(cursor.fetchall())
+	
+	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
-    print(cursor.fetchone())
+Fetching query result information
+-----------------------
 
-**Returns**: ``[2, 'world']``
+After running a query, you can fetch information about the results using the same ``cursor`` object. The examples
+below are from the last SELECT query in :ref:`connecting_and_queries:Inserting and selecting data`.
 
-::
+.. _result_information_example:
 
-    print(cursor.fetchmany(2))
+**rowcount**
 
-**Returns**: ``[[1, 'hello'], [3, '!']]``
+	- For a SELECT query, rowcount is the number of rows selected.  
+	- For An INSERT query, it is always -1.
+	- For DDL (CREATE/DROP), it is always 1
 
-::
+	::
+	
+		print("Rowcount: ", cursor.rowcount)
 
-    print(cursor.fetchall())
+	**Returns**: ``Rowcount:  3``
 
-**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
+
+**description**
+	
+	description is a list of Column objects, each one responsible for a single column in a result set. Only name and type_code fields get populated, all others are always empty.
+	
+	- name is the name of the column.	
+	- type_code is the data type of the column.  It can be:
+
+		- a python type (int, float, str, date, datetime)
+		- an ARRAY object, that signifies a list of some type. The inner type can is stored in ``.subtype`` field
+		- a DECIMAL object, that signifies a decimal value. It’s precision and scale are stored in ``.precision`` and ``.scale`` fields
+		- a DATETIME64 object, that signifies a datetime value with an extended precision. The precision is stored in ``.precision``
+
+	::
+	
+		print("Description: ", cursor.description)
+
+	**Returns**: ``Description:  [Column(name='id', type_code=<class 'int'>, display_size=None, internal_size=None, precision=None, scale=None, null_ok=None), Column(name='name', type_code=<class 'str'>, display_size=None, internal_size=None, precision=None, scale=None, null_ok=None)]``
+
 
 
 Executing parameterized queries
