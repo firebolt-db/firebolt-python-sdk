@@ -73,6 +73,24 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, auth_class: Auth):
         assert "Bad Request" in errmsg, "Invalid authentication error message"
         httpx_mock.reset(True)
 
+        # Username/password error
+        httpx_mock.add_response(
+            status_code=codes.FORBIDDEN,
+            headers={"Content-Type": "application/json"},
+            json={
+                "error": "invalid_grant",
+                "error_description": "Wrong email or password.",
+            },
+        )
+        with pytest.raises(AuthenticationError) as excinfo:
+            execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
+
+        errmsg = str(excinfo.value)
+        assert (
+            "Wrong email or password." in errmsg
+        ), "Invalid authentication error message"
+        httpx_mock.reset(True)
+
         # Firebolt api error
         httpx_mock.add_response(
             status_code=codes.OK, json={"error": "", "message": "firebolt"}
