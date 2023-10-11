@@ -62,9 +62,7 @@ class _RequestBasedAuth(Auth):
 
         except _REQUEST_ERRORS as e:
             error_text = repr(e)
-            if type(e) == HTTPStatusError:
+            if isinstance(e, HTTPStatusError):
                 client_friendly_error = get_auth_error(e)
-                error_text = (
-                    client_friendly_error if client_friendly_error else error_text
-                )
+                error_text = client_friendly_error or error_text
             raise AuthenticationError(error_text) from e
