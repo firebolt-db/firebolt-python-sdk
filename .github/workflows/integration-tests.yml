@@ -60,7 +60,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@v2
+        uses: firebolt-db/integration-testing-setup@migrate_to_node_sdk
         with:
           firebolt-client-id: ${{ env.CLIENT_ID }}
           firebolt-client-secret: ${{ env.CLIENT_SECRET }}
