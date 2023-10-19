@@ -1,3 +1,4 @@
+from asyncio import run
 from re import Pattern
 from typing import Callable, List
 from unittest.mock import patch
@@ -422,3 +423,34 @@ async def test_connect_no_user_agent(
         ) as connection:
             await connection.cursor().execute("select*")
         ut.assert_called_once_with([], [])
+
+
+def test_from_asyncio(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback: Callable,
+    query_url: str,
+    settings: Settings,
+    db_name: str,
+):
+    async def async_flow():
+        async with (
+            await connect(
+                engine_url=settings.server,
+                database=db_name,
+                username="u",
+                password="p",
+                account_name=settings.account_name,
+                api_endpoint=settings.server,
+            )
+        ) as connection:
+            cursor = connection.cursor()
+            await cursor.execute("SELECT 1")
+            await cursor.fetchone()
+            await cursor.fetchmany(1)
+            await cursor.fetchall()
+
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback, url=query_url)
+    run(async_flow)
