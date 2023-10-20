@@ -434,7 +434,7 @@ def test_from_asyncio(
     settings: Settings,
     db_name: str,
 ):
-    async def async_flow():
+    async def async_flow() -> None:
         async with (
             await connect(
                 engine_url=settings.server,
@@ -453,4 +453,4 @@ def test_from_asyncio(
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
-    run(async_flow)
+    run(async_flow())
