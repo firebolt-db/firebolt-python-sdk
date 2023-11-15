@@ -1,0 +1,801 @@
+{
+  "uid" : "fd603c74eaec45d3",
+  "name" : "test_cursor_execute_error",
+  "fullName" : "tests.unit.async_db.test_cursor#test_cursor_execute_error",
+  "historyId" : "b36e2becd34796e7e4da17f5db534432",
+  "time" : {
+    "start" : 1700017342443,
+    "stop" : 1700017342645,
+    "duration" : 202
+  },
+  "description" : "Cursor handles all types of errors properly.",
+  "descriptionHtml" : "<p>Cursor handles all types of errors properly.</p>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "client_secret",
+    "time" : {
+      "start" : 1700017342400,
+      "stop" : 1700017342400,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth",
+    "time" : {
+      "start" : 1700017342400,
+      "stop" : 1700017342440,
+      "duration" : 40
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "db_name",
+    "time" : {
+      "start" : 1700017342399,
+      "stop" : 1700017342399,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id",
+    "time" : {
+      "start" : 1700017342441,
+      "stop" : 1700017342441,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1700017342399,
+      "stop" : 1700017342399,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "connection",
+    "time" : {
+      "start" : 1700017342442,
+      "stop" : 1700017342442,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "check_credentials_callback",
+    "time" : {
+      "start" : 1700017342441,
+      "stop" : 1700017342441,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1700017342398,
+      "stop" : 1700017342399,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id_url",
+    "time" : {
+      "start" : 1700017342442,
+      "stop" : 1700017342442,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "server",
+    "time" : {
+      "start" : 1700017342399,
+      "stop" : 1700017342399,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "client_id",
+    "time" : {
+      "start" : 1700017342400,
+      "stop" : 1700017342400,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "get_system_engine_callback",
+    "time" : {
+      "start" : 1700017342441,
+      "stop" : 1700017342441,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1700017342398,
+      "stop" : 1700017342398,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_url",
+    "time" : {
+      "start" : 1700017342440,
+      "stop" : 1700017342440,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "get_engine_url_callback",
+    "time" : {
+      "start" : 1700017342442,
+      "stop" : 1700017342442,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "system_engine_url",
+    "time" : {
+      "start" : 1700017348695,
+      "stop" : 1700017348695,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "cursor",
+    "time" : {
+      "start" : 1700017342442,
+      "stop" : 1700017342442,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "get_system_engine_url",
+    "time" : {
+      "start" : 1700017342441,
+      "stop" : 1700017342441,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "system_engine_url",
+    "time" : {
+      "start" : 1700017342441,
+      "stop" : 1700017342441,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "query_statistics",
+    "time" : {
+      "start" : 1700017348696,
+      "stop" : 1700017348696,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "system_engine_query_url",
+    "time" : {
+      "start" : 1700017348695,
+      "stop" : 1700017348695,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "get_system_engine_callback",
+    "time" : {
+      "start" : 1700017348695,
+      "stop" : 1700017348695,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1700017342398,
+      "stop" : 1700017342398,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "get_system_engine_url",
+    "time" : {
+      "start" : 1700017348695,
+      "stop" : 1700017348695,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "engine_name",
+    "time" : {
+      "start" : 1700017342440,
+      "stop" : 1700017342440,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_server",
+    "time" : {
+      "start" : 1700017342440,
+      "stop" : 1700017342440,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "query_url",
+    "time" : {
+      "start" : 1700017349250,
+      "stop" : 1700017349250,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id_callback",
+    "time" : {
+      "start" : 1700017342442,
+      "stop" : 1700017342442,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "access_token",
+    "time" : {
+      "start" : 1700017342440,
+      "stop" : 1700017342440,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "get_engines_url",
+    "time" : {
+      "start" : 1700017342399,
+      "stop" : 1700017342399,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "mock_connection_flow",
+    "time" : {
+      "start" : 1700017348696,
+      "stop" : 1700017348696,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "mock_connection_flow",
+    "time" : {
+      "start" : 1700017342442,
+      "stop" : 1700017342442,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_name",
+    "time" : {
+      "start" : 1700017342440,
+      "stop" : 1700017342440,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "system_engine_query_url",
+    "time" : {
+      "start" : 1700017342441,
+      "stop" : 1700017342441,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "query_url",
+    "time" : {
+      "start" : 1700017342399,
+      "stop" : 1700017342399,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1700017342396,
+      "stop" : 1700017342398,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "get_engine_url_callback",
+    "time" : {
+      "start" : 1700017348696,
+      "stop" : 1700017348696,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "query_statistics",
+    "time" : {
+      "start" : 1700017342399,
+      "stop" : 1700017342400,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1700017342655,
+      "stop" : 1700017342655,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1700017342656,
+      "stop" : 1700017342656,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1700017342656,
+      "stop" : 1700017342657,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7f7424d547a0>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.async_db"
+  }, {
+    "name" : "suite",
+    "value" : "test_cursor"
+  }, {
+    "name" : "host",
+    "value" : "fv-az914-483"
+  }, {
+    "name" : "thread",
+    "value" : "2492-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.async_db.test_cursor"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 14,
+        "unknown" : 0,
+        "total" : 14
+      },
+      "items" : [ {
+        "uid" : "f62a0ea50e551d26",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/241//#testresult/f62a0ea50e551d26",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699930933352,
+          "stop" : 1699930933583,
+          "duration" : 231
+        }
+      }, {
+        "uid" : "e34710016605419d",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/714//#testresult/e34710016605419d",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699844551298,
+          "stop" : 1699844551624,
+          "duration" : 326
+        }
+      }, {
+        "uid" : "debaf660120e45a4",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/240//#testresult/debaf660120e45a4",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699844503106,
+          "stop" : 1699844503237,
+          "duration" : 131
+        }
+      }, {
+        "uid" : "32922cd71c588825",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/713//#testresult/32922cd71c588825",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699758180437,
+          "stop" : 1699758180766,
+          "duration" : 329
+        }
+      }, {
+        "uid" : "b53a64d46c251209",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/239//#testresult/b53a64d46c251209",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699758110008,
+          "stop" : 1699758110134,
+          "duration" : 126
+        }
+      }, {
+        "uid" : "df288474becdd30d",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/712//#testresult/df288474becdd30d",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699671945056,
+          "stop" : 1699671945259,
+          "duration" : 203
+        }
+      }, {
+        "uid" : "9e9dbe29c1bc787c",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/711//#testresult/9e9dbe29c1bc787c",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699585354982,
+          "stop" : 1699585355186,
+          "duration" : 204
+        }
+      }, {
+        "uid" : "927d951f8a9f94ea",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/236//#testresult/927d951f8a9f94ea",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699498914023,
+          "stop" : 1699498914226,
+          "duration" : 203
+        }
+      }, {
+        "uid" : "6c0af442ea646405",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/709//#testresult/6c0af442ea646405",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699412545765,
+          "stop" : 1699412545970,
+          "duration" : 205
+        }
+      }, {
+        "uid" : "8ee8436eb2b8827c",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/708//#testresult/8ee8436eb2b8827c",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699326146272,
+          "stop" : 1699326146476,
+          "duration" : 204
+        }
+      }, {
+        "uid" : "cac531bb3574057e",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/233//#testresult/cac531bb3574057e",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699239729259,
+          "stop" : 1699239729535,
+          "duration" : 276
+        }
+      }, {
+        "uid" : "79a6f2cdee26764e",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/706//#testresult/79a6f2cdee26764e",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699153379580,
+          "stop" : 1699153379932,
+          "duration" : 352
+        }
+      }, {
+        "uid" : "1c45394424f6b4f1",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/0d6fae4cc3c1d1ea1ba127f7b720170ddda89646_unit/705//#testresult/1c45394424f6b4f1",
+        "status" : "passed",
+        "time" : {
+          "start" : 1699066959258,
+          "stop" : 1699066959586,
+          "duration" : 328
+        }
+      } ]
+    },
+    "tags" : [ "trio(run=<function run at 0x7f7424d547a0>)" ]
+  },
+  "source" : "fd603c74eaec45d3.json",
+  "parameterValues" : [ ]
+}
