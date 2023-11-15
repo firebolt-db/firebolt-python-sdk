@@ -12,7 +12,7 @@ from firebolt.client.auth import Auth
 from firebolt.client.auth.base import AuthRequest
 from firebolt.client.constants import DEFAULT_API_URL
 from firebolt.utils.exception import AccountNotFoundError
-from firebolt.utils.urls import ACCOUNT_BY_NAME_URL
+from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL
 from firebolt.utils.util import (
     cached_property,
     fix_url_schema,
@@ -108,6 +108,60 @@ class Client(FireboltClientMixin, HttpxClient):
         return super()._send_handling_redirects(
             self._merge_auth_request(request), *args, **kwargs
         )
+
+
+class ClientOld(FireboltClientMixin, HttpxClient):
+    """An HTTP client, based on httpx.Client.
+
+    Handles the authentication for Firebolt database.
+    Authentication can be passed through auth keyword as a tuple or as a
+    FireboltAuth instance
+    """
+
+    def __init__(
+        self,
+        *args: Any,
+        account_name: str,
+        auth: Auth,
+        api_endpoint: str = DEFAULT_API_URL,
+        **kwargs: Any,
+    ):
+        super().__init__(*args, auth=auth, account_name=account_name, api_endpoint=api_endpoint, **kwargs)
+        self._auth_endpoint = URL(fix_url_schema(api_endpoint))
+
+    @cached_property
+    def account_id(self) -> str:
+        """User account ID.
+
+        If account_name was provided during Client construction, returns its ID;
+        gets default account otherwise.
+
+        Returns:
+            str: Account ID
+
+        Raises:
+            AccountNotFoundError: No account found with provided name
+        """
+        if self.account_name:
+            response = self.get(
+                url=ACCOUNT_BY_NAME_URL, params={"account_name": self.account_name}
+            ) # TODO: url here might be incorrect
+            if response.status_code == HttpxCodes.NOT_FOUND:
+                raise AccountNotFoundError(self.account_name)
+            # process all other status codes
+            response.raise_for_status()
+            return response.json()["account_id"]
+
+        # account_name isn't set, use the default account.
+        return self.get(url=ACCOUNT_URL).json()["account"]["id"]
+
+    def _send_handling_redirects(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        return super()._send_handling_redirects(
+            self._merge_auth_request(request), *args, **kwargs
+        )
+
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient):

@@ -48,8 +48,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-
-class Cursor(BaseCursor):
+class SharedCursor(BaseCursor):
     """
     Class, responsible for executing queries to Firebolt Database.
     Should not be created directly,
@@ -357,3 +356,46 @@ class Cursor(BaseCursor):
     @check_not_closed
     def __enter__(self) -> Cursor:
         return self
+
+class Cursor(SharedCursor):
+    def __init__(self, *args: Any, client: Client, connection: Connection, **kwargs: Any) -> None:
+        super().__init__(*args, client=client, connection=connection, **kwargs)
+
+
+class CursorOld(SharedCursor):
+    def __init__(self, *args: Any, client: Client, connection: Connection, **kwargs: Any) -> None:
+        super().__init__(*args, client=client, connection=connection, **kwargs)
+
+    def _api_request(
+        self,
+        query: Optional[str] = "",
+        parameters: Optional[dict[str, Any]] = {},
+        path: Optional[str] = "",
+        use_set_parameters: Optional[bool] = True,
+    ) -> Response:
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
+        """
+        if use_set_parameters:
+            parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        return self._client.request(
+            url=f"/{path}",
+            method="POST",
+            params={
+                "database": self.connection.database,
+                **(parameters or dict()),
+            },
+            content=query,
+        )
