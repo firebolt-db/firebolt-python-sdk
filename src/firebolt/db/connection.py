@@ -15,6 +15,7 @@ from firebolt.client import DEFAULT_API_URL, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.client.auth.client_credentials import ClientCredentials
 from firebolt.client.auth.service_account import ServiceAccount
+from firebolt.client.auth.token import Token
 from firebolt.client.auth.username_password import UsernamePassword
 from firebolt.client.client import ClientV1
 from firebolt.common.base_connection import BaseConnection
@@ -221,7 +222,7 @@ def connect(
             engine_name=engine_name,
             api_endpoint=api_endpoint,
         )
-    elif isinstance(auth, (ServiceAccount, UsernamePassword)):
+    elif isinstance(auth, (Token, UsernamePassword)):
         return connect_v1(
             auth=auth,
             user_agent_header=user_agent_header,
