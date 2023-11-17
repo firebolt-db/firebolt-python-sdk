@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from firebolt.client import Client
+from firebolt.client import ClientV2
 from firebolt.db import Connection
 
 if TYPE_CHECKING:
@@ -12,7 +12,7 @@ class BaseService:
         self.resource_manager = resource_manager
 
     @property
-    def client(self) -> Client:
+    def client(self) -> ClientV2:
         return self.resource_manager._client
 
     @property

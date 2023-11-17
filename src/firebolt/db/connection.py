@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import socket
 from types import TracebackType
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 from warnings import warn
 
 from httpcore.backends.base import NetworkStream
@@ -14,7 +14,6 @@ from readerwriterlock.rwlock import RWLockWrite
 from firebolt.client import DEFAULT_API_URL, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.client.auth.client_credentials import ClientCredentials
-from firebolt.client.auth.service_account import ServiceAccount
 from firebolt.client.auth.token import Token
 from firebolt.client.auth.username_password import UsernamePassword
 from firebolt.client.client import ClientV1
@@ -24,7 +23,7 @@ from firebolt.common.settings import (
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
 )
-from firebolt.db.cursor import CursorV2, CursorV1
+from firebolt.db.cursor import CursorV1, CursorV2, SharedCursor
 from firebolt.db.util import _get_system_engine_url
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -80,116 +79,6 @@ class OverriddenHttpBackend(SyncBackend):
         return stream
 
 
-class ConnectionV2(BaseConnection):
-    """
-    Firebolt database connection class. Implements PEP-249.
-
-    Args:
-
-        engine_url: Firebolt database engine REST API url
-        database: Firebolt database name
-        username: Firebolt account username
-        password: Firebolt account password
-        api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
-
-    Note:
-        Firebolt currenly doesn't support transactions so commit and rollback methods
-        are not implemented.
-    """
-
-    __slots__ = (
-        "_client",
-        "_cursors",
-        "database",
-        "engine_url",
-        "api_endpoint",
-        "_is_closed",
-        "_closing_lock",
-        "_system_engine_connection",
-    )
-
-    def __init__(
-        self,
-        engine_url: str,
-        database: Optional[str],
-        auth: Auth,
-        account_name: str,
-        system_engine_connection: Optional["Connection"],
-        api_endpoint: str = DEFAULT_API_URL,
-        additional_parameters: Dict[str, Any] = {},
-    ):
-        super().__init__()
-        self.api_endpoint = api_endpoint
-        self.engine_url = engine_url
-        self.database = database
-        self._cursors: List[CursorV2] = []
-        # Override tcp keepalive settings for connection
-        transport = HTTPTransport()
-        transport._pool._network_backend = OverriddenHttpBackend()
-        user_drivers = additional_parameters.get("user_drivers", [])
-        user_clients = additional_parameters.get("user_clients", [])
-        self._client = ClientV2(
-            account_name=account_name,
-            auth=auth,
-            base_url=engine_url,
-            api_endpoint=api_endpoint,
-            timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-            transport=transport,
-            headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
-        )
-        self._system_engine_connection = system_engine_connection
-        # Holding this lock for write means that connection is closing itself.
-        # cursor() should hold this lock for read to read/write state
-        self._closing_lock = RWLockWrite()
-
-    def cursor(self, **kwargs: Any) -> CursorV2:
-        if self.closed:
-            raise ConnectionClosedError(
-                "Unable to create cursor: connection closed."  # pragma: no mutate
-            )
-
-        with self._closing_lock.gen_rlock():
-            c = CursorV2(client=self._client, connection=self, **kwargs)
-            self._cursors.append(c)
-        return c
-
-    def close(self) -> None:
-        if self.closed:
-            return
-
-        # self._cursors is going to be changed during closing cursors
-        # after this point no cursors would be added to _cursors, only removed since
-        # closing lock is held, and later connection will be marked as closed
-        with self._closing_lock.gen_wlock():
-            cursors = self._cursors[:]
-            for c in cursors:
-                # Here c can already be closed by another thread,
-                # but it shouldn't raise an error in this case
-                c.close()
-            self._client.close()
-            self._is_closed = True
-
-        if self._system_engine_connection:
-            self._system_engine_connection.close()
-
-    # Context manager support
-    def __enter__(self) -> Connection:
-        if self.closed:
-            raise ConnectionClosedError(
-                "Connection is already closed."  # pragma: no mutate
-            )
-        return self
-
-    def __exit__(
-        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
-    ) -> None:
-        self.close()
-
-    def __del__(self) -> None:
-        if not self.closed:
-            warn(f"Unclosed {self!r} {id(self)}", UserWarning)
-
-
 def connect(
     auth: Optional[Auth] = None,
     account_name: Optional[str] = None,
@@ -232,6 +121,8 @@ def connect(
             engine_url=engine_url,
             api_endpoint=api_endpoint,
         )
+    else:
+        raise ConfigurationError(f"Unsupported auth type: {type(auth)}")
 
 
 def connect_v2(
@@ -299,6 +190,7 @@ def connect_v2(
     else:
         try:
             cursor = system_engine_connection.cursor()
+            assert isinstance(cursor, CursorV2)
             (
                 engine_url,
                 status,
@@ -359,7 +251,7 @@ class Connection(BaseConnection):
     """
 
     client_class: type
-    cursor_type: CursorV2
+    cursor_type: Type[SharedCursor]
     __slots__ = (
         "_client",
         "_cursors",
@@ -374,9 +266,9 @@ class Connection(BaseConnection):
     def __init__(
         self,
         engine_url: str,
-        database: str,
+        database: Optional[str],
         client: ClientV2,
-        cursor_type: CursorV2,  # TODO: change to base cursor type
+        cursor_type: Type[SharedCursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str = DEFAULT_API_URL,
     ):
@@ -384,7 +276,7 @@ class Connection(BaseConnection):
         self.engine_url = engine_url
         self.database = database
         self.cursor_type = cursor_type
-        self._cursors: List[cursor_type] = []
+        self._cursors: List[SharedCursor] = []
         self._system_engine_connection = system_engine_connection
         # Override tcp keepalive settings for connection
         transport = HTTPTransport()
@@ -395,7 +287,7 @@ class Connection(BaseConnection):
         self._closing_lock = RWLockWrite()
         super().__init__()
 
-    def cursor(self, **kwargs: Any) -> CursorV2:
+    def cursor(self, **kwargs: Any) -> SharedCursor:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
@@ -404,7 +296,7 @@ class Connection(BaseConnection):
             self._cursors.append(c)
         return c
 
-    def _remove_cursor(self, cursor: CursorV2) -> None:
+    def _remove_cursor(self, cursor: SharedCursor) -> None:
         # This way it's atomic
         try:
             self._cursors.remove(cursor)
@@ -449,8 +341,8 @@ class Connection(BaseConnection):
 def connect_v1(
     auth: Auth,
     user_agent_header: str,
-    account_name: Optional[str] = None,
     database: Optional[str] = None,
+    account_name: Optional[str] = None,
     engine_name: Optional[str] = None,
     engine_url: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,

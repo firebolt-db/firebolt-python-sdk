@@ -76,7 +76,9 @@ def test_client_different_auths(
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    ClientV2(account_name=account_name, auth=auth, api_endpoint=server).get("https://url")
+    ClientV2(account_name=account_name, auth=auth, api_endpoint=server).get(
+        "https://url"
+    )
 
     with raises(TypeError) as excinfo:
         ClientV2(account_name=account_name, auth=lambda r: r).get("https://url")

@@ -1,13 +1,13 @@
+from json import JSONDecodeError
 from typing import Any, Optional
 
 from async_property import async_cached_property  # type: ignore
-from httpx import URL, HTTPStatusError, RequestError
+from httpx import URL
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
-from httpx import Request, Response
+from httpx import HTTPStatusError, Request, RequestError, Response
 from httpx import codes as HttpxCodes
 from httpx._types import AuthTypes
-from requests import JSONDecodeError
 
 from firebolt.client.auth import Auth
 from firebolt.client.auth.base import AuthRequest
@@ -42,8 +42,8 @@ class FireboltClientMixin(FireboltClientMixinBase):
     def __init__(
         self,
         *args: Any,
-        account_name: str,
         auth: Auth,
+        account_name: Optional[str],
         api_endpoint: str = DEFAULT_API_URL,
         **kwargs: Any,
     ):
@@ -90,6 +90,22 @@ class ClientV2(FireboltClientMixin, HttpxClient):
     FireboltAuth instance
     """
 
+    def __init__(
+        self,
+        *args: Any,
+        auth: Auth,
+        account_name: str,
+        api_endpoint: str = DEFAULT_API_URL,
+        **kwargs: Any,
+    ):
+        super().__init__(
+            *args,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+            **kwargs,
+        )
+
     @cached_property
     def account_id(self) -> str:
         """User account ID.
@@ -109,6 +125,7 @@ class ClientV2(FireboltClientMixin, HttpxClient):
             )
         )
         if response.status_code == HttpxCodes.NOT_FOUND:
+            assert self.account_name is not None
             raise AccountNotFoundError(self.account_name)
         # process all other status codes
         response.raise_for_status()
@@ -133,8 +150,8 @@ class ClientV1(FireboltClientMixin, HttpxClient):
     def __init__(
         self,
         *args: Any,
-        account_name: str,
         auth: Auth,
+        account_name: Optional[str],
         api_endpoint: str = DEFAULT_API_URL,
         **kwargs: Any,
     ):
@@ -243,6 +260,22 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
     FireboltAuth instance.
     """
 
+    def __init__(
+        self,
+        *args: Any,
+        auth: Auth,
+        account_name: str,
+        api_endpoint: str = DEFAULT_API_URL,
+        **kwargs: Any,
+    ):
+        super().__init__(
+            *args,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+            **kwargs,
+        )
+
     @async_cached_property
     async def account_id(self) -> str:
         """User account id.
@@ -262,6 +295,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
             )
         )
         if response.status_code == HttpxCodes.NOT_FOUND:
+            assert self.account_name is not None
             raise AccountNotFoundError(self.account_name)
         # process all other status codes
         response.raise_for_status()

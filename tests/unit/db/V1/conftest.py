@@ -1,16 +1,24 @@
 from json import loads
 from re import Pattern, compile
 from typing import Callable
+
 import httpx
 from httpx import Request, Response, codes
 from pytest import fixture
-from firebolt.client.auth.base import Auth
 
-from firebolt.common.settings import Settings
-from firebolt.db import Connection, CursorV1 as Cursor, connect
 from firebolt.client import ClientV1 as Client
+from firebolt.client.auth.base import Auth
+from firebolt.db import Connection
+from firebolt.db import CursorV1 as Cursor
+from firebolt.db import connect
 from firebolt.utils.exception import AccountNotFoundError
-from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_ENGINE_URL, ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1, ACCOUNT_URL, AUTH_URL
+from firebolt.utils.urls import (
+    ACCOUNT_BY_NAME_URL,
+    ACCOUNT_ENGINE_URL,
+    ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1,
+    ACCOUNT_URL,
+    AUTH_URL,
+)
 
 
 @fixture
@@ -19,10 +27,7 @@ def auth(username_password_auth) -> Auth:
 
 
 @fixture
-def connection(
-        server: str,
-        db_name: str,
-        username_password_auth: Auth) -> Connection:
+def connection(server: str, db_name: str, username_password_auth: Auth) -> Connection:
     with connect(
         engine_url=server,
         database=db_name,
@@ -42,11 +47,8 @@ def auth_url(server: str) -> str:
     return f"https://{server}{AUTH_URL}"
 
 
-
 @fixture
-def get_engine_url_by_id_url(
-    server: str, account_id: str, engine_id: str
-) -> str:
+def get_engine_url_by_id_url(server: str, account_id: str, engine_id: str) -> str:
     return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
@@ -113,6 +115,7 @@ def account_id_callback(
         return Response(status_code=httpx.codes.OK, json={"account_id": account_id})
 
     return do_mock
+
 
 @fixture
 def engine_by_db_url(server: str, account_id: str) -> str:

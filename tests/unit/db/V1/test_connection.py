@@ -8,17 +8,17 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
 
+from firebolt.client import ClientV1 as Client
 from firebolt.client.auth import Auth, Token, UsernamePassword
 from firebolt.common._types import ColType
 from firebolt.db import Connection, connect
+from firebolt.db.cursor import CursorV1 as Cursor
 from firebolt.utils.exception import (
     AccountNotFoundError,
     ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
 )
-from firebolt.db.cursor import CursorV1 as Cursor
-from firebolt.client import ClientV1 as Client
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
 

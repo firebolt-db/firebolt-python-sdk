@@ -81,7 +81,7 @@ async def _get_system_engine_url(
         if response.status_code != codes.OK:
             raise InterfaceError(
                 f"Unable to retrieve system engine endpoint {url}: "
-                f"{response.status_code} {response.content}"
+                f"{response.status_code} {response.content.decode()}"
             )
         return response.json()["engineUrl"]
 

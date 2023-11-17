@@ -100,6 +100,7 @@ def password() -> str:
 def auth(client_id: str, client_secret: str) -> Auth:
     return ClientCredentials(client_id, client_secret)
 
+
 @fixture
 def username_password_auth(user: str, password: str) -> Auth:
     return UsernamePassword(user, password)

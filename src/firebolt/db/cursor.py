@@ -34,9 +34,7 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.db.util import (
-    ENGINE_STATUS_RUNNING
-)
+from firebolt.db.util import ENGINE_STATUS_RUNNING
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
@@ -366,7 +364,7 @@ class SharedCursor(BaseCursor):
             yield row
 
     @check_not_closed
-    def __enter__(self) -> CursorV2:
+    def __enter__(self) -> SharedCursor:
         return self
 
 

@@ -6,7 +6,7 @@ from httpx import Timeout
 from firebolt.client import (
     DEFAULT_API_URL,
     Auth,
-    Client,
+    ClientV2,
     log_request,
     log_response,
     raise_on_4xx_5xx,
@@ -83,7 +83,7 @@ class ResourceManager:
         assert auth is not None
         assert account_name is not None
 
-        self._client = Client(
+        self._client = ClientV2(
             auth=auth,
             base_url=fix_url_schema(api_endpoint),
             account_name=account_name,

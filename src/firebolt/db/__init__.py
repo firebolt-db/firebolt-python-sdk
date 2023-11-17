@@ -15,7 +15,7 @@ from firebolt.common._types import (
     TimestampFromTicks,
 )
 from firebolt.db.connection import Connection, connect
-from firebolt.db.cursor import CursorV2, CursorV1
+from firebolt.db.cursor import CursorV1, CursorV2
 from firebolt.utils.exception import (
     DatabaseError,
     DataError,

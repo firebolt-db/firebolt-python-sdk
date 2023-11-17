@@ -1,21 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
-from httpx import URL, Timeout, codes
+from httpx import Timeout, codes
 
 from firebolt.client import ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
-from firebolt.utils.exception import (
-    AccountNotFoundError,
-    FireboltEngineError,
-    InterfaceError,
-)
-from firebolt.utils.urls import DATABASES_URL, ENGINES_URL, GATEWAY_HOST_BY_ACCOUNT_NAME
+from firebolt.utils.exception import AccountNotFoundError, InterfaceError
+from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
 if TYPE_CHECKING:
-    from firebolt.db.connection import Connection
+    pass
 
 ENGINE_STATUS_RUNNING = "Running"
 
@@ -39,9 +35,6 @@ def _get_system_engine_url(
         if response.status_code != codes.OK:
             raise InterfaceError(
                 f"Unable to retrieve system engine endpoint {url}: "
-                f"{response.status_code} {response.content}"
+                f"{response.status_code} {response.content.decode()}"
             )
         return response.json()["engineUrl"]
-
-
-
