@@ -7,7 +7,7 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials
-from firebolt.client.client import Client, ClientOld
+from firebolt.client.client import ClientV2
 from firebolt.utils.exception import (
     AccountNotFoundError,
     DatabaseError,
@@ -96,12 +96,13 @@ def client(
     server: str,
     account_name: str,
     auth: Auth,
-) -> Client:
-    return Client(
+) -> ClientV2:
+    return ClientV2(
         account_name=account_name,
         auth=auth,
         api_endpoint=server,
     )
+
 
 @fixture
 def auth_callback(auth_url: str) -> Callable:

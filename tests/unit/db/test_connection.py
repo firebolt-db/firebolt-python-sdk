@@ -8,10 +8,10 @@ from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Auth, ClientCredentials
-from firebolt.client.client import Client
+from firebolt.client.client import ClientV2
 from firebolt.common._types import ColType
 from firebolt.db import Connection, connect
-from firebolt.db.cursor import Cursor
+from firebolt.db.cursor import CursorV2
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -194,8 +194,8 @@ def test_connection_unclosed_warnings(auth: Auth):
     ), "Invalid unclosed connection warning"
 
 
-def test_connection_no_warnings(client: Client):
-    c = Connection("", "", client, Cursor, "")
+def test_connection_no_warnings(client: ClientV2):
+    c = Connection("", "", client, CursorV2, "")
     c.close()
     with warnings.catch_warnings():
         warnings.simplefilter("error")

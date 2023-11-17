@@ -3,11 +3,11 @@ from typing import Any, Dict
 from pytest_httpx import HTTPXMock
 
 from firebolt.db.connection import Connection
-from firebolt.db.util import is_db_available, is_engine_running
+from firebolt.db.cursor import CursorV2
 
 
 def test_is_db_available(
-    connection: Connection,
+    cursor: CursorV2,
     httpx_mock: HTTPXMock,
     query_statistics: Dict[str, Any],
     system_engine_query_url: str,
@@ -22,11 +22,11 @@ def test_is_db_available(
             "statistics": query_statistics,
         },
     )
-    assert is_db_available(connection, "dummy") == True
+    assert cursor.is_db_available("dummy") == True
 
 
 def test_is_db_not_available(
-    connection: Connection,
+    cursor: CursorV2,
     httpx_mock: HTTPXMock,
     system_engine_query_url: str,
     query_statistics: Dict[str, Any],
@@ -41,15 +41,16 @@ def test_is_db_not_available(
             "statistics": query_statistics,
         },
     )
-    assert is_db_available(connection, "dummy") == False
+    assert cursor.is_db_available("dummy") == False
 
 
 def test_is_engine_running_system(
     httpx_mock: HTTPXMock,
     system_connection: Connection,
 ):
+    cursor = system_connection.cursor()
     # System engine is always running
-    assert is_engine_running(system_connection, "dummy") == True
+    assert cursor.is_engine_running("dummy") == True
     # We didn't resolve account id since since we run no query
     # We need to skip the mocked endpoint
     httpx_mock.reset(False)
@@ -59,7 +60,7 @@ def test_is_engine_running_system(
 
 
 def test_is_engine_running(
-    connection: Connection,
+    cursor: CursorV2,
     httpx_mock: HTTPXMock,
     system_engine_query_url: str,
     query_statistics: Dict[str, Any],
@@ -79,11 +80,11 @@ def test_is_engine_running(
             "statistics": query_statistics,
         },
     )
-    assert is_engine_running(connection, get_engines_url) == True
+    assert cursor.is_engine_running(get_engines_url) == True
 
 
 def test_is_engine_not_running(
-    connection: Connection,
+    cursor: CursorV2,
     httpx_mock: HTTPXMock,
     system_engine_query_url: str,
     query_statistics: Dict[str, Any],
@@ -103,4 +104,4 @@ def test_is_engine_not_running(
             "statistics": query_statistics,
         },
     )
-    assert is_engine_running(connection, get_engines_url) == False
+    assert cursor.is_engine_running(get_engines_url) == False

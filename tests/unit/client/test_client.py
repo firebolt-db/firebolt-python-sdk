@@ -6,7 +6,7 @@ from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import Client
+from firebolt.client import ClientV2
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
 from firebolt.utils.token_storage import TokenSecureStorage
@@ -24,7 +24,7 @@ def test_client_retry(
     Client retries with new auth token
     if first attempt fails with unauthorized error.
     """
-    with Client(account_name=account_name, auth=auth) as client:
+    with ClientV2(account_name=account_name, auth=auth) as client:
 
         # auth get token
         httpx_mock.add_response(
@@ -76,10 +76,10 @@ def test_client_different_auths(
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    Client(account_name=account_name, auth=auth, api_endpoint=server).get("https://url")
+    ClientV2(account_name=account_name, auth=auth, api_endpoint=server).get("https://url")
 
     with raises(TypeError) as excinfo:
-        Client(account_name=account_name, auth=lambda r: r).get("https://url")
+        ClientV2(account_name=account_name, auth=lambda r: r).get("https://url")
 
     assert str(excinfo.value).startswith(
         'Invalid "auth" argument'
@@ -100,7 +100,7 @@ def test_client_account_id(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
-    with Client(
+    with ClientV2(
         account_name=account_name,
         auth=auth,
         base_url=fix_url_schema(server),
@@ -125,7 +125,7 @@ def test_refresh_with_hooks(
     tss = TokenSecureStorage(client_id, client_secret)
     tss.cache_token(access_token, 2**32)
 
-    client = Client(
+    client = ClientV2(
         account_name=account_name,
         auth=ClientCredentials(client_id, client_secret),
         event_hooks={

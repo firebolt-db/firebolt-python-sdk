@@ -32,7 +32,10 @@ GATEWAY_HOST_BY_ACCOUNT_NAME = "/web/v3/account/{account_name}/engineUrl"
 # V1 URLS
 
 AUTH_URL = "/auth/v1/login"
-ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1 = ACCOUNT_LIST_ENGINES_URL + ":getURLByDatabaseName"
+ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1 = (
+    ACCOUNT_LIST_ENGINES_URL + ":getURLByDatabaseName"
+)
 ACCOUNT_LIST_ENGINES_URL = "/core/v1/accounts/{account_id}/engines"
 ACCOUNT_ENGINE_ID_BY_NAME_URL = ACCOUNT_LIST_ENGINES_URL + ":getIdByName"
 ACCOUNT_URL = "/iam/v2/account"
+ACCOUNT_BY_NAME_URL_V1 = "/iam/v2/accounts:getIdByName"

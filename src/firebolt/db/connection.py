@@ -1,5 +1,4 @@
 from __future__ import annotations
-from json import JSONDecodeError
 
 import logging
 import socket
@@ -9,32 +8,29 @@ from warnings import warn
 
 from httpcore.backends.base import NetworkStream
 from httpcore.backends.sync import SyncBackend
-from httpx import HTTPStatusError, HTTPTransport, RequestError, Timeout
+from httpx import HTTPTransport, Timeout
 from readerwriterlock.rwlock import RWLockWrite
 
-from firebolt.client import DEFAULT_API_URL, Client
+from firebolt.client import DEFAULT_API_URL, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.client.auth.client_credentials import ClientCredentials
 from firebolt.client.auth.service_account import ServiceAccount
 from firebolt.client.auth.username_password import UsernamePassword
-from firebolt.client.client import ClientOld
+from firebolt.client.client import ClientV1
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.base_cursor import BaseCursor
 from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
 )
-from firebolt.db.cursor import Cursor, CursorOld
-from firebolt.db.util import _get_engine_url_status_db, _get_system_engine_url
+from firebolt.db.cursor import CursorV2, CursorV1
+from firebolt.db.util import _get_system_engine_url
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
     EngineNotRunningError,
-    FireboltEngineError,
     InterfaceError,
 )
-from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL, ACCOUNT_ENGINE_URL, ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
@@ -125,13 +121,13 @@ class ConnectionV2(BaseConnection):
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
         self.database = database
-        self._cursors: List[Cursor] = []
+        self._cursors: List[CursorV2] = []
         # Override tcp keepalive settings for connection
         transport = HTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
         user_drivers = additional_parameters.get("user_drivers", [])
         user_clients = additional_parameters.get("user_clients", [])
-        self._client = Client(
+        self._client = ClientV2(
             account_name=account_name,
             auth=auth,
             base_url=engine_url,
@@ -145,14 +141,14 @@ class ConnectionV2(BaseConnection):
         # cursor() should hold this lock for read to read/write state
         self._closing_lock = RWLockWrite()
 
-    def cursor(self, **kwargs: Any) -> Cursor:
+    def cursor(self, **kwargs: Any) -> CursorV2:
         if self.closed:
             raise ConnectionClosedError(
                 "Unable to create cursor: connection closed."  # pragma: no mutate
             )
 
         with self._closing_lock.gen_rlock():
-            c = Cursor(client=self._client, connection=self, **kwargs)
+            c = CursorV2(client=self._client, connection=self, **kwargs)
             self._cursors.append(c)
         return c
 
@@ -202,7 +198,6 @@ def connect(
     api_endpoint: str = DEFAULT_API_URL,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
-
     # auth parameter is optional in function signature
     # but is required to connect.
     # PEP 249 recommends making it kwargs.
@@ -278,7 +273,7 @@ def connect_v2(
 
     transport = HTTPTransport()
     transport._pool._network_backend = OverriddenHttpBackend()
-    client = Client(
+    client = ClientV2(
         auth=auth,
         account_name=account_name,
         base_url=system_engine_url,
@@ -293,7 +288,7 @@ def connect_v2(
         system_engine_url,
         database,
         client,
-        Cursor,
+        CursorV2,
         None,
         api_endpoint,
     )
@@ -302,9 +297,12 @@ def connect_v2(
 
     else:
         try:
-            engine_url, status, attached_db = _get_engine_url_status_db(
-                system_engine_connection, engine_name
-            )
+            cursor = system_engine_connection.cursor()
+            (
+                engine_url,
+                status,
+                attached_db,
+            ) = cursor._get_engine_url_status_db(system_engine_connection, engine_name)
 
             if status != "Running":
                 raise EngineNotRunningError(engine_name)
@@ -320,7 +318,7 @@ def connect_v2(
             assert engine_url is not None
 
             engine_url = fix_url_schema(engine_url)
-            client = Client(
+            client = ClientV2(
                 auth=auth,
                 account_name=account_name,
                 base_url=engine_url,
@@ -333,13 +331,14 @@ def connect_v2(
                 engine_url,
                 database,
                 client,
-                Cursor,
+                CursorV2,
                 system_engine_connection,
                 api_endpoint,
             )
         except:  # noqa
             system_engine_connection.close()
             raise
+
 
 class Connection(BaseConnection):
     """
@@ -359,7 +358,7 @@ class Connection(BaseConnection):
     """
 
     client_class: type
-    cursor_type: Cursor
+    cursor_type: CursorV2
     __slots__ = (
         "_client",
         "_cursors",
@@ -375,8 +374,8 @@ class Connection(BaseConnection):
         self,
         engine_url: str,
         database: str,
-        client: Client,
-        cursor_type: Cursor, # TODO: change to base cursor type
+        client: ClientV2,
+        cursor_type: CursorV2,  # TODO: change to base cursor type
         system_engine_connection: Optional["Connection"],
         api_endpoint: str = DEFAULT_API_URL,
     ):
@@ -395,7 +394,7 @@ class Connection(BaseConnection):
         self._closing_lock = RWLockWrite()
         super().__init__()
 
-    def cursor(self, **kwargs: Any) -> Cursor:
+    def cursor(self, **kwargs: Any) -> CursorV2:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
@@ -404,7 +403,7 @@ class Connection(BaseConnection):
             self._cursors.append(c)
         return c
 
-    def _remove_cursor(self, cursor: Cursor) -> None:
+    def _remove_cursor(self, cursor: CursorV2) -> None:
         # This way it's atomic
         try:
             self._cursors.remove(cursor)
@@ -445,65 +444,6 @@ class Connection(BaseConnection):
         if not self.closed:
             warn(f"Unclosed {self!r}", UserWarning)
 
-### V1 section ###
-
-
-def _get_database_default_engine_url(
-    client: Client,
-    database: str,
-) -> str:
-    try:
-        account_id = client.account_id
-        response = client.get(
-            url=ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1.format(account_id=account_id),
-            params={"database_name": database},
-        )
-        response.raise_for_status()
-        return response.json()["engine_url"]
-    except (
-        JSONDecodeError,
-        RequestError,
-        RuntimeError,
-        HTTPStatusError,
-        KeyError,
-    ) as e:
-        raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
-
-
-def _resolve_engine_url(
-    client: Client,
-    engine_name: str
-) -> str:
-    account_id = client.account_id
-    url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
-    try:
-        response = client.get(
-            url=url,
-            params={"engine_name": engine_name},
-        )
-        response.raise_for_status()
-        engine_id = response.json()["engine_id"]["engine_id"]
-        url = ACCOUNT_ENGINE_URL.format(account_id=account_id, engine_id=engine_id)
-        response = client.get(url=url)
-        response.raise_for_status()
-        return response.json()["engine"]["endpoint"]
-    except HTTPStatusError as e:
-        # Engine error would be 404.
-        if e.response.status_code != 404:
-            raise InterfaceError(
-                f"Error {e.__class__.__name__}: Unable to retrieve engine "
-                f"endpoint {url}."
-            )
-        # Once this is point is reached we've already authenticated with
-        # the backend so it's safe to assume the cause of the error is
-        # missing engine.
-        raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist.")
-    except (JSONDecodeError, RequestError, RuntimeError) as e:
-        raise InterfaceError(
-            f"Error {e.__class__.__name__}: "
-            f"Unable to retrieve engine endpoint {url}."
-        )
-
 
 def connect_v1(
     auth: Auth,
@@ -514,7 +454,6 @@ def connect_v1(
     engine_url: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
 ) -> Connection:
-
     # These parameters are optional in function signature
     # but are required to connect.
     # PEP 249 recommends making them kwargs.
@@ -528,7 +467,7 @@ def connect_v1(
     # Override tcp keepalive settings for connection
     transport = HTTPTransport()
     transport._pool._network_backend = OverriddenHttpBackend()
-    no_engine_client = ClientOld(
+    no_engine_client = ClientV1(
         auth=auth,
         base_url=api_endpoint,
         account_name=account_name,
@@ -542,27 +481,23 @@ def connect_v1(
     assert database is not None
 
     if not engine_name and not engine_url:
-        engine_url = _get_database_default_engine_url(
-            client=no_engine_client,
+        engine_url = no_engine_client._get_database_default_engine_url(
             database=database
         )
 
     elif engine_name:
-        engine_url = _resolve_engine_url(
-            client=no_engine_client,
-            engine_name=engine_name
-        )
+        engine_url = no_engine_client._resolve_engine_url(engine_name=engine_name)
     elif account_name:
         # In above if branches account name is validated since it's used to
         # resolve or get an engine url.
         # We need to manually validate account_name if none of the above
         # cases are triggered.
-        client.account_id
+        no_engine_client.account_id
 
     assert engine_url is not None
 
     engine_url = fix_url_schema(engine_url)
-    client = ClientOld(
+    client = ClientV1(
         auth=auth,
         account_name=account_name,
         base_url=engine_url,
@@ -571,4 +506,4 @@ def connect_v1(
         transport=transport,
         headers={"User-Agent": user_agent_header},
     )
-    return Connection(engine_url, database, client, CursorOld, None, api_endpoint)
+    return Connection(engine_url, database, client, CursorV1, None, api_endpoint)
