@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
-from httpx import AsyncHTTPTransport, HTTPTransport, Timeout
+from httpx import AsyncHTTPTransport, Timeout
 
 from firebolt.async_db.cursor import CursorV1, CursorV2, SharedCursor
 from firebolt.async_db.util import _get_system_engine_url
@@ -349,7 +349,7 @@ async def connect_v1(
     api_endpoint = fix_url_schema(api_endpoint)
 
     # Override tcp keepalive settings for connection
-    transport = HTTPTransport()
+    transport = AsyncHTTPTransport()
     transport._pool._network_backend = OverriddenHttpBackend()
     no_engine_client = AsyncClientV1(
         auth=auth,
