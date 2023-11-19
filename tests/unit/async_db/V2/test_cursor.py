@@ -5,7 +5,7 @@ from httpx import HTTPStatusError, StreamError, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.async_db import Cursor
+from firebolt.async_db import CursorV2 as Cursor
 from firebolt.common._types import Column
 from firebolt.common.base_cursor import ColType, CursorState, QueryStatus
 from firebolt.utils.exception import (
