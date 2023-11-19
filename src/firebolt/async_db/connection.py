@@ -6,11 +6,11 @@ from typing import Any, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
+from httpx import AsyncClient as HttpxAsyncClient
 from httpx import AsyncHTTPTransport, Timeout
 
 from firebolt.async_db.cursor import CursorV1, CursorV2, SharedCursor
 from firebolt.async_db.util import _get_system_engine_url
-
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.auth.client_credentials import ClientCredentials
@@ -30,9 +30,12 @@ from firebolt.utils.exception import (
     InterfaceError,
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import Timer, fix_url_schema, validate_engine_name_and_url_v1
+from firebolt.utils.util import (
+    Timer,
+    fix_url_schema,
+    validate_engine_name_and_url_v1,
+)
 
-from httpx import AsyncClient as HttpxAsyncClient
 
 class OverriddenHttpBackend(AutoBackend):
     """
@@ -291,7 +294,9 @@ async def connect_v2(
                     engine_url,
                     status,
                     attached_db,
-                ) = await cursor._get_engine_url_status_db(system_engine_connection, engine_name)
+                ) = await cursor._get_engine_url_status_db(
+                    system_engine_connection, engine_name
+                )
 
             if status != "Running":
                 raise EngineNotRunningError(engine_name)

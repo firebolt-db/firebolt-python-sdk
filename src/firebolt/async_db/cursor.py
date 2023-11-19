@@ -16,10 +16,12 @@ from typing import (
     Union,
 )
 
-from httpx import URL, Response, codes
+from httpx import URL
+from httpx import AsyncClient as HttpxAsyncClient
+from httpx import Response, codes
 
 from firebolt.async_db.util import ENGINE_STATUS_RUNNING
-from httpx import AsyncClient as HttpxAsyncClient
+from firebolt.client.client import AsyncClientV1, AsyncClientV2
 from firebolt.common._types import (
     ColType,
     Column,
@@ -55,7 +57,6 @@ from firebolt.utils.util import Timer
 logger = logging.getLogger(__name__)
 
 
-
 class SharedCursor(BaseCursor):
     """
     Class, responsible for executing queries to Firebolt Database.
@@ -81,6 +82,15 @@ class SharedCursor(BaseCursor):
         self._client = client
         self.connection = connection
 
+    async def _api_request(
+        self,
+        query: str = "",
+        parameters: Optional[dict[str, Any]] = None,
+        path: str = "",
+        use_set_parameters: bool = True,
+    ) -> Response:
+        raise NotImplementedError
+
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
         if resp.status_code == codes.INTERNAL_SERVER_ERROR:
@@ -105,42 +115,6 @@ class SharedCursor(BaseCursor):
                     "needs to be running to run queries against it."
                 )
         resp.raise_for_status()
-
-    async def _api_request(
-        self,
-        query: str = "",
-        parameters: Optional[dict[str, Any]] = None,
-        path: str = "",
-        use_set_parameters: bool = True,
-    ) -> Response:
-        """
-        Query API, return Response object.
-
-        Args:
-            query (str): SQL query
-            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
-                parameters. Used to replace '?' placeholders inside a query with
-                actual values. Note: In order to "output_format" dict value, it
-                    must be an empty string. If no value not specified,
-                    JSON_OUTPUT_FORMAT will be used.
-            path (str): endpoint suffix, for example "cancel" or "status"
-            use_set_parameters: Optional[bool]: Some queries will fail if additional
-                set parameters are sent. Setting this to False will allow
-                self._set_parameters to be ignored.
-        """
-        parameters = parameters or {}
-        if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **parameters}
-        if self.connection.database:
-            parameters["database"] = self.connection.database
-        if self.connection._is_system:
-            parameters["account_id"] = await self._client.account_id
-        return await self._client.request(
-            url=f"/{path}" if path else "",
-            method="POST",
-            params=parameters,
-            content=query,
-        )
 
     async def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
@@ -352,11 +326,11 @@ class SharedCursor(BaseCursor):
             return QueryStatus.NOT_READY
         return QueryStatus[resp_json["status"]]
 
-    def is_db_available(self, database: str) -> bool:
+    async def is_db_available(self, database: str) -> bool:
         """Verify that the database exists."""
         raise NotImplementedError
 
-    def is_engine_running(self, engine_url: str) -> bool:
+    async def is_engine_running(self, engine_url: str) -> bool:
         """Verify that the engine is running."""
         raise NotImplementedError
 
@@ -432,11 +406,49 @@ class CursorV2(SharedCursor):
     def __init__(
         self,
         *args: Any,
-        client: HttpxAsyncClient,
+        client: AsyncClientV2,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
+        assert isinstance(client, AsyncClientV2)
         super().__init__(*args, client=client, connection=connection, **kwargs)
+
+    async def _api_request(
+        self,
+        query: str = "",
+        parameters: Optional[dict[str, Any]] = None,
+        path: str = "",
+        use_set_parameters: bool = True,
+    ) -> Response:
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
+        """
+        parameters = parameters or {}
+        if use_set_parameters:
+            parameters = {**(self._set_parameters or {}), **parameters}
+        if self.connection.database:
+            parameters["database"] = self.connection.database
+        if self.connection._is_system:
+            assert isinstance(self._client, AsyncClientV2)
+            parameters["account_id"] = await self._client.account_id
+        return await self._client.request(
+            url=f"/{path}" if path else "",
+            method="POST",
+            params=parameters,
+            content=query,
+        )
 
     async def is_db_available(self, database_name: str) -> bool:
         """
@@ -457,7 +469,6 @@ class CursorV2(SharedCursor):
                 )
                 > 0
             )
-
 
     async def is_engine_running(self, engine_url: str) -> bool:
         """
@@ -492,7 +503,9 @@ class CursorV2(SharedCursor):
             )
             row = await cursor.fetchone()
             if row is None:
-                raise FireboltEngineError(f"Engine with name {engine_name} doesn't exist")
+                raise FireboltEngineError(
+                    f"Engine with name {engine_name} doesn't exist"
+                )
             engine_url, database, status = row
             return str(engine_url), str(status), str(database)  # Mypy check
 
@@ -501,10 +514,11 @@ class CursorV1(SharedCursor):
     def __init__(
         self,
         *args: Any,
-        client: HttpxAsyncClient,
+        client: AsyncClientV1,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
+        assert isinstance(client, AsyncClientV1)
         super().__init__(*args, client=client, connection=connection, **kwargs)
 
     async def _api_request(
@@ -553,7 +567,6 @@ class CursorV1(SharedCursor):
         )
         return len(resp.json()["edges"]) > 0
 
-
     async def is_engine_running(self, engine_url: str) -> bool:
         """
         Verify that the engine is running.
@@ -573,9 +586,7 @@ class CursorV1(SharedCursor):
         )
         return len(resp.json()["edges"]) > 0
 
-    async def _filter_request(
-        self, endpoint: str, filters: dict
-    ) -> Response:
+    async def _filter_request(self, endpoint: str, filters: dict) -> Response:
         resp = await self.connection._client.request(
             # Full url overrides the client url, which contains engine as a prefix.
             url=self.connection.api_endpoint + endpoint,

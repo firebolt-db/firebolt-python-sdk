@@ -3,8 +3,9 @@ from typing import Dict
 
 from pytest import fixture
 
-from firebolt.async_db import ARRAY, DECIMAL, Connection, connect
+from firebolt.async_db import ARRAY, DECIMAL, Connection
 from firebolt.async_db import CursorV2 as Cursor
+from firebolt.async_db import connect
 from firebolt.client.auth import Auth
 from tests.unit.db_conftest import *  # noqa
 

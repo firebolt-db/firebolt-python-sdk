@@ -2,21 +2,31 @@ from datetime import date, datetime
 from json import loads
 from re import Pattern, compile
 from typing import Dict
-import httpx
 
+import httpx
 from pytest import fixture
 
-from firebolt.async_db import ARRAY, DECIMAL, Connection, connect
+from firebolt.async_db import ARRAY, DECIMAL, Connection
 from firebolt.async_db import CursorV1 as Cursor
+from firebolt.async_db import connect
+from firebolt.client import AsyncClientV1 as Client
 from firebolt.client.auth.base import Auth
 from firebolt.client.auth.username_password import UsernamePassword
 from firebolt.utils.exception import AccountNotFoundError
-from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_ENGINE_URL, ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1, ACCOUNT_URL, AUTH_URL
+from firebolt.utils.urls import (
+    ACCOUNT_BY_NAME_URL,
+    ACCOUNT_ENGINE_URL,
+    ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1,
+    ACCOUNT_URL,
+    AUTH_URL,
+)
 from tests.unit.db_conftest import *  # noqa
-from firebolt.client import AsyncClientV1 as Client
+
 
 @fixture
-async def connection(server: str, db_name: str, username_password_auth: UsernamePassword) -> Connection:
+async def connection(
+    server: str, db_name: str, username_password_auth: UsernamePassword
+) -> Connection:
     async with (
         await connect(
             engine_url=server,
@@ -32,6 +42,7 @@ async def connection(server: str, db_name: str, username_password_auth: Username
 async def cursor(connection: Connection) -> Cursor:
     return connection.cursor()
 
+
 @fixture
 def auth_url(server: str) -> str:
     return f"https://{server}{AUTH_URL}"
@@ -42,6 +53,7 @@ def get_engine_url_by_id_url(server: str, account_id: str, engine_id: str) -> st
     return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
+
 
 @fixture
 def get_engine_url_by_id_callback(

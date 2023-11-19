@@ -8,6 +8,7 @@ from warnings import warn
 
 from httpcore.backends.base import NetworkStream
 from httpcore.backends.sync import SyncBackend
+from httpx import Client as HttpxClient
 from httpx import HTTPTransport, Timeout
 from readerwriterlock.rwlock import RWLockWrite
 
@@ -33,8 +34,6 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
-
-from httpx import Client as HttpxClient
 
 logger = logging.getLogger(__name__)
 

@@ -14,9 +14,12 @@ from typing import (
     Union,
 )
 
-from httpx import URL, Response, codes
+from httpx import URL
+from httpx import Client as HttpxClient
+from httpx import Response, codes
 
 from firebolt.client import ClientV2
+from firebolt.client.client import ClientV1
 from firebolt.common._types import (
     ColType,
     Column,
@@ -45,7 +48,6 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 
-from httpx import Client as HttpxClient
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
 
@@ -67,7 +69,11 @@ class SharedCursor(BaseCursor):
     """
 
     def __init__(
-        self, *args: Any, client: HttpxClient, connection: Connection, **kwargs: Any
+        self,
+        *args: Any,
+        client: HttpxClient,
+        connection: Connection,
+        **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self._client = client
@@ -105,34 +111,7 @@ class SharedCursor(BaseCursor):
         path: str = "",
         use_set_parameters: bool = True,
     ) -> Response:
-        """
-        Query API, return Response object.
-
-        Args:
-            query (str): SQL query
-            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
-                parameters. Used to replace '?' placeholders inside a query with
-                actual values. Note: In order to "output_format" dict value, it
-                    must be an empty string. If no value not specified,
-                    JSON_OUTPUT_FORMAT will be used.
-            path (str): endpoint suffix, for example "cancel" or "status"
-            use_set_parameters: Optional[bool]: Some queries will fail if additional
-                set parameters are sent. Setting this to False will allow
-                self._set_parameters to be ignored.
-        """
-        parameters = parameters or {}
-        if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **parameters}
-        if self.connection.database:
-            parameters["database"] = self.connection.database
-        if self.connection._is_system:
-            parameters["account_id"] = self._client.account_id
-        return self._client.request(
-            url=f"/{path}" if path else "",
-            method="POST",
-            params=parameters,
-            content=query,
-        )
+        raise NotImplementedError
 
     def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
@@ -373,7 +352,45 @@ class CursorV2(SharedCursor):
     def __init__(
         self, *args: Any, client: ClientV2, connection: Connection, **kwargs: Any
     ) -> None:
+        assert isinstance(self._client, ClientV2)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
+
+    def _api_request(
+        self,
+        query: str = "",
+        parameters: Optional[dict[str, Any]] = None,
+        path: str = "",
+        use_set_parameters: bool = True,
+    ) -> Response:
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
+        """
+        parameters = parameters or {}
+        if use_set_parameters:
+            parameters = {**(self._set_parameters or {}), **parameters}
+        if self.connection.database:
+            parameters["database"] = self.connection.database
+        if self.connection._is_system:
+            assert isinstance(self._client, ClientV2)  # Type check
+            parameters["account_id"] = self._client.account_id
+        return self._client.request(
+            url=f"/{path}" if path else "",
+            method="POST",
+            params=parameters,
+            content=query,
+        )
 
     def is_db_available(self, database_name: str) -> bool:
         """
@@ -437,8 +454,9 @@ class CursorV2(SharedCursor):
 
 class CursorV1(SharedCursor):
     def __init__(
-        self, *args: Any, client: ClientV2, connection: Connection, **kwargs: Any
+        self, *args: Any, client: ClientV1, connection: Connection, **kwargs: Any
     ) -> None:
+        assert isinstance(self._client, ClientV1)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
 
     def _api_request(

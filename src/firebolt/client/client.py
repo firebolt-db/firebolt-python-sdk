@@ -357,8 +357,8 @@ class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
             response.raise_for_status()
             return response.json()["account_id"]
 
-        # account_name isn't set, use the default account.
-        return self.get(url=ACCOUNT_URL).json()["account"]["id"]
+        # account_name isn't set; use the default account.
+        return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
 
     async def _get_database_default_engine_url(
         self,

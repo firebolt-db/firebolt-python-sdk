@@ -1,6 +1,6 @@
+import sys
 from asyncio import run
 from re import Pattern
-import sys
 from typing import Callable, List
 from unittest.mock import patch
 
@@ -125,7 +125,6 @@ async def test_connect_access_token(
     with raises(ConfigurationError):
         async with await connect(engine_url="engine_url", database="database"):
             pass
-
 
 
 async def test_connect_engine_name(
@@ -441,6 +440,7 @@ async def test_connect_no_user_agent(
         ) as connection:
             await connection.cursor().execute("select*")
         ut.assert_called_once_with([], [])
+
 
 @mark.skipif(
     sys.platform == "darwin",
