@@ -99,7 +99,7 @@ class SharedCursor(BaseCursor):
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
         ):
-            if not await is_engine_running(self.connection, self.connection.engine_url):
+            if not await self.is_engine_running(self.connection.engine_url):
                 raise EngineNotRunningError(
                     f"Firebolt engine {self.connection.engine_url} "
                     "needs to be running to run queries against it."
@@ -360,6 +360,28 @@ class SharedCursor(BaseCursor):
         """Verify that the engine is running."""
         raise NotImplementedError
 
+    @wraps(BaseCursor.fetchone)
+    async def fetchone(self) -> Optional[List[ColType]]:
+        """Fetch the next row of a query result set."""
+        return super().fetchone()
+
+    @wraps(BaseCursor.fetchmany)
+    async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
+        """
+        Fetch the next set of rows of a query result;
+        size is cursor.arraysize by default.
+        """
+        return super().fetchmany(size)
+
+    @wraps(BaseCursor.fetchall)
+    async def fetchall(self) -> List[List[ColType]]:
+        """Fetch all remaining rows of a query result."""
+        return super().fetchall()
+
+    @wraps(BaseCursor.nextset)
+    async def nextset(self) -> None:
+        return super().nextset()
+
     @check_not_closed
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
@@ -372,13 +394,22 @@ class SharedCursor(BaseCursor):
     # Iteration support
     @check_not_closed
     @check_query_executed
-    def __aiter__(self) -> Cursor:
+    def __aiter__(self) -> SharedCursor:
         return self
 
     # TODO: figure out how to implement __aenter__ and __await__
     @check_not_closed
-    def __aenter__(self) -> Cursor:
+    def __aenter__(self) -> SharedCursor:
         return self
+
+    @check_not_closed
+    def __enter__(self) -> SharedCursor:
+        return self
+
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()
 
     def __await__(self) -> Iterator:
         pass

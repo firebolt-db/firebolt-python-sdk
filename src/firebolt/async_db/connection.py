@@ -16,7 +16,7 @@ from firebolt.client.auth import Auth
 from firebolt.client.auth.client_credentials import ClientCredentials
 from firebolt.client.auth.token import Token
 from firebolt.client.auth.username_password import UsernamePassword
-from firebolt.client.client import AsyncClientV1, AsyncClientV2, ClientV2
+from firebolt.client.client import AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -257,7 +257,7 @@ async def connect_v2(
         await _get_system_engine_url(auth, account_name, api_endpoint)
     )
 
-    transport = HTTPTransport()
+    transport = AsyncHTTPTransport()
     transport._pool._network_backend = OverriddenHttpBackend()
     client = AsyncClientV2(
         auth=auth,
@@ -283,6 +283,7 @@ async def connect_v2(
 
     else:
         try:
+            # TODO: avoid passing connection back to cursor
             cursor = system_engine_connection.cursor()
             assert isinstance(cursor, CursorV2)
             with Timer("[PERFORMANCE] Resolving engine name "):
@@ -306,7 +307,7 @@ async def connect_v2(
             assert engine_url is not None
 
             engine_url = fix_url_schema(engine_url)
-            client = ClientV2(
+            client = AsyncClientV2(
                 auth=auth,
                 account_name=account_name,
                 base_url=engine_url,
@@ -324,7 +325,7 @@ async def connect_v2(
                 api_endpoint,
             )
         except:  # noqa
-            system_engine_connection.close()
+            await system_engine_connection.aclose()
             raise
 
 
