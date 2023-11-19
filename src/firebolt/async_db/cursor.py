@@ -16,10 +16,10 @@ from typing import (
     Union,
 )
 
-from httpx import Response, codes
+from httpx import URL, Response, codes
 
-from firebolt.async_db.util import is_db_available, is_engine_running
-from firebolt.client import AsyncClient
+from firebolt.async_db.util import ENGINE_STATUS_RUNNING
+from httpx import AsyncClient as HttpxAsyncClient
 from firebolt.common._types import (
     ColType,
     Column,
@@ -41,9 +41,11 @@ from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
     FireboltDatabaseError,
+    FireboltEngineError,
     OperationalError,
     ProgrammingError,
 )
+from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
@@ -53,25 +55,25 @@ from firebolt.utils.util import Timer
 logger = logging.getLogger(__name__)
 
 
-class Cursor(BaseCursor):
+
+class SharedCursor(BaseCursor):
     """
-    Executes async queries to Firebolt Database.
-    Should not be created directly;
+    Class, responsible for executing queries to Firebolt Database.
+    Should not be created directly,
     use :py:func:`connection.cursor <firebolt.async_db.connection.Connection>`
 
     Args:
-        description: Information about a single result row.
-        rowcount: The number of rows produced by last query.
-        closed: True if connection is closed; False otherwise.
+        description: Information about a single result row
+        rowcount: The number of rows produced by last query
+        closed: True if connection is closed, False otherwise
         arraysize: Read/Write, specifies the number of rows to fetch at a time
-            with the :py:func:`fetchmany` method.
-
+            with the :py:func:`fetchmany` method
     """
 
     def __init__(
         self,
         *args: Any,
-        client: AsyncClient,
+        client: HttpxAsyncClient,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
@@ -321,33 +323,6 @@ class Cursor(BaseCursor):
         else:
             return self.rowcount
 
-    # Iteration support
-    @check_not_closed
-    @check_query_executed
-    def __aiter__(self) -> Cursor:
-        return self
-
-    # TODO: figure out how to implement __aenter__ and __await__
-    @check_not_closed
-    def __aenter__(self) -> Cursor:
-        return self
-
-    def __await__(self) -> Iterator:
-        pass
-
-    async def __aexit__(
-        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
-    ) -> None:
-        self.close()
-
-    @check_not_closed
-    @check_query_executed
-    async def __anext__(self) -> List[ColType]:
-        row = await self.fetchone()
-        if row is None:
-            raise StopAsyncIteration
-        return row
-
     @check_not_closed
     async def get_status(self, query_id: str) -> QueryStatus:
         """Get status of a server-side async query. Return the state of the query."""
@@ -377,6 +352,14 @@ class Cursor(BaseCursor):
             return QueryStatus.NOT_READY
         return QueryStatus[resp_json["status"]]
 
+    def is_db_available(self, database: str) -> bool:
+        """Verify that the database exists."""
+        raise NotImplementedError
+
+    def is_engine_running(self, engine_url: str) -> bool:
+        """Verify that the engine is running."""
+        raise NotImplementedError
+
     @check_not_closed
     async def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
@@ -386,28 +369,187 @@ class Cursor(BaseCursor):
             use_set_parameters=False,
         )
 
-    @wraps(BaseCursor.fetchone)
-    async def fetchone(self) -> Optional[List[ColType]]:
-        """Fetch the next row of a query result set."""
-        return super().fetchone()
+    # Iteration support
+    @check_not_closed
+    @check_query_executed
+    def __aiter__(self) -> Cursor:
+        return self
 
-    @wraps(BaseCursor.fetchmany)
-    async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        """
-        Fetch the next set of rows of a query result;
-        size is cursor.arraysize by default.
-        """
-        return super().fetchmany(size)
+    # TODO: figure out how to implement __aenter__ and __await__
+    @check_not_closed
+    def __aenter__(self) -> Cursor:
+        return self
 
-    @wraps(BaseCursor.fetchall)
-    async def fetchall(self) -> List[List[ColType]]:
-        """Fetch all remaining rows of a query result."""
-        return super().fetchall()
+    def __await__(self) -> Iterator:
+        pass
 
-    @wraps(BaseCursor.nextset)
-    async def nextset(self) -> None:
-        return super().nextset()
+    async def __aexit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        self.close()
 
     @check_not_closed
-    def __enter__(self) -> Cursor:
-        return self
+    @check_query_executed
+    async def __anext__(self) -> List[ColType]:
+        row = await self.fetchone()
+        if row is None:
+            raise StopAsyncIteration
+        return row
+
+
+class CursorV2(SharedCursor):
+    def __init__(
+        self,
+        *args: Any,
+        client: HttpxAsyncClient,
+        connection: Connection,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, client=client, connection=connection, **kwargs)
+
+    async def is_db_available(self, database_name: str) -> bool:
+        """
+        Verify that the database exists.
+
+        Args:
+            connection (firebolt.async_db.connection.Connection)
+            database_name (str): Name of a database
+        """
+        system_engine = self.connection._system_engine_connection or self.connection
+        with system_engine.cursor() as cursor:
+            return (
+                await cursor.execute(
+                    """
+                    SELECT 1 FROM information_schema.databases WHERE database_name=?
+                    """,
+                    [database_name],
+                )
+                > 0
+            )
+
+
+    async def is_engine_running(self, engine_url: str) -> bool:
+        """
+        Verify that the engine is running.
+
+        Args:
+            connection (firebolt.async_db.connection.Connection): connection.
+            engine_url (str): URL of the engine
+        """
+
+        if self.connection._is_system:
+            # System engine is always running
+            return True
+
+        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
+        assert self.connection._system_engine_connection is not None  # Type check
+        _, status, _ = await self._get_engine_url_status_db(
+            self.connection._system_engine_connection, engine_name
+        )
+        return status == ENGINE_STATUS_RUNNING
+
+    async def _get_engine_url_status_db(
+        self, system_engine_connection: Connection, engine_name: str
+    ) -> Tuple[str, str, str]:
+        with system_engine_connection.cursor() as cursor:
+            await cursor.execute(
+                """
+                SELECT url, attached_to, status FROM information_schema.engines
+                WHERE engine_name=?
+                """,
+                [engine_name],
+            )
+            row = await cursor.fetchone()
+            if row is None:
+                raise FireboltEngineError(f"Engine with name {engine_name} doesn't exist")
+            engine_url, database, status = row
+            return str(engine_url), str(status), str(database)  # Mypy check
+
+
+class CursorV1(SharedCursor):
+    def __init__(
+        self,
+        *args: Any,
+        client: HttpxAsyncClient,
+        connection: Connection,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, client=client, connection=connection, **kwargs)
+
+    async def _api_request(
+        self,
+        query: Optional[str] = "",
+        parameters: Optional[dict[str, Any]] = {},
+        path: Optional[str] = "",
+        use_set_parameters: Optional[bool] = True,
+    ) -> Response:
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
+        """
+        if use_set_parameters:
+            parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        return await self._client.request(
+            url=f"/{path}",
+            method="POST",
+            params={
+                "database": self.connection.database,
+                **(parameters or dict()),
+            },
+            content=query,
+        )
+
+    async def is_db_available(self, database_name: str) -> bool:
+        """
+        Verify that the database exists.
+
+        Args:
+            connection (firebolt.async_db.connection.Connection)
+        """
+        resp = await self._filter_request(
+            DATABASES_URL, {"filter.name_contains": database_name}
+        )
+        return len(resp.json()["edges"]) > 0
+
+
+    async def is_engine_running(self, engine_url: str) -> bool:
+        """
+        Verify that the engine is running.
+
+        Args:
+            connection (firebolt.async_db.connection.Connection): connection.
+        """
+        # Url is not guaranteed to be of this structure,
+        # but for the sake of error checking this is sufficient.
+        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
+        resp = await self._filter_request(
+            ENGINES_URL,
+            {
+                "filter.name_contains": engine_name,
+                "filter.current_status_eq": "ENGINE_STATUS_RUNNING_REVISION_SERVING",
+            },
+        )
+        return len(resp.json()["edges"]) > 0
+
+    async def _filter_request(
+        self, endpoint: str, filters: dict
+    ) -> Response:
+        resp = await self.connection._client.request(
+            # Full url overrides the client url, which contains engine as a prefix.
+            url=self.connection.api_endpoint + endpoint,
+            method="GET",
+            params=filters,
+        )
+        resp.raise_for_status()
+        return resp

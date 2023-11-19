@@ -34,6 +34,8 @@ from firebolt.utils.exception import (
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
+from httpx import Client as HttpxClient
+
 logger = logging.getLogger(__name__)
 
 
@@ -261,13 +263,15 @@ class Connection(BaseConnection):
         "_is_closed",
         "_closing_lock",
         "_system_engine_connection",
+        "client_class",
+        "cursor_type",
     )
 
     def __init__(
         self,
         engine_url: str,
         database: Optional[str],
-        client: ClientV2,
+        client: HttpxClient,
         cursor_type: Type[SharedCursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str = DEFAULT_API_URL,

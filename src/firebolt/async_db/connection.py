@@ -2,19 +2,21 @@ from __future__ import annotations
 
 import socket
 from types import TracebackType
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
-from httpx import AsyncHTTPTransport, Timeout
+from httpx import AsyncHTTPTransport, HTTPTransport, Timeout
 
-from firebolt.async_db.cursor import Cursor
-from firebolt.async_db.util import (
-    _get_engine_url_status_db,
-    _get_system_engine_url,
-)
-from firebolt.client import DEFAULT_API_URL, AsyncClient
+from firebolt.async_db.cursor import CursorV1, CursorV2, SharedCursor
+from firebolt.async_db.util import _get_system_engine_url
+
+from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
+from firebolt.client.auth.client_credentials import ClientCredentials
+from firebolt.client.auth.token import Token
+from firebolt.client.auth.username_password import UsernamePassword
+from firebolt.client.client import AsyncClientV1, AsyncClientV2, ClientV2
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -28,8 +30,9 @@ from firebolt.utils.exception import (
     InterfaceError,
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import Timer, fix_url_schema
+from firebolt.utils.util import Timer, fix_url_schema, validate_engine_name_and_url_v1
 
+from httpx import AsyncClient as HttpxAsyncClient
 
 class OverriddenHttpBackend(AutoBackend):
     """
@@ -96,6 +99,8 @@ class Connection(BaseConnection):
 
     """
 
+    client_class: type
+    cursor_type: Type[SharedCursor]
     __slots__ = (
         "_client",
         "_cursors",
@@ -104,44 +109,36 @@ class Connection(BaseConnection):
         "api_endpoint",
         "_is_closed",
         "_system_engine_connection",
+        "client_class",
+        "cursor_type",
     )
 
     def __init__(
         self,
         engine_url: str,
         database: Optional[str],
-        auth: Auth,
-        account_name: str,
+        client: HttpxAsyncClient,
+        cursor_type: Type[SharedCursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str,
-        additional_parameters: Dict[str, Any] = {},
     ):
         super().__init__()
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
         self.database = database
-        self._cursors: List[Cursor] = []
+        self.cursor_type = cursor_type
+        self._cursors: List[SharedCursor] = []
+        self._system_engine_connection = system_engine_connection
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
-        user_drivers = additional_parameters.get("user_drivers", [])
-        user_clients = additional_parameters.get("user_clients", [])
-        self._client = AsyncClient(
-            account_name=account_name,
-            auth=auth,
-            base_url=engine_url,
-            api_endpoint=api_endpoint,
-            timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-            transport=transport,
-            headers={"User-Agent": get_user_agent_header(user_drivers, user_clients)},
-        )
-        self._system_engine_connection = system_engine_connection
+        self._client = client
 
-    def cursor(self, **kwargs: Any) -> Cursor:
+    def cursor(self, **kwargs: Any) -> SharedCursor:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = Cursor(client=self._client, connection=self, **kwargs)
+        c = self.cursor_type(client=self._client, connection=self, **kwargs)
         self._cursors.append(c)
         return c
 
@@ -181,8 +178,54 @@ async def connect(
     account_name: Optional[str] = None,
     database: Optional[str] = None,
     engine_name: Optional[str] = None,
+    engine_url: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
     additional_parameters: Dict[str, Any] = {},
+) -> Connection:
+    # auth parameter is optional in function signature
+    # but is required to connect.
+    # PEP 249 recommends making it kwargs.
+    if not auth:
+        raise ConfigurationError("auth is required to connect.")
+
+    # Type checks
+    assert auth is not None
+    user_drivers = additional_parameters.get("user_drivers", [])
+    user_clients = additional_parameters.get("user_clients", [])
+    user_agent_header = get_user_agent_header(user_drivers, user_clients)
+    # Use v2 if auth is ClientCredentials
+    # Use v1 if auth is ServiceAccount or UsernamePassword
+    if isinstance(auth, ClientCredentials):
+        assert account_name is not None
+        return await connect_v2(
+            auth=auth,
+            user_agent_header=user_agent_header,
+            account_name=account_name,
+            database=database,
+            engine_name=engine_name,
+            api_endpoint=api_endpoint,
+        )
+    elif isinstance(auth, (Token, UsernamePassword)):
+        return await connect_v1(
+            auth=auth,
+            user_agent_header=user_agent_header,
+            account_name=account_name,
+            database=database,
+            engine_name=engine_name,
+            engine_url=engine_url,
+            api_endpoint=api_endpoint,
+        )
+    else:
+        raise ConfigurationError(f"Unsupported auth type: {type(auth)}")
+
+
+async def connect_v2(
+    auth: Auth,
+    user_agent_header: str,
+    account_name: Optional[str] = None,
+    database: Optional[str] = None,
+    engine_name: Optional[str] = None,
+    api_endpoint: str = DEFAULT_API_URL,
 ) -> Connection:
     """Connect to Firebolt.
 
@@ -191,14 +234,16 @@ async def connect(
         `database` (str): Name of the database to connect
         `engine_name` (Optional[str]): Name of the engine to connect to
         `account_name` (Optional[str]): For customers with multiple accounts;
+                                        if none, default is used
         `api_endpoint` (str): Firebolt API endpoint. Used for authentication
         `additional_parameters` (Optional[Dict]): Dictionary of less widely-used
                                 arguments for connection
+
     """
     # These parameters are optional in function signature
     # but are required to connect.
     # PEP 249 recommends making them kwargs.
-    for name, value in (("auth", auth), ("account_name", account_name)):
+    for name, value in [("account_name", account_name)]:
         if not value:
             raise ConfigurationError(f"{name} is required to connect.")
 
@@ -211,27 +256,41 @@ async def connect(
     system_engine_url = fix_url_schema(
         await _get_system_engine_url(auth, account_name, api_endpoint)
     )
+
+    transport = HTTPTransport()
+    transport._pool._network_backend = OverriddenHttpBackend()
+    client = AsyncClientV2(
+        auth=auth,
+        account_name=account_name,
+        base_url=system_engine_url,
+        api_endpoint=api_endpoint,
+        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+        transport=transport,
+        headers={"User-Agent": user_agent_header},
+    )
     # Don't use context manager since this will be stored
     # and used in a resulting connection
     system_engine_connection = Connection(
         system_engine_url,
         database,
-        auth,
-        account_name,
+        client,
+        CursorV2,
         None,
         api_endpoint,
-        additional_parameters,
     )
-
     if not engine_name:
         return system_engine_connection
 
     else:
         try:
+            cursor = system_engine_connection.cursor()
+            assert isinstance(cursor, CursorV2)
             with Timer("[PERFORMANCE] Resolving engine name "):
-                engine_url, status, attached_db = await _get_engine_url_status_db(
-                    system_engine_connection, engine_name
-                )
+                (
+                    engine_url,
+                    status,
+                    attached_db,
+                ) = await cursor._get_engine_url_status_db(system_engine_connection, engine_name)
 
             if status != "Running":
                 raise EngineNotRunningError(engine_name)
@@ -247,15 +306,87 @@ async def connect(
             assert engine_url is not None
 
             engine_url = fix_url_schema(engine_url)
+            client = ClientV2(
+                auth=auth,
+                account_name=account_name,
+                base_url=engine_url,
+                api_endpoint=api_endpoint,
+                timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+                transport=transport,
+                headers={"User-Agent": user_agent_header},
+            )
             return Connection(
                 engine_url,
                 database,
-                auth,
-                account_name,
+                client,
+                CursorV2,
                 system_engine_connection,
                 api_endpoint,
-                additional_parameters,
             )
         except:  # noqa
-            await system_engine_connection.aclose()
+            system_engine_connection.close()
             raise
+
+
+async def connect_v1(
+    auth: Auth,
+    user_agent_header: str,
+    database: Optional[str] = None,
+    account_name: Optional[str] = None,
+    engine_name: Optional[str] = None,
+    engine_url: Optional[str] = None,
+    api_endpoint: str = DEFAULT_API_URL,
+) -> Connection:
+    # These parameters are optional in function signature
+    # but are required to connect.
+    # PEP 249 recommends making them kwargs.
+    if not database:
+        raise ConfigurationError("database name is required to connect.")
+
+    validate_engine_name_and_url_v1(engine_name, engine_url)
+
+    api_endpoint = fix_url_schema(api_endpoint)
+
+    # Override tcp keepalive settings for connection
+    transport = HTTPTransport()
+    transport._pool._network_backend = OverriddenHttpBackend()
+    no_engine_client = AsyncClientV1(
+        auth=auth,
+        base_url=api_endpoint,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+        transport=transport,
+        headers={"User-Agent": user_agent_header},
+    )
+
+    # Mypy checks, this should never happen
+    assert database is not None
+
+    if not engine_name and not engine_url:
+        engine_url = await no_engine_client._get_database_default_engine_url(
+            database=database
+        )
+
+    elif engine_name:
+        engine_url = await no_engine_client._resolve_engine_url(engine_name=engine_name)
+    elif account_name:
+        # In above if branches account name is validated since it's used to
+        # resolve or get an engine url.
+        # We need to manually validate account_name if none of the above
+        # cases are triggered.
+        await no_engine_client.account_id
+
+    assert engine_url is not None
+
+    engine_url = fix_url_schema(engine_url)
+    client = AsyncClientV1(
+        auth=auth,
+        account_name=account_name,
+        base_url=engine_url,
+        api_endpoint=api_endpoint,
+        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+        transport=transport,
+        headers={"User-Agent": user_agent_header},
+    )
+    return Connection(engine_url, database, client, CursorV1, None, api_endpoint)

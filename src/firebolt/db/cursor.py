@@ -45,6 +45,7 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 
+from httpx import Client as HttpxClient
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
 
@@ -66,7 +67,7 @@ class SharedCursor(BaseCursor):
     """
 
     def __init__(
-        self, *args: Any, client: ClientV2, connection: Connection, **kwargs: Any
+        self, *args: Any, client: HttpxClient, connection: Connection, **kwargs: Any
     ) -> None:
         super().__init__(*args, **kwargs)
         self._client = client

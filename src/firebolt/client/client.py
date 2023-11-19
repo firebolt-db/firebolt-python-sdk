@@ -252,12 +252,12 @@ class ClientV1(FireboltClientMixin, HttpxClient):
         )
 
 
-class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
-    """An HTTP client, based on httpx.AsyncClient.
+class AsyncClientV2(FireboltClientMixin, HttpxAsyncClient):
+    """An HTTP client, based on httpx.Client.
 
-    Asynchronously handles authentication for Firebolt database.
-    Authentication can be passed through auth keyword as a tuple, or as a
-    FireboltAuth instance.
+    Handles the authentication for Firebolt database.
+    Authentication can be passed through auth keyword as a tuple or as a
+    FireboltAuth instance
     """
 
     def __init__(
@@ -278,9 +278,9 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
 
     @async_cached_property
     async def account_id(self) -> str:
-        """User account id.
+        """User account ID.
 
-        If account_name was provided during AsyncClient construction, returns its ID;
+        If account_name was provided during Client construction, returns its ID;
         gets default account otherwise.
 
         Returns:
@@ -300,6 +300,119 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient):
         # process all other status codes
         response.raise_for_status()
         return response.json()["id"]
+
+    async def _send_handling_redirects(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        return await super()._send_handling_redirects(
+            self._merge_auth_request(request), *args, **kwargs
+        )
+
+
+class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
+    """An HTTP client, based on httpx.Client.
+
+    Handles the authentication for Firebolt database.
+    Authentication can be passed through auth keyword as a tuple or as a
+    FireboltAuth instance
+    """
+
+    def __init__(
+        self,
+        *args: Any,
+        auth: Auth,
+        account_name: Optional[str],
+        api_endpoint: str = DEFAULT_API_URL,
+        **kwargs: Any,
+    ):
+        super().__init__(
+            *args,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+            **kwargs,
+        )
+        self._auth_endpoint = URL(fix_url_schema(api_endpoint))
+
+    @async_cached_property
+    async def account_id(self) -> str:
+        """User account ID.
+
+        If account_name was provided during Client construction, returns its ID;
+        gets default account otherwise.
+
+        Returns:
+            str: Account ID
+
+        Raises:
+            AccountNotFoundError: No account found with provided name
+        """
+        if self.account_name:
+            response = await self.get(
+                url=ACCOUNT_BY_NAME_URL_V1, params={"account_name": self.account_name}
+            )  # TODO: url here might be incorrect
+            if response.status_code == HttpxCodes.NOT_FOUND:
+                raise AccountNotFoundError(self.account_name)
+            # process all other status codes
+            response.raise_for_status()
+            return response.json()["account_id"]
+
+        # account_name isn't set, use the default account.
+        return self.get(url=ACCOUNT_URL).json()["account"]["id"]
+
+    async def _get_database_default_engine_url(
+        self,
+        database: str,
+    ) -> str:
+        try:
+            account_id = await self.account_id
+            response = await self.get(
+                url=ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1.format(
+                    account_id=account_id
+                ),
+                params={"database_name": database},
+            )
+            response.raise_for_status()
+            return response.json()["engine_url"]
+        except (
+            JSONDecodeError,
+            RequestError,
+            RuntimeError,
+            HTTPStatusError,
+            KeyError,
+        ) as e:
+            raise InterfaceError(f"Unable to retrieve default engine endpoint: {e}.")
+
+    async def _resolve_engine_url(self, engine_name: str) -> str:
+        account_id = await self.account_id
+        url = ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
+        try:
+            response = await self.get(
+                url=url,
+                params={"engine_name": engine_name},
+            )
+            response.raise_for_status()
+            engine_id = response.json()["engine_id"]["engine_id"]
+            url = ACCOUNT_ENGINE_URL.format(account_id=account_id, engine_id=engine_id)
+            response = await self.get(url=url)
+            response.raise_for_status()
+            return response.json()["engine"]["endpoint"]
+        except HTTPStatusError as e:
+            # Engine error would be 404.
+            if e.response.status_code != 404:
+                raise InterfaceError(
+                    f"Error {e.__class__.__name__}: Unable to retrieve engine "
+                    f"endpoint {url}."
+                )
+            # Once this is point is reached we've already authenticated with
+            # the backend so it's safe to assume the cause of the error is
+            # missing engine.
+            raise FireboltEngineError(f"Firebolt engine {engine_name} does not exist.")
+        except (JSONDecodeError, RequestError, RuntimeError) as e:
+            raise InterfaceError(
+                f"Error {e.__class__.__name__}: "
+                f"Unable to retrieve engine endpoint {url}."
+            )
 
     async def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any
