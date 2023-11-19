@@ -1,0 +1,18 @@
+ERROR    trio.async_generator_errors:_asyncgens.py:193 Exception ignored during finalization of async generator 'firebolt.client.auth.base.Auth.async_auth_flow' -- surround your use of the generator in 'async with aclosing(...):' to raise exceptions like this in the context where they're generated
+Traceback (most recent call last):
+  File "/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/client/auth/base.py", line 143, in async_auth_flow
+    response = yield request
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/trio/_core/_asyncgens.py", line 187, in _finalize_one
+    await agen.aclose()
+  File "/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/client/auth/base.py", line 143, in async_auth_flow
+    response = yield request
+  File "/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/anyio/_core/_synchronization.py", line 118, in __aexit__
+    self.release()
+  File "/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/anyio/_core/_synchronization.py", line 167, in release
+    raise RuntimeError("The current task is not holding this lock")
+RuntimeError: The current task is not holding this lock
