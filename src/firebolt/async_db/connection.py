@@ -286,17 +286,14 @@ async def connect_v2(
 
     else:
         try:
-            # TODO: avoid passing connection back to cursor
             cursor = system_engine_connection.cursor()
-            assert isinstance(cursor, CursorV2)
+            assert isinstance(cursor, CursorV2)  # Mypy check
             with Timer("[PERFORMANCE] Resolving engine name "):
                 (
                     engine_url,
                     status,
                     attached_db,
-                ) = await cursor._get_engine_url_status_db(
-                    system_engine_connection, engine_name
-                )
+                ) = await cursor._get_engine_url_status_db(engine_name)
 
             if status != "Running":
                 raise EngineNotRunningError(engine_name)

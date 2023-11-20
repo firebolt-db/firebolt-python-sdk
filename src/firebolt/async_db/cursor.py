@@ -485,29 +485,28 @@ class CursorV2(SharedCursor):
 
         engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
         assert self.connection._system_engine_connection is not None  # Type check
-        _, status, _ = await self._get_engine_url_status_db(
-            self.connection._system_engine_connection, engine_name
-        )
+        system_cursor = self.connection._system_engine_connection.cursor()
+        assert isinstance(system_cursor, CursorV2)  # Type check, should always be true
+        (
+            _,
+            status,
+            _,
+        ) = await system_cursor._get_engine_url_status_db(engine_name)
         return status == ENGINE_STATUS_RUNNING
 
-    async def _get_engine_url_status_db(
-        self, system_engine_connection: Connection, engine_name: str
-    ) -> Tuple[str, str, str]:
-        with system_engine_connection.cursor() as cursor:
-            await cursor.execute(
-                """
-                SELECT url, attached_to, status FROM information_schema.engines
-                WHERE engine_name=?
-                """,
-                [engine_name],
-            )
-            row = await cursor.fetchone()
-            if row is None:
-                raise FireboltEngineError(
-                    f"Engine with name {engine_name} doesn't exist"
-                )
-            engine_url, database, status = row
-            return str(engine_url), str(status), str(database)  # Mypy check
+    async def _get_engine_url_status_db(self, engine_name: str) -> Tuple[str, str, str]:
+        await self.execute(
+            """
+            SELECT url, attached_to, status FROM information_schema.engines
+            WHERE engine_name=?
+            """,
+            [engine_name],
+        )
+        row = await self.fetchone()
+        if row is None:
+            raise FireboltEngineError(f"Engine with name {engine_name} doesn't exist")
+        engine_url, database, status = row
+        return str(engine_url), str(status), str(database)  # Mypy check
 
 
 class CursorV1(SharedCursor):
