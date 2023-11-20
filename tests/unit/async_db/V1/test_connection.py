@@ -442,9 +442,9 @@ async def test_connect_no_user_agent(
 
 
 # TODO: fix this
-@mark.skip(
-    reason="Fails locally, need to verify",
-)
+# @mark.skip(
+#     reason="Fails locally, need to verify",
+# )
 def test_from_asyncio(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,

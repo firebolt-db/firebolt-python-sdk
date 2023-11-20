@@ -1,9 +1,9 @@
 from time import time
 from typing import AsyncGenerator, Generator, Optional
 
+from anyio import Lock
 from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
-from trio import Lock
 
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.util import Timer, cached_property

@@ -10,7 +10,6 @@ from httpcore.backends.base import NetworkStream
 from httpcore.backends.sync import SyncBackend
 from httpx import Client as HttpxClient
 from httpx import HTTPTransport, Timeout
-from readerwriterlock.rwlock import RWLockWrite
 
 from firebolt.client import DEFAULT_API_URL, ClientV2
 from firebolt.client.auth import Auth
@@ -260,7 +259,6 @@ class Connection(BaseConnection):
         "engine_url",
         "api_endpoint",
         "_is_closed",
-        "_closing_lock",
         "_system_engine_connection",
         "client_class",
         "cursor_type",
@@ -285,18 +283,14 @@ class Connection(BaseConnection):
         transport = HTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
         self._client = client
-        # Holding this lock for write means that connection is closing itself.
-        # cursor() should hold this lock for read to read/write state
-        self._closing_lock = RWLockWrite()
         super().__init__()
 
     def cursor(self, **kwargs: Any) -> SharedCursor:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        with self._closing_lock.gen_rlock():
-            c = self.cursor_type(client=self._client, connection=self, **kwargs)
-            self._cursors.append(c)
+        c = self.cursor_type(client=self._client, connection=self, **kwargs)
+        self._cursors.append(c)
         return c
 
     def _remove_cursor(self, cursor: SharedCursor) -> None:
@@ -310,17 +304,13 @@ class Connection(BaseConnection):
         if self.closed:
             return
 
-        # self._cursors is going to be changed during closing cursors
-        # after this point no cursors would be added to _cursors, only removed since
-        # closing lock is held, and later connection will be marked as closed
-        with self._closing_lock.gen_wlock():
-            cursors = self._cursors[:]
-            for c in cursors:
-                # Here c can already be closed by another thread,
-                # but it shouldn't raise an error in this case
-                c.close()
-            self._client.close()
-            self._is_closed = True
+        cursors = self._cursors[:]
+        for c in cursors:
+            # Here c can already be closed by another thread,
+            # but it shouldn't raise an error in this case
+            c.close()
+        self._client.close()
+        self._is_closed = True
 
         if self._system_engine_connection:
             self._system_engine_connection.close()
