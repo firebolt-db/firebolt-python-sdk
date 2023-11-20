@@ -43,7 +43,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
         self,
         *args: Any,
         auth: Auth,
-        account_name: Optional[str],
+        account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
         **kwargs: Any,
     ):
@@ -151,7 +151,7 @@ class ClientV1(FireboltClientMixin, HttpxClient):
         self,
         *args: Any,
         auth: Auth,
-        account_name: Optional[str],
+        account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
         **kwargs: Any,
     ):
@@ -180,7 +180,7 @@ class ClientV1(FireboltClientMixin, HttpxClient):
         if self.account_name:
             response = self.get(
                 url=ACCOUNT_BY_NAME_URL_V1, params={"account_name": self.account_name}
-            )  # TODO: url here might be incorrect
+            )
             if response.status_code == HttpxCodes.NOT_FOUND:
                 raise AccountNotFoundError(self.account_name)
             # process all other status codes
@@ -321,7 +321,7 @@ class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
         self,
         *args: Any,
         auth: Auth,
-        account_name: Optional[str],
+        account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
         **kwargs: Any,
     ):

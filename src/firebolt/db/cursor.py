@@ -352,7 +352,7 @@ class CursorV2(SharedCursor):
     def __init__(
         self, *args: Any, client: ClientV2, connection: Connection, **kwargs: Any
     ) -> None:
-        assert isinstance(self._client, ClientV2)  # Type check
+        assert isinstance(client, ClientV2)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
 
     def _api_request(
@@ -456,7 +456,7 @@ class CursorV1(SharedCursor):
     def __init__(
         self, *args: Any, client: ClientV1, connection: Connection, **kwargs: Any
     ) -> None:
-        assert isinstance(self._client, ClientV1)  # Type check
+        assert isinstance(client, ClientV1)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
 
     def _api_request(

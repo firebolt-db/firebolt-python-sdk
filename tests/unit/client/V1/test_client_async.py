@@ -7,27 +7,31 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 from trio import open_nursery, sleep
 
-from firebolt.client import AsyncClient
-from firebolt.client.auth import Auth, ClientCredentials
-from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
+from firebolt.client import DEFAULT_API_URL
+from firebolt.client import AsyncClientV1 as AsyncClient
+from firebolt.client.auth import Token, UsernamePassword
+from firebolt.utils.urls import AUTH_URL
 from firebolt.utils.util import fix_url_schema
 
 
 async def test_client_retry(
     httpx_mock: HTTPXMock,
-    auth: Auth,
-    account_name: str,
-    access_token: str,
+    test_username: str,
+    test_password: str,
+    test_token: str,
 ):
     """
     Client retries with new auth token
     if first attempt fails with unauthorized error.
     """
-    async with AsyncClient(account_name=account_name, auth=auth) as client:
+    async with AsyncClient(
+        auth=UsernamePassword(test_username, test_password)
+    ) as client:
+
         # auth get token
         httpx_mock.add_response(
             status_code=codes.OK,
-            json={"expires_in": 2**30, "access_token": access_token},
+            json={"expires_in": 2**30, "access_token": test_token},
         )
 
         # client request failed authorization
@@ -38,7 +42,7 @@ async def test_client_retry(
         # auth get another token
         httpx_mock.add_response(
             status_code=codes.OK,
-            json={"expires_in": 2**30, "access_token": access_token},
+            json={"expires_in": 2**30, "access_token": test_token},
         )
 
         # client request success this time
@@ -55,10 +59,9 @@ async def test_client_different_auths(
     httpx_mock: HTTPXMock,
     check_credentials_callback: Callable,
     check_token_callback: Callable,
-    auth: Auth,
-    account_name: str,
-    auth_server: str,
-    server: str,
+    test_username: str,
+    test_password: str,
+    test_token: str,
 ):
     """
     Client properly handles such auth types:
@@ -70,20 +73,25 @@ async def test_client_different_auths(
 
     httpx_mock.add_callback(
         check_credentials_callback,
-        url=f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}",
+        url=f"https://{DEFAULT_API_URL}{AUTH_URL}",
     )
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
     async with AsyncClient(
-        account_name=account_name, auth=auth, api_endpoint=server
+        auth=UsernamePassword(test_username, test_password)
     ) as client:
         await client.get("https://url")
+    async with AsyncClient(auth=Token(test_token)) as client:
+        await client.get("https://url")
+
+    # client accepts None auth, but authorization fails
+    with raises(AssertionError) as excinfo:
+        async with AsyncClient(auth=None) as client:
+            await client.get("https://url")
 
     with raises(TypeError) as excinfo:
-        async with AsyncClient(
-            account_name=account_name, auth=lambda r: r, api_endpoint=server
-        ):
+        async with AsyncClient(auth=lambda r: r):
             await client.get("https://url")
 
     assert str(excinfo.value).startswith(
@@ -93,8 +101,8 @@ async def test_client_different_auths(
 
 async def test_client_account_id(
     httpx_mock: HTTPXMock,
-    auth: Auth,
-    account_name: str,
+    test_username: str,
+    test_password: str,
     account_id: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
@@ -106,8 +114,7 @@ async def test_client_account_id(
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     async with AsyncClient(
-        account_name=account_name,
-        auth=auth,
+        auth=UsernamePassword(test_username, test_password),
         base_url=fix_url_schema(server),
         api_endpoint=server,
     ) as c:
@@ -116,11 +123,10 @@ async def test_client_account_id(
 
 async def test_concurent_auth_lock(
     httpx_mock: HTTPXMock,
-    account_name: str,
     server: str,
-    client_id: str,
-    client_secret: str,
-    access_token: str,
+    test_username: str,
+    test_password: str,
+    test_token: str,
     auth_url: str,
     check_token_callback: Callable,
 ) -> None:
@@ -142,16 +148,15 @@ async def test_concurent_auth_lock(
         checked_creds_times += 1
         return Response(
             status_code=codes.OK,
-            json={"expires_in": 2**32, "access_token": access_token},
+            json={"expires_in": 2**32, "access_token": test_token},
         )
 
     httpx_mock.add_callback(check_token_callback, url=compile(f"{url}/."))
     httpx_mock.add_callback(check_credentials, url=auth_url)
 
     async with AsyncClient(
-        auth=ClientCredentials(client_id, client_secret),
+        auth=UsernamePassword(test_username, test_password),
         api_endpoint=server,
-        account_name=account_name,
     ) as c:
         c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
         urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
