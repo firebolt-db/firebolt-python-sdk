@@ -198,8 +198,6 @@ async def test_cursor_execute_error(
     query_statistics: Dict[str, Any],
     cursor: Cursor,
     system_engine_query_url: str,
-    account_id_url: str,
-    account_id_callback: Callable,
 ):
     """Cursor handles all types of errors properly."""
     for query, message in (
@@ -212,7 +210,6 @@ async def test_cursor_execute_error(
             "server-side synchronous executemany()",
         ),
     ):
-        httpx_mock.add_callback(account_id_callback, url=account_id_url)
         # Internal httpx error
         def http_error(*args, **kwargs):
             raise StreamError("httpx error")
