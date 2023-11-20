@@ -1,18 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from httpx import Timeout, codes
 
-# from firebolt.client import AsyncClient
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClientV2
 from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import AccountNotFoundError, InterfaceError
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-
-if TYPE_CHECKING:
-    pass
 
 ENGINE_STATUS_RUNNING = "Running"
 

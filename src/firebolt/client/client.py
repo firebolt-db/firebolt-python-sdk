@@ -350,7 +350,7 @@ class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
         if self.account_name:
             response = await self.get(
                 url=ACCOUNT_BY_NAME_URL_V1, params={"account_name": self.account_name}
-            )  # TODO: url here might be incorrect
+            )
             if response.status_code == HttpxCodes.NOT_FOUND:
                 raise AccountNotFoundError(self.account_name)
             # process all other status codes

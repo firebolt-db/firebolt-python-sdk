@@ -96,12 +96,11 @@ class SharedCursor(BaseCursor):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ):
-            if not self.is_engine_running(self.connection.engine_url):
-                raise EngineNotRunningError(
-                    f"Firebolt engine {self.connection.engine_url} "
-                    "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
-                )
+        ) and not self.is_engine_running(self.connection.engine_url):
+            raise EngineNotRunningError(
+                f"Firebolt engine {self.connection.engine_url} "
+                "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
+            )
         resp.raise_for_status()
 
     def _api_request(
