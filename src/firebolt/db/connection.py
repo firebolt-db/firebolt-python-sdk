@@ -378,7 +378,7 @@ def connect_v1(
         # resolve or get an engine url.
         # We need to manually validate account_name if none of the above
         # cases are triggered.
-        no_engine_client.account_id
+        assert no_engine_client.account_id is not None
 
     assert engine_url is not None
 
