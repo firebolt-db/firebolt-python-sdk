@@ -108,12 +108,11 @@ class SharedCursor(BaseCursor):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ):
-            if not await self.is_engine_running(self.connection.engine_url):
-                raise EngineNotRunningError(
-                    f"Firebolt engine {self.connection.engine_url} "
-                    "needs to be running to run queries against it."
-                )
+        ) and not await self.is_engine_running(self.connection.engine_url):
+            raise EngineNotRunningError(
+                f"Firebolt engine {self.connection.engine_url} "
+                "needs to be running to run queries against it."
+            )
         resp.raise_for_status()
 
     async def _validate_set_parameter(self, parameter: SetParameter) -> None:
@@ -147,7 +146,6 @@ class SharedCursor(BaseCursor):
         )
         try:
             for query in queries:
-
                 start_time = time.time()
                 # Our CREATE EXTERNAL TABLE queries currently require credentials,
                 # so we will skip logging those queries.
