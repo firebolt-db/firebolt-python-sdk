@@ -108,7 +108,8 @@ def account_id_callback(
     ) -> Response:
         if "account_name" not in request.url.params:
             return Response(
-                status_code=httpx.codes.OK, json={"account": {"id": account_id}}
+                status_code=httpx.codes.OK,
+                json={"account": {"id": account_id, "name": account_name}},
             )
         # In this case, an account_name *should* be specified.
         if request.url.params["account_name"] != account_name:

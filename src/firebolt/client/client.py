@@ -1,7 +1,6 @@
 from json import JSONDecodeError
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
-from async_property import async_cached_property  # type: ignore
 from httpx import URL
 from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
@@ -275,8 +274,9 @@ class AsyncClientV2(FireboltClientMixin, HttpxAsyncClient):
             api_endpoint=api_endpoint,
             **kwargs,
         )
+        self.acount_id_cache: Dict[str, str] = {}
 
-    @async_cached_property
+    @property
     async def account_id(self) -> str:
         """User account ID.
 
@@ -289,6 +289,10 @@ class AsyncClientV2(FireboltClientMixin, HttpxAsyncClient):
         Raises:
             AccountNotFoundError: No account found with provided name
         """
+        # manual caching to avoid async_cached_property issues
+        if self.account_name in self.acount_id_cache:
+            return self.acount_id_cache[self.account_name]
+
         response = await self.get(
             url=self._api_endpoint.copy_with(
                 path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
@@ -299,7 +303,11 @@ class AsyncClientV2(FireboltClientMixin, HttpxAsyncClient):
             raise AccountNotFoundError(self.account_name)
         # process all other status codes
         response.raise_for_status()
-        return response.json()["id"]
+        account_id = response.json()["id"]
+        # cache for future use
+        if self.account_name:
+            self.acount_id_cache[self.account_name] = account_id
+        return account_id
 
     async def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any
@@ -332,9 +340,10 @@ class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
             api_endpoint=api_endpoint,
             **kwargs,
         )
+        self.acount_id_cache: Dict[str, str] = {}
         self._auth_endpoint = URL(fix_url_schema(api_endpoint))
 
-    @async_cached_property
+    @property
     async def account_id(self) -> str:
         """User account ID.
 
@@ -347,6 +356,10 @@ class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
         Raises:
             AccountNotFoundError: No account found with provided name
         """
+        # manual caching to avoid async_cached_property issues
+        if self.account_name in self.acount_id_cache:
+            return self.acount_id_cache[self.account_name]
+
         if self.account_name:
             response = await self.get(
                 url=ACCOUNT_BY_NAME_URL_V1, params={"account_name": self.account_name}
@@ -355,10 +368,16 @@ class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
                 raise AccountNotFoundError(self.account_name)
             # process all other status codes
             response.raise_for_status()
-            return response.json()["account_id"]
-
-        # account_name isn't set; use the default account.
-        return (await self.get(url=ACCOUNT_URL)).json()["account"]["id"]
+            account_id = response.json()["account_id"]
+        else:
+            # account_name isn't set; use the default account.
+            account_response = (await self.get(url=ACCOUNT_URL)).json()["account"]
+            account_id = account_response["id"]
+            self.account_name = account_response["name"]
+            assert self.account_name is not None  # type check
+        # cache for future use
+        self.acount_id_cache[self.account_name] = account_id
+        return account_id
 
     async def _get_database_default_engine_url(
         self,

@@ -441,10 +441,6 @@ async def test_connect_no_user_agent(
         ut.assert_called_once_with([], [])
 
 
-# TODO: fix this
-@mark.skip(
-    reason="Fails other tests by messing with async_cached_property",
-)
 def test_from_asyncio(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
