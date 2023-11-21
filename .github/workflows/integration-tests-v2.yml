@@ -1,4 +1,4 @@
-name: Integration tests
+name: Integration tests FB 2.0
 on:
   workflow_dispatch:
     inputs:
@@ -37,12 +37,12 @@ jobs:
         uses: actions/checkout@v2
         with:
           ref: ${{ inputs.branch }}
-    
+
       - name: Set up Python 3.7
         uses: actions/setup-python@v2
         with:
           python-version: 3.7
-    
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
@@ -77,4 +77,4 @@ jobs:
           API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
           ACCOUNT_NAME: "developer"
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1"
