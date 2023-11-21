@@ -1,4 +1,4 @@
-name: v0.x Nightly code check
+name: v1 Nightly code check
 on:
   workflow_dispatch:
   schedule:
@@ -6,19 +6,13 @@ on:
 jobs:
   code-check:
     uses: ./.github/workflows/code-check.yml
-    with:
-      branch: 0.x
   unit-tests:
     uses: ./.github/workflows/unit-tests.yml
-    with:
-      branch: 0.x
     secrets:
       GIST_PAT: ${{ secrets.GIST_PAT }}
   security-scan:
     needs: [unit-tests]
     uses: ./.github/workflows/security-scan.yml
-    with:
-      branch: 0.x
     secrets:
       FOSSA_TOKEN: ${{ secrets.FOSSA_TOKEN }}
       SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
@@ -33,8 +27,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
-        with:
-          ref: 0.x
 
       - name: Set up Python 3.7
         uses: actions/setup-python@v2
@@ -73,7 +65,7 @@ jobs:
           ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V2"
 
       - name: Slack Notify of failure
         if: failure()

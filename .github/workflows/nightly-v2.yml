@@ -1,4 +1,4 @@
-name: Nightly code check
+name: v2 Nightly code check
 on:
   workflow_dispatch:
   schedule:
@@ -62,7 +62,7 @@ jobs:
           ACCOUNT_NAME: "developer"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V1"
 
       - name: Slack Notify of failure
         if: failure()
