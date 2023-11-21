@@ -2,7 +2,7 @@ from collections import namedtuple
 
 from firebolt.client.auth import Auth
 from firebolt.service.manager import ResourceManager
-from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
 
 
 def make_engine_name(database_name: str, suffix: str) -> str:
