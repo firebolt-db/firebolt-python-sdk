@@ -1,7 +1,7 @@
 from pytest import mark
 
 from firebolt.service.manager import ResourceManager
-from firebolt.service.types_v1 import EngineStatusSummary
+from firebolt.service.V1.types import EngineStatusSummary
 
 
 def make_engine_name(database_name: str, suffix: str) -> str:

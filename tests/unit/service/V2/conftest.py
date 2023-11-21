@@ -12,7 +12,7 @@ from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine
 from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.manager import ResourceManager
-from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
 from firebolt.utils.urls import ACCOUNT_INSTANCE_TYPES_URL
 from tests.unit.util import list_to_paginated_response
 

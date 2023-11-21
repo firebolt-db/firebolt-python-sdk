@@ -3,8 +3,8 @@ from typing import List, Optional, Union
 
 from firebolt.model.V2.engine import Database, Engine
 from firebolt.model.V2.instance_type import InstanceType
-from firebolt.service.base import BaseService
-from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.service.V2.base import BaseService
+from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
 from firebolt.utils.exception import EngineNotFoundError
 
 logger = getLogger(__name__)

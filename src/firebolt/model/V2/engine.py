@@ -18,14 +18,14 @@ from firebolt.db import Connection, connect
 from firebolt.model.V2 import FireboltBaseModel
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.instance_type import InstanceType
-from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
 from firebolt.utils.exception import (
     DatabaseNotFoundError,
     NoAttachedDatabaseError,
 )
 
 if TYPE_CHECKING:
-    from firebolt.service.engine import EngineService
+    from firebolt.service.V2.engine import EngineService
 
 logger = logging.getLogger(__name__)
 

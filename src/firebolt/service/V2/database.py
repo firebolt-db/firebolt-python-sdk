@@ -3,7 +3,7 @@ from typing import List, Optional, Union
 
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine
-from firebolt.service.base import BaseService
+from firebolt.service.V2.base import BaseService
 from firebolt.utils.exception import DatabaseNotFoundError
 
 logger = logging.getLogger(__name__)

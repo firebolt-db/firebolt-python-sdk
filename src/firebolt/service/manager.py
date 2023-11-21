@@ -120,9 +120,9 @@ class ResourceManager:
 
     def _init_services_v2(self) -> None:
         # avoid circular import
-        from firebolt.service.database import DatabaseService
-        from firebolt.service.engine import EngineService
-        from firebolt.service.instance_type import InstanceTypeService
+        from firebolt.service.V2.database import DatabaseService
+        from firebolt.service.V2.engine import EngineService
+        from firebolt.service.V2.instance_type import InstanceTypeService
 
         # Cloud Platform Resources (AWS)
         self.instance_types = InstanceTypeService(resource_manager=self)
@@ -133,7 +133,7 @@ class ResourceManager:
 
     def _init_services_v1(self) -> None:
         # avoid circular import
-        from firebolt.service.engine_v1 import EngineService
+        from firebolt.service.V1.engine import EngineService
 
         self.engines = EngineService(resource_manager=self)  # type: ignore
 

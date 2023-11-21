@@ -6,7 +6,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine
 from firebolt.service.manager import ResourceManager
-from firebolt.service.types import EngineType
+from firebolt.service.V2.types import EngineType
 from firebolt.utils.exception import (
     EngineNotFoundError,
     NoAttachedDatabaseError,

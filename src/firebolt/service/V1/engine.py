@@ -2,7 +2,7 @@ from logging import getLogger
 from typing import List
 
 from firebolt.model.V1.engine import Engine
-from firebolt.service.base_v1 import BaseService
+from firebolt.service.V1.base import BaseService
 from firebolt.utils.urls import (
     ACCOUNT_ENGINE_ID_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,

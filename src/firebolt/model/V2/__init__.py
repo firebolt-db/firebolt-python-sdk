@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass, field, fields
 from typing import ClassVar, Dict, Optional, Type, TypeVar
 
-from firebolt.service.base import BaseService
+from firebolt.service.V2.base import BaseService
 
 Model = TypeVar("Model", bound="FireboltBaseModel")
 

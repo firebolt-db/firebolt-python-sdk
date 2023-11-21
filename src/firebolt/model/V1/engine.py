@@ -10,7 +10,7 @@ from pydantic import Field, PrivateAttr
 from firebolt.model.V1 import FireboltBaseModel
 from firebolt.model.V1.engine_revision import EngineRevisionKey
 from firebolt.model.V1.region import RegionKey
-from firebolt.service.types_v1 import (
+from firebolt.service.V1.types import (
     EngineStatus,
     EngineStatusSummary,
     EngineType,
@@ -22,7 +22,7 @@ from firebolt.utils.urls import (
 )
 
 if TYPE_CHECKING:
-    from firebolt.service.engine_v1 import EngineService
+    from firebolt.service.V1.engine import EngineService
 
 logger = logging.getLogger(__name__)
 
