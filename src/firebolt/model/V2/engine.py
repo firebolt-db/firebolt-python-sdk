@@ -15,9 +15,9 @@ from typing import (
 )
 
 from firebolt.db import Connection, connect
-from firebolt.model import FireboltBaseModel
-from firebolt.model.database import Database
-from firebolt.model.instance_type import InstanceType
+from firebolt.model.V2 import FireboltBaseModel
+from firebolt.model.V2.database import Database
+from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.types import EngineStatus, EngineType, WarmupMethod
 from firebolt.utils.exception import (
     DatabaseNotFoundError,

@@ -45,6 +45,14 @@ class ServiceAccount(_RequestBasedAuth):
         self.client_secret = client_secret
         super().__init__(use_token_cache)
 
+    def get_firebolt_version(self) -> int:
+        """Get Firebolt version from auth.
+
+        Returns:
+            int: Firebolt version
+        """
+        return 1
+
     def copy(self) -> "ServiceAccount":
         """Make another auth object with same credentials.
 

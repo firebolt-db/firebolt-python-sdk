@@ -1,8 +1,8 @@
 import logging
 from typing import List, Optional, Union
 
-from firebolt.model.database import Database
-from firebolt.model.engine import Engine
+from firebolt.model.V2.database import Database
+from firebolt.model.V2.engine import Engine
 from firebolt.service.base import BaseService
 from firebolt.utils.exception import DatabaseNotFoundError
 

@@ -2,7 +2,7 @@ from typing import Callable, List
 
 from pytest_httpx import HTTPXMock
 
-from firebolt.model.instance_type import InstanceType
+from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.manager import ResourceManager
 
 

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Dict
 
-from firebolt.model import FireboltBaseModel
+from firebolt.model.V2 import FireboltBaseModel
 
 
 @dataclass

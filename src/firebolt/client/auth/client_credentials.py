@@ -55,6 +55,14 @@ class ClientCredentials(_RequestBasedAuth):
             self.client_id, self.client_secret, self._use_token_cache
         )
 
+    def get_firebolt_version(self) -> int:
+        """Get Firebolt version from auth.
+
+        Returns:
+            int: Firebolt version
+        """
+        return 2
+
     @cached_property
     def _token_storage(self) -> Optional[TokenSecureStorage]:
         """Token filesystem cache storage.

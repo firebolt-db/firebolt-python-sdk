@@ -3,8 +3,8 @@ from typing import Callable
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.model.database import Database
-from firebolt.model.engine import Engine
+from firebolt.model.V2.database import Database
+from firebolt.model.V2.engine import Engine
 from firebolt.service.manager import ResourceManager
 from firebolt.utils.exception import AttachedEngineInUseError
 

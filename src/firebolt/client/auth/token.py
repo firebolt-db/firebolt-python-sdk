@@ -23,6 +23,14 @@ class Token(Auth):
         super().__init__(use_token_cache=False)
         self._token = token
 
+    def get_firebolt_version(self) -> int:
+        """Get Firebolt version from auth.
+
+        Returns:
+            int: Firebolt version
+        """
+        return 1
+
     def copy(self) -> "Token":
         """Make another auth object with same credentials.
 

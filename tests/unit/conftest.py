@@ -8,6 +8,8 @@ from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials, UsernamePassword
 from firebolt.client.client import ClientV2
+from firebolt.common.settings import Settings
+from firebolt.model.V1.region import Region
 from firebolt.utils.exception import (
     AccountNotFoundError,
     DatabaseError,
@@ -290,3 +292,23 @@ def check_credentials_callback(
         )
 
     return check_credentials
+
+
+## Deprecated
+
+
+@fixture
+def region_1() -> Region:
+    return "us-east-1"
+
+
+@fixture
+def settings(
+    server: str, region_1: str, username_password_auth: Auth, account_name: str
+) -> Settings:
+    return Settings(
+        server=server,
+        auth=username_password_auth,
+        default_region=region_1,
+        account_name=account_name,
+    )

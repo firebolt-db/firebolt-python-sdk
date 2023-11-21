@@ -5,12 +5,12 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, List
 
-from firebolt.model import FireboltBaseModel
+from firebolt.model.V2 import FireboltBaseModel
 from firebolt.service.types import EngineStatus
 from firebolt.utils.exception import AttachedEngineInUseError
 
 if TYPE_CHECKING:
-    from firebolt.model.engine import Engine
+    from firebolt.model.V2.engine import Engine
     from firebolt.service.database import DatabaseService
 
 logger = logging.getLogger(__name__)

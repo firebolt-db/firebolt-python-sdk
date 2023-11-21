@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from firebolt.model.instance_type import InstanceType
+from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.base import BaseService
 from firebolt.utils.exception import InstanceTypeNotFoundError
 from firebolt.utils.urls import ACCOUNT_INSTANCE_TYPES_URL

@@ -13,9 +13,6 @@ from firebolt.async_db.cursor import CursorV1, CursorV2, SharedCursor
 from firebolt.async_db.util import _get_system_engine_url
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
-from firebolt.client.auth.client_credentials import ClientCredentials
-from firebolt.client.auth.token import Token
-from firebolt.client.auth.username_password import UsernamePassword
 from firebolt.client.client import AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
@@ -198,7 +195,8 @@ async def connect(
     user_agent_header = get_user_agent_header(user_drivers, user_clients)
     # Use v2 if auth is ClientCredentials
     # Use v1 if auth is ServiceAccount or UsernamePassword
-    if isinstance(auth, ClientCredentials):
+    version = auth.get_firebolt_version()
+    if version == 2:
         assert account_name is not None
         return await connect_v2(
             auth=auth,
@@ -208,7 +206,7 @@ async def connect(
             engine_name=engine_name,
             api_endpoint=api_endpoint,
         )
-    elif isinstance(auth, (Token, UsernamePassword)):
+    elif version == 1:
         return await connect_v1(
             auth=auth,
             user_agent_header=user_agent_header,

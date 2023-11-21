@@ -13,9 +13,6 @@ from httpx import HTTPTransport, Timeout
 
 from firebolt.client import DEFAULT_API_URL, ClientV2
 from firebolt.client.auth import Auth
-from firebolt.client.auth.client_credentials import ClientCredentials
-from firebolt.client.auth.token import Token
-from firebolt.client.auth.username_password import UsernamePassword
 from firebolt.client.client import ClientV1
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
@@ -99,9 +96,10 @@ def connect(
     user_drivers = additional_parameters.get("user_drivers", [])
     user_clients = additional_parameters.get("user_clients", [])
     user_agent_header = get_user_agent_header(user_drivers, user_clients)
+    version = auth.get_firebolt_version()
     # Use v2 if auth is ClientCredentials
     # Use v1 if auth is ServiceAccount or UsernamePassword
-    if isinstance(auth, ClientCredentials):
+    if version == 2:
         assert account_name is not None
         return connect_v2(
             auth=auth,
@@ -111,7 +109,7 @@ def connect(
             engine_name=engine_name,
             api_endpoint=api_endpoint,
         )
-    elif isinstance(auth, (Token, UsernamePassword)):
+    elif version == 1:
         return connect_v1(
             auth=auth,
             user_agent_header=user_agent_header,

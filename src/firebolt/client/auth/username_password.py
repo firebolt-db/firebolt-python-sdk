@@ -45,6 +45,14 @@ class UsernamePassword(_RequestBasedAuth):
         self.password = password
         super().__init__(use_token_cache)
 
+    def get_firebolt_version(self) -> int:
+        """Get Firebolt version from auth.
+
+        Returns:
+            int: Firebolt version
+        """
+        return 1
+
     def copy(self) -> "UsernamePassword":
         """Make another auth object with same credentials.
 

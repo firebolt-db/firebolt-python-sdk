@@ -6,7 +6,7 @@ from httpx import Request, Response
 from firebolt.client import AsyncClientV2 as AsyncClient
 from firebolt.client import ClientV2
 from firebolt.client.auth import Auth
-from firebolt.model import FireboltBaseModel
+from firebolt.model.V2 import FireboltBaseModel
 
 
 def field_name(f: Field) -> str:

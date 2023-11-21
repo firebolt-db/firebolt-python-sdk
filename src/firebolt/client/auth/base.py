@@ -55,6 +55,14 @@ class Auth(HttpxAuth):
         """
         return self._token
 
+    def get_firebolt_version(self) -> int:
+        """Get Firebolt version from auth.
+
+        Returns:
+            int: Firebolt version
+        """
+        return -1
+
     @property
     def expired(self) -> bool:
         """Check if current token is expired.
