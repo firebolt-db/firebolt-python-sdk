@@ -1,0 +1,20 @@
+ERROR    trio.async_generator_errors:_asyncgens.py:193 Exception ignored during finalization of async generator 'firebolt.client.auth.base.Auth.async_auth_flow' -- surround your use of the generator in 'async with aclosing(...):' to raise exceptions like this in the context where they're generated
+Traceback (most recent call last):
+  File "/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/client/auth/base.py", line 144, in async_auth_flow
+    response = yield request
+GeneratorExit
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/trio/_core/_asyncgens.py", line 187, in _finalize_one
+    await agen.aclose()
+  File "/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/client/auth/base.py", line 144, in async_auth_flow
+    response = yield request
+  File "/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/trio/_sync.py", line 97, in __aexit__
+    self.release()
+  File "/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/trio/_core/_ki.py", line 169, in wrapper
+    return fn(*args, **kwargs)
+  File "/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/trio/_sync.py", line 545, in release
+    raise RuntimeError("can't release a Lock you don't own")
+RuntimeError: can't release a Lock you don't own
