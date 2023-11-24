@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from abc import ABCMeta, abstractmethod
 from functools import wraps
 from types import TracebackType
 from typing import (
@@ -57,7 +58,7 @@ from firebolt.utils.util import Timer
 logger = logging.getLogger(__name__)
 
 
-class SharedCursor(BaseCursor):
+class Cursor(BaseCursor, metaclass=ABCMeta):
     """
     Class, responsible for executing queries to Firebolt Database.
     Should not be created directly,
@@ -82,6 +83,7 @@ class SharedCursor(BaseCursor):
         self._client = client
         self.connection = connection
 
+    @abstractmethod
     async def _api_request(
         self,
         query: str = "",
@@ -89,7 +91,7 @@ class SharedCursor(BaseCursor):
         path: str = "",
         use_set_parameters: bool = True,
     ) -> Response:
-        raise NotImplementedError
+        ...
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -324,13 +326,15 @@ class SharedCursor(BaseCursor):
             return QueryStatus.NOT_READY
         return QueryStatus[resp_json["status"]]
 
+    @abstractmethod
     async def is_db_available(self, database: str) -> bool:
         """Verify that the database exists."""
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     async def is_engine_running(self, engine_url: str) -> bool:
         """Verify that the engine is running."""
-        raise NotImplementedError
+        ...
 
     @wraps(BaseCursor.fetchone)
     async def fetchone(self) -> Optional[List[ColType]]:
@@ -366,16 +370,16 @@ class SharedCursor(BaseCursor):
     # Iteration support
     @check_not_closed
     @check_query_executed
-    def __aiter__(self) -> SharedCursor:
+    def __aiter__(self) -> Cursor:
         return self
 
     # TODO: figure out how to implement __aenter__ and __await__
     @check_not_closed
-    def __aenter__(self) -> SharedCursor:
+    def __aenter__(self) -> Cursor:
         return self
 
     @check_not_closed
-    def __enter__(self) -> SharedCursor:
+    def __enter__(self) -> Cursor:
         return self
 
     def __exit__(
@@ -400,7 +404,7 @@ class SharedCursor(BaseCursor):
         return row
 
 
-class CursorV2(SharedCursor):
+class CursorV2(Cursor):
     def __init__(
         self,
         *args: Any,
@@ -507,7 +511,7 @@ class CursorV2(SharedCursor):
         return str(engine_url), str(status), str(database)  # Mypy check
 
 
-class CursorV1(SharedCursor):
+class CursorV1(Cursor):
     def __init__(
         self,
         *args: Any,

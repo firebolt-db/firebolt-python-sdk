@@ -1,5 +1,5 @@
 from firebolt.async_db.connection import Connection, connect
-from firebolt.async_db.cursor import CursorV1, CursorV2
+from firebolt.async_db.cursor import Cursor
 from firebolt.common._types import (
     ARRAY,
     BINARY,

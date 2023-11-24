@@ -1,4 +1,5 @@
 from json import JSONDecodeError
+from abc import ABCMeta, abstractmethod
 from typing import Any, Dict, Optional
 
 from httpx import URL
@@ -81,7 +82,14 @@ class FireboltClientMixin(FireboltClientMixinBase):
         return url
 
 
-class ClientV2(FireboltClientMixin, HttpxClient):
+class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    def account_id(self) -> str:
+        ...
+
+
+class ClientV2(Client):
     """An HTTP client, based on httpx.Client.
 
     Handles the authentication for Firebolt database.
@@ -138,7 +146,7 @@ class ClientV2(FireboltClientMixin, HttpxClient):
         )
 
 
-class ClientV1(FireboltClientMixin, HttpxClient):
+class ClientV1(Client):
     """An HTTP client, based on httpx.Client.
 
     Handles the authentication for Firebolt database.
@@ -251,7 +259,14 @@ class ClientV1(FireboltClientMixin, HttpxClient):
         )
 
 
-class AsyncClientV2(FireboltClientMixin, HttpxAsyncClient):
+class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
+    @property
+    @abstractmethod
+    async def account_id(self) -> str:
+        ...
+
+
+class AsyncClientV2(AsyncClient):
     """An HTTP client, based on httpx.Client.
 
     Handles the authentication for Firebolt database.
@@ -317,7 +332,7 @@ class AsyncClientV2(FireboltClientMixin, HttpxAsyncClient):
         )
 
 
-class AsyncClientV1(FireboltClientMixin, HttpxAsyncClient):
+class AsyncClientV1(AsyncClient):
     """An HTTP client, based on httpx.Client.
 
     Handles the authentication for Firebolt database.

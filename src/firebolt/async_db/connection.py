@@ -6,14 +6,13 @@ from typing import Any, Dict, List, Optional, Type
 
 from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
-from httpx import AsyncClient as HttpxAsyncClient
 from httpx import AsyncHTTPTransport, Timeout
 
-from firebolt.async_db.cursor import CursorV1, CursorV2, SharedCursor
+from firebolt.async_db.cursor import CursorV1, CursorV2, Cursor
 from firebolt.async_db.util import _get_system_engine_url
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
-from firebolt.client.client import AsyncClientV1, AsyncClientV2
+from firebolt.client.client import AsyncClientV1, AsyncClientV2, AsyncClient
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -100,7 +99,7 @@ class Connection(BaseConnection):
     """
 
     client_class: type
-    cursor_type: Type[SharedCursor]
+    cursor_type: Type[Cursor]
     __slots__ = (
         "_client",
         "_cursors",
@@ -117,8 +116,8 @@ class Connection(BaseConnection):
         self,
         engine_url: str,
         database: Optional[str],
-        client: HttpxAsyncClient,
-        cursor_type: Type[SharedCursor],
+        client: AsyncClient,
+        cursor_type: Type[Cursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str,
     ):
@@ -127,14 +126,14 @@ class Connection(BaseConnection):
         self.engine_url = engine_url
         self.database = database
         self.cursor_type = cursor_type
-        self._cursors: List[SharedCursor] = []
+        self._cursors: List[Cursor] = []
         self._system_engine_connection = system_engine_connection
         # Override tcp keepalive settings for connection
         transport = AsyncHTTPTransport()
         transport._pool._network_backend = OverriddenHttpBackend()
         self._client = client
 
-    def cursor(self, **kwargs: Any) -> SharedCursor:
+    def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 

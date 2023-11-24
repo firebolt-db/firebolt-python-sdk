@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from abc import ABCMeta, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -15,11 +16,9 @@ from typing import (
 )
 
 from httpx import URL
-from httpx import Client as HttpxClient
 from httpx import Response, codes
 
-from firebolt.client import ClientV2
-from firebolt.client.client import ClientV1
+from firebolt.client import ClientV2, ClientV1, Client
 from firebolt.common._types import (
     ColType,
     Column,
@@ -54,7 +53,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SharedCursor(BaseCursor):
+class Cursor(BaseCursor, metaclass=ABCMeta):
     """
     Class, responsible for executing queries to Firebolt Database.
     Should not be created directly,
@@ -71,7 +70,7 @@ class SharedCursor(BaseCursor):
     def __init__(
         self,
         *args: Any,
-        client: HttpxClient,
+        client: Client,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
@@ -103,6 +102,7 @@ class SharedCursor(BaseCursor):
             )
         resp.raise_for_status()
 
+    @abstractmethod
     def _api_request(
         self,
         query: str = "",
@@ -110,7 +110,7 @@ class SharedCursor(BaseCursor):
         path: str = "",
         use_set_parameters: bool = True,
     ) -> Response:
-        raise NotImplementedError
+        ...
 
     def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
@@ -315,13 +315,15 @@ class SharedCursor(BaseCursor):
             return QueryStatus.NOT_READY
         return QueryStatus[resp_json["status"]]
 
+    @abstractmethod
     def is_db_available(self, database: str) -> bool:
         """Verify that the database exists."""
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def is_engine_running(self, engine_url: str) -> bool:
         """Verify that the engine is running."""
-        raise NotImplementedError
+        ...
 
     @check_not_closed
     def cancel(self, query_id: str) -> None:
@@ -343,13 +345,13 @@ class SharedCursor(BaseCursor):
             yield row
 
     @check_not_closed
-    def __enter__(self) -> SharedCursor:
+    def __enter__(self) -> Cursor:
         return self
 
 
-class CursorV2(SharedCursor):
+class CursorV2(Cursor):
     def __init__(
-        self, *args: Any, client: ClientV2, connection: Connection, **kwargs: Any
+        self, *args: Any, client: Client, connection: Connection, **kwargs: Any
     ) -> None:
         assert isinstance(client, ClientV2)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
@@ -451,7 +453,7 @@ class CursorV2(SharedCursor):
             return str(engine_url), str(status), str(database)  # Mypy check
 
 
-class CursorV1(SharedCursor):
+class CursorV1(Cursor):
     def __init__(
         self, *args: Any, client: ClientV1, connection: Connection, **kwargs: Any
     ) -> None:

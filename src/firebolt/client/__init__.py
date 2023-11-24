@@ -1,7 +1,9 @@
 from firebolt.client.auth import Auth  # backward compatibility
 from firebolt.client.client import (
+    AsyncClient,
     AsyncClientV1,
     AsyncClientV2,
+    Client,
     ClientV1,
     ClientV2,
 )
