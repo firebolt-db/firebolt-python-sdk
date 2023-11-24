@@ -6,9 +6,7 @@ from typing import Dict
 import httpx
 from pytest import fixture
 
-from firebolt.async_db import ARRAY, DECIMAL, Connection
-from firebolt.async_db import Cursor
-from firebolt.async_db import connect
+from firebolt.async_db import ARRAY, DECIMAL, Connection, Cursor, connect
 from firebolt.client import AsyncClientV1 as Client
 from firebolt.client.auth.base import Auth
 from firebolt.client.auth.username_password import UsernamePassword

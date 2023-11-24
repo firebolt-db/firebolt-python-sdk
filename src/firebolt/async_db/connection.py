@@ -8,11 +8,11 @@ from httpcore.backends.auto import AutoBackend
 from httpcore.backends.base import AsyncNetworkStream
 from httpx import AsyncHTTPTransport, Timeout
 
-from firebolt.async_db.cursor import CursorV1, CursorV2, Cursor
+from firebolt.async_db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.async_db.util import _get_system_engine_url
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
-from firebolt.client.client import AsyncClientV1, AsyncClientV2, AsyncClient
+from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
     DEFAULT_TIMEOUT_SECONDS,

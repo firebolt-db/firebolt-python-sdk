@@ -10,7 +10,7 @@ from httpcore.backends.base import NetworkStream
 from httpcore.backends.sync import SyncBackend
 from httpx import HTTPTransport, Timeout
 
-from firebolt.client import DEFAULT_API_URL, ClientV2, ClientV1, Client
+from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.settings import (
@@ -18,7 +18,7 @@ from firebolt.common.settings import (
     KEEPALIVE_FLAG,
     KEEPIDLE_RATE,
 )
-from firebolt.db.cursor import CursorV1, CursorV2, Cursor
+from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url
 from firebolt.utils.exception import (
     ConfigurationError,

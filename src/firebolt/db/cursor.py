@@ -15,10 +15,9 @@ from typing import (
     Union,
 )
 
-from httpx import URL
-from httpx import Response, codes
+from httpx import URL, Response, codes
 
-from firebolt.client import ClientV2, ClientV1, Client
+from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import (
     ColType,
     Column,

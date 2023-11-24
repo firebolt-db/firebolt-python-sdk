@@ -1,5 +1,5 @@
-from json import JSONDecodeError
 from abc import ABCMeta, abstractmethod
+from json import JSONDecodeError
 from typing import Any, Dict, Optional
 
 from httpx import URL
@@ -83,7 +83,7 @@ class FireboltClientMixin(FireboltClientMixinBase):
 
 
 class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
-    @property
+    @cached_property
     @abstractmethod
     def account_id(self) -> str:
         ...
