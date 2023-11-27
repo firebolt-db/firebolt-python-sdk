@@ -3,9 +3,11 @@ from functools import lru_cache
 from os import environ
 from time import time
 from types import TracebackType
-from typing import TYPE_CHECKING, Callable, Type, TypeVar
+from typing import TYPE_CHECKING, Callable, Optional, Type, TypeVar
 
 from httpx import URL
+
+from firebolt.utils.exception import ConfigurationError
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
@@ -104,6 +106,15 @@ def merge_urls(base: URL, merge: URL) -> URL:
         merge_raw_path = base.raw_path + merge.raw_path.lstrip(b"/")
         return base.copy_with(raw_path=merge_raw_path)
     return merge
+
+
+def validate_engine_name_and_url_v1(
+    engine_name: Optional[str], engine_url: Optional[str]
+) -> None:
+    if engine_name and engine_url:
+        raise ConfigurationError(
+            "Both engine_name and engine_url are provided. Provide only one to connect."
+        )
 
 
 class Timer:

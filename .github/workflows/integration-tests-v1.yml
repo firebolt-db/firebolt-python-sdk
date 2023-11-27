@@ -1,0 +1,109 @@
+name: Integration tests FB 1.0
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run the tests against'
+        type: choice
+        required: true
+        default: 'dev'
+        options:
+          - dev
+          - staging
+  workflow_call:
+    inputs:
+      environment:
+        default: 'staging'
+        required: false
+        type: string
+      branch:
+        required: false
+        type: string
+        description: 'Branch to run on'
+    secrets:
+      FIREBOLT_USERNAME:
+        required: true
+      FIREBOLT_PASSWORD:
+        required: true
+      FIREBOLT_STG_USERNAME:
+        required: true
+      FIREBOLT_STG_PASSWORD:
+        required: true
+      SERVICE_ID:
+        required: true
+      SERVICE_SECRET:
+        required: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+
+      - name: Determine env variables
+        run: |
+          if [ "${{ inputs.environment }}" == 'staging' ]; then
+              echo "USERNAME=${{ secrets.FIREBOLT_STG_USERNAME }}" >> "$GITHUB_ENV"
+              echo "PASSWORD=${{ secrets.FIREBOLT_STG_PASSWORD }}" >> "$GITHUB_ENV"
+              echo "CLIENT_ID=${{ secrets.SERVICE_ID_STG }}" >> "$GITHUB_ENV"
+              echo "CLIENT_SECRET=${{ secrets.SERVICE_SECRET_STG }}" >> "$GITHUB_ENV"
+          else
+              echo "USERNAME=${{ secrets.FIREBOLT_USERNAME }}" >> "$GITHUB_ENV"
+              echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD }}" >> "$GITHUB_ENV"
+              echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID }}" >> "$GITHUB_ENV"
+              echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Setup database and engine
+        id: setup
+        uses: firebolt-db/integration-testing-setup@v1
+        with:
+          firebolt-username: ${{ env.USERNAME }}
+          firebolt-password: ${{ env.PASSWORD }}
+          api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
+          region: "us-east-1"
+
+      - name: Restore cached failed tests
+        id: cache-tests-restore
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            .pytest_cache/v/cache/lastfailed
+          key: ${{ runner.os }}-pytest-restore-failed-${{ github.ref }}-${{ github.sha }}
+
+      - name: Run integration tests
+        env:
+          USER_NAME: ${{ env.USERNAME }}
+          PASSWORD: ${{ env.PASSWORD }}
+          SERVICE_ID: ${{ env.CLIENT_ID }}
+          SERVICE_SECRET: ${{ env.CLIENT_SECRET }}
+          DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
+          ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
+          ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
+          STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
+          STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
+          API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
+          ACCOUNT_NAME: "firebolt"
+        run: |
+          pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration -k "not V2"
+
+      - name: Save failed tests
+        id: cache-tests-save
+        uses: actions/cache/save@v3
+        if: failure()
+        with:
+          path: |
+            .pytest_cache/v/cache/lastfailed
+          key: ${{ steps.cache-tests-restore.outputs.cache-primary-key }}

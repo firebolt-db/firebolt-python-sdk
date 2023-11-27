@@ -6,7 +6,10 @@ from httpx import Request, Response
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.client.auth import Auth, ClientCredentials
+from firebolt.client.auth import Auth, ClientCredentials, UsernamePassword
+from firebolt.client.client import ClientV2
+from firebolt.common.settings import Settings
+from firebolt.model.V1.region import Region
 from firebolt.utils.exception import (
     AccountNotFoundError,
     DatabaseError,
@@ -86,8 +89,36 @@ def access_token_2() -> str:
 
 
 @fixture
+def user() -> str:
+    return "mock_user"
+
+
+@fixture
+def password() -> str:
+    return "mock_password"
+
+
+@fixture
 def auth(client_id: str, client_secret: str) -> Auth:
     return ClientCredentials(client_id, client_secret)
+
+
+@fixture
+def username_password_auth(user: str, password: str) -> Auth:
+    return UsernamePassword(user, password)
+
+
+@fixture
+def client(
+    server: str,
+    account_name: str,
+    auth: Auth,
+) -> ClientV2:
+    return ClientV2(
+        account_name=account_name,
+        auth=auth,
+        api_endpoint=server,
+    )
 
 
 @fixture
@@ -261,3 +292,23 @@ def check_credentials_callback(
         )
 
     return check_credentials
+
+
+## Deprecated
+
+
+@fixture
+def region_1() -> Region:
+    return "us-east-1"
+
+
+@fixture
+def settings(
+    server: str, region_1: str, username_password_auth: Auth, account_name: str
+) -> Settings:
+    return Settings(
+        server=server,
+        auth=username_password_auth,
+        default_region=region_1,
+        account_name=account_name,
+    )

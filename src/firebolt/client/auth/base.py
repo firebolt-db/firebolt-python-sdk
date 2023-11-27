@@ -1,9 +1,9 @@
 from time import time
 from typing import AsyncGenerator, Generator, Optional
 
+from anyio import Lock
 from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
-from trio import Lock
 
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.util import Timer, cached_property
@@ -54,6 +54,14 @@ class Auth(HttpxAuth):
             Optional[str]: Acquired token
         """
         return self._token
+
+    def get_firebolt_version(self) -> int:
+        """Get Firebolt version from auth.
+
+        Returns:
+            int: Firebolt version
+        """
+        return -1
 
     @property
     def expired(self) -> bool:

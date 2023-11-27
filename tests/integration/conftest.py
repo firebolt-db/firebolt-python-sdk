@@ -4,6 +4,7 @@ from os import environ
 from pytest import fixture
 
 from firebolt.client.auth import ClientCredentials
+from firebolt.client.auth.username_password import UsernamePassword
 
 LOGGER = getLogger(__name__)
 
@@ -14,6 +15,10 @@ ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
+USER_NAME_ENV = "USER_NAME"
+PASSWORD_ENV = "PASSWORD"
+ENGINE_URL_ENV = "ENGINE_URL"
+STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
 
 
 class Secret:
@@ -79,3 +84,28 @@ def service_secret() -> Secret:
 @fixture(scope="session")
 def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
     return ClientCredentials(service_id, service_secret.value)
+
+
+@fixture(scope="session")
+def username() -> str:
+    return must_env(USER_NAME_ENV)
+
+
+@fixture(scope="session")
+def password() -> str:
+    return Secret(must_env(PASSWORD_ENV))
+
+
+@fixture(scope="session")
+def password_auth(username: str, password: Secret) -> UsernamePassword:
+    return UsernamePassword(username, password.value)
+
+
+@fixture(scope="session")
+def engine_url() -> str:
+    return must_env(ENGINE_URL_ENV)
+
+
+@fixture(scope="session")
+def stopped_engine_url() -> str:
+    return must_env(STOPPED_ENGINE_URL_ENV)

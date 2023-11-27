@@ -3,9 +3,10 @@ from typing import AsyncGenerator, Dict, Generator, List
 
 from httpx import Request, Response
 
-from firebolt.client import AsyncClient, Client
+from firebolt.client import AsyncClientV2 as AsyncClient
+from firebolt.client import ClientV2
 from firebolt.client.auth import Auth
-from firebolt.model import FireboltBaseModel
+from firebolt.model.V2 import FireboltBaseModel
 
 
 def field_name(f: Field) -> str:
@@ -25,7 +26,7 @@ def execute_generator_requests(
 ) -> None:
     request = next(requests)
 
-    with Client(
+    with ClientV2(
         account_name="account", auth=Auth(), api_endpoint=api_endpoint
     ) as client:
         client._auth = None

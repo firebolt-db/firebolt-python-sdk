@@ -1,6 +1,5 @@
 from typing import Any, List
 
-from firebolt.common.base_cursor import BaseCursor
 from firebolt.utils.exception import ConnectionClosedError
 
 
@@ -9,7 +8,7 @@ class BaseConnection:
         self._cursors: List[Any] = []
         self._is_closed = False
 
-    def _remove_cursor(self, cursor: BaseCursor) -> None:
+    def _remove_cursor(self, cursor: Any) -> None:
         # This way it's atomic
         try:
             self._cursors.remove(cursor)

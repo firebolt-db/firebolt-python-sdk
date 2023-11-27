@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import re
 import time
+from abc import ABCMeta, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -14,9 +15,9 @@ from typing import (
     Union,
 )
 
-from httpx import Response, codes
+from httpx import URL, Response, codes
 
-from firebolt.client import Client
+from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import (
     ColType,
     Column,
@@ -34,14 +35,16 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.db.util import is_db_available, is_engine_running
+from firebolt.db.util import ENGINE_STATUS_RUNNING
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
     FireboltDatabaseError,
+    FireboltEngineError,
     OperationalError,
     ProgrammingError,
 )
+from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -49,7 +52,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Cursor(BaseCursor):
+class Cursor(BaseCursor, metaclass=ABCMeta):
     """
     Class, responsible for executing queries to Firebolt Database.
     Should not be created directly,
@@ -64,7 +67,11 @@ class Cursor(BaseCursor):
     """
 
     def __init__(
-        self, *args: Any, client: Client, connection: Connection, **kwargs: Any
+        self,
+        *args: Any,
+        client: Client,
+        connection: Connection,
+        **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self._client = client
@@ -77,8 +84,8 @@ class Cursor(BaseCursor):
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            if self.connection.database and not is_db_available(
-                self.connection, self.connection.database
+            if self.connection.database and not self.is_db_available(
+                self.connection.database
             ):
                 raise FireboltDatabaseError(
                     f"Database {self.connection.database} does not exist"
@@ -87,14 +94,14 @@ class Cursor(BaseCursor):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ):
-            if not is_engine_running(self.connection, self.connection.engine_url):
-                raise EngineNotRunningError(
-                    f"Firebolt engine {self.connection.engine_url} "
-                    "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
-                )
+        ) and not self.is_engine_running(self.connection.engine_url):
+            raise EngineNotRunningError(
+                f"Firebolt engine {self.connection.engine_url} "
+                "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
+            )
         resp.raise_for_status()
 
+    @abstractmethod
     def _api_request(
         self,
         query: str = "",
@@ -102,34 +109,7 @@ class Cursor(BaseCursor):
         path: str = "",
         use_set_parameters: bool = True,
     ) -> Response:
-        """
-        Query API, return Response object.
-
-        Args:
-            query (str): SQL query
-            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
-                parameters. Used to replace '?' placeholders inside a query with
-                actual values. Note: In order to "output_format" dict value, it
-                    must be an empty string. If no value not specified,
-                    JSON_OUTPUT_FORMAT will be used.
-            path (str): endpoint suffix, for example "cancel" or "status"
-            use_set_parameters: Optional[bool]: Some queries will fail if additional
-                set parameters are sent. Setting this to False will allow
-                self._set_parameters to be ignored.
-        """
-        parameters = parameters or {}
-        if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **parameters}
-        if self.connection.database:
-            parameters["database"] = self.connection.database
-        if self.connection._is_system:
-            parameters["account_id"] = self._client.account_id
-        return self._client.request(
-            url=f"/{path}" if path else "",
-            method="POST",
-            params=parameters,
-            content=query,
-        )
+        ...
 
     def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
@@ -162,7 +142,6 @@ class Cursor(BaseCursor):
         )
         try:
             for query in queries:
-
                 start_time = time.time()
                 # Our CREATE EXTERNAL TABLE queries currently require credentials,
                 # so we will skip logging those queries.
@@ -335,6 +314,16 @@ class Cursor(BaseCursor):
             return QueryStatus.NOT_READY
         return QueryStatus[resp_json["status"]]
 
+    @abstractmethod
+    def is_db_available(self, database: str) -> bool:
+        """Verify that the database exists."""
+        ...
+
+    @abstractmethod
+    def is_engine_running(self, engine_url: str) -> bool:
+        """Verify that the engine is running."""
+        ...
+
     @check_not_closed
     def cancel(self, query_id: str) -> None:
         """Cancel a server-side async query."""
@@ -357,3 +346,190 @@ class Cursor(BaseCursor):
     @check_not_closed
     def __enter__(self) -> Cursor:
         return self
+
+
+class CursorV2(Cursor):
+    def __init__(
+        self, *args: Any, client: Client, connection: Connection, **kwargs: Any
+    ) -> None:
+        assert isinstance(client, ClientV2)  # Type check
+        super().__init__(*args, client=client, connection=connection, **kwargs)
+
+    def _api_request(
+        self,
+        query: str = "",
+        parameters: Optional[dict[str, Any]] = None,
+        path: str = "",
+        use_set_parameters: bool = True,
+    ) -> Response:
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
+        """
+        parameters = parameters or {}
+        if use_set_parameters:
+            parameters = {**(self._set_parameters or {}), **parameters}
+        if self.connection.database:
+            parameters["database"] = self.connection.database
+        if self.connection._is_system:
+            assert isinstance(self._client, ClientV2)  # Type check
+            parameters["account_id"] = self._client.account_id
+        return self._client.request(
+            url=f"/{path}" if path else "",
+            method="POST",
+            params=parameters,
+            content=query,
+        )
+
+    def is_db_available(self, database_name: str) -> bool:
+        """
+        Verify that the database exists.
+
+        Args:
+            connection (firebolt.db.connection.Connection)
+            database_name (str): Name of a database
+        """
+        system_engine = self.connection._system_engine_connection or self.connection
+        with system_engine.cursor() as cursor:
+            return (
+                cursor.execute(
+                    """
+                    SELECT 1 FROM information_schema.databases WHERE database_name=?
+                    """,
+                    [database_name],
+                )
+                > 0
+            )
+
+    def is_engine_running(self, engine_url: str) -> bool:
+        """
+        Verify that the engine is running.
+
+        Args:
+            connection (firebolt.db.connection.Connection): connection.
+            engine_url (str): URL of the engine
+        """
+
+        if self.connection._is_system:
+            # System engine is always running
+            return True
+
+        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
+        assert self.connection._system_engine_connection is not None  # Type check
+        _, status, _ = self._get_engine_url_status_db(
+            self.connection._system_engine_connection, engine_name
+        )
+        return status == ENGINE_STATUS_RUNNING
+
+    def _get_engine_url_status_db(
+        self, system_engine_connection: Connection, engine_name: str
+    ) -> Tuple[str, str, str]:
+        with system_engine_connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT url, attached_to, status FROM information_schema.engines
+                WHERE engine_name=?
+                """,
+                [engine_name],
+            )
+            row = cursor.fetchone()
+            if row is None:
+                raise FireboltEngineError(
+                    f"Engine with name {engine_name} doesn't exist"
+                )
+            engine_url, database, status = row
+            return str(engine_url), str(status), str(database)  # Mypy check
+
+
+class CursorV1(Cursor):
+    def __init__(
+        self, *args: Any, client: ClientV1, connection: Connection, **kwargs: Any
+    ) -> None:
+        assert isinstance(client, ClientV1)  # Type check
+        super().__init__(*args, client=client, connection=connection, **kwargs)
+
+    def _api_request(
+        self,
+        query: Optional[str] = "",
+        parameters: Optional[dict[str, Any]] = {},
+        path: Optional[str] = "",
+        use_set_parameters: Optional[bool] = True,
+    ) -> Response:
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
+        """
+        if use_set_parameters:
+            parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        return self._client.request(
+            url=f"/{path}",
+            method="POST",
+            params={
+                "database": self.connection.database,
+                **(parameters or dict()),
+            },
+            content=query,
+        )
+
+    def is_db_available(self, database_name: str) -> bool:
+        """
+        Verify that the database exists.
+
+        Args:
+            connection (firebolt.async_db.connection.Connection)
+        """
+        resp = self._filter_request(
+            DATABASES_URL, {"filter.name_contains": database_name}
+        )
+        return len(resp.json()["edges"]) > 0
+
+    def is_engine_running(self, engine_url: str) -> bool:
+        """
+        Verify that the engine is running.
+
+        Args:
+            connection (firebolt.async_db.connection.Connection): connection.
+        """
+        # Url is not guaranteed to be of this structure,
+        # but for the sake of error checking this is sufficient.
+        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
+        resp = self._filter_request(
+            ENGINES_URL,
+            {
+                "filter.name_contains": engine_name,
+                "filter.current_status_eq": "ENGINE_STATUS_RUNNING_REVISION_SERVING",
+            },
+        )
+        return len(resp.json()["edges"]) > 0
+
+    def _filter_request(self, endpoint: str, filters: dict) -> Response:
+        resp = self.connection._client.request(
+            # Full url overrides the client url, which contains engine as a prefix.
+            url=self.connection.api_endpoint + endpoint,
+            method="GET",
+            params=filters,
+        )
+        resp.raise_for_status()
+        return resp

@@ -1,0 +1,80 @@
+name: Integration tests FB 2.0
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run the tests against'
+        type: choice
+        required: true
+        default: 'dev'
+        options:
+          - dev
+          - staging
+  workflow_call:
+    inputs:
+      environment:
+        default: 'staging'
+        required: false
+        type: string
+      branch:
+        required: false
+        type: string
+        description: 'Branch to run on'
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_ID_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_NEW_IDN:
+        required: true
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
+
+      - name: Determine env variables
+        run: |
+          if [ "${{ inputs.environment }}" == 'staging' ]; then
+             echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+          else
+             echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
+          fi
+
+      - name: Setup database and engine
+        id: setup
+        uses: firebolt-db/integration-testing-setup@v2
+        with:
+          firebolt-client-id: ${{ env.CLIENT_ID }}
+          firebolt-client-secret: ${{ env.CLIENT_SECRET }}
+          account: "developer"
+          api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
+
+      - name: Run integration tests
+        env:
+          SERVICE_ID: ${{ env.CLIENT_ID }}
+          SERVICE_SECRET: ${{ env.CLIENT_SECRET }}
+          DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
+          ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
+          STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
+          API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
+          ACCOUNT_NAME: "developer"
+        run: |
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1"
