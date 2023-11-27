@@ -13,6 +13,8 @@ on:
 jobs:
   integration-tests:
     uses: ./.github/workflows/integration-tests.yml
+    with:
+      environment: "staging"
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -24,6 +26,8 @@ jobs:
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
       SERVICE_ID: ${{ secrets.SERVICE_ID }}
       SERVICE_SECRET: ${{ secrets.SERVICE_SECRET }}
+      SERVICE_ID_STG: ${{ secrets.SERVICE_ID_STG }}
+      SERVICE_SECRET_STG: ${{ secrets.SERVICE_SECRET_STG }}
 
   publish:
     runs-on: ubuntu-latest

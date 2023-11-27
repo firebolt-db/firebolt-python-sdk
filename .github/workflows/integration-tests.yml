@@ -33,6 +33,10 @@ on:
         required: true
       SERVICE_SECRET:
         required: true
+      SERVICE_ID_STG:
+        required: true
+      SERVICE_SECRET_STG:
+        required: true
       # V2 secrets
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
@@ -55,6 +59,8 @@ jobs:
       FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
       SERVICE_ID: ${{ secrets.SERVICE_ID }}
       SERVICE_SECRET: ${{ secrets.SERVICE_SECRET }}
+      SERVICE_ID_STG: ${{ secrets.SERVICE_ID_STG }}
+      SERVICE_SECRET_STG: ${{ secrets.SERVICE_SECRET_STG }}
   integration-test-v2:
     uses: ./.github/workflows/integration-tests-v2.yml
     with:
