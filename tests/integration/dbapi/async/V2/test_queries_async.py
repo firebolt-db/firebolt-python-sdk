@@ -4,9 +4,7 @@ from typing import List
 
 from pytest import mark, raises
 
-from firebolt.async_db import Binary, Connection
-from firebolt.async_db import CursorV2 as Cursor
-from firebolt.async_db import OperationalError
+from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.common._types import ColType, Column
 from tests.integration.dbapi.utils import assert_deep_eq
