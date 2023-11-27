@@ -16,10 +16,6 @@ on:
         default: 'staging'
         required: false
         type: string
-      branch:
-        required: false
-        type: string
-        description: 'Branch to run on'
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
@@ -35,8 +31,6 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ inputs.branch }}
 
       - name: Set up Python 3.7
         uses: actions/setup-python@v2

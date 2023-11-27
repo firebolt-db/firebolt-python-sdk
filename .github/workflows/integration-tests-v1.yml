@@ -16,10 +16,6 @@ on:
         default: 'staging'
         required: false
         type: string
-      branch:
-        required: false
-        type: string
-        description: 'Branch to run on'
     secrets:
       FIREBOLT_USERNAME:
         required: true
@@ -33,14 +29,16 @@ on:
         required: true
       SERVICE_SECRET:
         required: true
+      SERVICE_ID_STG:
+        required: true
+      SERVICE_SECRET_STG:
+        required: true
 jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
         uses: actions/checkout@v2
-        with:
-          ref: ${{ inputs.branch }}
 
       - name: Set up Python 3.7
         uses: actions/setup-python@v2
@@ -62,8 +60,8 @@ jobs:
           else
               echo "USERNAME=${{ secrets.FIREBOLT_USERNAME }}" >> "$GITHUB_ENV"
               echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD }}" >> "$GITHUB_ENV"
-              echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID }}" >> "$GITHUB_ENV"
-              echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET }}" >> "$GITHUB_ENV"
+              echo "CLIENT_ID=${{ secrets.SERVICE_ID }}" >> "$GITHUB_ENV"
+              echo "CLIENT_SECRET=${{ secrets.SERVICE_SECRET }}" >> "$GITHUB_ENV"
           fi
 
       - name: Setup database and engine
