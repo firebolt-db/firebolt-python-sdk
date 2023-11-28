@@ -62,13 +62,7 @@ class ResourceManager:
         auth: Optional[Auth] = None,
         account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
-        # DEPRECATED
-        user: Optional[str] = None,
-        password: Optional[str] = None,
     ):
-        if user or password:
-            logger.warning("user and password are deprecated, use auth instead")
-
         if settings:
             logger.warning(SETTINGS_DEPRECATION_MESSAGE)
             if auth or account_name or (api_endpoint != DEFAULT_API_URL):
