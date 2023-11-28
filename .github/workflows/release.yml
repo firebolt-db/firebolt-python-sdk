@@ -11,35 +11,17 @@ on:
         description: 'Trigger a major release (optional). Leave empty for regular release.'
 
 jobs:
-  integration-tests:
-    uses: ./.github/workflows/integration-tests.yml
-    with:
-      environment: "staging"
-    secrets:
-      FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-      FIREBOLT_CLIENT_ID_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}
-      FIREBOLT_CLIENT_SECRET_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}
-      FIREBOLT_USERNAME: ${{ secrets.FIREBOLT_USERNAME }}
-      FIREBOLT_PASSWORD: ${{ secrets.FIREBOLT_PASSWORD }}
-      FIREBOLT_STG_USERNAME: ${{ secrets.FIREBOLT_STG_USERNAME }}
-      FIREBOLT_STG_PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
-      SERVICE_ID: ${{ secrets.SERVICE_ID }}
-      SERVICE_SECRET: ${{ secrets.SERVICE_SECRET }}
-      SERVICE_ID_STG: ${{ secrets.SERVICE_ID_STG }}
-      SERVICE_SECRET_STG: ${{ secrets.SERVICE_SECRET_STG }}
-
   publish:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    needs: integration-tests
     steps:
     - name: Check out code
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
         token: ${{ secrets.RELEASE_PAT }}
+        ref: main
 
     - name: 'Publish action'
       uses: firebolt-db/action-python-release@main
