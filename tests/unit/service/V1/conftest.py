@@ -8,6 +8,7 @@ from httpx import Request, Response
 from pytest import fixture
 
 from firebolt.client.auth.base import Auth
+from firebolt.model.V1.binding import Binding, BindingKey
 from firebolt.model.V1.engine import Engine, EngineKey, EngineSettings
 from firebolt.model.V1.region import Region, RegionKey
 from firebolt.utils.exception import AccountNotFoundError
@@ -25,7 +26,9 @@ from firebolt.utils.urls import (
     PROVIDERS_URL,
     REGIONS_URL,
 )
-from tests.unit.util import list_to_paginated_response
+from tests.unit.util import (
+    list_to_paginated_response_v1 as list_to_paginated_response,
+)
 
 
 @fixture
@@ -46,6 +49,11 @@ def engine_settings() -> EngineSettings:
 @fixture
 def region_key() -> RegionKey:
     return RegionKey(provider_id="pid", region_id="rid")
+
+
+@fixture
+def db_id() -> str:
+    return "db_id"
 
 
 @fixture
@@ -387,6 +395,33 @@ def create_binding_callback(create_binding_url: str, binding) -> Callable:
         return Response(
             status_code=httpx.codes.OK,
             json={"binding": binding.dict()},
+        )
+
+    return do_mock
+
+
+@fixture
+def binding(account_id, mock_engine, db_id) -> Binding:
+    return Binding(
+        binding_key=BindingKey(
+            account_id=account_id,
+            database_id=db_id,
+            engine_id=mock_engine.engine_id,
+        ),
+        is_default_engine=True,
+    )
+
+
+@fixture
+def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == bindings_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response([binding]),
         )
 
     return do_mock

@@ -12,8 +12,6 @@ ACCOUNT_DATABASE_URL = "/core/v1/accounts/{account_id}/databases/{database_id}"
 ACCOUNT_DATABASE_BINDING_URL = ACCOUNT_DATABASE_URL + "/bindings/{engine_id}"
 ACCOUNT_DATABASE_BY_NAME_URL = ACCOUNT_DATABASES_URL + ":getIdByName"
 
-ACCOUNT_BINDINGS_URL = "/core/v1/accounts/{account_id}/bindings"
-
 ACCOUNT_INSTANCE_TYPES_URL = "/aws/v2/accounts/{account_id}/instanceTypes"
 
 PROVIDERS_URL = "/compute/v1/providers"
@@ -39,3 +37,4 @@ ACCOUNT_LIST_ENGINES_URL = "/core/v1/accounts/{account_id}/engines"
 ACCOUNT_ENGINE_ID_BY_NAME_URL = ACCOUNT_LIST_ENGINES_URL + ":getIdByName"
 ACCOUNT_URL = "/iam/v2/account"
 ACCOUNT_BY_NAME_URL_V1 = "/iam/v2/accounts:getIdByName"
+ACCOUNT_BINDINGS_URL = "/core/v1/accounts/{account_id}/bindings"
