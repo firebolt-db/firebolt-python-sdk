@@ -6,6 +6,7 @@ from httpx import Request, Response
 from firebolt.client import AsyncClientV2 as AsyncClient
 from firebolt.client import ClientV2
 from firebolt.client.auth import Auth
+from firebolt.model.V1 import FireboltBaseModel as FireboltBaseModelV1
 from firebolt.model.V2 import FireboltBaseModel
 
 
@@ -19,6 +20,10 @@ def to_dict(dc: dataclass) -> Dict:
 
 def list_to_paginated_response(items: List[FireboltBaseModel]) -> Dict:
     return {"edges": [{"node": to_dict(i)} for i in items]}
+
+
+def list_to_paginated_response_v1(items: List[FireboltBaseModelV1]) -> Dict:
+    return {"edges": [{"node": i.dict()} for i in items]}
 
 
 def execute_generator_requests(

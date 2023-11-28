@@ -133,8 +133,10 @@ class ResourceManager:
 
     def _init_services_v1(self) -> None:
         # avoid circular import
+        from firebolt.service.V1.binding import BindingService
         from firebolt.service.V1.engine import EngineService
 
+        self.bindings = BindingService(resource_manager=self)  # type: ignore
         self.engines = EngineService(resource_manager=self)  # type: ignore
 
     def __del__(self) -> None:
