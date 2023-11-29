@@ -683,3 +683,30 @@ def test_cursor_server_side_async_get_status_error(
             str(excinfo.value)
             == f"Asynchronous query {server_side_async_id} status check failed."
         ), f"Invalid get_status error message."
+
+
+def test_server_side_header_database(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    query_callback_with_headers: Callable,
+    query_url: str,
+    query_url_updated: str,
+    db_name: str,
+    db_name_updated: str,
+    cursor: Cursor,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    assert cursor.database == db_name
+    cursor.execute(
+        f"USE DATABASE = '{db_name_updated}'"
+    )  # TODO: check if this is the right way to set the database
+    assert cursor.database == db_name_updated
+
+    httpx_mock.reset(True)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    # Check updated database is used in the next query
+    httpx_mock.add_callback(query_callback_with_headers, url=query_url_updated)
+    cursor.execute("select 1")
+    assert cursor.database == db_name_updated

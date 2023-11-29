@@ -748,7 +748,6 @@ def test_cursor_iterate(
             pass
 
 
-# test cursor parses headers returned by the server in Firebolt-Update-Parameters
 def test_server_side_header_database(
     httpx_mock: HTTPXMock,
     query_callback_with_headers: Callable,
