@@ -3,7 +3,7 @@ from typing import Callable
 from pytest import fixture
 
 from firebolt.client.auth import Auth
-from firebolt.db import Connection, CursorV2, connect
+from firebolt.db import Connection, Cursor, connect
 
 
 @fixture
@@ -45,5 +45,5 @@ def system_connection(
 
 
 @fixture
-def cursor(connection: Connection) -> CursorV2:
+def cursor(connection: Connection) -> Cursor:
     return connection.cursor()

@@ -8,9 +8,7 @@ from pytest import fixture
 
 from firebolt.client import ClientV1 as Client
 from firebolt.client.auth.base import Auth
-from firebolt.db import Connection
-from firebolt.db import CursorV1 as Cursor
-from firebolt.db import connect
+from firebolt.db import Connection, Cursor, connect
 from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.urls import (
     ACCOUNT_BY_NAME_URL,

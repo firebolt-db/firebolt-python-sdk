@@ -5,7 +5,7 @@ from httpx import HTTPStatusError, StreamError, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.db import CursorV2
+from firebolt.db import Cursor
 from firebolt.db.cursor import ColType, Column, CursorState, QueryStatus
 from firebolt.utils.exception import (
     CursorClosedError,
@@ -24,7 +24,7 @@ def test_cursor_state(
     httpx_mock: HTTPXMock,
     mock_query: Callable,
     query_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """Cursor state changes depending on the operations performed with it."""
     mock_query()
@@ -51,7 +51,7 @@ def test_cursor_state(
     assert cursor._state == CursorState.CLOSED
 
 
-def test_closed_cursor(cursor: CursorV2):
+def test_closed_cursor(cursor: Cursor):
     """Most of cursor methods are unavailable for closed cursor."""
     fields = ("description", "rowcount")
     methods = (
@@ -91,7 +91,7 @@ def test_closed_cursor(cursor: CursorV2):
 def test_cursor_no_query(
     httpx_mock: HTTPXMock,
     mock_query: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """Some of cursor methods are unavailable until a query is run."""
     methods = (
@@ -133,7 +133,7 @@ def test_cursor_no_query(
 def test_cursor_execute(
     mock_query: Callable,
     mock_insert_query: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
@@ -191,7 +191,7 @@ def test_cursor_execute_error(
     db_name: str,
     query_url: str,
     query_statistics: Dict[str, Any],
-    cursor: CursorV2,
+    cursor: Cursor,
     system_engine_query_url: str,
 ):
     """Cursor handles all types of errors properly."""
@@ -336,7 +336,7 @@ def test_cursor_execute_error(
 def test_cursor_fetchone(
     mock_query: Callable,
     mock_insert_query: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """cursor fetchone fetches single row in correct order; if no rows returns None."""
     mock_query()
@@ -363,7 +363,7 @@ def test_cursor_fetchone(
 def test_cursor_fetchmany(
     mock_query: Callable,
     mock_insert_query: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """
     Cursor's fetchmany fetches the provided amount of rows, or arraysize by
@@ -419,7 +419,7 @@ def test_cursor_fetchmany(
 def test_cursor_fetchall(
     mock_query: Callable,
     mock_insert_query: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """cursor fetchall fetches all rows that left after last query."""
     mock_query()
@@ -448,7 +448,7 @@ def test_cursor_fetchall(
 def test_cursor_multi_statement(
     mock_query: Callable,
     mock_insert_query: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
@@ -494,7 +494,7 @@ def test_cursor_set_statements(
     httpx_mock: HTTPXMock,
     select_one_query_callback: Callable,
     set_query_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """cursor correctly parses and processes set statements."""
     httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
@@ -562,7 +562,7 @@ def test_cursor_set_parameters_sent(
     query_url: str,
     query_with_params_callback: Callable,
     select_one_query_callback: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
     set_params: Dict,
 ):
     """Cursor passes provided set parameters to engine."""
@@ -582,7 +582,7 @@ def test_cursor_set_parameters_sent(
 
 def test_cursor_skip_parse(
     mock_query: Callable,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """Cursor doesn't process a query if skip_parsing is provided."""
     mock_query()
@@ -601,7 +601,7 @@ def test_cursor_server_side_async_execute(
     server_side_async_id_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """
     Cursor is able to execute query server-side asynchronously and
@@ -639,7 +639,7 @@ def test_cursor_server_side_async_cancel(
     server_side_async_cancel_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """
     Cursor is able to cancel query server-side asynchronously and
@@ -663,7 +663,7 @@ def test_cursor_server_side_async_get_status_completed(
     server_side_async_get_status_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """
     Cursor is able to execute query server-side asynchronously and
@@ -683,7 +683,7 @@ def test_cursor_server_side_async_get_status_not_yet_available(
     server_side_async_get_status_not_yet_availabe_callback: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """
     Cursor is able to execute query server-side asynchronously and
@@ -704,7 +704,7 @@ def test_cursor_server_side_async_get_status_error(
     server_side_async_get_status_error: Callable,
     server_side_async_id: Callable,
     query_with_params_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
 ):
     """ """
     httpx_mock.add_callback(
@@ -724,7 +724,7 @@ def test_cursor_iterate(
     httpx_mock: HTTPXMock,
     query_callback: Callable,
     query_url: str,
-    cursor: CursorV2,
+    cursor: Cursor,
     python_query_data: List[List[ColType]],
 ):
     """Cursor is able to execute query, all fields are populated properly."""

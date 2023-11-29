@@ -8,7 +8,7 @@ from pytest import mark, raises
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType, Column
-from firebolt.db import Binary, Connection, CursorV1, OperationalError, connect
+from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
@@ -25,7 +25,7 @@ def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
 def status_loop(
     query_id: str,
     query: str,
-    cursor: CursorV1,
+    cursor: Cursor,
     start_status: QueryStatus = QueryStatus.NOT_READY,
     final_status: QueryStatus = QueryStatus.ENDED_SUCCESSFULLY,
 ) -> None:
@@ -142,7 +142,7 @@ def test_long_query(
 def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
-    def test_query(c: CursorV1, query: str) -> None:
+    def test_query(c: Cursor, query: str) -> None:
         c.execute(query)
         assert c.description == None
         # Inconsistent behaviour in Firebolt
@@ -201,7 +201,7 @@ def test_drop_create(connection: Connection) -> None:
 def test_insert(connection: Connection) -> None:
     """Insert and delete queries are handled properly."""
 
-    def test_empty_query(c: CursorV1, query: str) -> None:
+    def test_empty_query(c: Cursor, query: str) -> None:
         assert c.execute(query) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
@@ -246,7 +246,7 @@ def test_insert(connection: Connection) -> None:
 def test_parameterized_query(connection: Connection) -> None:
     """Query parameters are handled properly."""
 
-    def test_empty_query(c: CursorV1, query: str, params: tuple) -> None:
+    def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
         assert c.execute(query, params) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
         assert c.description is None, "Invalid description"
