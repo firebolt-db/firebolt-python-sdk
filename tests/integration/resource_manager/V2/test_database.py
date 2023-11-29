@@ -9,6 +9,9 @@ def test_database_get_default_engine(
     database_name: str,
     stopped_engine_name: str,
     engine_name: str,
+    single_param_engine_name: str,
+    start_stop_engine_name: str,
+    multi_param_engine_name: str,
 ):
     """
     Checks that the default engine is either running or stopped engine
@@ -24,6 +27,9 @@ def test_database_get_default_engine(
     assert engine.name in [
         stopped_engine_name,
         engine_name,
+        single_param_engine_name,
+        start_stop_engine_name,
+        multi_param_engine_name,
     ], "Returned default engine name is neither of known engines"
 
 
