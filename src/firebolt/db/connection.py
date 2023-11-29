@@ -168,7 +168,7 @@ def connect_v2(
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         transport=transport,
-        headers={"User-Agent": user_agent_header},
+        headers={"User-Agent": user_agent_header, "Firebolt-Protocol-Version": "2"},
     )
     # Don't use context manager since this will be stored
     # and used in a resulting connection
@@ -214,7 +214,10 @@ def connect_v2(
                 api_endpoint=api_endpoint,
                 timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
                 transport=transport,
-                headers={"User-Agent": user_agent_header},
+                headers={
+                    "User-Agent": user_agent_header,
+                    "Firebolt-Protocol-Version": "2",
+                },
             )
             return Connection(
                 engine_url,
@@ -356,7 +359,7 @@ def connect_v1(
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         transport=transport,
-        headers={"User-Agent": user_agent_header},
+        headers={"User-Agent": user_agent_header, "Firebolt-Protocol-Version": "2"},
     )
 
     # Mypy checks, this should never happen
@@ -386,6 +389,6 @@ def connect_v1(
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         transport=transport,
-        headers={"User-Agent": user_agent_header},
+        headers={"User-Agent": user_agent_header, "Firebolt-Protocol-Version": "2"},
     )
     return Connection(engine_url, database, client, CursorV1, None, api_endpoint)
