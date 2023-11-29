@@ -5,20 +5,16 @@ from firebolt.service.manager import ResourceManager
 from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
 
 
-def make_engine_name(database_name: str, suffix: str) -> str:
-    return f"{database_name}_{suffix}"
-
-
 def test_create_start_stop_engine(
     auth: Auth,
     account_name: str,
     api_endpoint: str,
-    database_name: str,
+    start_stop_engine_name: str,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
     )
-    name = make_engine_name(database_name, "start_stop")
+    name = start_stop_engine_name
 
     engine = rm.engines.create(name=name)
     assert engine.name == name
@@ -54,12 +50,13 @@ def test_engine_update_single_parameter(
     account_name: str,
     api_endpoint: str,
     database_name: str,
+    single_param_engine_name: str,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
     )
 
-    name = make_engine_name(database_name, "single_param")
+    name = single_param_engine_name
     engine = rm.engines.create(name=name)
 
     engine.attach_to_database(rm.databases.get(database_name))
@@ -85,12 +82,13 @@ def test_engine_update_multiple_parameters(
     account_name: str,
     api_endpoint: str,
     database_name: str,
+    multi_param_engine_name: str,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
     )
 
-    name = make_engine_name(database_name, "multi_param")
+    name = multi_param_engine_name
     engine = rm.engines.create(name=name)
 
     engine.attach_to_database(rm.databases.get(database_name))
