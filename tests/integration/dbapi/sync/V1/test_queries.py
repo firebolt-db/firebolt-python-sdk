@@ -88,7 +88,6 @@ def test_select(
 ) -> None:
     """Select handles all data types properly."""
     with connection.cursor() as c:
-        assert c.execute(f"SET advanced_mode=1") == -1, "Invalid set statment row count"
         # For timestamptz test
         assert (
             c.execute(f"SET time_zone={timezone_name}") == -1
@@ -121,7 +120,7 @@ def test_select(
         )
 
 
-@mark.skip("Don't have a good way to test this anymore. FIR-16038")
+@mark.slow
 @mark.timeout(timeout=400)
 def test_long_query(
     connection: Connection,
@@ -129,14 +128,12 @@ def test_long_query(
     """AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly."""
     with connection.cursor() as c:
         c.execute(
-            "SET advanced_mode=1;"
-            "SET use_standard_sql=0;"
-            "SELECT sleepEachRow(1) FROM numbers(360)",
+            "SELECT checksum(*) FROM GENERATE_SERIES(1, 200000000000)",  # approx 6m runtime
         )
         c.nextset()
         c.nextset()
         data = c.fetchall()
-        assert len(data) == 360, "Invalid data size returned by fetchall"
+        assert len(data) == 1, "Invalid data size returned by fetchall"
 
 
 def test_drop_create(connection: Connection) -> None:
