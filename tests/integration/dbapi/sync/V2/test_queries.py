@@ -3,7 +3,7 @@ from decimal import Decimal
 from threading import Thread
 from typing import Any, List
 
-from pytest import mark, raises
+from pytest import fixture, mark, raises
 
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
@@ -498,3 +498,29 @@ def test_bytea_roundtrip(
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
+
+
+# TODO: check if we can have it on top level, V1 V2 independent
+@fixture(scope="module")
+def setup_db(connection_system_engine, use_db_name):
+    with connection_system_engine.cursor() as cursor:
+        cursor.execute(f"CREATE DATABASE {use_db_name}")
+        yield
+        cursor.execute(f"DROP DATABASE {use_db_name}")
+
+
+def test_use_database(
+    setup_db,
+    connection_system_engine: Connection,
+    use_db_name: str,
+    database_name: str,
+) -> None:
+    """Use database works as expected."""
+    with connection_system_engine.cursor() as c:
+        c.execute(f"USE DATABASE {use_db_name}")
+        assert c.database == use_db_name
+        c.execute("SELECT 1")
+
+        c.execute(f"USE DATABASE {database_name}")
+        assert c.database == database_name
+        c.execute("SELECT 1")

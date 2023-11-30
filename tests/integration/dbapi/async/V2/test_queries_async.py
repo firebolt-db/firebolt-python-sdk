@@ -2,7 +2,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import List
 
-from pytest import mark, raises
+from pytest import fixture, mark, raises
 
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.cursor import QueryStatus
@@ -417,3 +417,28 @@ async def test_bytea_roundtrip(
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
+
+
+@fixture(scope="module")
+async def setup_db(connection_no_engine: Connection, use_db_name: str):
+    with connection_no_engine.cursor() as cursor:
+        await cursor.execute(f"CREATE DATABASE {use_db_name}")
+        yield
+        await cursor.execute(f"DROP DATABASE {use_db_name}")
+
+
+async def test_use_database(
+    setup_db,
+    connection_no_engine: Connection,
+    use_db_name: str,
+    database_name: str,
+) -> None:
+    """Use database works as expected."""
+    with connection_no_engine.cursor() as c:
+        await c.execute(f"USE DATABASE {use_db_name}")
+        assert c.database == use_db_name
+        await c.execute("SELECT 1")
+
+        await c.execute(f"USE DATABASE {database_name}")
+        assert c.database == database_name
+        await c.execute("SELECT 1")
