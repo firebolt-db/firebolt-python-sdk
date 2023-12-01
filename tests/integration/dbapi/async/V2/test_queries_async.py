@@ -394,17 +394,17 @@ async def test_bytea_roundtrip(
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip")
+        await c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip_2")
         await c.execute(
-            "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
+            "CREATE FACT TABLE test_bytea_roundtrip_2(id int, b bytea) primary index id"
         )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
         await c.execute(
-            "INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),)
+            "INSERT INTO test_bytea_roundtrip_2 VALUES (1, ?)", (Binary(data),)
         )
-        await c.execute("SELECT b FROM test_bytea_roundtrip")
+        await c.execute("SELECT b FROM test_bytea_roundtrip_2")
 
         bytes_data = (await c.fetchone())[0]
 
