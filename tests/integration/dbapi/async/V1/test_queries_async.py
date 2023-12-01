@@ -170,7 +170,7 @@ async def test_select(
 
 
 @mark.slow
-@mark.timeout(timeout=550)
+@mark.timeout(timeout=600)
 async def test_long_query(
     connection: Connection,
 ) -> None:

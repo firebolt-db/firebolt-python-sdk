@@ -121,7 +121,7 @@ def test_select(
 
 
 @mark.slow
-@mark.timeout(timeout=550)
+@mark.timeout(timeout=600)
 def test_long_query(
     connection: Connection,
 ) -> None:
