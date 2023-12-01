@@ -446,6 +446,7 @@ async def test_server_side_async_execution_get_status(
     # ), "get_status() did not return a QueryStatus object."
 
 
+@mark.xdist_group("multi_thread_connection_sharing")
 def test_multi_thread_connection_sharing(
     engine_url: str,
     database_name: str,
