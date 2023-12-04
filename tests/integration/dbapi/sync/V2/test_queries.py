@@ -72,7 +72,6 @@ def test_select(
 ) -> None:
     """Select handles all data types properly."""
     with connection.cursor() as c:
-        assert c.execute(f"SET advanced_mode=1") == -1, "Invalid set statment row count"
         # For timestamptz test
         assert (
             c.execute(f"SET time_zone={timezone_name}") == -1
@@ -105,22 +104,18 @@ def test_select(
         )
 
 
-@mark.skip("Don't have a good way to test this anymore. FIR-16038")
-@mark.timeout(timeout=400)
+@mark.slow
+@mark.timeout(timeout=550)
 def test_long_query(
     connection: Connection,
 ) -> None:
     """AWS ALB TCP timeout set to 350, make sure we handle the keepalive correctly."""
     with connection.cursor() as c:
         c.execute(
-            "SET advanced_mode=1;"
-            "SET use_standard_sql=0;"
-            "SELECT sleepEachRow(1) FROM numbers(360)",
+            "SELECT checksum(*) FROM GENERATE_SERIES(1, 200000000000)",  # approx 6m runtime
         )
-        c.nextset()
-        c.nextset()
         data = c.fetchall()
-        assert len(data) == 360, "Invalid data size returned by fetchall"
+        assert len(data) == 1, "Invalid data size returned by fetchall"
 
 
 def test_drop_create(connection: Connection) -> None:
@@ -434,6 +429,7 @@ async def test_server_side_async_execution_get_status(
     # ), "get_status() did not return a QueryStatus object."
 
 
+@mark.xdist_group("multi_thread_connection_sharing")
 def test_multi_thread_connection_sharing(
     engine_name: str,
     database_name: str,
