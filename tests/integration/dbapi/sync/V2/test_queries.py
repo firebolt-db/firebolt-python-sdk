@@ -500,9 +500,9 @@ def test_bytea_roundtrip(
         ), "Invalid bytea data returned after roundtrip"
 
 
-# TODO: check if we can have it on top level, V1 V2 independent
-@fixture(scope="module")
+@fixture
 def setup_db(connection_system_engine, use_db_name):
+    use_db_name = f"{use_db_name}_sync"
     with connection_system_engine.cursor() as cursor:
         cursor.execute(f"CREATE DATABASE {use_db_name}")
         yield
@@ -515,6 +515,7 @@ def test_use_database(
     use_db_name: str,
     database_name: str,
 ) -> None:
+    use_db_name = f"{use_db_name}_sync"
     """Use database works as expected."""
     with connection_system_engine.cursor() as c:
         c.execute(f"USE DATABASE {use_db_name}")

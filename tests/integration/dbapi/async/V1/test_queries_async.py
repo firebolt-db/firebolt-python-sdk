@@ -493,8 +493,9 @@ async def test_bytea_roundtrip(
         ), "Invalid bytea data returned after roundtrip"
 
 
-@fixture(scope="module")
+@fixture
 async def setup_db(connection_no_engine: Connection, use_db_name: str):
+    use_db_name = f"{use_db_name}_async"
     with connection_no_engine.cursor() as cursor:
         await cursor.execute(f"CREATE DATABASE {use_db_name}")
         yield
@@ -507,6 +508,7 @@ async def test_use_database(
     use_db_name: str,
     database_name: str,
 ) -> None:
+    use_db_name = f"{use_db_name}_async"
     """Use database works as expected."""
     with connection_no_engine.cursor() as c:
         await c.execute(f"USE DATABASE {use_db_name}")
