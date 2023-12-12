@@ -699,9 +699,7 @@ def test_server_side_header_database(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback_with_headers, url=query_url)
     assert cursor.database == db_name
-    cursor.execute(
-        f"USE DATABASE = '{db_name_updated}'"
-    )  # TODO: check if this is the right way to set the database
+    cursor.execute(f"USE DATABASE = '{db_name_updated}'")
     assert cursor.database == db_name_updated
 
     httpx_mock.reset(True)
