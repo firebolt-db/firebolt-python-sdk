@@ -214,9 +214,7 @@ def connect_v2(
                 api_endpoint=api_endpoint,
                 timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
                 transport=transport,
-                headers={
-                    "User-Agent": user_agent_header,
-                },
+                headers={"User-Agent": user_agent_header},
             )
             return Connection(
                 engine_url,
