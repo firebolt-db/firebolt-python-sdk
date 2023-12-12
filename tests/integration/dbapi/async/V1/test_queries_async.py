@@ -510,12 +510,22 @@ async def test_use_database(
     database_name: str,
 ) -> None:
     use_db_name = f"{use_db_name}_async"
+    test_table_name = "verify_use_db_async"
     """Use database works as expected."""
     with connection_no_engine.cursor() as c:
         await c.execute(f"USE DATABASE {use_db_name}")
         assert c.database == use_db_name
-        await c.execute("SELECT 1")
-
+        await c.execute(f"CREATE TABLE {test_table_name} (id int)")
+        await c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert (await c.fetchone())[0] == test_table_name, "Table was not created"
+        # Change DB and verify table is not there
         await c.execute(f"USE DATABASE {database_name}")
         assert c.database == database_name
-        await c.execute("SELECT 1")
+        await c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert (await c.fetchone()) is None, "Database was not changed"
