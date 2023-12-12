@@ -526,6 +526,7 @@ def setup_db(connection_no_engine, use_db_name):
         cursor.execute(f"DROP DATABASE {use_db_name}")
 
 
+@mark.xfail(reason="USE DATABASE is not yet available in 1.0 Firebolt")
 def test_use_database(
     setup_db,
     connection_no_engine: Connection,
@@ -533,12 +534,22 @@ def test_use_database(
     database_name: str,
 ) -> None:
     use_db_name = f"{use_db_name}_sync"
+    test_table_name = "verify_use_db"
     """Use database works as expected."""
     with connection_no_engine.cursor() as c:
         c.execute(f"USE DATABASE {use_db_name}")
         assert c.database == use_db_name
-        c.execute("SELECT 1")
-
+        c.execute(f"CREATE TABLE {test_table_name} (id int)")
+        c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert c.fetchone()[0] == test_table_name, "Table was not created"
+        # Change DB and verify table is not there
         c.execute(f"USE DATABASE {database_name}")
         assert c.database == database_name
-        c.execute("SELECT 1")
+        c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert c.fetchone() is None, "Database was not changed"

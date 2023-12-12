@@ -269,7 +269,6 @@ async def connect_v2(
         transport=transport,
         headers={
             "User-Agent": user_agent_header,
-            "Firebolt-Protocol-Version": PROTOCOL_VERSION,
         },
     )
     # Don't use context manager since this will be stored
@@ -366,7 +365,6 @@ async def connect_v1(
         transport=transport,
         headers={
             "User-Agent": user_agent_header,
-            "Firebolt-Protocol-Version": PROTOCOL_VERSION,
         },
     )
 
@@ -399,7 +397,6 @@ async def connect_v1(
         transport=transport,
         headers={
             "User-Agent": user_agent_header,
-            "Firebolt-Protocol-Version": PROTOCOL_VERSION,
         },
     )
     return Connection(engine_url, database, client, CursorV1, None, api_endpoint)

@@ -11,7 +11,7 @@ from httpx._types import AuthTypes
 
 from firebolt.client.auth import Auth
 from firebolt.client.auth.base import AuthRequest
-from firebolt.client.constants import DEFAULT_API_URL
+from firebolt.client.constants import DEFAULT_API_URL, PROTOCOL_VERSION
 from firebolt.utils.exception import (
     AccountNotFoundError,
     FireboltEngineError,
@@ -51,6 +51,11 @@ class FireboltClientMixin(FireboltClientMixinBase):
         self._api_endpoint = URL(fix_url_schema(api_endpoint))
         self._auth_endpoint = get_auth_endpoint(self._api_endpoint)
         super().__init__(*args, auth=auth, **kwargs)
+        self._set_default_header("Firebolt-Protocol-Version", PROTOCOL_VERSION)
+
+    def _set_default_header(self, key: str, value: str) -> None:
+        if key not in self.headers:
+            self.headers[key] = value
 
     def _build_auth(self, auth: Optional[AuthTypes]) -> Auth:
         """Create Auth object based on auth provided.
