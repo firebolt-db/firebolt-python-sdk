@@ -526,6 +526,7 @@ def setup_db(connection_no_engine, use_db_name):
         cursor.execute(f"DROP DATABASE {use_db_name}")
 
 
+@mark.xfail(reason="USE DATABASE is not yet available in 1.0 Firebolt")
 def test_use_database(
     setup_db,
     connection_no_engine: Connection,

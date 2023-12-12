@@ -502,6 +502,7 @@ async def setup_db(connection_no_engine: Connection, use_db_name: str):
         await cursor.execute(f"DROP DATABASE {use_db_name}")
 
 
+@mark.xfail(reason="USE DATABASE is not yet available in 1.0 Firebolt")
 async def test_use_database(
     setup_db,
     connection_no_engine: Connection,

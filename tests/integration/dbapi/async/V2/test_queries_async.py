@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
+from os import environ
 from typing import List
 
 from pytest import fixture, mark, raises
@@ -7,6 +8,7 @@ from pytest import fixture, mark, raises
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.common._types import ColType, Column
+from tests.integration.conftest import API_ENDPOINT_ENV
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(
@@ -428,6 +430,7 @@ async def setup_db(connection_system_engine_no_db: Connection, use_db_name: str)
         await cursor.execute(f"DROP DATABASE {use_db_name}")
 
 
+@mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
 async def test_use_database(
     setup_db,
     connection_system_engine_no_db: Connection,
