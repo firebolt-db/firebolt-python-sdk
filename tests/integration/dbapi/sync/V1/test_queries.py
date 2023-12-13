@@ -533,12 +533,12 @@ def test_use_database(
     use_db_name: str,
     database_name: str,
 ) -> None:
-    use_db_name = f"{use_db_name}_sync"
+    test_db_name = f"{use_db_name}_sync"
     test_table_name = "verify_use_db"
     """Use database works as expected."""
     with connection_no_engine.cursor() as c:
-        c.execute(f"USE DATABASE {use_db_name}")
-        assert c.database == use_db_name
+        c.execute(f"USE DATABASE {test_db_name}")
+        assert c.database == test_db_name
         c.execute(f"CREATE TABLE {test_table_name} (id int)")
         c.execute(
             "SELECT table_name FROM information_schema.tables "
