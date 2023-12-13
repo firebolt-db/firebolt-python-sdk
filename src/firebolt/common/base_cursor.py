@@ -113,6 +113,7 @@ def check_query_executed(func: Callable) -> Callable:
 class BaseCursor:
     __slots__ = (
         "connection",
+        "parameters",
         "_arraysize",
         "_client",
         "_state",
@@ -255,6 +256,10 @@ class BaseCursor:
         if update_parameters:
             # parse key1=value1,key2=value2 comma separated string into dict
             param_dict = dict(item.split("=") for item in update_parameters.split(","))
+            # strip whitespace from keys and values
+            param_dict = {
+                key.strip(): value.strip() for key, value in param_dict.items()
+            }
             for key, value in param_dict.items():
                 if key in SERVER_SIDE_PARAMETERS:
                     self.parameters[key] = value
