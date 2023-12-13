@@ -258,6 +258,11 @@ class BaseCursor:
             for key, value in param_dict.items():
                 if key in SERVER_SIDE_PARAMETERS:
                     self.parameters[key] = value
+                else:
+                    logger.debug(
+                        f"Unknown parameter {key} returned by the server. "
+                        "It will be ignored."
+                    )
 
     def _row_set_from_response(
         self, response: Response
