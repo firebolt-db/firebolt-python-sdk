@@ -179,7 +179,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                         query,
                         {
                             "async_execution": 1,
-                            "advanced_mode": 1,
                             "output_format": JSON_OUTPUT_FORMAT,
                         },
                     )
