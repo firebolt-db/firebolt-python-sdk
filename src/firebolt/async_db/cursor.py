@@ -83,11 +83,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._client = client
         self.connection = connection
         if connection.database:
-            self.parameters["database"] = connection.database
+            self.database = connection.database
 
     @property
     def database(self) -> Optional[str]:
         return self.parameters.get("database")
+
+    @database.setter
+    def database(self, database: str) -> None:
+        self.parameters["database"] = database
 
     @abstractmethod
     async def _api_request(
@@ -106,12 +110,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            if self.parameters["database"] and not await self.is_db_available(
-                self.parameters["database"]
-            ):
-                raise FireboltDatabaseError(
-                    f"Database {self.parameters['database']} does not exist"
-                )
+            if self.database and not await self.is_db_available(self.database):
+                raise FireboltDatabaseError(f"Database {self.database} does not exist")
             raise ProgrammingError(resp.read().decode("utf-8"))
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
