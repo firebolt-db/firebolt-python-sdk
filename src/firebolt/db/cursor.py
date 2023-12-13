@@ -489,13 +489,15 @@ class CursorV1(Cursor):
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
         """
+        parameters = parameters or {}
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        if self.parameters:
+            parameters = {**self.parameters, **parameters}
         return self._client.request(
             url=f"/{path}",
             method="POST",
             params={
-                "database": self.parameters["database"],
                 **(parameters or dict()),
             },
             content=query,
