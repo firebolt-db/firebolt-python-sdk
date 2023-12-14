@@ -85,6 +85,11 @@ def database_name() -> str:
 
 
 @fixture(scope="session")
+def use_db_name(database_name: str):
+    return f"{database_name}_use_db_test"
+
+
+@fixture(scope="session")
 def account_name() -> str:
     return must_env(ACCOUNT_NAME_ENV)
 

@@ -841,3 +841,24 @@ async def test_cursor_iterate(
     with raises(CursorClosedError):
         async for res in cursor:
             pass
+
+
+async def test_server_side_header_database(
+    httpx_mock: HTTPXMock,
+    query_callback_with_headers: Callable,
+    query_url: str,
+    query_url_updated: str,
+    db_name: str,
+    db_name_updated: str,
+    cursor: Cursor,
+):
+    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    assert cursor.database == db_name
+    await cursor.execute(f"USE DATABASE = '{db_name_updated}'")
+    assert cursor.database == db_name_updated
+
+    httpx_mock.reset(True)
+    # Check updated database is used in the next query
+    httpx_mock.add_callback(query_callback_with_headers, url=query_url_updated)
+    await cursor.execute("select 1")
+    assert cursor.database == db_name_updated

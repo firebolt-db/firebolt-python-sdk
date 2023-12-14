@@ -76,6 +76,16 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         super().__init__(*args, **kwargs)
         self._client = client
         self.connection = connection
+        if connection.database:
+            self.database = connection.database
+
+    @property
+    def database(self) -> Optional[str]:
+        return self.parameters.get("database")
+
+    @database.setter
+    def database(self, database: str) -> None:
+        self.parameters["database"] = database
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -84,11 +94,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 f"Error executing query:\n{resp.read().decode('utf-8')}"
             )
         if resp.status_code == codes.FORBIDDEN:
-            if self.connection.database and not self.is_db_available(
-                self.connection.database
-            ):
+            if self.database and not self.is_db_available(self.database):
                 raise FireboltDatabaseError(
-                    f"Database {self.connection.database} does not exist"
+                    f"Database {self.parameters['database']} does not exist"
                 )
             raise ProgrammingError(resp.read().decode("utf-8"))
         if (
@@ -188,6 +196,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                         query, {"output_format": JSON_OUTPUT_FORMAT}
                     )
                     self._raise_if_error(resp)
+                    # get parameters from response
+                    self._parse_response_headers(resp.headers)
                     row_set = self._row_set_from_response(resp)
 
                 self._append_row_set(row_set)
@@ -379,8 +389,8 @@ class CursorV2(Cursor):
         parameters = parameters or {}
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **parameters}
-        if self.connection.database:
-            parameters["database"] = self.connection.database
+        if self.parameters:
+            parameters = {**self.parameters, **parameters}
         if self.connection._is_system:
             assert isinstance(self._client, ClientV2)  # Type check
             parameters["account_id"] = self._client.account_id
@@ -480,13 +490,15 @@ class CursorV1(Cursor):
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
         """
+        parameters = parameters or {}
         if use_set_parameters:
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
+        if self.parameters:
+            parameters = {**self.parameters, **parameters}
         return self._client.request(
             url=f"/{path}",
             method="POST",
             params={
-                "database": self.connection.database,
                 **(parameters or dict()),
             },
             content=query,

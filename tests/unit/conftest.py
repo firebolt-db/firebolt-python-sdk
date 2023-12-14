@@ -147,6 +147,11 @@ def db_name() -> str:
 
 
 @fixture
+def db_name_updated() -> str:
+    return "database_new"
+
+
+@fixture
 def account_id_url(server: str, account_name: str) -> Pattern:
     account_name_re = r"[^\\\\]*"
     base = f"https://{server}{ACCOUNT_BY_NAME_URL}"

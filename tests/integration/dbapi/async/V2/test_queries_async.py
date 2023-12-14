@@ -1,12 +1,14 @@
 from datetime import date, datetime
 from decimal import Decimal
+from os import environ
 from typing import List
 
-from pytest import mark, raises
+from pytest import fixture, mark, raises
 
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.common._types import ColType, Column
+from tests.integration.conftest import API_ENDPOINT_ENV
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(
@@ -411,3 +413,41 @@ async def test_bytea_roundtrip(
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
+
+
+@fixture
+async def setup_db(connection_system_engine_no_db: Connection, use_db_name: str):
+    use_db_name = use_db_name + "_async"
+    with connection_system_engine_no_db.cursor() as cursor:
+        await cursor.execute(f"CREATE DATABASE {use_db_name}")
+        yield
+        await cursor.execute(f"DROP DATABASE {use_db_name}")
+
+
+@mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
+async def test_use_database(
+    setup_db,
+    connection_system_engine_no_db: Connection,
+    use_db_name: str,
+    database_name: str,
+) -> None:
+    test_db_name = use_db_name + "_async"
+    test_table_name = "verify_use_db_async"
+    """Use database works as expected."""
+    with connection_system_engine_no_db.cursor() as c:
+        await c.execute(f"USE DATABASE {test_db_name}")
+        assert c.database == test_db_name
+        await c.execute(f"CREATE TABLE {test_table_name} (id int)")
+        await c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert (await c.fetchone())[0] == test_table_name, "Table was not created"
+        # Change DB and verify table is not there
+        await c.execute(f"USE DATABASE {database_name}")
+        assert c.database == database_name
+        await c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert (await c.fetchone()) is None, "Database was not changed"

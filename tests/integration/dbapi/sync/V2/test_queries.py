@@ -1,14 +1,16 @@
 from datetime import date, datetime
 from decimal import Decimal
+from os import environ
 from threading import Thread
 from typing import Any, List
 
-from pytest import mark, raises
+from pytest import fixture, mark, raises
 
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType, Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
+from tests.integration.conftest import API_ENDPOINT_ENV
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
@@ -494,3 +496,41 @@ def test_bytea_roundtrip(
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
+
+
+@fixture
+def setup_db(connection_system_engine, use_db_name):
+    use_db_name = f"{use_db_name}_sync"
+    with connection_system_engine.cursor() as cursor:
+        cursor.execute(f"CREATE DATABASE {use_db_name}")
+        yield
+        cursor.execute(f"DROP DATABASE {use_db_name}")
+
+
+@mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
+def test_use_database(
+    setup_db,
+    connection_system_engine: Connection,
+    use_db_name: str,
+    database_name: str,
+) -> None:
+    test_db_name = f"{use_db_name}_sync"
+    test_table_name = "verify_use_db"
+    """Use database works as expected."""
+    with connection_system_engine.cursor() as c:
+        c.execute(f"USE DATABASE {test_db_name}")
+        assert c.database == test_db_name
+        c.execute(f"CREATE TABLE {test_table_name} (id int)")
+        c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert c.fetchone()[0] == test_table_name, "Table was not created"
+        # Change DB and verify table is not there
+        c.execute(f"USE DATABASE {database_name}")
+        assert c.database == database_name
+        c.execute(
+            "SELECT table_name FROM information_schema.tables "
+            f"WHERE table_name = '{test_table_name}'"
+        )
+        assert c.fetchone() is None, "Database was not changed"

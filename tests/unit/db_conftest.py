@@ -268,6 +268,29 @@ def query_callback(
 
 
 @fixture
+def query_callback_with_headers(
+    query_description: List[Column],
+    query_data: List[List[ColType]],
+    query_statistics: Dict[str, Any],
+    db_name_updated: str,
+) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        assert f"output_format={JSON_OUTPUT_FORMAT}" in str(request.url)
+        query_response = {
+            "meta": [{"name": c.name, "type": c.type_code} for c in query_description],
+            "data": query_data,
+            "rows": len(query_data),
+            "statistics": query_statistics,
+        }
+        headers = {"Firebolt-Update-Parameters": f"database={db_name_updated}"}
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    return do_query
+
+
+@fixture
 def select_one_query_callback(
     query_description: List[Column], query_data: List[List[ColType]]
 ) -> Callable:
@@ -340,6 +363,14 @@ def query_url(server: str, db_name: str) -> str:
     return URL(
         f"https://{server}/",
         params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name},
+    )
+
+
+@fixture
+def query_url_updated(server: str, db_name_updated: str) -> str:
+    return URL(
+        f"https://{server}/",
+        params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name_updated},
     )
 
 

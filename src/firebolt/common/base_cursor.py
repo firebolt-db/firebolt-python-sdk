@@ -7,7 +7,7 @@ from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-from httpx import Response
+from httpx import Headers, Response
 
 from firebolt.common._types import (
     ColType,
@@ -50,6 +50,10 @@ class QueryStatus(Enum):
     PARSE_ERROR = 6
     CANCELED_EXECUTION = 7
     EXECUTION_ERROR = 8
+
+
+# known parameters that can be set on the server side
+SERVER_SIDE_PARAMETERS = ["database"]
 
 
 @dataclass
@@ -109,6 +113,7 @@ def check_query_executed(func: Callable) -> Callable:
 class BaseCursor:
     __slots__ = (
         "connection",
+        "parameters",
         "_arraysize",
         "_client",
         "_state",
@@ -140,6 +145,7 @@ class BaseCursor:
             ]
         ] = []
         self._set_parameters: Dict[str, Any] = dict()
+        self.parameters: Dict[str, str] = dict()
         self._rowcount = -1
         self._idx = 0
         self._next_set_idx = 0
@@ -242,6 +248,26 @@ class BaseCursor:
         self._row_sets = []
         self._next_set_idx = 0
         self._query_id = ""
+
+    def _parse_response_headers(self, headers: Headers) -> None:
+        """Parse response and update relevant cursor fields."""
+        update_parameters = headers.get("Firebolt-Update-Parameters")
+        # parse update parameters dict and set keys as attributes
+        if update_parameters:
+            # parse key1=value1,key2=value2 comma separated string into dict
+            param_dict = dict(item.split("=") for item in update_parameters.split(","))
+            # strip whitespace from keys and values
+            param_dict = {
+                key.strip(): value.strip() for key, value in param_dict.items()
+            }
+            for key, value in param_dict.items():
+                if key in SERVER_SIDE_PARAMETERS:
+                    self.parameters[key] = value
+                else:
+                    logger.debug(
+                        f"Unknown parameter {key} returned by the server. "
+                        "It will be ignored."
+                    )
 
     def _row_set_from_response(
         self, response: Response
