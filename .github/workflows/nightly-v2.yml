@@ -56,6 +56,8 @@ jobs:
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          SERVICE_ID_NO_USER: ${{ secrets.FIREBOLT_CLIENT_ID_NO_USER_STG }}
+          SERVICE_SECRET_NO_USER: ${{ secrets.FIREBOLT_CLIENT_SECRET_NO_USER_STG }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}

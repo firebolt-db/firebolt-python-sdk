@@ -57,6 +57,8 @@ jobs:
           PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
           SERVICE_ID: ${{ secrets.SERVICE_ID_STG }}
           SERVICE_SECRET: ${{ secrets.SERVICE_SECRET_STG }}
+          SERVICE_ID_NO_USER: "n/a"
+          SERVICE_SECRET_NO_USER: "n/a"
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           ENGINE_URL: ${{ steps.setup.outputs.engine_url }}

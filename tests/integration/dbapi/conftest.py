@@ -194,3 +194,16 @@ def create_drop_description() -> List[Column]:
         Column("num_hosts_remaining", int, None, None, None, None, None),
         Column("num_hosts_active", int, None, None, None, None, None),
     ]
+
+
+@fixture(params=[("invalid_account_name", "auth"), ("account_name", "auth_no_user")])
+def account_and_auth_404(request):
+    """
+    Fixture that provides invalid account name and auth parameters for testing.
+    Returning either invalid account_name or account name with no user attached.
+    Both have respective valid auth parameters.
+    """
+    account_fixture, auth_fixture = request.param
+    return request.getfixturevalue(account_fixture), request.getfixturevalue(
+        auth_fixture
+    )

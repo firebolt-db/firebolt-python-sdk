@@ -25,6 +25,14 @@ on:
         required: true
       FIREBOLT_CLIENT_SECRET_NEW_IDN:
         required: true
+      FIREBOLT_CLIENT_ID_NO_USER:
+        required: true
+      FIREBOLT_CLIENT_SECRET_NO_USER:
+        required: true
+      FIREBOLT_CLIENT_ID_NO_USER_STG:
+        required: true
+      FIREBOLT_CLIENT_SECRET_NO_USER_STG:
+        required: true
 jobs:
   tests:
     runs-on: ubuntu-latest
@@ -47,9 +55,13 @@ jobs:
           if [ "${{ inputs.environment }}" == 'staging' ]; then
              echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}" >> "$GITHUB_ENV"
              echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_ID_NO_USER=${{ secrets.SERVICE_ID_NO_USER_STG }}" >> "$GITHUB_ENV"
+             echo "CLIENT_SECRET_NO_USER=${{ secrets.SERVICE_SECRET_NO_USER_STG }}" >> "$GITHUB_ENV"
           else
              echo "CLIENT_ID=${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}" >> "$GITHUB_ENV"
              echo "CLIENT_SECRET=${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}" >> "$GITHUB_ENV"
+             echo "CLIENT_ID_NO_USER=${{ secrets.SERVICE_ID_NO_USER }}" >> "$GITHUB_ENV"
+             echo "CLIENT_SECRET_NO_USER=${{ secrets.SERVICE_SECRET_NO_USER }}" >> "$GITHUB_ENV"
           fi
 
       - name: Setup database and engine
@@ -65,6 +77,8 @@ jobs:
         env:
           SERVICE_ID: ${{ env.CLIENT_ID }}
           SERVICE_SECRET: ${{ env.CLIENT_SECRET }}
+          SERVICE_ID_NO_USER: ${{ env.CLIENT_ID_NO_USER }}
+          SERVICE_SECRET_NO_USER: ${{ env.CLIENT_SECRET_NO_USER }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}

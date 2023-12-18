@@ -15,6 +15,8 @@ ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
+SERVICE_ID_NO_USER_ENV = "SERVICE_ID_NO_USER"
+SERVICE_SECRET_NO_USER_ENV = "SERVICE_SECRET_NO_USER"
 USER_NAME_ENV = "USER_NAME"
 PASSWORD_ENV = "PASSWORD"
 ENGINE_URL_ENV = "ENGINE_URL"
@@ -95,6 +97,11 @@ def account_name() -> str:
 
 
 @fixture(scope="session")
+def invalid_account_name(account_name: str) -> str:
+    return f"{account_name}--"
+
+
+@fixture(scope="session")
 def api_endpoint() -> str:
     return must_env(API_ENDPOINT_ENV)
 
@@ -110,8 +117,25 @@ def service_secret() -> Secret:
 
 
 @fixture(scope="session")
+def service_id_no_user() -> str:
+    return must_env(SERVICE_ID_NO_USER_ENV)
+
+
+@fixture(scope="session")
+def service_secret_no_user() -> Secret:
+    return Secret(must_env(SERVICE_SECRET_NO_USER_ENV))
+
+
+@fixture(scope="session")
 def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
     return ClientCredentials(service_id, service_secret.value)
+
+
+@fixture(scope="session")
+def auth_no_user(
+    service_id_no_user: str, service_secret_no_user: Secret
+) -> ClientCredentials:
+    return ClientCredentials(service_id_no_user, service_secret_no_user.value)
 
 
 @fixture(scope="session")
