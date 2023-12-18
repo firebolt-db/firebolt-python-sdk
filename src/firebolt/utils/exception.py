@@ -75,6 +75,27 @@ class AccountNotFoundError(FireboltError):
         self.account_name = account_name
 
 
+class AccountNotFoundOrNoAccessError(FireboltError):
+    """Account with provided name doesn't exist.
+
+    Args:
+        account_name (str): Name of account that wasn't found
+
+    Attributes:
+        account_name (str): Name of account that wasn't found
+    """
+
+    def __init__(self, account_name: str):
+        super().__init__(
+            f"Account '{account_name}' does not exist "
+            "in this organization or is not authorized. "
+            "Please verify the account name and make sure your "
+            "service account has the correct RBAC permissions and "
+            "is linked to a user."
+        )
+        self.account_name = account_name
+
+
 class AttachedEngineInUseError(FireboltDatabaseError):
     """Engine unavailable because it's starting/stopping.
 

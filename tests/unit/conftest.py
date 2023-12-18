@@ -177,6 +177,17 @@ def account_id_callback(
 
 
 @fixture
+def account_id_invalid_callback() -> Callable:
+    def do_mock(
+        request: Request,
+        **kwargs,
+    ) -> Response:
+        return Response(status_code=httpx.codes.NOT_FOUND, json={"error": "not found"})
+
+    return do_mock
+
+
+@fixture
 def engine_id() -> str:
     return "mock_engine_id"
 

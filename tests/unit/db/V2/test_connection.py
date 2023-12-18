@@ -13,6 +13,7 @@ from firebolt.common._types import ColType
 from firebolt.db import Connection, connect
 from firebolt.db.cursor import CursorV2
 from firebolt.utils.exception import (
+    AccountNotFoundOrNoAccessError,
     ConfigurationError,
     ConnectionClosedError,
     EngineNotRunningError,
@@ -181,6 +182,55 @@ def test_connect_database(
         api_endpoint=server,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
+
+
+def test_connect_invalid_account(
+    db_name: str,
+    auth_url: str,
+    server: str,
+    auth: Auth,
+    account_name: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    account_id_url: str,
+    account_id_invalid_callback: Callable,
+):
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(account_id_invalid_callback, url=account_id_url)
+    with raises(AccountNotFoundOrNoAccessError):
+        with connect(
+            database=db_name,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=server,
+        ) as connection:
+            connection.cursor().execute("select*")
+
+
+def test_connect_system_engine_404(
+    db_name: str,
+    auth_url: str,
+    server: str,
+    auth: Auth,
+    account_name: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_404_callback: Callable,
+):
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_404_callback, url=get_system_engine_url)
+    with raises(AccountNotFoundOrNoAccessError):
+        with connect(
+            database=db_name,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=server,
+        ) as connection:
+            connection.cursor().execute("select*")
 
 
 def test_connection_unclosed_warnings(auth: Auth):

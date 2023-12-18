@@ -18,6 +18,7 @@ from firebolt.client.constants import (
 )
 from firebolt.utils.exception import (
     AccountNotFoundError,
+    AccountNotFoundOrNoAccessError,
     FireboltEngineError,
     InterfaceError,
 )
@@ -142,7 +143,7 @@ class ClientV2(Client):
         )
         if response.status_code == HttpxCodes.NOT_FOUND:
             assert self.account_name is not None
-            raise AccountNotFoundError(self.account_name)
+            raise AccountNotFoundOrNoAccessError(self.account_name)
         # process all other status codes
         response.raise_for_status()
         return response.json()["id"]
@@ -324,7 +325,7 @@ class AsyncClientV2(AsyncClient):
         )
         if response.status_code == HttpxCodes.NOT_FOUND:
             assert self.account_name is not None
-            raise AccountNotFoundError(self.account_name)
+            raise AccountNotFoundOrNoAccessError(self.account_name)
         # process all other status codes
         response.raise_for_status()
         account_id = response.json()["id"]
