@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from pytest import mark, raises
 
 from firebolt.client.auth import ClientCredentials
@@ -15,22 +13,43 @@ from firebolt.utils.exception import (
 
 def test_invalid_account(
     database_name: str,
-    account_and_auth_404: Tuple[str, ClientCredentials],
+    invalid_account_name: str,
+    auth: ClientCredentials,
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid account error."""
-    account, auth = account_and_auth_404
     with raises(AccountNotFoundOrNoAccessError) as exc_info:
         with connect(
             database=database_name,
             auth=auth,
-            account_name=account,
+            account_name=invalid_account_name,
             api_endpoint=api_endpoint,
         ) as connection:
             connection.cursor().execute("show tables")
 
     assert str(exc_info.value).startswith(
-        f"Account '{account}' does not exist"
+        f"Account '{invalid_account_name}' does not exist"
+    ), "Invalid account error message."
+
+
+def test_account_no_user(
+    database_name: str,
+    account_name: str,
+    auth_no_user: ClientCredentials,
+    api_endpoint: str,
+) -> None:
+    """Connection properly reacts to invalid account error."""
+    with raises(AccountNotFoundOrNoAccessError) as exc_info:
+        with connect(
+            database=database_name,
+            auth=auth_no_user,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as connection:
+            connection.cursor().execute("show tables")
+
+    assert str(exc_info.value).startswith(
+        f"Account '{account_name}' does not exist"
     ), "Invalid account error message."
 
 

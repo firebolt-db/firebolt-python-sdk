@@ -42,14 +42,6 @@ on:
         required: true
       FIREBOLT_CLIENT_SECRET_NEW_IDN:
         required: true
-      FIREBOLT_CLIENT_ID_NO_USER:
-        required: true
-      FIREBOLT_CLIENT_SECRET_NO_USER:
-        required: true
-      FIREBOLT_CLIENT_ID_NO_USER_STG:
-        required: true
-      FIREBOLT_CLIENT_SECRET_NO_USER_STG:
-        required: true
 jobs:
   integration-test-v1:
     uses: ./.github/workflows/integration-tests-v1.yml
@@ -73,7 +65,3 @@ jobs:
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
       FIREBOLT_CLIENT_ID_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_NEW_IDN }}
       FIREBOLT_CLIENT_SECRET_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_NEW_IDN }}
-      FIREBOLT_CLIENT_ID_NO_USER: ${{ secrets.FIREBOLT_CLIENT_ID_NO_USER }}
-      FIREBOLT_CLIENT_SECRET_NO_USER: ${{ secrets.FIREBOLT_CLIENT_SECRET_NO_USER }}
-      FIREBOLT_CLIENT_ID_NO_USER_STG: ${{ secrets.FIREBOLT_CLIENT_ID_NO_USER_STG }}
-      FIREBOLT_CLIENT_SECRET_NO_USER_STG: ${{ secrets.FIREBOLT_CLIENT_SECRET_NO_USER_STG }}
