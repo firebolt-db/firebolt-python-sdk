@@ -503,6 +503,22 @@ def get_system_engine_callback(system_engine_url: str) -> Callable:
 
 
 @fixture
+def get_system_engine_404_callback() -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.method == "GET", "invalid request method"
+
+        return Response(
+            status_code=codes.NOT_FOUND,
+            json={"error": "not found"},
+        )
+
+    return inner
+
+
+@fixture
 def mock_connection_flow(
     httpx_mock: HTTPXMock,
     auth_url: str,

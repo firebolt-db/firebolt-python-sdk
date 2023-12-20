@@ -95,6 +95,11 @@ def account_name() -> str:
 
 
 @fixture(scope="session")
+def invalid_account_name(account_name: str) -> str:
+    return f"{account_name}--"
+
+
+@fixture(scope="session")
 def api_endpoint() -> str:
     return must_env(API_ENDPOINT_ENV)
 

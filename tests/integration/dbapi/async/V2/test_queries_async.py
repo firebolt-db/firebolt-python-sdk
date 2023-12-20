@@ -415,7 +415,7 @@ async def test_bytea_roundtrip(
         ), "Invalid bytea data returned after roundtrip"
 
 
-@fixture
+@fixture(scope="session")
 async def setup_db(connection_system_engine_no_db: Connection, use_db_name: str):
     use_db_name = use_db_name + "_async"
     with connection_system_engine_no_db.cursor() as cursor:
