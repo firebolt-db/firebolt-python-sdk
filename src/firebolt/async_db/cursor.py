@@ -395,7 +395,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self.close()
 
     def __await__(self) -> Iterator:
-        pass
+        yield None
 
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
