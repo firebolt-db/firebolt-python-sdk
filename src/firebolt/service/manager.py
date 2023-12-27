@@ -14,6 +14,7 @@ from firebolt.client import (
 )
 from firebolt.common import Settings
 from firebolt.db import connect
+from firebolt.service.V1.provider import get_provider_id
 from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 60 * 2
@@ -48,11 +49,12 @@ class ResourceManager:
         "_connection",
         "regions",
         "instance_types",
-        "_provider_id",
+        "provider_id",
         "databases",
         "engines",
         "engine_revisions",
         "bindings",
+        "default_region",
         "_version",
     )
 
@@ -62,6 +64,8 @@ class ResourceManager:
         auth: Optional[Auth] = None,
         account_name: Optional[str] = None,
         api_endpoint: str = DEFAULT_API_URL,
+        # Legacy parameters
+        default_region: Optional[str] = None,
     ):
         if settings:
             logger.warning(SETTINGS_DEPRECATION_MESSAGE)
@@ -73,6 +77,7 @@ class ResourceManager:
             auth = settings.auth
             account_name = settings.account_name
             api_endpoint = settings.server
+            default_region = settings.default_region
 
         for param, name in ((auth, "auth"),):
             if not param:
@@ -113,6 +118,8 @@ class ResourceManager:
         self.account_name = account_name
         self.api_endpoint = api_endpoint
         self.account_id = self._client.account_id
+        self.default_region = default_region
+        self.provider_id: Optional[str] = None
         if version == 2:
             self._init_services_v2()
         elif version == 1:
@@ -131,13 +138,25 @@ class ResourceManager:
         self.databases = DatabaseService(resource_manager=self)
         self.engines = EngineService(resource_manager=self)
 
+        # Not applicable to V2
+        self.provider_id = None
+
     def _init_services_v1(self) -> None:
         # avoid circular import
         from firebolt.service.V1.binding import BindingService
+        from firebolt.service.V1.database import DatabaseService
         from firebolt.service.V1.engine import EngineService
+        from firebolt.service.V1.region import RegionService
 
+        # Cloud Platform Resources (AWS)
+        self.regions = RegionService(resource_manager=self)  # type: ignore
+
+        # Firebolt Resources
         self.bindings = BindingService(resource_manager=self)  # type: ignore
         self.engines = EngineService(resource_manager=self)  # type: ignore
+        self.databases = DatabaseService(resource_manager=self)  # type: ignore
+
+        self.provider_id = get_provider_id(client=self._client)
 
     def __del__(self) -> None:
         if hasattr(self, "_client"):

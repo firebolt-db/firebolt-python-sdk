@@ -1,6 +1,6 @@
 import json
 from re import Pattern, compile
-from typing import Callable
+from typing import Callable, List
 from urllib.parse import urlparse
 
 import httpx
@@ -9,7 +9,9 @@ from pytest import fixture
 
 from firebolt.client.auth.base import Auth
 from firebolt.model.V1.binding import Binding, BindingKey
+from firebolt.model.V1.database import Database, DatabaseKey
 from firebolt.model.V1.engine import Engine, EngineKey, EngineSettings
+from firebolt.model.V1.provider import Provider
 from firebolt.model.V1.region import Region, RegionKey
 from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.urls import (
@@ -68,6 +70,19 @@ def mock_engine(engine_name, region_key, engine_settings, account_id, server) ->
 
 
 @fixture
+def provider() -> Provider:
+    return Provider(
+        provider_id="mock_provider_id",
+        name="mock_provider_name",
+    )
+
+
+@fixture
+def mock_providers(provider) -> List[Provider]:
+    return [provider]
+
+
+@fixture
 def provider_callback(provider_url: str, mock_providers) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -85,6 +100,33 @@ def provider_callback(provider_url: str, mock_providers) -> Callable:
 @fixture
 def provider_url(server: str) -> str:
     return f"https://{server}{PROVIDERS_URL}"
+
+
+@fixture
+def region_1(provider) -> Region:
+    return Region(
+        key=RegionKey(
+            provider_id=provider.provider_id,
+            region_id="mock_region_id_1",
+        ),
+        name="mock_region_1",
+    )
+
+
+@fixture
+def region_2(provider) -> Region:
+    return Region(
+        key=RegionKey(
+            provider_id=provider.provider_id,
+            region_id="mock_region_id_2",
+        ),
+        name="mock_region_2",
+    )
+
+
+@fixture
+def mock_regions(region_1, region_2) -> List[Region]:
+    return [region_1, region_2]
 
 
 @fixture
@@ -220,6 +262,21 @@ def account_engine_url(server: str, account_id, mock_engine) -> str:
     return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id,
         engine_id=mock_engine.engine_id,
+    )
+
+
+@fixture
+def db_description() -> str:
+    return "database description"
+
+
+@fixture
+def mock_database(region_1: Region, account_id: str, database_id: str) -> Database:
+    return Database(
+        name="mock_db_name",
+        description="mock_db_description",
+        compute_region_key=region_1.key,
+        database_key=DatabaseKey(account_id=account_id, database_id=database_id),
     )
 
 

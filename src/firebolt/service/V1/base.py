@@ -1,3 +1,5 @@
+from typing import Optional
+
 from firebolt.client import ClientV1 as Client
 from firebolt.service.manager import ResourceManager
 
@@ -13,3 +15,7 @@ class BaseService:
     @property
     def account_id(self) -> str:
         return self.resource_manager.account_id
+
+    @property
+    def default_region_setting(self) -> Optional[str]:
+        return self.resource_manager.default_region
