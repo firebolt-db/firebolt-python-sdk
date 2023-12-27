@@ -12,6 +12,8 @@ def test_get_many_bindings(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     account_id_callback: Callable,
     account_id_url: Pattern,
     bindings_url: str,
@@ -20,6 +22,7 @@ def test_get_many_bindings(
     mock_engine: Engine,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(bindings_callback, url=bindings_url)
 

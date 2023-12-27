@@ -22,7 +22,7 @@ def test_region(
     mock_regions: List[Region],
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(region_callback, url=region_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
 

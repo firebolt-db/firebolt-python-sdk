@@ -12,6 +12,8 @@ def test_database_create(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     region_callback: Callable,
     region_url: str,
     settings: Settings,
@@ -23,6 +25,7 @@ def test_database_create(
     db_description: str,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(region_callback, url=region_url)
@@ -39,6 +42,8 @@ def test_database_get_by_name(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     settings: Settings,
     account_id_callback: Callable,
     account_id_url: Pattern,
@@ -50,6 +55,7 @@ def test_database_get_by_name(
 ):
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(database_get_by_name_callback, url=database_get_by_name_url)
@@ -65,6 +71,8 @@ def test_database_get_many(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     settings: Settings,
     account_id_callback: Callable,
     account_id_url: Pattern,
@@ -76,6 +84,7 @@ def test_database_get_many(
 ):
 
     httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(
@@ -99,6 +108,8 @@ def test_database_update(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     settings: Settings,
     account_id_callback: Callable,
     account_id_url: Pattern,
@@ -107,6 +118,7 @@ def test_database_update(
     mock_database: Database,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     httpx_mock.add_callback(database_update_callback, url=database_url, method="PATCH")

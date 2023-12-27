@@ -12,6 +12,8 @@ def test_engine_start_stop(
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     settings: Settings,
     mock_engine: Engine,
     account_id_callback: Callable,
@@ -20,7 +22,7 @@ def test_engine_start_stop(
     account_engine_url: str,
 ):
     httpx_mock.add_callback(auth_callback, url=auth_url)
-
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
