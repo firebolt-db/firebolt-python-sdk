@@ -11,4 +11,5 @@ def resource_manager(
     return ResourceManager(
         auth=password_auth,
         api_endpoint=api_endpoint,
+        default_region="us-east-1",
     )
