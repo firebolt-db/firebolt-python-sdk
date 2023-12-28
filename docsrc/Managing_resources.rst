@@ -49,10 +49,6 @@ To get started, follow the steps below:
             account_name="your_acc_name",
         )
 
-    .. note::
-
-        Subsequent examples on this page use the ``rm`` object for database and engine functions.
-
 
 Setting up a ResourceManager object (legacy)
 ================================================
@@ -129,9 +125,10 @@ Setting up a ResourceManager object (legacy)
 
             rm = ResourceManager(settings=settings)
 
-    .. note::
 
-        Subsequent examples on this page use the ``rm`` object for database and engine functions.
+.. note::
+
+	Subsequent examples on this page use the ``rm`` object for database and engine functions.
 
 
 Database function examples
