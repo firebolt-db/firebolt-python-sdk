@@ -17,14 +17,14 @@ To get started, follow the steps below:
 
 **1. Import modules**
 
-	The Firebolt Python SDK requires you to import the following modules before making
-	any command or query requests to your Firebolt database.
+    The Firebolt Python SDK requires you to import the following modules before making
+    any command or query requests to your Firebolt database.
 
 .. _required_connection_imports:
 
-	::
+    ::
 
-		from firebolt.db import connect
+        from firebolt.db import connect
         from firebolt.client.auth import UsernamePassword
 
 
@@ -33,87 +33,87 @@ To get started, follow the steps below:
 **2. Connect to your database and engine**
 
 
-	Your account information can be provided as parameters in a ``connection()`` function.
+    Your account information can be provided as parameters in a ``connection()`` function.
 
-	A connection requires the following parameters:
+    A connection requires the following parameters:
 
-	+------------------------------------+----------------------------------------------------------------------------------------------------------------+
-	| ``auth``                           |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.            |
-	+------------------------------------+----------------------------------------------------------------------------------------------------------------+
-	| ``database``                       |  The name of the database you would like to connect to.                                                        |
-	+------------------------------------+----------------------------------------------------------------------------------------------------------------+
-	| ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.                                                         |
-	|                                    |                                                                                                                |
-	|                                    |	If the engine is not specified, your default engine is used.                                                  |
-	+------------------------------------+----------------------------------------------------------------------------------------------------------------+
+    +------------------------------------+----------------------------------------------------------------------------------------------------------------+
+    | ``auth``                           |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.            |
+    +------------------------------------+----------------------------------------------------------------------------------------------------------------+
+    | ``database``                       |  The name of the database you would like to connect to.                                                        |
+    +------------------------------------+----------------------------------------------------------------------------------------------------------------+
+    | ``engine_name`` or ``engine_url``  |  The name or URL of the engine to use for SQL queries.                                                         |
+    |                                    |                                                                                                                |
+    |                                    |    If the engine is not specified, your default engine is used.                                                  |
+    +------------------------------------+----------------------------------------------------------------------------------------------------------------+
 
-	This information can be provided in multiple ways.
+    This information can be provided in multiple ways.
 
-		* **Set credentials manually**
+        * **Set credentials manually**
 
-			You can manually include your account information in a connection object in
-			your code for any queries you want to request.
+            You can manually include your account information in a connection object in
+            your code for any queries you want to request.
 
-			Replace the values in the example code below with your Firebolt account
-			credentials as appropriate.
+            Replace the values in the example code below with your Firebolt account
+            credentials as appropriate.
 
-			::
+            ::
 
-				username = "your_username"
-				password = "your_password"
-				engine_name = "your_engine"
-				database_name = "your_database"
+                username = "your_username"
+                password = "your_password"
+                engine_name = "your_engine"
+                database_name = "your_database"
 
-				connection = connect(
-					engine_name=engine_name,
-					database=database_name,
-					auth=UsernamePassword(username, password)
-				)
+                connection = connect(
+                    engine_name=engine_name,
+                    database=database_name,
+                    auth=UsernamePassword(username, password)
+                )
 
-				cursor = connection.cursor()
+                cursor = connection.cursor()
 
 
-		* **Use an .env file**
+        * **Use an .env file**
 
-			Consolidating all of your Firebolt credentials into a ``.env`` file can help
-			protect sensitive information from exposure. Create an ``.env`` file with the
-			following key-value pairs, and replace the values with your information.
+            Consolidating all of your Firebolt credentials into a ``.env`` file can help
+            protect sensitive information from exposure. Create an ``.env`` file with the
+            following key-value pairs, and replace the values with your information.
 
-			::
+            ::
 
-				FIREBOLT_USER="your_username"
-				FIREBOLT_PASSWORD="your_password"
-				FIREBOLT_ENGINE="your_engine"
-				FIREBOLT_DB="your_database"
+                FIREBOLT_USER="your_username"
+                FIREBOLT_PASSWORD="your_password"
+                FIREBOLT_ENGINE="your_engine"
+                FIREBOLT_DB="your_database"
 
-			Be sure to place this ``.env`` file into your root directory.
+            Be sure to place this ``.env`` file into your root directory.
 
-			Your connection script can load these environmental variables from the ``.env``
-			file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_
-			package. Note that the example below imports the ``os`` and ``dotenv`` modules
-			in order to load the environmental variables.
+            Your connection script can load these environmental variables from the ``.env``
+            file by using the `python-dotenv <https://pypi.org/project/python-dotenv/>`_
+            package. Note that the example below imports the ``os`` and ``dotenv`` modules
+            in order to load the environmental variables.
 
-			::
+            ::
 
-				import os
-				from dotenv import load_dotenv
+                import os
+                from dotenv import load_dotenv
 
-				load_dotenv()
+                load_dotenv()
 
-				connection = connect(
-				    auth=UsernamePassword(os.getenv('FIREBOLT_USER'),
-				                          os.getenv('FIREBOLT_PASSWORD')),
-				    engine_name=os.getenv('FIREBOLT_ENGINE'),
-				    database=os.getenv('FIREBOLT_DB')
-				)
+                connection = connect(
+                    auth=UsernamePassword(os.getenv('FIREBOLT_USER'),
+                                          os.getenv('FIREBOLT_PASSWORD')),
+                    engine_name=os.getenv('FIREBOLT_ENGINE'),
+                    database=os.getenv('FIREBOLT_DB')
+                )
 
-				cursor = connection.cursor()
+                cursor = connection.cursor()
 
 
 **3. Execute commands using the cursor**
 
-	The ``cursor`` object can be used to send queries and commands to your Firebolt
-	database and engine. See below for examples of functions using the ``cursor`` object.
+    The ``cursor`` object can be used to send queries and commands to your Firebolt
+    database and engine. See below for examples of functions using the ``cursor`` object.
 
 Server-side synchronous command and query examples
 ==================================================
@@ -134,32 +134,32 @@ queries. For help, see :ref:`managing_resources:starting an engine`.
 
 ::
 
-	cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table (
-	        id INT,
-	        name TEXT
-	    )
-	    PRIMARY INDEX id;
-	    """
-	)
+    cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table (
+            id INT,
+            name TEXT
+        )
+        PRIMARY INDEX id;
+        """
+    )
 
-	cursor.execute(
-	    """
-	    INSERT INTO test_table VALUES
-	    (1, 'hello'),
-	    (2, 'world'),
-	    (3, '!');
-	    """
-	)
+    cursor.execute(
+        """
+        INSERT INTO test_table VALUES
+        (1, 'hello'),
+        (2, 'world'),
+        (3, '!');
+        """
+    )
 
-	cursor.execute("SELECT * FROM test_table;")
+    cursor.execute("SELECT * FROM test_table;")
 
-	cursor.close()
+    cursor.close()
 
 .. note::
 
-	For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
+    For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
 
 
 Fetching query results
@@ -173,19 +173,19 @@ below use the data queried from ``test_table`` created in the
 
 ::
 
-	print(cursor.fetchone())
+    print(cursor.fetchone())
 
 **Returns**: ``[2, 'world']``
 
 ::
 
-	print(cursor.fetchmany(2))
+    print(cursor.fetchmany(2))
 
 **Returns**: ``[[1, 'hello'], [3, '!']]``
 
 ::
 
-	print(cursor.fetchall())
+    print(cursor.fetchall())
 
 **Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
@@ -207,25 +207,25 @@ parameters equal in length to the  number of ``?`` in the statement.
 
 ::
 
-	cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table2 (
-		    id INT,
-		    name TEXT,
-		    date_value DATE
-	    )
-		PRIMARY INDEX id;"""
-	)
+    cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table2 (
+            id INT,
+            name TEXT,
+            date_value DATE
+        )
+        PRIMARY INDEX id;"""
+    )
 
 
 ::
 
-	cursor.execute(
-	    "INSERT INTO test_table2 VALUES (?, ?, ?)",
-	    (1, "apple", "2018-01-01"),
-	)
+    cursor.execute(
+        "INSERT INTO test_table2 VALUES (?, ?, ?)",
+        (1, "apple", "2018-01-01"),
+    )
 
-	cursor.close()
+    cursor.close()
 
 .. _parameterized_query_executemany_example:
 
@@ -235,16 +235,16 @@ as values in the second argument.
 
 ::
 
-	cursor.executemany(
-	    "INSERT INTO test_table2 VALUES (?, ?, ?)",
-	    (
-	        (2, "banana", "2019-01-01"),
-	        (3, "carrot", "2020-01-01"),
-	        (4, "donut", "2021-01-01")
-	    )
-	)
+    cursor.executemany(
+        "INSERT INTO test_table2 VALUES (?, ?, ?)",
+        (
+            (2, "banana", "2019-01-01"),
+            (3, "carrot", "2020-01-01"),
+            (4, "donut", "2021-01-01")
+        )
+    )
 
-	cursor.close()
+    cursor.close()
 
 
 
@@ -257,32 +257,32 @@ SQL statements in the Firebolt UI.
 
 ::
 
-	cursor.execute(
-	    """
-	    SELECT * FROM test_table WHERE id < 4;
-	    SELECT * FROM test_table WHERE id > 2;
-	    """
-	)
-	print("First query: ", cursor.fetchall())
-	assert cursor.nextset()
-	print("Second query: ", cursor.fetchall())
-	assert cursor.nextset() is None
+    cursor.execute(
+        """
+        SELECT * FROM test_table WHERE id < 4;
+        SELECT * FROM test_table WHERE id > 2;
+        """
+    )
+    print("First query: ", cursor.fetchall())
+    assert cursor.nextset()
+    print("Second query: ", cursor.fetchall())
+    assert cursor.nextset() is None
 
-	cursor.close()
+    cursor.close()
 
 **Returns**:
 
 ::
 
-	First query: [[2, 'banana', datetime.date(2019, 1, 1)],
-	              [3, 'carrot', datetime.date(2020, 1, 1)],
-	              [1, 'apple', datetime.date(2018, 1, 1)]]
-	Second query: [[3, 'carrot', datetime.date(2020, 1, 1)],
-	               [4, 'donut', datetime.date(2021, 1, 1)]]
+    First query: [[2, 'banana', datetime.date(2019, 1, 1)],
+                  [3, 'carrot', datetime.date(2020, 1, 1)],
+                  [1, 'apple', datetime.date(2018, 1, 1)]]
+    Second query: [[3, 'carrot', datetime.date(2020, 1, 1)],
+                   [4, 'donut', datetime.date(2021, 1, 1)]]
 
 .. note::
 
-	Multiple statement queries are not able to use placeholder values for parameterized queries.
+    Multiple statement queries are not able to use placeholder values for parameterized queries.
 
 
 Asynchronous query execution
@@ -495,71 +495,71 @@ be used to check the query status.
 
 ::
 
-	query_id = cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table (
-	        id INT,
-	        name TEXT
-	    )
-	    PRIMARY INDEX id;
-	    """,
-	    async_execution=True
-	)
+    query_id = cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table (
+            id INT,
+            name TEXT
+        )
+        PRIMARY INDEX id;
+        """,
+        async_execution=True
+    )
 
 
 To check the status of a query, send the query ID to ```get_status()``` to receive a
 QueryStatus enumeration object. Possible statuses are:
 
 
-	* ``RUNNING``
-	* ``ENDED_SUCCESSFULLY``
-	* ``ENDED_UNSUCCESSFULLY``
-	* ``NOT_READY``
-	* ``STARTED_EXECUTION``
-	* ``PARSE_ERROR``
-	* ``CANCELED_EXECUTION``
-	* ``EXECUTION_ERROR``
+    * ``RUNNING``
+    * ``ENDED_SUCCESSFULLY``
+    * ``ENDED_UNSUCCESSFULLY``
+    * ``NOT_READY``
+    * ``STARTED_EXECUTION``
+    * ``PARSE_ERROR``
+    * ``CANCELED_EXECUTION``
+    * ``EXECUTION_ERROR``
 
 
 Once the status of the table creation is ``ENDED_SUCCESSFULLY``, data can be inserted into it:
 
 ::
 
-	from firebolt.async_db.cursor import QueryStatus
+    from firebolt.async_db.cursor import QueryStatus
 
-	query_status = cursor.get_status(query_id)
+    query_status = cursor.get_status(query_id)
 
-	if query_status == QueryStatus.ENDED_SUCCESSFULLY:
-	    cursor.execute(
-	        """
-	        INSERT INTO test_table VALUES
-	            (1, 'hello'),
-	            (2, 'world'),
-	            (3, '!');
-	        """
-		)
+    if query_status == QueryStatus.ENDED_SUCCESSFULLY:
+        cursor.execute(
+            """
+            INSERT INTO test_table VALUES
+                (1, 'hello'),
+                (2, 'world'),
+                (3, '!');
+            """
+        )
 
 
 In addition, server-side asynchronous queries can be cancelled calling ``cancel()``.
 
 ::
 
-	query_id = cursor.execute(
-	    """
-	    CREATE FACT TABLE IF NOT EXISTS test_table (
-	        id INT,
-	        name TEXT
-	    )
-	    PRIMARY INDEX id;
-	    """,
-	    async_execution=True
-	)
+    query_id = cursor.execute(
+        """
+        CREATE FACT TABLE IF NOT EXISTS test_table (
+            id INT,
+            name TEXT
+        )
+        PRIMARY INDEX id;
+        """,
+        async_execution=True
+    )
 
-	cursor.cancel(query_id)
+    cursor.cancel(query_id)
 
-	query_status = cursor.get_status(query_id)
+    query_status = cursor.get_status(query_id)
 
-	print(query_status)
+    print(query_status)
 
 **Returns**: ``CANCELED_EXECUTION``
 
@@ -594,5 +594,5 @@ You can import this module as follows:
 
 ::
 
-	from datetime import datetime
+    from datetime import datetime
 
