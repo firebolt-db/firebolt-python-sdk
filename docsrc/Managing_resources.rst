@@ -23,9 +23,50 @@ To get started, follow the steps below:
 
 	::
 
+        from firebolt.client.auth import UsernamePassword
 		from firebolt.service.manager import ResourceManager
-		from firebolt.common import Settings
 
+**2. Initialize a ResourceManager object**
+
+    A ResourceManager object contains the user credentials and other information needed to
+    manage Firebolt databases and engines.
+
+    ResourceManager uses the following parameters:
+
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``auth``            |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.                         |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``api_endpoint``    |  The API hostname for logging in. Defaults to ``api.app.firebolt.io`` if not included.                                      |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``account_name``    |  The name of the account you're using to connect to Firebolt. Must be specified in order to authenticate.                   |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+
+
+    ::
+
+        rm = ResourceManager(
+            auth=UsernamePassword("your_username", "your_password"),
+            account_name="your_acc_name",
+        )
+
+    .. note::
+
+        Subsequent examples on this page use the ``rm`` object for database and engine functions.
+
+
+Setting up a ResourceManager object (legacy)
+================================================
+
+**1. Import modules**
+
+	To initialize a ``ResourceManager`` object, import the modules shown below.
+
+.. _required_resourcemanager_imports:
+
+	::
+
+        from firebolt.client.auth import UsernamePassword
+		from firebolt.service.manager import ResourceManager
 
 **2. Initialize a Settings object**
 
@@ -277,12 +318,6 @@ engine name or ID.
 
 			engine = rm.engines.get_by_name(name="engine_name")
 
-	**Locating by ID**
-
-		::
-
-			engine = rm.engines.get_by_id(name="engine_id")
-
 
 Attaching an engine
 ---------------------
@@ -296,18 +331,6 @@ it can run SQL commands or queries.
 		engine.attach_to_database(
 		    database=rm.databases.get_by_name(name="database_name")
 		)
-
-
-
-Dropping an engine
---------------------
-
-Delete an engine by calling the ``delete`` function. The engine is removed from its attached
-database and deleted.
-
-	::
-
-		engine.delete()
 
 
 Starting an engine
@@ -332,18 +355,6 @@ to run queries and does not accrue additional usage time on your account.
 
 		engine.stop()
 
-Updating an engine
----------------------
-
-Update an engine to change its specifications, returning an updated version of the engine.
-The engine must be stopped in order to be updated.
-
-For a list of engine parameters that can be updated, see :meth:`~firebolt.model.engine.Engine.update`
-
-	::
-
-		engine.update(description = "This is a new description.")
-
 Getting engine status
 ----------------------
 
@@ -355,4 +366,3 @@ check if its execution was successful.
 
 		from devtools import debug
 		debug(engine)
-
