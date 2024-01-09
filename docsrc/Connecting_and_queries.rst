@@ -70,10 +70,12 @@ To get started, follow the steps below:
                 secret = "your_service_account_secret"
                 engine_name = "your_engine"
                 database_name = "your_database"
+                account_name = "your_account"
 
                 with connect(
                         engine_name=engine_name,
                         database=database_name,
+                        account_name=account_name,
                         auth=ClientCredentials(id, secret),
                 ) as connection:
                     cursor = connection.cursor()
@@ -91,6 +93,7 @@ To get started, follow the steps below:
                 FIREBOLT_CLIENT_SECRET="your_service_account_secret"
                 FIREBOLT_ENGINE="your_engine"
                 FIREBOLT_DB="your_database"
+                FIREBOLT_ACCOUNT="your_account"
 
             Be sure to place this ``.env`` file into your root directory.
 
@@ -112,7 +115,8 @@ To get started, follow the steps below:
                         os.getenv("FIREBOLT_CLIENT_SECRET")
                     )
                     engine_name=os.getenv('FIREBOLT_ENGINE'),
-                    database=os.getenv('FIREBOLT_DB')
+                    database=os.getenv('FIREBOLT_DB'),
+                    account_name=os.getenv('FIREBOLT_ACCOUNT'),
                 ) as connection:
                     cursor = connection.cursor()
 
