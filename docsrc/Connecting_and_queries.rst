@@ -399,12 +399,14 @@ It can be extended to run alongside of other operations.
         secret = "your_service_account_secret"
         engine_name = "your_engine"
         database_name = "your_database"
+        account_name = "your_account"
 
         query = "select * from my_table"
 
         async with await async_connect(
             engine_name=engine_name,
             database=database_name,
+            account_name=account_name,
             auth=ClientCredentials(id, secret),
         ) as connection:
             cursor = connection.cursor()
@@ -449,6 +451,7 @@ at the same time.
         secret = "your_service_account_secret"
         engine_name = "your_engine"
         database_name = "your_database"
+        account_name = "your_account"
 
         queries = [
             "select * from table_1",
@@ -459,6 +462,7 @@ at the same time.
         async with await async_connect(
             engine_name=engine_name,
             database=database_name,
+            account_name=account_name,
             auth=ClientCredentials(id, secret),
         ) as connection:
             # Create async tasks for every query
@@ -524,6 +528,7 @@ load on both server and client machines can be controlled. A suggested way is to
         secret = "your_service_account_secret"
         engine_name = "your_engine"
         database_name = "your_database"
+        account_name = "your_account"
 
         queries = [
             "select * from table_1",
@@ -534,6 +539,7 @@ load on both server and client machines can be controlled. A suggested way is to
         async with await async_connect(
             engine_name=engine_name,
             database=database_name,
+            account_name=account_name,
             auth=ClientCredentials(id, secret),
         ) as connection:
             # Create async tasks for every query
