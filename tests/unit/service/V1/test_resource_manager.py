@@ -20,6 +20,8 @@ def test_rm_credentials(
     user: str,
     password: str,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
     access_token: str,
@@ -28,6 +30,7 @@ def test_rm_credentials(
     url = "https://url"
 
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(check_token_callback, url=url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
@@ -62,6 +65,8 @@ def test_rm_token_cache(
     user: str,
     password: str,
     auth_url: str,
+    provider_callback: Callable,
+    provider_url: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
     access_token: str,
@@ -70,6 +75,7 @@ def test_rm_token_cache(
     url = "https://url"
 
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(provider_callback, url=provider_url)
     httpx_mock.add_callback(check_token_callback, url=url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
