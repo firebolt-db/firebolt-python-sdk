@@ -43,7 +43,8 @@ class RegionService(BaseService):
 
         if not self.default_region_setting:
             raise ValueError(
-                "The environment variable FIREBOLT_DEFAULT_REGION must be set."
+                "default_region parameter must be set when initializing "
+                "the resource manager."
             )
         return self.get_by_name(name=self.default_region_setting)
 
