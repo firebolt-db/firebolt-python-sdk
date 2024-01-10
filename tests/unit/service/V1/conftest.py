@@ -1,6 +1,6 @@
 import json
 from re import Pattern, compile
-from typing import Callable
+from typing import Callable, List
 from urllib.parse import urlparse
 
 import httpx
@@ -9,12 +9,15 @@ from pytest import fixture
 
 from firebolt.client.auth.base import Auth
 from firebolt.model.V1.binding import Binding, BindingKey
+from firebolt.model.V1.database import Database, DatabaseKey
 from firebolt.model.V1.engine import Engine, EngineKey, EngineSettings
+from firebolt.model.V1.provider import Provider
 from firebolt.model.V1.region import Region, RegionKey
 from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.urls import (
     ACCOUNT_BINDINGS_URL,
     ACCOUNT_BY_NAME_URL,
+    ACCOUNT_DATABASE_BINDING_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_DATABASE_URL,
     ACCOUNT_DATABASES_URL,
@@ -23,6 +26,7 @@ from firebolt.utils.urls import (
     ACCOUNT_LIST_ENGINES_URL,
     ACCOUNT_URL,
     AUTH_URL,
+    ENGINES_BY_IDS_URL,
     PROVIDERS_URL,
     REGIONS_URL,
 )
@@ -68,6 +72,19 @@ def mock_engine(engine_name, region_key, engine_settings, account_id, server) ->
 
 
 @fixture
+def provider() -> Provider:
+    return Provider(
+        provider_id="mock_provider_id",
+        name="mock_provider_name",
+    )
+
+
+@fixture
+def mock_providers(provider) -> List[Provider]:
+    return [provider]
+
+
+@fixture
 def provider_callback(provider_url: str, mock_providers) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -85,6 +102,33 @@ def provider_callback(provider_url: str, mock_providers) -> Callable:
 @fixture
 def provider_url(server: str) -> str:
     return f"https://{server}{PROVIDERS_URL}"
+
+
+@fixture
+def region_1(provider) -> Region:
+    return Region(
+        key=RegionKey(
+            provider_id=provider.provider_id,
+            region_id="mock_region_id_1",
+        ),
+        name="mock_region_1",
+    )
+
+
+@fixture
+def region_2(provider) -> Region:
+    return Region(
+        key=RegionKey(
+            provider_id=provider.provider_id,
+            region_id="mock_region_id_2",
+        ),
+        name="mock_region_2",
+    )
+
+
+@fixture
+def mock_regions(region_1, region_2) -> List[Region]:
+    return [region_1, region_2]
 
 
 @fixture
@@ -220,6 +264,21 @@ def account_engine_url(server: str, account_id, mock_engine) -> str:
     return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id,
         engine_id=mock_engine.engine_id,
+    )
+
+
+@fixture
+def db_description() -> str:
+    return "database description"
+
+
+@fixture
+def mock_database(region_1: Region, account_id: str, database_id: str) -> Database:
+    return Database(
+        name="mock_db_name",
+        description="mock_db_description",
+        compute_region_key=region_1.key,
+        database_key=DatabaseKey(account_id=account_id, database_id=database_id),
     )
 
 
@@ -386,6 +445,26 @@ def bindings_url(server: str, account_id: str, mock_engine: Engine) -> str:
 
 
 @fixture
+def database_bindings_url(server: str, account_id: str, mock_database: Database) -> str:
+    return (
+        f"https://{server}"
+        + ACCOUNT_BINDINGS_URL.format(account_id=account_id)
+        + f"?page.first=5000&filter.id_database_id_eq={mock_database.database_id}"
+    )
+
+
+@fixture
+def create_binding_url(
+    server: str, account_id: str, mock_database: Database, mock_engine: Engine
+) -> str:
+    return f"https://{server}" + ACCOUNT_DATABASE_BINDING_URL.format(
+        account_id=account_id,
+        database_id=mock_database.database_id,
+        engine_id=mock_engine.engine_id,
+    )
+
+
+@fixture
 def create_binding_callback(create_binding_url: str, binding) -> Callable:
     def do_mock(
         request: httpx.Request = None,
@@ -401,11 +480,11 @@ def create_binding_callback(create_binding_url: str, binding) -> Callable:
 
 
 @fixture
-def binding(account_id, mock_engine, db_id) -> Binding:
+def binding(account_id, mock_engine, database_id) -> Binding:
     return Binding(
         binding_key=BindingKey(
             account_id=account_id,
-            database_id=db_id,
+            database_id=database_id,
             engine_id=mock_engine.engine_id,
         ),
         is_default_engine=True,
@@ -419,6 +498,23 @@ def bindings_callback(bindings_url: str, binding: Binding) -> Callable:
         **kwargs,
     ) -> Response:
         assert request.url == bindings_url
+        return Response(
+            status_code=httpx.codes.OK,
+            json=list_to_paginated_response([binding]),
+        )
+
+    return do_mock
+
+
+@fixture
+def bindings_database_callback(
+    database_bindings_url: str, binding: Binding
+) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request.url == database_bindings_url
         return Response(
             status_code=httpx.codes.OK,
             json=list_to_paginated_response([binding]),
@@ -501,3 +597,8 @@ def account_id_callback(
 @fixture
 def auth(username_password_auth) -> Auth:
     return username_password_auth
+
+
+@fixture
+def engines_by_id_url(server: str) -> str:
+    return f"https://{server}" + ENGINES_BY_IDS_URL
