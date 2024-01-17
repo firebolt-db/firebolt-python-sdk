@@ -127,12 +127,12 @@ class BindingService(BaseService):
         )
         assert database.database_id is not None, "Database must have database_id"
         binding = Binding(
-            id=BindingKey(
+            binding_key=BindingKey(
                 account_id=self.account_id,
                 database_id=database.database_id,
                 engine_id=engine.engine_id,
             ),
-            engine_is_default=is_default_engine,
+            is_default_engine=is_default_engine,
         )
 
         response = self.client.post(

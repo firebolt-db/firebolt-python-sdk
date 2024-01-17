@@ -110,7 +110,7 @@ class DatabaseService(BaseService):
         else:
             region_key = self.resource_manager.regions.get_by_name(name=region).key
         database = Database(
-            name=name, compute_region_id=region_key, description=description
+            name=name, compute_region_key=region_key, description=description
         )
 
         logger.info(f"Creating Database (name={name})")
