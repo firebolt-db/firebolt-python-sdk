@@ -127,7 +127,7 @@ class BindingService(BaseService):
         )
         assert database.database_id is not None, "Database must have database_id"
         binding = Binding(
-            binding_id=BindingKey(
+            id=BindingKey(
                 account_id=self.account_id,
                 database_id=database.database_id,
                 engine_id=engine.engine_id,
