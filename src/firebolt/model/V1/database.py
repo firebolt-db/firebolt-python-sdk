@@ -42,24 +42,24 @@ class Database(FireboltBaseModel):
     _service: DatabaseService = PrivateAttr()
 
     # required
-    name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
+    name: str = Field(min_length=1, max_length=255, pattern=r"^[0-9a-zA-Z_]+$")
     compute_region_key: RegionKey = Field(alias="compute_region_id")
 
     # optional
-    database_key: Optional[DatabaseKey] = Field(None, alias="id")
-    description: Optional[str] = Field(None, max_length=255)
-    emoji: Optional[str] = Field(None, max_length=255)
-    current_status: Optional[str]
-    health_status: Optional[str]
-    data_size_full: Optional[int]
-    data_size_compressed: Optional[int]
-    is_system_database: Optional[bool]
-    storage_bucket_name: Optional[str]
-    create_time: Optional[datetime]
-    create_actor: Optional[str]
-    last_update_time: Optional[datetime]
-    last_update_actor: Optional[str]
-    desired_status: Optional[str]
+    database_key: Optional[DatabaseKey] = Field(default=None, alias="id")
+    description: Optional[str] = Field(default=None, max_length=255)
+    emoji: Optional[str] = Field(default=None, max_length=255)
+    current_status: Optional[str] = None
+    health_status: Optional[str] = None
+    data_size_full: Optional[int] = None
+    data_size_compressed: Optional[int] = None
+    is_system_database: Optional[bool] = None
+    storage_bucket_name: Optional[str] = None
+    create_time: Optional[datetime] = None
+    create_actor: Optional[str] = None
+    last_update_time: Optional[datetime] = None
+    last_update_actor: Optional[str] = None
+    desired_status: Optional[str] = None
 
     @classmethod
     def parse_obj_with_service(
@@ -142,6 +142,7 @@ class Database(FireboltBaseModel):
 
         self.description = description
 
+        assert self.database_id is not None, "Database must have database_id"
         logger.info(
             f"Updating Database (database_id={self.database_id}, "
             f"name={self.name}, description={self.description})"

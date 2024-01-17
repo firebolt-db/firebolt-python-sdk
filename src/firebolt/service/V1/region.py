@@ -61,6 +61,13 @@ class RegionService(BaseService):
     def get_by_id(self, id_: str) -> Region:
         """Get an AWS region by region_id."""
 
+        # error if provider_id is not set
+        if not self.resource_manager.provider_id:
+            raise ValueError(
+                "provider_id parameter must be set when initializing "
+                "the resource manager."
+            )
+
         return self.get_by_key(
             RegionKey(provider_id=self.resource_manager.provider_id, region_id=id_)
         )

@@ -11,6 +11,6 @@ class Provider(FireboltBaseModel, frozen=True):  # type: ignore
     name: str
 
     # optional
-    create_time: Optional[datetime]
-    display_name: Optional[str]
-    last_update_time: Optional[datetime]
+    create_time: Optional[datetime] = None
+    display_name: Optional[str] = None
+    last_update_time: Optional[datetime] = None
