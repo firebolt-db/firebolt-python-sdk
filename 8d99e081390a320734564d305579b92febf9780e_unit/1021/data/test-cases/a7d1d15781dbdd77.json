@@ -1,0 +1,634 @@
+{
+  "uid" : "a7d1d15781dbdd77",
+  "name" : "test_create_binding",
+  "fullName" : "tests.unit.service.V1.test_bindings#test_create_binding",
+  "historyId" : "496179e622b86811a4da70dd6364ddbc",
+  "time" : {
+    "start" : 1705504634769,
+    "stop" : 1705504634815,
+    "duration" : 46
+  },
+  "status" : "broken",
+  "statusMessage" : "pydantic_core._pydantic_core.ValidationError: 2 validation errors for Binding\nid\n  Field required [type=missing, input_value={'binding_id': BindingKey...ngine_is_default': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.5/v/missing\nbinding_id\n  Extra inputs are not permitted [type=extra_forbidden, input_value=BindingKey(account_id='mo...e_id='mock_engine_id_1'), input_type=BindingKey]\n    For further information visit https://errors.pydantic.dev/2.5/v/extra_forbidden",
+  "statusTrace" : "httpx_mock = <pytest_httpx._httpx_mock.HTTPXMock object at 0x7f6dd50bf150>\nauth_callback = <function auth_callback.<locals>.do_mock at 0x7f6dd2fd7680>\nauth_url = 'https://api-dev.mock.firebolt.io/auth/v1/login'\nprovider_callback = <function provider_callback.<locals>.do_mock at 0x7f6dd380f950>\nprovider_url = 'https://api-dev.mock.firebolt.io/compute/v1/providers'\naccount_id_callback = <function account_id_callback.<locals>.do_mock at 0x7f6dd380ff80>\naccount_id_url = re.compile('(?:https:\\\\/\\\\/api-dev.mock.firebolt.io\\\\/web\\\\/v3\\\\/account\\\\/{account_name}\\\\/resolve\\\\?account_name=.*|https:\\\\/\\\\/api-dev.mock.firebolt.io\\\\/iam\\\\/v2\\\\/account)')\nbindings_url = 'https://api-dev.mock.firebolt.io/core/v1/accounts/mock_account_id/bindings?page.first=5000&filter.id_engine_id_eq=mock_engine_id_1'\nbinding = Binding(binding_key=BindingKey(account_id='mock_account_id', database_id='database_id', engine_id='mock_engine_id_1'),...h_status=None, create_time=None, create_actor=None, last_update_time=None, last_update_actor=None, desired_status=None)\ncreate_binding_url = 'https://api-dev.mock.firebolt.io/core/v1/accounts/mock_account_id/databases/database_id/bindings/mock_engine_id_1'\nsettings = Settings(auth=<firebolt.client.auth.username_password.UsernamePassword object at 0x7f6dd380f290>, account_name='mock_account_name', server='api-dev.mock.firebolt.io', default_region='mock_region_1')\nmock_engine = Engine(name='my_engine', compute_region_key=RegionKey(provider_id='pid', region_id='rid'), settings=EngineSettings(pre...ast_update_actor=None, last_use_time=None, desired_status=None, health_status=None, endpoint_desired_revision_key=None)\nmock_database = Database(name='mock_db_name', compute_region_key=RegionKey(provider_id='mock_provider_id', region_id='mock_region_id_1...ket_name=None, create_time=None, create_actor=None, last_update_time=None, last_update_actor=None, desired_status=None)\n\n    def test_create_binding(\n        httpx_mock: HTTPXMock,\n        auth_callback: Callable,\n        auth_url: str,\n        provider_callback: Callable,\n        provider_url: str,\n        account_id_callback: Callable,\n        account_id_url: Pattern,\n        bindings_url: str,\n        binding: Binding,\n        create_binding_url: str,\n        settings: Settings,\n        mock_engine: Engine,\n        mock_database: Database,\n    ):\n        httpx_mock.add_callback(auth_callback, url=auth_url)\n        httpx_mock.add_callback(provider_callback, url=provider_url)\n        httpx_mock.add_callback(account_id_callback, url=account_id_url)\n        httpx_mock.add_response(url=bindings_url, method=\"GET\", json={\"edges\": []})\n        httpx_mock.add_response(\n            url=create_binding_url, method=\"POST\", json={\"binding\": binding.dict()}\n        )\n    \n        resource_manager = ResourceManager(settings=settings)\n        binding = resource_manager.bindings.create(\n>           engine=mock_engine, database=mock_database, is_default_engine=True\n        )\n\n/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/tests/unit/service/V1/test_bindings.py:64: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <firebolt.service.V1.binding.BindingService object at 0x7f6dd3df4b10>\nengine = Engine(name='my_engine', compute_region_key=RegionKey(provider_id='pid', region_id='rid'), settings=EngineSettings(pre...ast_update_actor=None, last_use_time=None, desired_status=None, health_status=None, endpoint_desired_revision_key=None)\ndatabase = Database(name='mock_db_name', compute_region_key=RegionKey(provider_id='mock_provider_id', region_id='mock_region_id_1...ket_name=None, create_time=None, create_actor=None, last_update_time=None, last_update_actor=None, desired_status=None)\nis_default_engine = True\n\n    def create(\n        self, engine: Engine, database: Database, is_default_engine: bool\n    ) -> Binding:\n        \"\"\"\n        Create a new binding between an engine and a database.\n    \n        Args:\n            engine: Engine to bind.\n            database: Database to bind.\n            is_default_engine:\n                Whether this engine should be used as default for this database.\n                Only one engine can be set as default for a single database.\n                This will overwrite any existing default.\n    \n        Returns:\n            New binding between the engine and database.\n        \"\"\"\n    \n        existing_database = self.get_database_bound_to_engine(engine=engine)\n        if existing_database is not None:\n            raise AlreadyBoundError(\n                f\"The engine {engine.name} is already bound \"\n                f\"to {existing_database.name}!\"\n            )\n    \n        logger.info(\n            f\"Attaching Engine (engine_id={engine.engine_id}, name={engine.name}) \"\n            f\"to Database (database_id={database.database_id}, \"\n            f\"name={database.name})\"\n        )\n        assert database.database_id is not None, \"Database must have database_id\"\n        binding = Binding(\n            binding_id=BindingKey(\n                account_id=self.account_id,\n                database_id=database.database_id,\n                engine_id=engine.engine_id,\n            ),\n>           engine_is_default=is_default_engine,\n        )\nE       pydantic_core._pydantic_core.ValidationError: 2 validation errors for Binding\nE       id\nE         Field required [type=missing, input_value={'binding_id': BindingKey...ngine_is_default': True}, input_type=dict]\nE           For further information visit https://errors.pydantic.dev/2.5/v/missing\nE       binding_id\nE         Extra inputs are not permitted [type=extra_forbidden, input_value=BindingKey(account_id='mo...e_id='mock_engine_id_1'), input_type=BindingKey]\nE           For further information visit https://errors.pydantic.dev/2.5/v/extra_forbidden\n\n/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/service/V1/binding.py:135: ValidationError",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "server",
+    "time" : {
+      "start" : 1705504634728,
+      "stop" : 1705504634728,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id_url",
+    "time" : {
+      "start" : 1705504636445,
+      "stop" : 1705504636445,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "database_id",
+    "time" : {
+      "start" : 1705504634730,
+      "stop" : 1705504634730,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "engine_settings",
+    "time" : {
+      "start" : 1705504634730,
+      "stop" : 1705504634730,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "password",
+    "time" : {
+      "start" : 1705504634732,
+      "stop" : 1705504634732,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "username_password_auth",
+    "time" : {
+      "start" : 1705504634732,
+      "stop" : 1705504634768,
+      "duration" : 36
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1705504634727,
+      "stop" : 1705504634727,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "mock_providers",
+    "time" : {
+      "start" : 1705504634729,
+      "stop" : 1705504634729,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "region_string",
+    "time" : {
+      "start" : 1705504634731,
+      "stop" : 1705504634731,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "bindings_url",
+    "time" : {
+      "start" : 1705504634730,
+      "stop" : 1705504634730,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "region_1",
+    "time" : {
+      "start" : 1705504634731,
+      "stop" : 1705504634731,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_url",
+    "time" : {
+      "start" : 1705504636444,
+      "stop" : 1705504636444,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_name",
+    "time" : {
+      "start" : 1705504634729,
+      "stop" : 1705504634729,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_url",
+    "time" : {
+      "start" : 1705504634728,
+      "stop" : 1705504634728,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "user",
+    "time" : {
+      "start" : 1705504634731,
+      "stop" : 1705504634731,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "engine_name",
+    "time" : {
+      "start" : 1705504634729,
+      "stop" : 1705504634729,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id_url",
+    "time" : {
+      "start" : 1705504634729,
+      "stop" : 1705504634729,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "create_binding_url",
+    "time" : {
+      "start" : 1705504634731,
+      "stop" : 1705504634731,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "settings",
+    "time" : {
+      "start" : 1705504634768,
+      "stop" : 1705504634768,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "binding",
+    "time" : {
+      "start" : 1705504634730,
+      "stop" : 1705504634730,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "mock_engine",
+    "time" : {
+      "start" : 1705504634730,
+      "stop" : 1705504634730,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "provider",
+    "time" : {
+      "start" : 1705504634728,
+      "stop" : 1705504634728,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_callback",
+    "time" : {
+      "start" : 1705504634728,
+      "stop" : 1705504634728,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1705504634728,
+      "stop" : 1705504634728,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id_callback",
+    "time" : {
+      "start" : 1705504636445,
+      "stop" : 1705504636445,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1705504634727,
+      "stop" : 1705504634727,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id_callback",
+    "time" : {
+      "start" : 1705504634729,
+      "stop" : 1705504634729,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "provider_callback",
+    "time" : {
+      "start" : 1705504634729,
+      "stop" : 1705504634729,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_id",
+    "time" : {
+      "start" : 1705504634729,
+      "stop" : 1705504634729,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1705504634725,
+      "stop" : 1705504634727,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "mock_database",
+    "time" : {
+      "start" : 1705504634731,
+      "stop" : 1705504634731,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "region_key",
+    "time" : {
+      "start" : 1705504634730,
+      "stop" : 1705504634730,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1705504634727,
+      "stop" : 1705504634727,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "provider_url",
+    "time" : {
+      "start" : 1705504634728,
+      "stop" : 1705504634728,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "testStage" : {
+    "status" : "broken",
+    "statusMessage" : "pydantic_core._pydantic_core.ValidationError: 2 validation errors for Binding\nid\n  Field required [type=missing, input_value={'binding_id': BindingKey...ngine_is_default': True}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.5/v/missing\nbinding_id\n  Extra inputs are not permitted [type=extra_forbidden, input_value=BindingKey(account_id='mo...e_id='mock_engine_id_1'), input_type=BindingKey]\n    For further information visit https://errors.pydantic.dev/2.5/v/extra_forbidden",
+    "statusTrace" : "httpx_mock = <pytest_httpx._httpx_mock.HTTPXMock object at 0x7f6dd50bf150>\nauth_callback = <function auth_callback.<locals>.do_mock at 0x7f6dd2fd7680>\nauth_url = 'https://api-dev.mock.firebolt.io/auth/v1/login'\nprovider_callback = <function provider_callback.<locals>.do_mock at 0x7f6dd380f950>\nprovider_url = 'https://api-dev.mock.firebolt.io/compute/v1/providers'\naccount_id_callback = <function account_id_callback.<locals>.do_mock at 0x7f6dd380ff80>\naccount_id_url = re.compile('(?:https:\\\\/\\\\/api-dev.mock.firebolt.io\\\\/web\\\\/v3\\\\/account\\\\/{account_name}\\\\/resolve\\\\?account_name=.*|https:\\\\/\\\\/api-dev.mock.firebolt.io\\\\/iam\\\\/v2\\\\/account)')\nbindings_url = 'https://api-dev.mock.firebolt.io/core/v1/accounts/mock_account_id/bindings?page.first=5000&filter.id_engine_id_eq=mock_engine_id_1'\nbinding = Binding(binding_key=BindingKey(account_id='mock_account_id', database_id='database_id', engine_id='mock_engine_id_1'),...h_status=None, create_time=None, create_actor=None, last_update_time=None, last_update_actor=None, desired_status=None)\ncreate_binding_url = 'https://api-dev.mock.firebolt.io/core/v1/accounts/mock_account_id/databases/database_id/bindings/mock_engine_id_1'\nsettings = Settings(auth=<firebolt.client.auth.username_password.UsernamePassword object at 0x7f6dd380f290>, account_name='mock_account_name', server='api-dev.mock.firebolt.io', default_region='mock_region_1')\nmock_engine = Engine(name='my_engine', compute_region_key=RegionKey(provider_id='pid', region_id='rid'), settings=EngineSettings(pre...ast_update_actor=None, last_use_time=None, desired_status=None, health_status=None, endpoint_desired_revision_key=None)\nmock_database = Database(name='mock_db_name', compute_region_key=RegionKey(provider_id='mock_provider_id', region_id='mock_region_id_1...ket_name=None, create_time=None, create_actor=None, last_update_time=None, last_update_actor=None, desired_status=None)\n\n    def test_create_binding(\n        httpx_mock: HTTPXMock,\n        auth_callback: Callable,\n        auth_url: str,\n        provider_callback: Callable,\n        provider_url: str,\n        account_id_callback: Callable,\n        account_id_url: Pattern,\n        bindings_url: str,\n        binding: Binding,\n        create_binding_url: str,\n        settings: Settings,\n        mock_engine: Engine,\n        mock_database: Database,\n    ):\n        httpx_mock.add_callback(auth_callback, url=auth_url)\n        httpx_mock.add_callback(provider_callback, url=provider_url)\n        httpx_mock.add_callback(account_id_callback, url=account_id_url)\n        httpx_mock.add_response(url=bindings_url, method=\"GET\", json={\"edges\": []})\n        httpx_mock.add_response(\n            url=create_binding_url, method=\"POST\", json={\"binding\": binding.dict()}\n        )\n    \n        resource_manager = ResourceManager(settings=settings)\n        binding = resource_manager.bindings.create(\n>           engine=mock_engine, database=mock_database, is_default_engine=True\n        )\n\n/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/tests/unit/service/V1/test_bindings.py:64: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <firebolt.service.V1.binding.BindingService object at 0x7f6dd3df4b10>\nengine = Engine(name='my_engine', compute_region_key=RegionKey(provider_id='pid', region_id='rid'), settings=EngineSettings(pre...ast_update_actor=None, last_use_time=None, desired_status=None, health_status=None, endpoint_desired_revision_key=None)\ndatabase = Database(name='mock_db_name', compute_region_key=RegionKey(provider_id='mock_provider_id', region_id='mock_region_id_1...ket_name=None, create_time=None, create_actor=None, last_update_time=None, last_update_actor=None, desired_status=None)\nis_default_engine = True\n\n    def create(\n        self, engine: Engine, database: Database, is_default_engine: bool\n    ) -> Binding:\n        \"\"\"\n        Create a new binding between an engine and a database.\n    \n        Args:\n            engine: Engine to bind.\n            database: Database to bind.\n            is_default_engine:\n                Whether this engine should be used as default for this database.\n                Only one engine can be set as default for a single database.\n                This will overwrite any existing default.\n    \n        Returns:\n            New binding between the engine and database.\n        \"\"\"\n    \n        existing_database = self.get_database_bound_to_engine(engine=engine)\n        if existing_database is not None:\n            raise AlreadyBoundError(\n                f\"The engine {engine.name} is already bound \"\n                f\"to {existing_database.name}!\"\n            )\n    \n        logger.info(\n            f\"Attaching Engine (engine_id={engine.engine_id}, name={engine.name}) \"\n            f\"to Database (database_id={database.database_id}, \"\n            f\"name={database.name})\"\n        )\n        assert database.database_id is not None, \"Database must have database_id\"\n        binding = Binding(\n            binding_id=BindingKey(\n                account_id=self.account_id,\n                database_id=database.database_id,\n                engine_id=engine.engine_id,\n            ),\n>           engine_is_default=is_default_engine,\n        )\nE       pydantic_core._pydantic_core.ValidationError: 2 validation errors for Binding\nE       id\nE         Field required [type=missing, input_value={'binding_id': BindingKey...ngine_is_default': True}, input_type=dict]\nE           For further information visit https://errors.pydantic.dev/2.5/v/missing\nE       binding_id\nE         Extra inputs are not permitted [type=extra_forbidden, input_value=BindingKey(account_id='mo...e_id='mock_engine_id_1'), input_type=BindingKey]\nE           For further information visit https://errors.pydantic.dev/2.5/v/extra_forbidden\n\n/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/service/V1/binding.py:135: ValidationError",
+    "steps" : [ ],
+    "attachments" : [ {
+      "uid" : "efa55ee989585b5f",
+      "name" : "log",
+      "source" : "efa55ee989585b5f.txt",
+      "type" : "text/plain",
+      "size" : 246
+    } ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 1,
+    "shouldDisplayMessage" : true,
+    "hasContent" : true
+  },
+  "afterStages" : [ {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1705504634875,
+      "stop" : 1705504634876,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1705504634873,
+      "stop" : 1705504634874,
+      "duration" : 1
+    },
+    "status" : "failed",
+    "statusMessage" : "AssertionError: The following responses are mocked but not requested:\n  Match POST requests on https://api-dev.mock.firebolt.io/core/v1/accounts/mock_account_id/databases/database_id/bindings/mock_engine_id_1\nassert not [<pytest_httpx._httpx_mock._RequestMatcher object at 0x7f6dd4662090>]\n",
+    "statusTrace" : "  File \"/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/allure_commons/_allure.py\", line 221, in __call__\n    return self._fixture_function(*args, **kwargs)\n  File \"/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/_pytest/fixtures.py\", line 916, in _teardown_yield_fixture\n    next(it)\n  File \"/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/pytest_httpx/__init__.py\", line 65, in httpx_mock\n    mock.reset(assert_all_responses_were_requested)\n  File \"/opt/hostedtoolcache/Python/3.7.17/x64/lib/python3.7/site-packages/pytest_httpx/_httpx_mock.py\", line 309, in reset\n    assert (\n",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : true,
+    "hasContent" : true
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1705504634876,
+      "stop" : 1705504634877,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.service.V1"
+  }, {
+    "name" : "suite",
+    "value" : "test_bindings"
+  }, {
+    "name" : "host",
+    "value" : "fv-az777-93"
+  }, {
+    "name" : "thread",
+    "value" : "2244-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.service.V1.test_bindings"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ {
+      "name" : "Test defects",
+      "matchedStatuses" : [ ],
+      "flaky" : false
+    } ],
+    "tags" : [ ]
+  },
+  "source" : "a7d1d15781dbdd77.json",
+  "parameterValues" : [ ]
+}
