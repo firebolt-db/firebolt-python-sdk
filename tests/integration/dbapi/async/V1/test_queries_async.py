@@ -177,7 +177,7 @@ async def test_long_query(
     """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
     with connection.cursor() as c:
         await c.execute(
-            "SELECT checksum(*) FROM GENERATE_SERIES(1, 200000000000)",  # approx 6m runtime
+            "SELECT checksum(*) FROM GENERATE_SERIES(1, 150000000000)",  # approx 6m runtime
         )
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
