@@ -5,7 +5,7 @@ from time import time
 from types import TracebackType
 from typing import TYPE_CHECKING, Callable, Optional, Type, TypeVar
 
-from httpx import URL
+from httpx import URL, Response, codes
 
 from firebolt.utils.exception import ConfigurationError
 
@@ -88,6 +88,36 @@ def get_auth_endpoint(api_endpoint: URL) -> URL:
     return api_endpoint.copy_with(
         host=".".join(["id"] + api_endpoint.host.split(".")[1:])
     )
+
+
+def get_internal_error_code(response: Response) -> Optional[int]:
+    """Get internal error code from response.
+
+    Args:
+        response (Response): HTTP response
+
+    Returns:
+        Optional[int]: Internal error code
+    """
+    # Internal server error usually hides the real error code in the response body
+    if response.status_code == codes.INTERNAL_SERVER_ERROR:
+        try:
+            # Example response:
+            # Received error from remote server
+            # /core/v1/accounts/<account_num>/engines:getIdByName?engine_name=
+            # <engine_name>. HTTP status code: 401 Unauthorized, body: failed to
+            # verify JWT token: failed to verify jwt: "exp" not satisfied\n'
+            error = int(response.text.split("HTTP status code: ")[1].split(" ")[0])
+            body = (
+                response.text.split("body: ")[1] if "body: " in response.text else None
+            )
+            logger.debug(
+                f"Detected an internal server error with code: {error}, body: {body}"
+            )
+            return error
+        except (IndexError, ValueError):
+            return None
+    return None
 
 
 def merge_urls(base: URL, merge: URL) -> URL:
