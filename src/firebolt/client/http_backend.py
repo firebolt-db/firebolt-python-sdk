@@ -2,11 +2,11 @@ import socket
 from typing import Any
 
 try:
-    from httpcore.backends.auto import AutoBackend  # type: ignore [import]
-    from httpcore.backends.sync import SyncBackend  # type: ignore [import]
+    from httpcore.backends.auto import AutoBackend  # type: ignore
+    from httpcore.backends.sync import SyncBackend  # type: ignore
 except ImportError:
-    from httpcore._backends.auto import AutoBackend  # type: ignore [import]
-    from httpcore._backends.sync import SyncBackend  # type: ignore [import]
+    from httpcore._backends.auto import AutoBackend  # type: ignore
+    from httpcore._backends.sync import SyncBackend  # type: ignore
 
 from httpx import AsyncHTTPTransport, HTTPTransport
 
