@@ -17,80 +17,118 @@ To get started, follow the steps below:
 
 **1. Import modules**
 
-	To initialize a ``ResourceManager`` object, import the modules shown below.
+    To initialize a ``ResourceManager`` object, import the modules shown below.
 
 .. _required_resourcemanager_imports:
 
-	::
+    ::
 
-		from firebolt.service.manager import ResourceManager
-		from firebolt.common import Settings
+        from firebolt.client.auth import UsernamePassword
+        from firebolt.service.manager import ResourceManager
 
+**2. Initialize a ResourceManager object**
+
+    A ResourceManager object contains the user credentials and other information needed to
+    manage Firebolt databases and engines.
+
+    ResourceManager uses the following parameters:
+
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``auth``            |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.                         |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``api_endpoint``    |  The API hostname for logging in. Defaults to ``api.app.firebolt.io`` if not included.                                      |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``account_name``    |  The name of the account you're using to connect to Firebolt. Must be specified in order to authenticate.                   |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+
+
+    ::
+
+        rm = ResourceManager(
+            auth=UsernamePassword("your_username", "your_password"),
+            account_name="your_acc_name",
+        )
+
+
+Setting up a ResourceManager object (legacy)
+================================================
+
+**1. Import modules**
+
+    To initialize a ``ResourceManager`` object, import the modules shown below.
+
+.. _required_resourcemanager_imports:
+
+    ::
+
+        from firebolt.client.auth import UsernamePassword
+        from firebolt.service.manager import ResourceManager
 
 **2. Initialize a Settings object**
 
-	A Settings object contains the user credentials and other information needed to
-	manage Firebolt databases and engines.
+    A Settings object contains the user credentials and other information needed to
+    manage Firebolt databases and engines.
 
-	The Settings object uses the following parameters:
+    The Settings object uses the following parameters:
 
-	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
-	| ``user``            |  The email address associated with your Firebolt user profile.                                                              |
-	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
-	| ``password``        |  The password used for connecting to Firebolt.                                                                              |
-	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
-	| ``server``          |  The API hostname for logging in. Defaults to ``api.app.firebolt.io`` if not included.                                      |
-	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
-	| ``default_region``  |  The default region for creating new databases and engines.                                                                 |
-	|                     |                                                                                                                             |
-	|                     |  For more information, see `Available AWS Regions <https://docs.firebolt.io/general-reference/available-regions.html>`_.    |
-	+---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``user``            |  The email address associated with your Firebolt user profile.                                                              |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``password``        |  The password used for connecting to Firebolt.                                                                              |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``server``          |  The API hostname for logging in. Defaults to ``api.app.firebolt.io`` if not included.                                      |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
+    | ``default_region``  |  The default region for creating new databases and engines.                                                                 |
+    |                     |                                                                                                                             |
+    |                     |  For more information, see `Available AWS Regions <https://docs.firebolt.io/general-reference/available-regions.html>`_.    |
+    +---------------------+-----------------------------------------------------------------------------------------------------------------------------+
 
 
 
-	A ``Settings`` object can be configured with parameters by multiple methods.
+    A ``Settings`` object can be configured with parameters by multiple methods.
 
-		* Add the parameters manually in your command script:
+        * Add the parameters manually in your command script:
 
-			::
+            ::
 
-				settings = Settings(
-				    user="your_username",
-				    password="your_password",
-				    server="api.app.firebolt.io"
-				    default_region="your_region"
-				)
+                settings = Settings(
+                    user="your_username",
+                    password="your_password",
+                    server="api.app.firebolt.io"
+                    default_region="your_region"
+                )
 
-		* Use a ``.env`` file located in your root directory containing the following parameters:
+        * Use a ``.env`` file located in your root directory containing the following parameters:
 
-			::
+            ::
 
-				FIREBOLT_USER="your_username",
-				FIREBOLT_PASSWORD="your_password",
-				FIREBOLT_SERVER="api.app.firebolt.io"
-				FIREBOLT_DEFAULT_REGION="your_region"
+                FIREBOLT_USER="your_username",
+                FIREBOLT_PASSWORD="your_password",
+                FIREBOLT_SERVER="api.app.firebolt.io"
+                FIREBOLT_DEFAULT_REGION="your_region"
 
-			In your application file, the ``Settings`` object can read the values from the
-			``.env`` file if it is set to ``None`` instead of having values, as shown below:
+            In your application file, the ``Settings`` object can read the values from the
+            ``.env`` file if it is set to ``None`` instead of having values, as shown below:
 
-			::
+            ::
 
-				settings = None
+                settings = None
 
 
 **3. Initialize a ResourceManager object**
 
 
-	After the ``Settings`` are configured, create a ``ResourceManager`` object, which is
-	given the variable name ``rm`` in the example below.
+    After the ``Settings`` are configured, create a ``ResourceManager`` object, which is
+    given the variable name ``rm`` in the example below.
 
-		::
+        ::
 
-			rm = ResourceManager(settings=settings)
+            rm = ResourceManager(settings=settings)
 
-	.. note::
 
-		Subsequent examples on this page use the ``rm`` object for database and engine functions.
+.. note::
+
+	Subsequent examples on this page use the ``rm`` object for database and engine functions.
 
 
 Database function examples
@@ -106,35 +144,35 @@ List out the names of all databases under your account by using the ``get_many``
 
 
 
-	**List out all databases and their metadata**
+    **List out all databases and their metadata**
 
-		This produces an inventory of all databases and their metadata from your account.
-		The Python `devtools <https://pypi.org/project/devtools/>`_ module used in the
-		example below helps format the metadata to be more readable.
+        This produces an inventory of all databases and their metadata from your account.
+        The Python `devtools <https://pypi.org/project/devtools/>`_ module used in the
+        example below helps format the metadata to be more readable.
 
-		::
+        ::
 
-			from devtools import debug
+            from devtools import debug
 
-			debug(rm.databases.get_many())
+            debug(rm.databases.get_many())
 
 
-	**Listing out databases by name**
+    **Listing out databases by name**
 
-		This function call lists out the names of your databases, but it can be modified
-		to list out other attributes. This is helpful for tracking down a particular
-		database in your account.
+        This function call lists out the names of your databases, but it can be modified
+        to list out other attributes. This is helpful for tracking down a particular
+        database in your account.
 
-		::
+        ::
 
-			all_dbs = rm.databases.get_many()
-			all_db_names = [d.name for d in all_dbs]
-			for db in db_names:
-			    print(db)
+            all_dbs = rm.databases.get_many()
+            all_db_names = [d.name for d in all_dbs]
+            for db in db_names:
+                print(db)
 
-	.. note::
+    .. note::
 
-		For a list of all database attributes, see :ref:`model-database`.
+        For a list of all database attributes, see :ref:`model-database`.
 
 
 Creating a new database
@@ -144,14 +182,14 @@ Launch a new database and use it to create a ``database`` object.
 
 A newly created database uses the default region from your Settings unless you specify a different region as a parameter.
 
-	::
+    ::
 
-		database = rm.databases.create(name="database_name", region="us-east-1")
+        database = rm.databases.create(name="database_name", region="us-east-1")
 
 
-	.. note::
+    .. note::
 
-		For a list of all database parameters, see :ref:`service-database`
+        For a list of all database parameters, see :ref:`service-database`
 
 
 Locating a database
@@ -165,17 +203,17 @@ your database name or ID.
 
 
 
-	**Locating by name**
+    **Locating by name**
 
-		::
+        ::
 
-			database = rm.databases.get_by_name(name="database_name")
+            database = rm.databases.get_by_name(name="database_name")
 
-	**Locating by ID**
+    **Locating by ID**
 
-		::
+        ::
 
-			database = rm.databases.get_by_id(id="database_id")
+            database = rm.databases.get_by_id(id="database_id")
 
 
 Getting database status
@@ -185,10 +223,10 @@ Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to format
 from a ``database`` object. This is a helpful command to run after a database operation to
 check if its execution was successful.
 
-	::
+    ::
 
-		from devtools import debug
-		debug(database)
+        from devtools import debug
+        debug(database)
 
 
 Dropping a database
@@ -197,9 +235,9 @@ Dropping a database
 Delete a database by calling the ``delete`` function. The database is deleted along with
 all of its tables.
 
-	::
+    ::
 
-		database.delete()
+        database.delete()
 
 
 Engine function examples
@@ -216,14 +254,14 @@ Creating an engine
 Launch a new Firebolt engine and create an ``engine`` object. The created engine uses the
 default region included in your Settings unless you specify a different region as a parameter.
 
-	::
+    ::
 
-		engine = rm.engines.create(name="engine_name")
+        engine = rm.engines.create(name="engine_name")
 
 
 .. note::
 
-	For a list of all engine parameters, see :ref:`service-engine`
+    For a list of all engine parameters, see :ref:`service-engine`
 
 
 
@@ -232,35 +270,35 @@ Listing out engines
 
 List out the names of all engines under your account by using the ``get_many`` function.
 
-	**List out all engines and metadata**
+    **List out all engines and metadata**
 
-		This produces an inventory of all engines and their metadata from your account.
-		The Python `devtools <https://pypi.org/project/devtools/>`_ module used in the
-		example below helps format the metadata to be more readable.
+        This produces an inventory of all engines and their metadata from your account.
+        The Python `devtools <https://pypi.org/project/devtools/>`_ module used in the
+        example below helps format the metadata to be more readable.
 
-		::
+        ::
 
-			from devtools import debug
+            from devtools import debug
 
-			debug(rm.engines.get_many())
+            debug(rm.engines.get_many())
 
-	**List out engines by name**
+    **List out engines by name**
 
-		This function call lists out the names of your engines, but it can be modified to
-		list out other attributes. This is helpful for tracking down a particular engine
-		in your account.
+        This function call lists out the names of your engines, but it can be modified to
+        list out other attributes. This is helpful for tracking down a particular engine
+        in your account.
 
-		::
+        ::
 
-			all_engines = rm.engines.get_many()
-			all_engine_names = [e.name for e in all_engines]
-			for name in all_engine_names:
-			    print(name)
+            all_engines = rm.engines.get_many()
+            all_engine_names = [e.name for e in all_engines]
+            for name in all_engine_names:
+                print(name)
 
 
-	.. note::
+    .. note::
 
-		For a list of all engine attributes, see :ref:`model-engine`
+        For a list of all engine attributes, see :ref:`model-engine`
 
 Locating an engine
 --------------------
@@ -271,17 +309,11 @@ starting point to create an ``engine`` object that can be called in other engine
 In the examples below, replace the values for ``engine_name`` and ``engine_id`` with your
 engine name or ID.
 
-	**Locating by name**
+    **Locating by name**
 
-		::
+        ::
 
-			engine = rm.engines.get_by_name(name="engine_name")
-
-	**Locating by ID**
-
-		::
-
-			engine = rm.engines.get_by_id(name="engine_id")
+            engine = rm.engines.get_by_name(name="engine_name")
 
 
 Attaching an engine
@@ -290,24 +322,12 @@ Attaching an engine
 Attach an engine to a database. An engine must be attached to a database and started before
 it can run SQL commands or queries.
 
-	::
+    ::
 
-		engine = rm.engines.get_by_name(name="engine_name")
-		engine.attach_to_database(
-		    database=rm.databases.get_by_name(name="database_name")
-		)
-
-
-
-Dropping an engine
---------------------
-
-Delete an engine by calling the ``delete`` function. The engine is removed from its attached
-database and deleted.
-
-	::
-
-		engine.delete()
+        engine = rm.engines.get_by_name(name="engine_name")
+        engine.attach_to_database(
+            database=rm.databases.get_by_name(name="database_name")
+        )
 
 
 Starting an engine
@@ -316,9 +336,9 @@ Starting an engine
 Start an engine by calling the ``start`` function on an ``engine`` object. An engine must
 be attached to a database and started before it can run SQL commands or queries.
 
-	::
+    ::
 
-		engine.start()
+        engine.start()
 
 
 
@@ -328,21 +348,9 @@ Stopping an engine
 Stop an engine by calling the ``stop`` function. When stopped, an engine is not available
 to run queries and does not accrue additional usage time on your account.
 
-	::
+    ::
 
-		engine.stop()
-
-Updating an engine
----------------------
-
-Update an engine to change its specifications, returning an updated version of the engine.
-The engine must be stopped in order to be updated.
-
-For a list of engine parameters that can be updated, see :meth:`~firebolt.model.engine.Engine.update`
-
-	::
-
-		engine.update(description = "This is a new description.")
+        engine.stop()
 
 Getting engine status
 ----------------------
@@ -351,8 +359,7 @@ Use the Python `devtools <https://pypi.org/project/devtools/>`_ module to format
 from an ``engine`` object. This is a helpful command to run after an engine operation to
 check if its execution was successful.
 
-	::
+    ::
 
-		from devtools import debug
-		debug(engine)
-
+        from devtools import debug
+        debug(engine)
