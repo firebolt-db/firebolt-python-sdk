@@ -10,4 +10,4 @@ try:
         return to_response(*args, **kwargs)
 
 except ImportError:
-    pass
+    from httpx import Response  # noqa: F401
