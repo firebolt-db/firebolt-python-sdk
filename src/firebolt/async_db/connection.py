@@ -11,7 +11,6 @@ from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.http_backend import AsyncKeepaliveTransport
 from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -212,7 +211,6 @@ async def connect_v2(
         base_url=system_engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=AsyncKeepaliveTransport(),
         headers={"User-Agent": user_agent_header},
     )
     # Don't use context manager since this will be stored
@@ -259,7 +257,6 @@ async def connect_v2(
                 base_url=engine_url,
                 api_endpoint=api_endpoint,
                 timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-                transport=AsyncKeepaliveTransport(),
                 headers={"User-Agent": user_agent_header},
             )
             return Connection(
@@ -300,7 +297,6 @@ async def connect_v1(
         account_name=account_name,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=AsyncKeepaliveTransport(),
         headers={"User-Agent": user_agent_header},
     )
 
@@ -330,7 +326,6 @@ async def connect_v1(
         base_url=engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=AsyncKeepaliveTransport(),
         headers={"User-Agent": user_agent_header},
     )
     return Connection(engine_url, database, client, CursorV1, None, api_endpoint)

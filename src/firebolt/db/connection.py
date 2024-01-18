@@ -10,7 +10,6 @@ from httpx import Timeout
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.http_backend import KeepaliveTransport
 from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url
@@ -117,7 +116,6 @@ def connect_v2(
         base_url=system_engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=KeepaliveTransport(),
         headers={"User-Agent": user_agent_header},
     )
     # Don't use context manager since this will be stored
@@ -163,7 +161,6 @@ def connect_v2(
                 base_url=engine_url,
                 api_endpoint=api_endpoint,
                 timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-                transport=KeepaliveTransport(),
                 headers={"User-Agent": user_agent_header},
             )
             return Connection(
@@ -301,7 +298,6 @@ def connect_v1(
         account_name=account_name,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=KeepaliveTransport(),
         headers={"User-Agent": user_agent_header},
     )
 
@@ -331,7 +327,6 @@ def connect_v1(
         base_url=engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=KeepaliveTransport(),
         headers={"User-Agent": user_agent_header},
     )
     return Connection(engine_url, database, client, CursorV1, None, api_endpoint)

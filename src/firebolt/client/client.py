@@ -16,6 +16,10 @@ from firebolt.client.constants import (
     PROTOCOL_VERSION,
     PROTOCOL_VERSION_HEADER_NAME,
 )
+from firebolt.client.http_backend import (
+    AsyncKeepaliveTransport,
+    KeepaliveTransport,
+)
 from firebolt.utils.exception import (
     AccountNotFoundError,
     AccountNotFoundOrNoAccessError,
@@ -93,6 +97,9 @@ class FireboltClientMixin(FireboltClientMixinBase):
 
 
 class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs, transport=KeepaliveTransport())
+
     @cached_property
     @abstractmethod
     def account_id(self) -> str:
@@ -270,6 +277,9 @@ class ClientV1(Client):
 
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs, transport=AsyncKeepaliveTransport())
+
     @property
     @abstractmethod
     async def account_id(self) -> str:

@@ -1,9 +1,10 @@
 import socket
-from typing import Any, Optional, Union
+from typing import Any, Iterable, Optional
 
 try:
     from httpcore.backends.auto import AutoBackend  # type: ignore [import]
     from httpcore.backends.base import (  # type: ignore [import]
+        SOCKET_OPTION,
         AsyncNetworkStream,
         NetworkStream,
     )
@@ -13,33 +14,13 @@ except ImportError:
     from httpcore._backends.base import (  # type: ignore [import]
         AsyncNetworkStream,
         NetworkStream,
+        SOCKET_OPTION,
     )
     from httpcore._backends.sync import SyncBackend  # type: ignore [import]
 
 from httpx import AsyncHTTPTransport, HTTPTransport
 
 from firebolt.common.settings import KEEPALIVE_FLAG, KEEPIDLE_RATE
-
-
-def override_stream(
-    stream: Union[NetworkStream, AsyncNetworkStream]
-) -> Union[NetworkStream, AsyncNetworkStream]:
-    # Enable keepalive
-    stream.get_extra_info("socket").setsockopt(
-        socket.SOL_SOCKET, socket.SO_KEEPALIVE, KEEPALIVE_FLAG
-    )
-    # MacOS does not have TCP_KEEPIDLE
-    if hasattr(socket, "TCP_KEEPIDLE"):
-        keepidle = socket.TCP_KEEPIDLE
-    else:
-        keepidle = 0x10  # TCP_KEEPALIVE on mac
-
-    # Set keepalive to 60 seconds
-    stream.get_extra_info("socket").setsockopt(
-        socket.IPPROTO_TCP, keepidle, KEEPIDLE_RATE
-    )
-
-    return stream
 
 
 class AsyncOverriddenHttpBackend(AutoBackend):
@@ -58,17 +39,20 @@ class AsyncOverriddenHttpBackend(AutoBackend):
         port: int,
         timeout: Optional[float] = None,
         local_address: Optional[str] = None,
-        **kwargs: Any,
+        socket_options: Optional[Iterable[SOCKET_OPTION]] = None,
     ) -> AsyncNetworkStream:
-        stream = await super().connect_tcp(  # type: ignore [call-arg]
+        keepidle = getattr(socket, "TCP_KEEPIDLE", 0x10)  # 0x10 is TCP_KEEPALIVE on mac
+        return await super().connect_tcp(  # type: ignore [call-arg]
             host,
             port,
             timeout=timeout,
             local_address=local_address,
-            **kwargs,
+            socket_options=[
+                (socket.SOL_SOCKET, socket.SO_KEEPALIVE, KEEPALIVE_FLAG),
+                (socket.IPPROTO_TCP, keepidle, KEEPIDLE_RATE),
+                *(socket_options or []),
+            ],
         )
-
-        return override_stream(stream)
 
 
 class OverriddenHttpBackend(SyncBackend):
@@ -87,16 +71,20 @@ class OverriddenHttpBackend(SyncBackend):
         port: int,
         timeout: Optional[float] = None,
         local_address: Optional[str] = None,
-        **kwargs: Any,
+        socket_options: Optional[Iterable[SOCKET_OPTION]] = None,
     ) -> NetworkStream:
-        stream = super().connect_tcp(  # type: ignore [call-arg]
+        keepidle = getattr(socket, "TCP_KEEPIDLE", 0x10)  # 0x10 is TCP_KEEPALIVE on mac
+        return super().connect_tcp(
             host,
             port,
             timeout=timeout,
             local_address=local_address,
-            **kwargs,
+            socket_options=[
+                (socket.SOL_SOCKET, socket.SO_KEEPALIVE, KEEPALIVE_FLAG),
+                (socket.IPPROTO_TCP, keepidle, KEEPIDLE_RATE),
+                *(socket_options or []),
+            ],
         )
-        return override_stream(stream)
 
 
 class AsyncKeepaliveTransport(AsyncHTTPTransport):
