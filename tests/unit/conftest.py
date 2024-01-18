@@ -2,7 +2,7 @@ from re import Pattern, compile
 from typing import Callable
 
 import httpx
-from httpx import Request, Response
+from httpx import Request
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
@@ -31,6 +31,7 @@ from firebolt.utils.urls import (
     ENGINES_URL,
 )
 from tests.unit.db_conftest import *  # noqa
+from tests.unit.response import Response
 
 
 # Register nofakefs mark

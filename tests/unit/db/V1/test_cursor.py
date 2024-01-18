@@ -14,6 +14,7 @@ from firebolt.utils.exception import (
     QueryNotRunError,
 )
 from tests.unit.db_conftest import encode_param
+from tests.unit.response import Response
 
 
 def test_cursor_state(
@@ -229,7 +230,12 @@ def test_cursor_execute_error(
         ), f"Invalid query error message for {message}."
 
         # HTTP error
-        httpx_mock.add_response(status_code=codes.BAD_REQUEST, url=query_url)
+        httpx_mock.add_callback(
+            lambda *args, **kwargs: Response(
+                status_code=codes.BAD_REQUEST,
+            ),
+            url=query_url,
+        )
         with raises(HTTPStatusError) as excinfo:
             query()
 
@@ -238,9 +244,11 @@ def test_cursor_execute_error(
         assert "Bad Request" in errmsg, f"Invalid query error message for {message}."
 
         # Database query error
-        httpx_mock.add_response(
-            status_code=codes.INTERNAL_SERVER_ERROR,
-            content="Query error message",
+        httpx_mock.add_callback(
+            lambda *args, **kwargs: Response(
+                status_code=codes.INTERNAL_SERVER_ERROR,
+                content="Query error message",
+            ),
             url=query_url,
         )
         with raises(OperationalError) as excinfo:

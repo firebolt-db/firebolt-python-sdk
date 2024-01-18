@@ -3,11 +3,12 @@ import typing
 from re import Pattern, compile
 
 import httpx
-from httpx import Request, Response
+from httpx import Request
 from pytest import fixture
 
 from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL, AUTH_URL
+from tests.unit.response import Response
 
 
 @fixture

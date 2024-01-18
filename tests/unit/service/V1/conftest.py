@@ -4,7 +4,7 @@ from typing import Callable, List
 from urllib.parse import urlparse
 
 import httpx
-from httpx import Request, Response
+from httpx import Request
 from pytest import fixture
 
 from firebolt.client.auth.base import Auth
@@ -30,6 +30,7 @@ from firebolt.utils.urls import (
     PROVIDERS_URL,
     REGIONS_URL,
 )
+from tests.unit.response import Response
 from tests.unit.util import (
     list_to_paginated_response_v1 as list_to_paginated_response,
 )

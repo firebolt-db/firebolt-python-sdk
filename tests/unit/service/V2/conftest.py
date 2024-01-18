@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Callable, List
 
 import httpx
-from httpx import Response
 from pytest import fixture
 
 from firebolt.client.auth import Auth
@@ -14,6 +13,7 @@ from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.manager import ResourceManager
 from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
 from firebolt.utils.urls import ACCOUNT_INSTANCE_TYPES_URL
+from tests.unit.response import Response
 from tests.unit.util import list_to_paginated_response
 
 
