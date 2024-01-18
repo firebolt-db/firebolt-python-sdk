@@ -3,7 +3,7 @@ from re import Pattern, compile
 from typing import Callable
 
 import httpx
-from httpx import Request, Response, codes
+from httpx import Request, codes
 from pytest import fixture
 
 from firebolt.client import ClientV1 as Client
@@ -17,6 +17,7 @@ from firebolt.utils.urls import (
     ACCOUNT_URL,
     AUTH_URL,
 )
+from tests.unit.response import Response
 
 
 @fixture

@@ -1,23 +1,16 @@
 from __future__ import annotations
 
 import logging
-import socket
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type
 from warnings import warn
 
-from httpcore.backends.base import NetworkStream
-from httpcore.backends.sync import SyncBackend
-from httpx import HTTPTransport, Timeout
+from httpx import Timeout
 
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.settings import (
-    DEFAULT_TIMEOUT_SECONDS,
-    KEEPALIVE_FLAG,
-    KEEPIDLE_RATE,
-)
+from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url
 from firebolt.utils.exception import (
@@ -30,48 +23,6 @@ from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
 logger = logging.getLogger(__name__)
-
-
-class OverriddenHttpBackend(SyncBackend):
-    """
-    `OverriddenHttpBackend` is a short-term solution for the TCP
-    connection idle timeout issue described in the following article:
-    https://docs.aws.amazon.com/elasticloadbalancing/latest/network/network-load-balancers.html#connection-idle-timeout
-    Since httpx creates a connection right before executing a request, the
-    backend must be overridden to set the socket to `KEEPALIVE`
-    and `KEEPIDLE` settings.
-    """
-
-    def connect_tcp(  # type: ignore [override]
-        self,
-        host: str,
-        port: int,
-        timeout: Optional[float] = None,
-        local_address: Optional[str] = None,
-        **kwargs: Any,
-    ) -> NetworkStream:
-        stream = super().connect_tcp(  # type: ignore [call-arg]
-            host,
-            port,
-            timeout=timeout,
-            local_address=local_address,
-            **kwargs,
-        )
-        # Enable keepalive
-        stream.get_extra_info("socket").setsockopt(
-            socket.SOL_SOCKET, socket.SO_KEEPALIVE, KEEPALIVE_FLAG
-        )
-        # MacOS does not have TCP_KEEPIDLE
-        if hasattr(socket, "TCP_KEEPIDLE"):
-            keepidle = socket.TCP_KEEPIDLE
-        else:
-            keepidle = 0x10  # TCP_KEEPALIVE on mac
-
-        # Set keepalive to 60 seconds
-        stream.get_extra_info("socket").setsockopt(
-            socket.IPPROTO_TCP, keepidle, KEEPIDLE_RATE
-        )
-        return stream
 
 
 def connect(
@@ -159,15 +110,12 @@ def connect_v2(
         _get_system_engine_url(auth, account_name, api_endpoint)
     )
 
-    transport = HTTPTransport()
-    transport._pool._network_backend = OverriddenHttpBackend()
     client = ClientV2(
         auth=auth,
         account_name=account_name,
         base_url=system_engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=transport,
         headers={"User-Agent": user_agent_header},
     )
     # Don't use context manager since this will be stored
@@ -213,7 +161,6 @@ def connect_v2(
                 base_url=engine_url,
                 api_endpoint=api_endpoint,
                 timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-                transport=transport,
                 headers={"User-Agent": user_agent_header},
             )
             return Connection(
@@ -276,8 +223,6 @@ class Connection(BaseConnection):
         self._cursors: List[Cursor] = []
         self._system_engine_connection = system_engine_connection
         # Override tcp keepalive settings for connection
-        transport = HTTPTransport()
-        transport._pool._network_backend = OverriddenHttpBackend()
         self._client = client
         super().__init__()
 
@@ -347,15 +292,12 @@ def connect_v1(
     api_endpoint = fix_url_schema(api_endpoint)
 
     # Override tcp keepalive settings for connection
-    transport = HTTPTransport()
-    transport._pool._network_backend = OverriddenHttpBackend()
     no_engine_client = ClientV1(
         auth=auth,
         base_url=api_endpoint,
         account_name=account_name,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=transport,
         headers={"User-Agent": user_agent_header},
     )
 
@@ -385,7 +327,6 @@ def connect_v1(
         base_url=engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-        transport=transport,
         headers={"User-Agent": user_agent_header},
     )
     return Connection(engine_url, database, client, CursorV1, None, api_endpoint)

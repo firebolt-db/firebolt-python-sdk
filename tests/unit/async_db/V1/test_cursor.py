@@ -18,6 +18,7 @@ from firebolt.utils.exception import (
     QueryNotRunError,
 )
 from tests.unit.db_conftest import encode_param
+from tests.unit.response import Response
 
 
 async def test_cursor_state(
@@ -239,7 +240,13 @@ async def test_cursor_execute_error(
         ), f"Invalid query error message for {message}."
 
         # HTTP error
-        httpx_mock.add_response(status_code=codes.BAD_REQUEST, url=query_url)
+        httpx_mock.add_callback(
+            lambda *args, **kwargs: Response(
+                status_code=codes.BAD_REQUEST,
+                content="Query error message",
+            ),
+            url=query_url,
+        )
         with raises(HTTPStatusError) as excinfo:
             await query()
 
@@ -248,9 +255,11 @@ async def test_cursor_execute_error(
         assert "Bad Request" in errmsg, f"Invalid query error message for {message}."
 
         # Database query error
-        httpx_mock.add_response(
-            status_code=codes.INTERNAL_SERVER_ERROR,
-            content="Query error message",
+        httpx_mock.add_callback(
+            lambda *args, **kwargs: Response(
+                status_code=codes.INTERNAL_SERVER_ERROR,
+                content="Query error message",
+            ),
             url=query_url,
         )
         with raises(OperationalError) as excinfo:
@@ -262,9 +271,11 @@ async def test_cursor_execute_error(
         ), f"Invalid authentication error message for {message}."
 
         # Database does not exist error
-        httpx_mock.add_response(
-            status_code=codes.FORBIDDEN,
-            content="Query error message",
+        httpx_mock.add_callback(
+            lambda *args, **kwargs: Response(
+                status_code=codes.FORBIDDEN,
+                content="Query error message",
+            ),
             url=query_url,
         )
         httpx_mock.add_response(
@@ -276,9 +287,11 @@ async def test_cursor_execute_error(
         assert cursor._state == CursorState.ERROR
 
         # Engine is not running error
-        httpx_mock.add_response(
-            status_code=codes.SERVICE_UNAVAILABLE,
-            content="Query error message",
+        httpx_mock.add_callback(
+            lambda *args, **kwargs: Response(
+                status_code=codes.SERVICE_UNAVAILABLE,
+                content="Query error message",
+            ),
             url=query_url,
         )
         httpx_mock.add_response(

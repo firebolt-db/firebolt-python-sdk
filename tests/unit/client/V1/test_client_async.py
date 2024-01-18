@@ -2,7 +2,7 @@ from re import Pattern, compile
 from types import MethodType
 from typing import Any, Callable
 
-from httpx import Request, Response, codes
+from httpx import Request, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 from trio import open_nursery, sleep
@@ -12,6 +12,7 @@ from firebolt.client import AsyncClientV1 as AsyncClient
 from firebolt.client.auth import Token, UsernamePassword
 from firebolt.utils.urls import AUTH_URL
 from firebolt.utils.util import fix_url_schema
+from tests.unit.conftest import Response
 
 
 async def test_client_retry(

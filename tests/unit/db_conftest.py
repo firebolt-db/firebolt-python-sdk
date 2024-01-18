@@ -3,13 +3,14 @@ from decimal import Decimal
 from json import dumps as jdumps
 from typing import Any, Callable, Dict, List
 
-from httpx import URL, Request, Response, codes
+from httpx import URL, Request, codes
 from pytest import fixture
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
 from firebolt.db import ARRAY, DECIMAL
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
+from tests.unit.response import Response
 
 QUERY_ROW_COUNT: int = 10
 
