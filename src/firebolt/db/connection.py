@@ -6,8 +6,12 @@ from types import TracebackType
 from typing import Any, Dict, List, Optional, Type
 from warnings import warn
 
-from httpcore.backends.base import NetworkStream
-from httpcore.backends.sync import SyncBackend
+try:
+    from httpcore.backends.base import NetworkStream  # type: ignore [import]
+    from httpcore.backends.sync import SyncBackend  # type: ignore [import]
+except ImportError:
+    from httpcore._backends.base import NetworkStream  # type: ignore [import]
+    from httpcore._backends.sync import SyncBackend  # type: ignore [import]
 from httpx import HTTPTransport, Timeout
 
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
