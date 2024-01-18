@@ -125,6 +125,7 @@ class BindingService(BaseService):
             f"to Database (database_id={database.database_id}, "
             f"name={database.name})"
         )
+        assert database.database_id is not None, "Database must have database_id"
         binding = Binding(
             binding_key=BindingKey(
                 account_id=self.account_id,

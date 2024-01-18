@@ -21,13 +21,13 @@ class Binding(FireboltBaseModel):
     is_default_engine: bool = Field(alias="engine_is_default")
 
     # optional
-    current_status: Optional[str]
-    health_status: Optional[str]
-    create_time: Optional[datetime]
-    create_actor: Optional[str]
-    last_update_time: Optional[datetime]
-    last_update_actor: Optional[str]
-    desired_status: Optional[str]
+    current_status: Optional[str] = None
+    health_status: Optional[str] = None
+    create_time: Optional[datetime] = None
+    create_actor: Optional[str] = None
+    last_update_time: Optional[datetime] = None
+    last_update_actor: Optional[str] = None
+    desired_status: Optional[str] = None
 
     @property
     def database_id(self) -> str:

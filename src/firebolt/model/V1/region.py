@@ -16,6 +16,6 @@ class Region(FireboltBaseModel):
     name: str
 
     # optional
-    display_name: Optional[str]
-    create_time: Optional[datetime]
-    last_update_time: Optional[datetime]
+    display_name: Optional[str] = None
+    create_time: Optional[datetime] = None
+    last_update_time: Optional[datetime] = None

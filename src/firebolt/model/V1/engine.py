@@ -50,7 +50,7 @@ class EngineSettings(FireboltBaseModel):
     """
 
     preset: str
-    auto_stop_delay_duration: str = Field(regex=r"^[0-9]+[sm]$|^0$")
+    auto_stop_delay_duration: str = Field(pattern=r"^[0-9]+[sm]$|^0$")
     minimum_logging_level: str
     is_read_only: bool
     warm_up: str
@@ -97,30 +97,30 @@ class Engine(FireboltBaseModel):
     _service: EngineService = PrivateAttr()
 
     # required
-    name: str = Field(min_length=1, max_length=255, regex=r"^[0-9a-zA-Z_]+$")
+    name: str = Field(min_length=1, max_length=255, pattern=r"^[0-9a-zA-Z_]+$")
     compute_region_key: RegionKey = Field(alias="compute_region_id")
     settings: EngineSettings
 
     # optional
     key: Optional[EngineKey] = Field(None, alias="id")
-    description: Optional[str]
-    emoji: Optional[str]
-    current_status: Optional[EngineStatus]
-    current_status_summary: Optional[EngineStatusSummary]
+    description: Optional[str] = None
+    emoji: Optional[str] = None
+    current_status: Optional[EngineStatus] = None
+    current_status_summary: Optional[EngineStatusSummary] = None
     latest_revision_key: Optional[EngineRevisionKey] = Field(
         None, alias="latest_revision_id"
     )
-    endpoint: Optional[str]
+    endpoint: Optional[str] = None
     endpoint_serving_revision_key: Optional[EngineRevisionKey] = Field(
         None, alias="endpoint_serving_revision_id"
     )
-    create_time: Optional[datetime]
-    create_actor: Optional[str]
-    last_update_time: Optional[datetime]
-    last_update_actor: Optional[str]
-    last_use_time: Optional[datetime]
-    desired_status: Optional[str]
-    health_status: Optional[str]
+    create_time: Optional[datetime] = None
+    create_actor: Optional[str] = None
+    last_update_time: Optional[datetime] = None
+    last_update_actor: Optional[str] = None
+    last_use_time: Optional[datetime] = None
+    desired_status: Optional[str] = None
+    health_status: Optional[str] = None
     endpoint_desired_revision_key: Optional[EngineRevisionKey] = Field(
         None, alias="endpoint_desired_revision_id"
     )

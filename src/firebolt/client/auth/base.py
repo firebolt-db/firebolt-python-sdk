@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from time import time
 from typing import AsyncGenerator, Generator, Optional
 
@@ -44,7 +45,7 @@ class Auth(HttpxAuth):
         Returns:
             Auth: Auth object
         """
-        return Auth(self._use_token_cache)
+        return self.__class__(self._use_token_cache)
 
     @property
     def token(self) -> Optional[str]:
@@ -103,6 +104,7 @@ class Auth(HttpxAuth):
         if self._token and self._expires:
             self._token_storage.cache_token(self._token, self._expires)
 
+    @abstractmethod
     def get_new_token_generator(self) -> Generator[Request, Response, None]:
         """Generate requests needed to create a new token session."""
 

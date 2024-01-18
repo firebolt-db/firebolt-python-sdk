@@ -5,9 +5,12 @@ from pydantic import BaseModel
 
 
 class FireboltBaseModel(BaseModel):
+
+    # Using Pydantic 1.* config class for backwards compatibility
     class Config:
-        allow_population_by_field_name = True
         extra = "forbid"
+        allow_population_by_field_name = True  # Pydantic 1.8
+        populate_by_name = True  # Pydantic 2.0
 
     def jsonable_dict(self, *args: Any, **kwargs: Any) -> dict:
         """
