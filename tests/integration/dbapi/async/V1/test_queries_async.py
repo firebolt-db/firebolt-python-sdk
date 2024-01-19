@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, List
+from typing import Any, Callable, List
 
 from pytest import fixture, mark, raises
 
@@ -173,8 +173,13 @@ async def test_select(
 @mark.timeout(timeout=1000)
 async def test_long_query(
     connection: Connection,
+    minimal_time: Callable[[float], None],
 ) -> None:
     """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
+
+    # Fail test if it takes less than 350 seconds
+    minimal_time(350)
+
     with connection.cursor() as c:
         await c.execute(
             "SELECT checksum(*) FROM GENERATE_SERIES(1, 250000000000)",  # approx 6m runtime
