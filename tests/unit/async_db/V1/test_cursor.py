@@ -2,7 +2,7 @@ from typing import Callable, Dict, List
 from unittest.mock import patch
 
 from httpx import HTTPStatusError, StreamError, codes
-from pytest import raises
+from pytest import LogCaptureFixture, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
@@ -857,3 +857,24 @@ async def test_server_side_header_database(
     httpx_mock.add_callback(query_callback_with_headers, url=query_url_updated)
     await cursor.execute("select 1")
     assert cursor.database == db_name_updated
+
+
+async def test_cursor_unknown_error_body_logging(
+    httpx_mock: HTTPXMock,
+    auth_callback: Callable,
+    auth_url: str,
+    cursor: Cursor,
+    caplog: LogCaptureFixture,
+    query_url: str,
+):
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+    actual_error_body = "Your query was incorrect"
+    httpx_mock.add_callback(
+        lambda *args, **kwargs: Response(
+            status_code=codes.NOT_IMPLEMENTED, content=actual_error_body
+        ),
+        url=query_url,
+    )
+    with raises(HTTPStatusError):
+        await cursor.execute("select 1")
+    assert actual_error_body in caplog.text
