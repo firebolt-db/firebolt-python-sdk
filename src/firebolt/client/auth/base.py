@@ -7,7 +7,7 @@ from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.util import Timer, cached_property
+from firebolt.utils.util import Timer, cached_property, get_internal_error_code
 
 
 class AuthRequest(Request):
@@ -128,7 +128,10 @@ class Auth(HttpxAuth):
 
             response = yield request
 
-            if response.status_code == codes.UNAUTHORIZED:
+            if (
+                response.status_code == codes.UNAUTHORIZED
+                or get_internal_error_code(response) == codes.UNAUTHORIZED
+            ):
                 yield from self.get_new_token_generator()
                 request.headers["Authorization"] = f"Bearer {self.token}"
                 yield request
