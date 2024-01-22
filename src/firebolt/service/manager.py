@@ -14,7 +14,14 @@ from firebolt.client import (
 )
 from firebolt.common import Settings
 from firebolt.db import connect
+from firebolt.service.V1.binding import BindingService
+from firebolt.service.V1.database import DatabaseService as DatabaseServiceV1
+from firebolt.service.V1.engine import EngineService as EngineServiceV1
 from firebolt.service.V1.provider import get_provider_id
+from firebolt.service.V1.region import RegionService
+from firebolt.service.V2.database import DatabaseService as DatabaseServiceV2
+from firebolt.service.V2.engine import EngineService as EngineServiceV2
+from firebolt.service.V2.instance_type import InstanceTypeService
 from firebolt.utils.util import fix_url_schema
 
 DEFAULT_TIMEOUT_SECONDS: int = 60 * 2
@@ -127,34 +134,25 @@ class ResourceManager:
 
     def _init_services_v2(self) -> None:
         # avoid circular import
-        from firebolt.service.V2.database import DatabaseService
-        from firebolt.service.V2.engine import EngineService
-        from firebolt.service.V2.instance_type import InstanceTypeService
 
         # Cloud Platform Resources (AWS)
         self.instance_types = InstanceTypeService(resource_manager=self)
 
         # Firebolt Resources
-        self.databases = DatabaseService(resource_manager=self)
-        self.engines = EngineService(resource_manager=self)
+        self.databases = DatabaseServiceV2(resource_manager=self)
+        self.engines = EngineServiceV2(resource_manager=self)
 
         # Not applicable to V2
         self.provider_id = None
 
     def _init_services_v1(self) -> None:
-        # avoid circular import
-        from firebolt.service.V1.binding import BindingService
-        from firebolt.service.V1.database import DatabaseService
-        from firebolt.service.V1.engine import EngineService
-        from firebolt.service.V1.region import RegionService
-
         # Cloud Platform Resources (AWS)
         self.regions = RegionService(resource_manager=self)  # type: ignore
 
         # Firebolt Resources
         self.bindings = BindingService(resource_manager=self)  # type: ignore
-        self.engines = EngineService(resource_manager=self)  # type: ignore
-        self.databases = DatabaseService(resource_manager=self)  # type: ignore
+        self.engines = EngineServiceV1(resource_manager=self)  # type: ignore
+        self.databases = DatabaseServiceV1(resource_manager=self)  # type: ignore
 
         self.provider_id = get_provider_id(client=self._client)
 
