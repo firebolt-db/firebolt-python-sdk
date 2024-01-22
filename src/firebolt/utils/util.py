@@ -147,6 +147,19 @@ def validate_engine_name_and_url_v1(
         )
 
 
+def _print_error_body(resp: Response) -> None:
+    """log error body if it exists, since it's not always logged by default"""
+    try:
+        if (
+            codes.is_error(resp.status_code)
+            and "Content-Length" in resp.headers
+            and int(resp.headers["Content-Length"]) > 0
+        ):
+            logger.error(f"Something went wrong: {resp.read().decode('utf-8')}")
+    except Exception:
+        pass
+
+
 class Timer:
     def __init__(self, message: str = ""):
         self._message = message
