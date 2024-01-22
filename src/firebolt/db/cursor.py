@@ -45,6 +45,7 @@ from firebolt.utils.exception import (
     ProgrammingError,
 )
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
+from firebolt.utils.util import _print_error_body
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -107,6 +108,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 f"Firebolt engine {self.connection.engine_url} "
                 "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
             )
+        _print_error_body(resp)
         resp.raise_for_status()
 
     @abstractmethod

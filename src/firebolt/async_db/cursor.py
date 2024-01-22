@@ -53,7 +53,7 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from firebolt.utils.util import Timer
+from firebolt.utils.util import Timer, _print_error_body
 
 logger = logging.getLogger(__name__)
 
@@ -121,6 +121,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 f"Firebolt engine {self.connection.engine_url} "
                 "needs to be running to run queries against it."
             )
+        _print_error_body(resp)
         resp.raise_for_status()
 
     async def _validate_set_parameter(self, parameter: SetParameter) -> None:
