@@ -1,14 +1,16 @@
-from typing import Dict, List
+from typing import TYPE_CHECKING, Dict, List
 
 from firebolt.model.V1.region import Region, RegionKey
-from firebolt.service.manager import ResourceManager
 from firebolt.service.V1.base import BaseService
 from firebolt.utils.urls import REGIONS_URL
 from firebolt.utils.util import cached_property
 
+if TYPE_CHECKING:
+    from firebolt.service.manager import ResourceManager
+
 
 class RegionService(BaseService):
-    def __init__(self, resource_manager: ResourceManager):
+    def __init__(self, resource_manager: "ResourceManager"):
         """
         Service to manage AWS regions (us-east-1, etc)
 

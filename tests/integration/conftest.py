@@ -1,5 +1,7 @@
 from logging import getLogger
 from os import environ
+from time import time
+from typing import Optional
 
 from pytest import fixture, mark
 
@@ -142,3 +144,20 @@ def engine_url() -> str:
 @fixture(scope="session")
 def stopped_engine_url() -> str:
     return must_env(STOPPED_ENGINE_URL_ENV)
+
+
+@fixture(scope="function")
+def minimal_time():
+    limit: Optional[float] = None
+
+    def setter(value):
+        nonlocal limit
+        limit = value
+
+    start = time()
+    yield setter
+    end = time()
+    if limit is not None:
+        assert (
+            end - start >= limit
+        ), f"Test took {end - start} seconds, less than {limit} seconds"

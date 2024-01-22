@@ -1,11 +1,13 @@
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from firebolt.client import ClientV1 as Client
-from firebolt.service.manager import ResourceManager
+
+if TYPE_CHECKING:
+    from firebolt.service.manager import ResourceManager
 
 
 class BaseService:
-    def __init__(self, resource_manager: ResourceManager):
+    def __init__(self, resource_manager: "ResourceManager"):
         self.resource_manager = resource_manager
 
     @property
