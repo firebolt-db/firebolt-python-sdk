@@ -245,7 +245,7 @@ class Engine(FireboltBaseModel):
     def delete(self) -> None:
         """Delete an engine."""
         self.refresh()
-        if self.current_status == EngineStatus.DROPPING:
+        if self.current_status in [EngineStatus.DROPPING, EngineStatus.DELETING]:
             return
         with self._service._connection.cursor() as c:
             c.execute(self.DROP_SQL.format(self.name))
