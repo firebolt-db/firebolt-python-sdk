@@ -1,10 +1,13 @@
 from collections import namedtuple
 
+from pytest import mark
+
 from firebolt.client.auth import Auth
 from firebolt.service.manager import ResourceManager
 from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
 
 
+@mark.slow
 def test_create_start_stop_engine(
     auth: Auth,
     account_name: str,
@@ -16,7 +19,17 @@ def test_create_start_stop_engine(
     )
     name = start_stop_engine_name
 
-    engine = rm.engines.create(name=name)
+    spec = rm.instance_types.get("B1")
+
+    engine = rm.engines.create(
+        name=name,
+        region="us-east-1",
+        engine_type=EngineType.DATA_ANALYTICS,
+        spec=spec,
+        scale=1,
+        auto_stop=120,
+        warmup=WarmupMethod.MINIMAL,
+    )
     assert engine.name == name
 
     database = rm.databases.create(name=name)
