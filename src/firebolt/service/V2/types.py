@@ -48,6 +48,7 @@ class EngineStatus(Enum):
     DROPPING = "Dropping"
     REPAIRING = "Repairing"
     FAILED = "Failed"
+    DELETING = "Deleting"
 
     def __str__(self) -> str:
         return self.value

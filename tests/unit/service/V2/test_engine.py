@@ -4,13 +4,14 @@ from pytest import raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.model.V2.database import Database
-from firebolt.model.V2.engine import Engine
+from firebolt.model.V2.engine import Engine, EngineStatus
 from firebolt.service.manager import ResourceManager
 from firebolt.service.V2.types import EngineType
 from firebolt.utils.exception import (
     EngineNotFoundError,
     NoAttachedDatabaseError,
 )
+from tests.unit.service.V2.conftest import get_objects_from_db_callback
 
 
 def test_engine_create(
@@ -195,3 +196,22 @@ def test_engine_get_by_name(
     engine = resource_manager.engines.get_by_name(mock_engine.name)
 
     assert engine == mock_engine
+
+
+def test_engine_deleteting(
+    httpx_mock: HTTPXMock,
+    resource_manager: ResourceManager,
+    instance_type_callback: Callable,
+    instance_type_url: str,
+    system_engine_no_db_query_url: str,
+    mock_engine: Engine,
+):
+    mock_engine.current_status = "Deleting"
+    get_engine_callback = get_objects_from_db_callback([mock_engine])
+
+    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
+    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+
+    engine = resource_manager.engines.get_by_name(mock_engine.name)
+
+    assert engine.current_status == EngineStatus.DELETING
