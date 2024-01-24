@@ -12,7 +12,6 @@ from firebolt.utils.exception import (
     EngineNotFoundError,
     NoAttachedDatabaseError,
 )
-
 from tests.unit.response import Response
 from tests.unit.service.V2.conftest import get_objects_from_db_callback
 
