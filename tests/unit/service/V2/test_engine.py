@@ -36,6 +36,10 @@ def test_engine_create(
     httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(create_engine_callback, url=system_engine_no_db_query_url)
 
+    for value in (1.0, False, int):
+        with raises(TypeError):
+            resource_manager.engines.create("wrong", scale=value)
+
     engine = resource_manager.engines.create(
         name=mock_engine.name,
         region=mock_engine.region,
