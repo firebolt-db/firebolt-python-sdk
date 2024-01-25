@@ -115,6 +115,20 @@ class EngineService(BaseService):
             ]
             return [Engine._from_dict(_dict, self) for _dict in dicts]
 
+    @staticmethod
+    def _format_engine_parameter(
+        value: Union[str, int, EngineType, InstanceType, WarmupMethod]
+    ) -> Union[str, int]:
+        if not isinstance(
+            value, (str, int, EngineType, InstanceType, WarmupMethod)
+        ) or isinstance(value, bool):
+            raise TypeError(f"Unsupported type {type(value)} for engine parameter. ")
+        if isinstance(value, InstanceType):
+            return value.name
+        if isinstance(value, (EngineType, WarmupMethod)):
+            return str(value.value)
+        return value
+
     def create(
         self,
         name: str,
@@ -169,7 +183,7 @@ class EngineService(BaseService):
             ):
                 if value is not None:
                     sql += f"{param} = ? "
-                    parameters.append(str(value))
+                    parameters.append(self._format_engine_parameter(value))
         with self._connection.cursor() as c:
             c.execute(sql, parameters)
         return self.get(name)

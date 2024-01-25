@@ -1,5 +1,6 @@
 from typing import Callable
 
+from httpx import Request
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
@@ -11,6 +12,7 @@ from firebolt.utils.exception import (
     EngineNotFoundError,
     NoAttachedDatabaseError,
 )
+from tests.unit.response import Response
 from tests.unit.service.V2.conftest import get_objects_from_db_callback
 
 
@@ -19,13 +21,24 @@ def test_engine_create(
     resource_manager: ResourceManager,
     instance_type_callback: Callable,
     instance_type_url: str,
-    get_engine_callback: Callable,
     mock_engine: Engine,
     system_engine_no_db_query_url: str,
 ):
+    def create_engine_callback(request: Request) -> Response:
+        if request.content.startswith(b"CREATE"):
+            assert (
+                request.content.decode("utf-8")
+                == "CREATE ENGINE engine_1 WITH REGION = 'us-east-1' ENGINE_TYPE = 'GENERAL_PURPOSE'"
+                " SPEC = 'B1' SCALE = 2 AUTO_STOP = 7200 WARMUP = 'MINIMAL'"
+            )
+        return get_objects_from_db_callback([mock_engine])(request)
 
     httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(create_engine_callback, url=system_engine_no_db_query_url)
+
+    for value in (1.0, False, int):
+        with raises(TypeError):
+            resource_manager.engines.create("wrong", scale=value)
 
     engine = resource_manager.engines.create(
         name=mock_engine.name,
