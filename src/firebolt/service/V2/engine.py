@@ -119,12 +119,12 @@ class EngineService(BaseService):
     def _format_engine_parameter(
         value: Union[str, int, EngineType, InstanceType, WarmupMethod]
     ) -> Union[str, int]:
+        if not isinstance(value, (str, int, EngineType, InstanceType, WarmupMethod)):
+            raise TypeError(f"Unsupported type {type(value)} for engine parameter. ")
         if isinstance(value, InstanceType):
             return value.name
         if isinstance(value, (EngineType, WarmupMethod)):
             return str(value.value)
-        elif isinstance(value, (int, float)):
-            return int(value)
         return value
 
     def create(
