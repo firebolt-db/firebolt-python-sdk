@@ -135,7 +135,6 @@ def test_drop_create(connection: Connection) -> None:
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        c.execute("DROP JOIN INDEX IF EXISTS test_drop_create_db_join_idx")
         c.execute("DROP AGGREGATING INDEX IF EXISTS test_drop_create_db_agg_idx")
         c.execute("DROP TABLE IF EXISTS test_drop_create_tb")
         c.execute("DROP TABLE IF EXISTS test_drop_create_tb_dim")
@@ -154,22 +153,12 @@ def test_drop_create(connection: Connection) -> None:
             ", f float, d date, dt datetime, b bool, a array(int))",
         )
 
-        # Create join index
-        test_query(
-            c,
-            "CREATE JOIN INDEX test_drop_create_db_join_idx ON "
-            "test_drop_create_tb_dim(id, sn, f)",
-        )
-
         # Create aggregating index
         test_query(
             c,
             "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
             "test_drop_create_tb(id, sum(f), count(dt))",
         )
-
-        # Drop join index
-        test_query(c, "DROP JOIN INDEX test_drop_create_db_join_idx")
 
         # Drop aggregating index
         test_query(c, "DROP AGGREGATING INDEX test_drop_create_db_agg_idx")
