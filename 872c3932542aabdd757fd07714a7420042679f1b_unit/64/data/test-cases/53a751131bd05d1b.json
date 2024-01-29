@@ -1,0 +1,92 @@
+{
+  "uid" : "53a751131bd05d1b",
+  "name" : "test_format_statement[statement5-params5-select * from t where id == '\\\\' or \\\\'\\\\' == \\\\'']",
+  "fullName" : "tests.unit.async_db.V1.test_typing_format#test_format_statement",
+  "historyId" : "6b0f50708cab38cbfd6b0bb7856e6d80",
+  "time" : {
+    "start" : 1706497511368,
+    "stop" : 1706497511369,
+    "duration" : 1
+  },
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1706497511365,
+      "stop" : 1706497511367,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1706497511371,
+      "stop" : 1706497511372,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.async_db.V1"
+  }, {
+    "name" : "suite",
+    "value" : "test_typing_format"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1040-680"
+  }, {
+    "name" : "thread",
+    "value" : "2303-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.async_db.V1.test_typing_format"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "params",
+    "value" : "(\"' or '' == '\",)"
+  }, {
+    "name" : "result",
+    "value" : "'select * from t where id == '\\' or \\'\\' == \\'''"
+  }, {
+    "name" : "statement",
+    "value" : "<Statement 'select...' at 0x7FCB30F50250>"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "tags" : [ ]
+  },
+  "source" : "53a751131bd05d1b.json",
+  "parameterValues" : [ "(\"' or '' == '\",)", "'select * from t where id == '\\' or \\'\\' == \\'''", "<Statement 'select...' at 0x7FCB30F50250>" ]
+}
