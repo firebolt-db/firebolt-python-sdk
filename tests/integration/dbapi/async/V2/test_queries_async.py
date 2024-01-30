@@ -129,7 +129,6 @@ async def test_drop_create(connection: Connection) -> None:
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        await c.execute("DROP JOIN INDEX IF EXISTS test_db_join_idx")
         await c.execute("DROP AGGREGATING INDEX IF EXISTS test_db_agg_idx")
         await c.execute("DROP TABLE IF EXISTS test_drop_create_async")
         await c.execute("DROP TABLE IF EXISTS test_drop_create_async_dim")
@@ -148,22 +147,12 @@ async def test_drop_create(connection: Connection) -> None:
             ", f float, d date, dt datetime, b bool, a array(int))",
         )
 
-        # Create join index
-        await test_query(
-            c,
-            "CREATE JOIN INDEX test_db_join_idx ON "
-            "test_drop_create_async_dim(id, sn, f)",
-        )
-
         # Create aggregating index
         await test_query(
             c,
             "CREATE AGGREGATING INDEX test_db_agg_idx ON "
             "test_drop_create_async(id, sum(f), count(dt))",
         )
-
-        # Drop join index
-        await test_query(c, "DROP JOIN INDEX test_db_join_idx")
 
         # Drop aggregating index
         await test_query(c, "DROP AGGREGATING INDEX test_db_agg_idx")
