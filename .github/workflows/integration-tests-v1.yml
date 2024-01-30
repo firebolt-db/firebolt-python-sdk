@@ -1,33 +1,11 @@
 name: Integration tests FB 1.0
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to run the tests against'
-        type: choice
-        required: true
-        default: 'dev'
-        options:
-          - dev
-          - staging
   workflow_call:
-    inputs:
-      environment:
-        default: 'staging'
-        required: false
-        type: string
     secrets:
-      FIREBOLT_USERNAME:
-        required: true
-      FIREBOLT_PASSWORD:
-        required: true
       FIREBOLT_STG_USERNAME:
         required: true
       FIREBOLT_STG_PASSWORD:
-        required: true
-      SERVICE_ID:
-        required: true
-      SERVICE_SECRET:
         required: true
       SERVICE_ID_STG:
         required: true
@@ -50,27 +28,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Determine env variables
-        run: |
-          if [ "${{ inputs.environment }}" == 'staging' ]; then
-              echo "USERNAME=${{ secrets.FIREBOLT_STG_USERNAME }}" >> "$GITHUB_ENV"
-              echo "PASSWORD=${{ secrets.FIREBOLT_STG_PASSWORD }}" >> "$GITHUB_ENV"
-              echo "CLIENT_ID=${{ secrets.SERVICE_ID_STG }}" >> "$GITHUB_ENV"
-              echo "CLIENT_SECRET=${{ secrets.SERVICE_SECRET_STG }}" >> "$GITHUB_ENV"
-          else
-              echo "USERNAME=${{ secrets.FIREBOLT_USERNAME }}" >> "$GITHUB_ENV"
-              echo "PASSWORD=${{ secrets.FIREBOLT_PASSWORD }}" >> "$GITHUB_ENV"
-              echo "CLIENT_ID=${{ secrets.SERVICE_ID }}" >> "$GITHUB_ENV"
-              echo "CLIENT_SECRET=${{ secrets.SERVICE_SECRET }}" >> "$GITHUB_ENV"
-          fi
-
       - name: Setup database and engine
         id: setup
         uses: firebolt-db/integration-testing-setup@v1
         with:
-          firebolt-username: ${{ env.USERNAME }}
-          firebolt-password: ${{ env.PASSWORD }}
-          api-endpoint: "api.${{ inputs.environment }}.firebolt.io"
+          firebolt-username: ${{ secrets.FIREBOLT_STG_USERNAME }}
+          firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+          api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
 
       - name: Restore cached failed tests
@@ -83,16 +47,16 @@ jobs:
 
       - name: Run integration tests
         env:
-          USER_NAME: ${{ env.USERNAME }}
-          PASSWORD: ${{ env.PASSWORD }}
-          SERVICE_ID: ${{ env.CLIENT_ID }}
-          SERVICE_SECRET: ${{ env.CLIENT_SECRET }}
+          USER_NAME: ${{ secrets.FIREBOLT_STG_USERNAME}}
+          PASSWORD: ${{ secrets.FIREBOLT_STG_PASSWORD }}
+          SERVICE_ID: ${{ secrets.SERVICE_ID_STG }}
+          SERVICE_SECRET: ${{ secrets.SERVICE_SECRET_STG }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
           STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
-          API_ENDPOINT: "api.${{ inputs.environment }}.firebolt.io"
+          API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: "firebolt"
         run: |
           pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration -k "not V2" --runslow
