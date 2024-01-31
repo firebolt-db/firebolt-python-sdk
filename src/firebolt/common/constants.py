@@ -1,0 +1,3 @@
+KEEPALIVE_FLAG: int = 1
+KEEPIDLE_RATE: int = 60  # seconds
+DEFAULT_TIMEOUT_SECONDS: int = 60

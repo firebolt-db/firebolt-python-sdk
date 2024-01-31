@@ -11,7 +11,7 @@ from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
