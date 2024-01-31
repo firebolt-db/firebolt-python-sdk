@@ -10,7 +10,7 @@ except ImportError:
 
 from httpx import AsyncHTTPTransport, HTTPTransport
 
-from firebolt.common.settings import KEEPALIVE_FLAG, KEEPIDLE_RATE
+from firebolt.common.constants import KEEPALIVE_FLAG, KEEPIDLE_RATE
 
 
 def override_stream(stream):  # type: ignore [no-untyped-def]

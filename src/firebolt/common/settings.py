@@ -7,11 +7,6 @@ from firebolt.client.auth import Auth, ClientCredentials
 
 logger = logging.getLogger(__name__)
 
-KEEPALIVE_FLAG: int = 1
-
-KEEPIDLE_RATE: int = 60  # seconds
-DEFAULT_TIMEOUT_SECONDS: int = 60
-
 CLIENT_ID_ENV = "FIREBOLT_CLIENT_ID"
 CLIENT_SECRET_ENV = "FIREBOLT_CLIENT_SECRET"
 ACCOUNT_ENV = "FIREBOLT_ACCOUNT"

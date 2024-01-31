@@ -10,7 +10,7 @@ from httpx import Timeout
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url
 from firebolt.utils.exception import (

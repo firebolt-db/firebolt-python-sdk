@@ -4,7 +4,7 @@ from httpx import Timeout, codes
 
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClientV2
-from firebolt.common.settings import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     InterfaceError,
