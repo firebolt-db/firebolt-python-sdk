@@ -1,0 +1,112 @@
+{
+  "uid" : "53e9ec9fba2d4ce3",
+  "name" : "test_split_format_sql[select * from t; set a = b;-params8-result8]",
+  "fullName" : "tests.unit.async_db.V2.test_typing_format#test_split_format_sql",
+  "historyId" : "cf455a9422de6f0f3ea4757ed9ffcfd9",
+  "time" : {
+    "start" : 1706756605676,
+    "stop" : 1706756605677,
+    "duration" : 1
+  },
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1706756605673,
+      "stop" : 1706756605675,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1706756605680,
+      "stop" : 1706756605680,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.async_db.V2"
+  }, {
+    "name" : "suite",
+    "value" : "test_typing_format"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1385-403"
+  }, {
+    "name" : "thread",
+    "value" : "2266-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.async_db.V2.test_typing_format"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "params",
+    "value" : "()"
+  }, {
+    "name" : "query",
+    "value" : "'select * from t; set a = b;'"
+  }, {
+    "name" : "result",
+    "value" : "['select * from t', SetParameter(name='a', value='b')]"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 2,
+        "unknown" : 0,
+        "total" : 2
+      },
+      "items" : [ {
+        "uid" : "8e8b8650bd24a9",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/52e1077fbbaeca2c995fbf1af3fe083422cf25c3_unit/280//#testresult/8e8b8650bd24a9",
+        "status" : "passed",
+        "time" : {
+          "start" : 1706713295798,
+          "stop" : 1706713295799,
+          "duration" : 1
+        }
+      } ]
+    },
+    "tags" : [ ]
+  },
+  "source" : "53e9ec9fba2d4ce3.json",
+  "parameterValues" : [ "()", "'select * from t; set a = b;'", "['select * from t', SetParameter(name='a', value='b')]" ]
+}
