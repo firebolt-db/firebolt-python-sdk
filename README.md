@@ -9,7 +9,7 @@
 
 ### Installation
 
-* Requires Python `>=3.7`
+* Requires Python `>=3.8`
 * `pip install "firebolt-sdk>=1.0.0a1"`
 
 ## Documentation
