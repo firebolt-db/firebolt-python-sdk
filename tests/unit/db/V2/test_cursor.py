@@ -2,12 +2,13 @@ from typing import Any, Callable, Dict, List
 from unittest.mock import patch
 
 from httpx import HTTPStatusError, StreamError, codes
-from pytest import LogCaptureFixture, raises
+from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.db import Cursor
 from firebolt.db.cursor import ColType, Column, CursorState, QueryStatus
 from firebolt.utils.exception import (
+    ConfigurationError,
     CursorClosedError,
     DataError,
     EngineNotRunningError,
@@ -798,3 +799,22 @@ def test_cursor_unknown_error_body_logging(
     with raises(HTTPStatusError):
         cursor.execute("select 1")
     assert actual_error_body in caplog.text
+
+
+@mark.parametrize(
+    "parameter",
+    [
+        "database",
+        "engine",
+        "account_id",
+        "output_format",
+    ],
+)
+def test_disallowed_set_parameter(cursor: Cursor, parameter: str) -> None:
+    """Test that setting disallowed parameters raises an error."""
+    with raises(ConfigurationError) as e:
+        cursor.execute(f"SET {parameter}=dummy")
+    assert f"Set parameter '{parameter}' is not allowed" in str(
+        e.value
+    ), "invalid error"
+    assert cursor._set_parameters == {}, "set parameters should not be updated"

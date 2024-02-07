@@ -20,6 +20,7 @@ from firebolt.common._types import (
 )
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
+    ConfigurationError,
     CursorClosedError,
     DataError,
     QueryNotRunError,
@@ -54,6 +55,29 @@ class QueryStatus(Enum):
 
 # known parameters that can be set on the server side
 SERVER_SIDE_PARAMETERS = ["database"]
+
+# Parameters that should be set using USE instead of SET
+USE_PARAMETER_LIST = ["database", "engine"]
+# parameters that can only be set by the backend
+DISALLOWED_PARAMETER_LIST = ["account_id", "output_format"]
+
+
+def _raise_if_internal_set_parameter(parameter: SetParameter) -> None:
+    """
+    Check if parameter is internal and raise an error if it is.
+    """
+    if parameter.name in USE_PARAMETER_LIST:
+        raise ConfigurationError(
+            "Could not set parameter. "
+            f"Set parameter '{parameter.name}' is not allowed. "
+            "Try again with 'USE <DATABASE/ENGINE>' instead of SET"
+        )
+    if parameter.name in DISALLOWED_PARAMETER_LIST:
+        raise ConfigurationError(
+            "Could not set parameter. "
+            f"Set parameter '{parameter.name}' is not allowed. "
+            "Try again with a different parameter name."
+        )
 
 
 @dataclass
