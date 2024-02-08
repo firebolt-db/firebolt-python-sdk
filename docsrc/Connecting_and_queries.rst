@@ -334,7 +334,8 @@ Setting session parameters
 Session parameters are special SQL statements allowing you to modify the behavior of
 the current session. For example, you can set the time zone for the current session
 using the ``SET time_zone`` statement. More information on session parameters can be
-found in the relevant [section](https://docs.firebolt.io/godocs/Reference/system-settings.html).
+found in the relevant `section <https://docs.firebolt.io/godocs/Reference/system-settings.html>`_
+in Firebolt docs.
 
 In Python SDK session parameters are stored on the cursor object and are set using the
 ``execute()`` method. This means that each cursor you create will act independently of
@@ -354,7 +355,11 @@ Alternatively set paramters can be set in a multi-statement query.
 
 Even when set in a multi-statement query, the session parameters will be set for the
 entire session, not just for the duration of the query. To reset the parameter either
-set it to a new value or use `cursor.flush_parameters()`.`
+set it to a new value or use `flush_parameters()` method.
+
+::
+
+	cursor.flush_parameters()
 
 
 Executing multiple-statement queries
