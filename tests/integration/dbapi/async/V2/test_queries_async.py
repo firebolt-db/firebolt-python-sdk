@@ -1,3 +1,4 @@
+import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
@@ -98,6 +99,24 @@ async def test_select(
         assert_deep_eq(
             data, all_types_query_response, "Invalid data returned by fetchmany"
         )
+
+
+async def test_select_inf(connection: Connection) -> None:
+    with connection.cursor() as c:
+        await c.execute("SELECT 'inf'::float, '-inf'::float")
+        data = await c.fetchall()
+        assert len(data) == 1, "Invalid data size returned by fetchall"
+        assert data[0][0] == float("inf"), "Invalid data returned by fetchall"
+        assert data[0][1] == float("-inf"), "Invalid data returned by fetchall"
+
+
+async def test_select_nan(connection: Connection) -> None:
+    with connection.cursor() as c:
+        await c.execute("SELECT 'nan'::float, '-nan'::float")
+        data = await c.fetchall()
+        assert len(data) == 1, "Invalid data size returned by fetchall"
+        assert math.isnan(data[0][0]), "Invalid data returned by fetchall"
+        assert math.isnan(data[0][1]), "Invalid data returned by fetchall"
 
 
 @mark.slow
@@ -408,7 +427,7 @@ async def test_bytea_roundtrip(
         ), "Invalid bytea data returned after roundtrip"
 
 
-@fixture(scope="session")
+@fixture
 async def setup_db(connection_system_engine_no_db: Connection, use_db_name: str):
     use_db_name = use_db_name + "_async"
     with connection_system_engine_no_db.cursor() as cursor:
