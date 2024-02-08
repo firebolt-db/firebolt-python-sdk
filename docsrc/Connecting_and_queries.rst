@@ -362,6 +362,13 @@ set it to a new value or use `flush_parameters()` method.
 	cursor.flush_parameters()
 
 
+.. note::
+
+	Some parameters are not allowed. `account_id`, `output_format`, `database`and `engine` are
+	internal parameters and should not be set using the `SET` statement. Database and engine
+	parameters (if enabled on your Firebolt version) can be set via `USE DATABASE` and `USE ENGINE`.
+
+
 Executing multiple-statement queries
 --------------------------------------
 
