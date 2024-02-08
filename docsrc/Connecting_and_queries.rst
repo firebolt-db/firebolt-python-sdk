@@ -123,25 +123,25 @@ To get started, follow the steps below:
 
 **3. Token management/caching**
 
-	Firebolt allows access by using authentication and refresh tokens.  In order to authenticate, 
-	the SDK issues an http login request to the Firebolt API, providing username and password.  
-	The API returns an authentication token and refresh token.   Authentication tokens are valid 
-	for 12 hours, and can be refreshed using the refresh token.  The SDK uses the authentication 
+	Firebolt allows access by using authentication and refresh tokens.  In order to authenticate,
+	the SDK issues an http login request to the Firebolt API, providing username and password.
+	The API returns an authentication token and refresh token.   Authentication tokens are valid
+	for 12 hours, and can be refreshed using the refresh token.  The SDK uses the authentication
 	token for all subsequent requests, and includes logic for refreshing the token if it is reported as expired.
 
-	Because a typical script that uses the SDK usually runs for less than a minute and then is closed, 
-	the token is lost because it’s only stored in a process memory.  To avoid that, the SDK by default does token caching.   
-	Token caching is designed to preserve the token in filesystem to later reuse it for requests and save time on 
-	authentication api request. It also helps for workflows that use the SDL in parallel or in sequential scripts 
-	on the same machine, as only a single authentication request is performed.  The caching works by preserving the 
-	token value and it’s expiration timestamp in filesystem, in user data directory. On the authentication, the SDK 
-	first tries to find a token cache file and, if it exists, checks that token is not yet expired. If the token 
-	is valid, it’s used for further authorization. The token value itself is encrypted with PBKDF2 algorithm, 
+	Because a typical script that uses the SDK usually runs for less than a minute and then is closed,
+	the token is lost because it’s only stored in a process memory.  To avoid that, the SDK by default does token caching.
+	Token caching is designed to preserve the token in filesystem to later reuse it for requests and save time on
+	authentication api request. It also helps for workflows that use the SDL in parallel or in sequential scripts
+	on the same machine, as only a single authentication request is performed.  The caching works by preserving the
+	token value and it’s expiration timestamp in filesystem, in user data directory. On the authentication, the SDK
+	first tries to find a token cache file and, if it exists, checks that token is not yet expired. If the token
+	is valid, it’s used for further authorization. The token value itself is encrypted with PBKDF2 algorithm,
 	the encryption key is a combination of user credentials.
 
-	Token caching can be disabled if desired.  If the server the SDK is running on has a read only 
-	filesystem (when using AWS Lambda, for example), then the SDK will not be able to store the token.  
-	The caching is disabled by adding ``use_token_cache=False`` to the auth object.  From the examples above, 
+	Token caching can be disabled if desired.  If the server the SDK is running on has a read only
+	filesystem (when using AWS Lambda, for example), then the SDK will not be able to store the token.
+	The caching is disabled by adding ``use_token_cache=False`` to the auth object.  From the examples above,
 	it would look like: ``auth=UsernamePassword(username, password,use_token_cache=False),``
 
 
@@ -197,7 +197,7 @@ queries. For help, see :ref:`managing_resources:starting an engine`.
     For reference documentation on ``cursor`` functions, see :ref:`cursor <firebolt.db:cursor>`.
 
 
-Fetching query results 
+Fetching query results
 -----------------------
 
 After running a query, you can fetch the results using a ``cursor`` object. The examples
@@ -207,27 +207,27 @@ below use the data queried from ``test_table`` created in the
 .. _fetch_example:
 
 	::
-	
+
 		print(cursor.fetchone())
-	
+
 	**Returns**: ``[2, 'world']``
-	
+
 	::
-	
+
 		print(cursor.fetchmany(2))
-	
+
 	**Returns**: ``[[1, 'hello'], [3, '!']]``
-	
+
 	::
-	
+
 		print(cursor.fetchall())
-	
+
 	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
-	
+
 	::
-	
+
 		print(cursor.fetchall())
-	
+
 	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
 Fetching query result information
@@ -240,22 +240,22 @@ below are from the last SELECT query in :ref:`connecting_and_queries:Inserting a
 
 **rowcount**
 
-	- For a SELECT query, rowcount is the number of rows selected.  
+	- For a SELECT query, rowcount is the number of rows selected.
 	- For An INSERT query, it is always -1.
 	- For DDL (CREATE/DROP), it is always 1
 
 	::
-	
+
 		print("Rowcount: ", cursor.rowcount)
 
 	**Returns**: ``Rowcount:  3``
 
 
 **description**
-	
+
 	description is a list of Column objects, each one responsible for a single column in a result set. Only name and type_code fields get populated, all others are always empty.
-	
-	- name is the name of the column.	
+
+	- name is the name of the column.
 	- type_code is the data type of the column.  It can be:
 
 		- a python type (int, float, str, date, datetime)
@@ -264,7 +264,7 @@ below are from the last SELECT query in :ref:`connecting_and_queries:Inserting a
 		- a DATETIME64 object, that signifies a datetime value with an extended precision. The precision is stored in ``.precision``
 
 	::
-	
+
 		print("Description: ", cursor.description)
 
 	**Returns**: ``Description:  [Column(name='id', type_code=<class 'int'>, display_size=None, internal_size=None, precision=None, scale=None, null_ok=None), Column(name='name', type_code=<class 'str'>, display_size=None, internal_size=None, precision=None, scale=None, null_ok=None)]``
@@ -327,6 +327,34 @@ as values in the second argument.
 
     cursor.close()
 
+
+Setting session parameters
+--------------------------------------
+
+Session parameters are special SQL statements allowing you to modify the behavior of
+the current session. For example, you can set the time zone for the current session
+using the ``SET time_zone`` statement. More information on session parameters can be
+found in the relevant [section](https://docs.firebolt.io/godocs/Reference/system-settings.html).
+
+In Python SDK session parameters are stored on the cursor object and are set using the
+``execute()`` method. This means that each cursor you create will act independently of
+each other. Any session parameters on one will have no effect on another cursor.
+The example below sets the time zone to UTC and then selects a timestamp with time zone.
+
+::
+
+	cursor.execute("SET time_zone = 'UTC'")
+	cursor.execute("SELECT TIMESTAMPTZ '1996-09-03 11:19:33.123456 Europe/Berlin'")
+
+Alternatively set paramters can be set in a multi-statement query.
+
+::
+
+	cursor.execute("SET time_zone = 'UTC'; SELECT TIMESTAMPTZ '1996-09-03 11:19:33.123456 Europe/Berlin'")
+
+Even when set in a multi-statement query, the session parameters will be set for the
+entire session, not just for the duration of the query. To reset the parameter either
+set it to a new value or use `cursor.flush_parameters()`.`
 
 
 Executing multiple-statement queries
