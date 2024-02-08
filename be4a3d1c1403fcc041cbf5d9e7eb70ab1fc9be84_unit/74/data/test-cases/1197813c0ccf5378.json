@@ -1,0 +1,132 @@
+{
+  "uid" : "1197813c0ccf5378",
+  "name" : "test_parse_value_datetime[2021-12-31 23:59:59.1234-03-expected3-timezone provided]",
+  "fullName" : "tests.unit.async_db.V2.test_typing_parse#test_parse_value_datetime",
+  "historyId" : "90fb85a559bf5b19d913f209bb31ab5f",
+  "time" : {
+    "start" : 1707361404027,
+    "stop" : 1707361404027,
+    "duration" : 0
+  },
+  "description" : "parse_value parses all date values correctly.",
+  "descriptionHtml" : "<p>parse_value parses all date values correctly.</p>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1707361404024,
+      "stop" : 1707361404026,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1707361404030,
+      "stop" : 1707361404031,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.async_db.V2"
+  }, {
+    "name" : "suite",
+    "value" : "test_typing_parse"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1499-380"
+  }, {
+    "name" : "thread",
+    "value" : "2302-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.async_db.V2.test_typing_parse"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "case",
+    "value" : "'timezone provided'"
+  }, {
+    "name" : "expected",
+    "value" : "datetime.datetime(2021, 12, 31, 23, 59, 59, 123400, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=75600)))"
+  }, {
+    "name" : "value",
+    "value" : "'2021-12-31 23:59:59.1234-03'"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 4,
+        "unknown" : 0,
+        "total" : 4
+      },
+      "items" : [ {
+        "uid" : "499fd753e2c9c5fb",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/be4a3d1c1403fcc041cbf5d9e7eb70ab1fc9be84_unit/73//#testresult/499fd753e2c9c5fb",
+        "status" : "passed",
+        "time" : {
+          "start" : 1707275142864,
+          "stop" : 1707275142864,
+          "duration" : 0
+        }
+      }, {
+        "uid" : "2f6dca8e016619dc",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/be4a3d1c1403fcc041cbf5d9e7eb70ab1fc9be84_unit/72//#testresult/2f6dca8e016619dc",
+        "status" : "passed",
+        "time" : {
+          "start" : 1707188729082,
+          "stop" : 1707188729083,
+          "duration" : 1
+        }
+      }, {
+        "uid" : "2e739e9c214ba788",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/be4a3d1c1403fcc041cbf5d9e7eb70ab1fc9be84_unit/282//#testresult/2e739e9c214ba788",
+        "status" : "passed",
+        "time" : {
+          "start" : 1707129622043,
+          "stop" : 1707129622043,
+          "duration" : 0
+        }
+      } ]
+    },
+    "tags" : [ ]
+  },
+  "source" : "1197813c0ccf5378.json",
+  "parameterValues" : [ "'timezone provided'", "datetime.datetime(2021, 12, 31, 23, 59, 59, 123400, tzinfo=datetime.timezone(datetime.timedelta(days=-1, seconds=75600)))", "'2021-12-31 23:59:59.1234-03'" ]
+}
