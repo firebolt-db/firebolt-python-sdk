@@ -70,7 +70,7 @@ def _raise_if_internal_set_parameter(parameter: SetParameter) -> None:
         raise ConfigurationError(
             "Could not set parameter. "
             f"Set parameter '{parameter.name}' is not allowed. "
-            "Try again with 'USE <DATABASE/ENGINE>' instead of SET"
+            f"Try again with 'USE {str(parameter.name).upper()}' instead of SET"
         )
     if parameter.name in DISALLOWED_PARAMETER_LIST:
         raise ConfigurationError(
