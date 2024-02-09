@@ -37,6 +37,7 @@ from firebolt.common.base_cursor import (
     CursorState,
     QueryStatus,
     Statistics,
+    _raise_if_internal_set_parameter,
     check_not_closed,
     check_query_executed,
 )
@@ -126,6 +127,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     async def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
+        _raise_if_internal_set_parameter(parameter)
         if parameter.name == "async_execution":
             raise AsyncExecutionUnavailableError(
                 "It is not possible to set async_execution using a SET command. "
