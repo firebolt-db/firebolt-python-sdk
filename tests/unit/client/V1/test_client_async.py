@@ -120,6 +120,7 @@ async def test_client_account_id(
         api_endpoint=server,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
+        assert await c._account_version == 1, "Invalid account version returned."
 
 
 async def test_concurent_auth_lock(
