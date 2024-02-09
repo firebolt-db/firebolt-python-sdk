@@ -60,6 +60,22 @@ def connection_system_engine(
 
 
 @fixture
+def connection_system_engine_v2(
+    database_name: str,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
+) -> Connection:
+    with connect(
+        database=database_name,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        yield connection
+
+
+@fixture
 def connection_system_engine_no_db(
     auth: Auth,
     account_name: str,

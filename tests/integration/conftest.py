@@ -13,7 +13,8 @@ LOGGER = getLogger(__name__)
 ENGINE_NAME_ENV = "ENGINE_NAME"
 STOPPED_ENGINE_NAME_ENV = "STOPPED_ENGINE_NAME"
 DATABASE_NAME_ENV = "DATABASE_NAME"
-ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
+ACCOUNT_NAME_V1_ENV = "ACCOUNT_NAME_V1"
+ACCOUNT_NAME_V2_ENV = "ACCOUNT_NAME_V2"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
@@ -93,7 +94,12 @@ def use_db_name(database_name: str):
 
 @fixture(scope="session")
 def account_name() -> str:
-    return must_env(ACCOUNT_NAME_ENV)
+    return must_env(ACCOUNT_NAME_V1_ENV)
+
+
+@fixture(scope="session")
+def account_name_v2() -> str:
+    return must_env(ACCOUNT_NAME_V2_ENV)
 
 
 @fixture(scope="session")

@@ -16,6 +16,7 @@ def test_system_engine(
     timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
+    connection_system_engine._client._account_version = 1, "Invalid account version"
     with connection_system_engine.cursor() as c:
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
@@ -68,3 +69,12 @@ def test_system_engine_no_db(
         all_types_query_system_engine_response,
         timezone_name,
     )
+
+
+def test_system_engine_v2_account(connection_system_engine_v2: Connection):
+    assert (
+        connection_system_engine_v2._client.account_id
+    ), "Can't get account id explicitly"
+    assert (
+        connection_system_engine_v2._client._account_version == 2
+    ), "Invalid account version"
