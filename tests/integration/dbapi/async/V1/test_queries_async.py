@@ -1,6 +1,7 @@
 import math
 from datetime import date, datetime
 from decimal import Decimal
+from random import choice
 from typing import Any, Callable, List
 
 from pytest import fixture, mark, raises
@@ -504,9 +505,10 @@ async def test_bytea_roundtrip(
 async def setup_db(connection_no_engine: Connection, use_db_name: str):
     use_db_name = f"{use_db_name}_async"
     with connection_no_engine.cursor() as cursor:
-        await cursor.execute(f"CREATE DATABASE {use_db_name}")
+        suffix = "".join(choice("0123456789") for _ in range(2))
+        await cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
         yield
-        await cursor.execute(f"DROP DATABASE {use_db_name}")
+        await cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 
 @mark.xfail(reason="USE DATABASE is not yet available in 1.0 Firebolt")

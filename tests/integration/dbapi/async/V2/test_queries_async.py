@@ -2,6 +2,7 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
+from random import choice
 from typing import Callable, List
 
 from pytest import fixture, mark, raises
@@ -431,9 +432,11 @@ async def test_bytea_roundtrip(
 async def setup_db(connection_system_engine_no_db: Connection, use_db_name: str):
     use_db_name = use_db_name + "_async"
     with connection_system_engine_no_db.cursor() as cursor:
-        await cursor.execute(f"CREATE DATABASE {use_db_name}")
+        # randomize the db name to avoid conflicts
+        suffix = "".join(choice("0123456789") for _ in range(2))
+        await cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
         yield
-        await cursor.execute(f"DROP DATABASE {use_db_name}")
+        await cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 
 @mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
