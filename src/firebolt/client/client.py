@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from collections import namedtuple
 from json import JSONDecodeError
 from typing import Any, Dict, Optional
 
@@ -43,6 +44,8 @@ from firebolt.utils.util import (
 )
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
+
+_AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
 
 
 class FireboltClientMixin(FireboltClientMixinBase):
@@ -100,9 +103,14 @@ class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs, transport=KeepaliveTransport())
 
-    @cached_property
+    @property
     @abstractmethod
     def account_id(self) -> str:
+        ...
+
+    @property
+    @abstractmethod
+    def _account_version(self) -> int:
         ...
 
 
@@ -131,6 +139,35 @@ class ClientV2(Client):
         )
 
     @cached_property
+    def _account_info(self) -> _AccountInfo:
+        response = self.get(
+            url=self._api_endpoint.copy_with(
+                path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
+            )
+        )
+        if response.status_code == HttpxCodes.NOT_FOUND:
+            assert self.account_name is not None
+            raise AccountNotFoundOrNoAccessError(self.account_name)
+        # process all other status codes
+        response.raise_for_status()
+        account_id = response.json()["id"]
+        # If no version assume 1
+        account_version = int(response.json().get("infraVersion", 1))
+        return _AccountInfo(id=account_id, version=account_version)
+
+    @property
+    def _account_version(self) -> int:
+        """User account version. 2 means both database and engine v2 are supported.
+
+        Returns:
+            int: Account version
+
+        Raises:
+            AccountNotFoundError: No account found with provided name
+        """
+        return self._account_info.version
+
+    @property
     def account_id(self) -> str:
         """User account ID.
 
@@ -143,17 +180,7 @@ class ClientV2(Client):
         Raises:
             AccountNotFoundError: No account found with provided name
         """
-        response = self.get(
-            url=self._api_endpoint.copy_with(
-                path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
-            )
-        )
-        if response.status_code == HttpxCodes.NOT_FOUND:
-            assert self.account_name is not None
-            raise AccountNotFoundOrNoAccessError(self.account_name)
-        # process all other status codes
-        response.raise_for_status()
-        return response.json()["id"]
+        return self._account_info.id
 
     def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any
@@ -187,6 +214,13 @@ class ClientV1(Client):
             **kwargs,
         )
         self._auth_endpoint = URL(fix_url_schema(api_endpoint))
+
+    @property
+    def _account_version(self) -> int:
+        """User account version. Hardcoded since it's not returned
+        by the backend for V1.
+        """
+        return 1
 
     @cached_property
     def account_id(self) -> str:
@@ -285,6 +319,11 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
     async def account_id(self) -> str:
         ...
 
+    @property
+    @abstractmethod
+    async def _account_version(self) -> int:
+        ...
+
 
 class AsyncClientV2(AsyncClient):
     """An HTTP client, based on httpx.Client.
@@ -309,7 +348,30 @@ class AsyncClientV2(AsyncClient):
             api_endpoint=api_endpoint,
             **kwargs,
         )
-        self.acount_id_cache: Dict[str, str] = {}
+        self.acount_info_cache: Dict[str, _AccountInfo] = {}
+
+    async def _account_info(self) -> _AccountInfo:
+        # manual caching to avoid async_cached_property issues
+        if self.account_name in self.acount_info_cache:
+            return self.acount_info_cache[self.account_name]
+
+        response = await self.get(
+            url=self._api_endpoint.copy_with(
+                path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
+            )
+        )
+        if response.status_code == HttpxCodes.NOT_FOUND:
+            assert self.account_name is not None
+            raise AccountNotFoundOrNoAccessError(self.account_name)
+        # process all other status codes
+        response.raise_for_status()
+        account_id = response.json()["id"]
+        account_version = int(response.json().get("infraVersion", 1))
+        account_info = _AccountInfo(id=account_id, version=account_version)
+        # cache for future use
+        if self.account_name:
+            self.acount_info_cache[self.account_name] = account_info
+        return account_info
 
     @property
     async def account_id(self) -> str:
@@ -324,25 +386,19 @@ class AsyncClientV2(AsyncClient):
         Raises:
             AccountNotFoundError: No account found with provided name
         """
-        # manual caching to avoid async_cached_property issues
-        if self.account_name in self.acount_id_cache:
-            return self.acount_id_cache[self.account_name]
+        return (await self._account_info()).id
 
-        response = await self.get(
-            url=self._api_endpoint.copy_with(
-                path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
-            )
-        )
-        if response.status_code == HttpxCodes.NOT_FOUND:
-            assert self.account_name is not None
-            raise AccountNotFoundOrNoAccessError(self.account_name)
-        # process all other status codes
-        response.raise_for_status()
-        account_id = response.json()["id"]
-        # cache for future use
-        if self.account_name:
-            self.acount_id_cache[self.account_name] = account_id
-        return account_id
+    @property
+    async def _account_version(self) -> int:
+        """User account version. 2 means both database and engine v2 are supported.
+
+        Returns:
+            int: Account version
+
+        Raises:
+            AccountNotFoundError: No account found with provided name
+        """
+        return (await self._account_info()).version
 
     async def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any
@@ -377,6 +433,12 @@ class AsyncClientV1(AsyncClient):
         )
         self.acount_id_cache: Dict[str, str] = {}
         self._auth_endpoint = URL(fix_url_schema(api_endpoint))
+
+    @property
+    async def _account_version(self) -> int:
+        """User account version. Hardcoded since it's not returned
+        by the backend for V1."""
+        return 1
 
     @property
     async def account_id(self) -> str:

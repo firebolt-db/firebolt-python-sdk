@@ -74,6 +74,16 @@ def account_id() -> str:
 
 
 @fixture
+def account_version_1() -> int:
+    return 1
+
+
+@fixture
+def account_version_2() -> int:
+    return 2
+
+
+@fixture
 def account_name() -> str:
     return "mock_account_name"
 
@@ -163,6 +173,7 @@ def account_id_url(server: str, account_name: str) -> Pattern:
 @fixture
 def account_id_callback(
     account_id: str,
+    account_version_1: int,
     account_name: str,
 ) -> Callable:
     def do_mock(
@@ -171,7 +182,30 @@ def account_id_callback(
     ) -> Response:
         if request.url.path.split("/")[-2] != account_name:
             raise AccountNotFoundError(request.url.path.split("/")[-2])
-        return Response(status_code=httpx.codes.OK, json={"id": account_id})
+        return Response(
+            status_code=httpx.codes.OK,
+            json={"id": account_id, "infraVersion": account_version_1},
+        )
+
+    return do_mock
+
+
+@fixture
+def account_id_v2_callback(
+    account_id: str,
+    account_version_2: int,
+    account_name: str,
+) -> Callable:
+    def do_mock(
+        request: Request,
+        **kwargs,
+    ) -> Response:
+        if request.url.path.split("/")[-2] != account_name:
+            raise AccountNotFoundError(request.url.path.split("/")[-2])
+        return Response(
+            status_code=httpx.codes.OK,
+            json={"id": account_id, "infraVersion": account_version_2},
+        )
 
     return do_mock
 

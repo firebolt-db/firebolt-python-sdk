@@ -113,6 +113,31 @@ async def test_client_account_id(
         api_endpoint=server,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
+        assert await c._account_version == 1, "Invalid account version returned"
+
+
+async def test_client_account_v2(
+    httpx_mock: HTTPXMock,
+    auth: Auth,
+    account_name: str,
+    account_id: str,
+    account_id_url: Pattern,
+    account_id_v2_callback: Callable,
+    auth_url: str,
+    auth_callback: Callable,
+    server: str,
+):
+    httpx_mock.add_callback(account_id_v2_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    async with AsyncClient(
+        account_name=account_name,
+        auth=auth,
+        base_url=fix_url_schema(server),
+        api_endpoint=server,
+    ) as c:
+        assert await c.account_id == account_id, "Invalid account id returned."
+        assert await c._account_version == 2, "Invalid account version returned"
 
 
 async def test_concurent_auth_lock(

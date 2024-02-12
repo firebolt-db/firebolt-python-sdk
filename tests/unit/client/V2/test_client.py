@@ -107,8 +107,33 @@ def test_client_account_id(
         auth=auth,
         base_url=fix_url_schema(server),
         api_endpoint=server,
-    ) as c:
-        assert c.account_id == account_id, "Invalid account id returned"
+    ) as cursor:
+        assert cursor.account_id == account_id, "Invalid account id returned"
+        assert cursor._account_version == 1, "Invalid account version returned"
+
+
+def test_client_account_v2(
+    httpx_mock: HTTPXMock,
+    auth: Auth,
+    account_name: str,
+    account_id: str,
+    account_id_url: Pattern,
+    account_id_v2_callback: Callable,
+    auth_url: str,
+    auth_callback: Callable,
+    server: str,
+):
+    httpx_mock.add_callback(account_id_v2_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    with ClientV2(
+        account_name=account_name,
+        auth=auth,
+        base_url=fix_url_schema(server),
+        api_endpoint=server,
+    ) as cursor:
+        assert cursor.account_id == account_id, "Invalid account id returned"
+        assert cursor._account_version == 2, "Invalid account version returned"
 
 
 # FIR-14945
