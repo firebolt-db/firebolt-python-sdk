@@ -16,7 +16,9 @@ async def test_system_engine(
     timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
-    connection_system_engine._client._account_version = 1, "Invalid account version"
+    assert (
+        await connection_system_engine._client._account_version
+    ) == 1, "Invalid account version"
     with connection_system_engine.cursor() as c:
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
