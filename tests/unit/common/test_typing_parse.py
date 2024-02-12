@@ -1,3 +1,4 @@
+import math
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, Optional
@@ -31,45 +32,80 @@ def test_parse_type(types_map: Dict[str, type]) -> None:
     ), "Invalid type parsing error message"
 
 
-def test_parse_value_int() -> None:
+@mark.parametrize(
+    "value,expected,error",
+    [
+        (1, 1, None),
+        ("1", 1, None),
+        (1.1, 1, None),
+        (None, None, None),
+        ("a", None, ValueError),
+        ((1,), None, TypeError),
+        ([1], None, TypeError),
+        (Exception(), None, TypeError),
+    ],
+)
+def test_parse_value_int(value, expected, error) -> None:
     """parse_value parses all int values correctly."""
-    assert parse_value(1, int) == 1, "Error parsing integer: provided int"
-    assert parse_value("1", int) == 1, "Error parsing integer: provided str"
-    assert parse_value(1.1, int) == 1, "Error parsing integer: provided float"
-    assert parse_value(None, int) is None, "Error parsing integer: provided None"
-
-    with raises(ValueError):
-        parse_value("a", int)
-
-    for val in ((1,), [1], Exception()):
-        with raises(TypeError):
-            parse_value(val, int)
+    if error:
+        with raises(error):
+            parse_value(value, int)
+    else:
+        assert (
+            parse_value(value, int) == expected
+        ), f"Error parsing integer: provided {value}, expected {expected}"
 
 
-def test_parse_value_float() -> None:
+@mark.parametrize(
+    "value,expected,error",
+    [
+        (1, 1.0, None),
+        ("1", 1.0, None),
+        ("1.1", 1.1, None),
+        (1.1, 1.1, None),
+        (None, None, None),
+        ("inf", float("inf"), None),
+        ("-inf", float("-inf"), None),
+        ("nan", float("nan"), None),
+        ("-nan", float("nan"), None),
+        ("a", None, ValueError),
+        ((1.1,), None, TypeError),
+        ([1.1], None, TypeError),
+        (Exception(), None, TypeError),
+    ],
+)
+def test_parse_value_float(value, expected, error) -> None:
     """parse_value parses all float values correctly."""
-    assert parse_value(1, float) == 1.0, "Error parsing float: provided int"
-    assert parse_value("1", float) == 1.0, "Error parsing float: provided str"
-    assert parse_value("1.1", float) == 1.1, "Error parsing float: provided str"
-    assert parse_value(1.1, float) == 1.1, "Error parsing float: provided float"
-    assert parse_value(None, float) is None, "Error parsing float: provided None"
+    if error:
+        with raises(error):
+            parse_value(value, float)
+    else:
+        if expected and math.isnan(expected):
+            assert math.isnan(
+                parse_value(value, float)
+            ), f"Error parsing float: provided {value}, expected {expected}"
+        else:
+            assert (
+                parse_value(value, float) == expected
+            ), f"Error parsing float: provided {value}, expected {expected}"
 
-    with raises(ValueError):
-        parse_value("a", float)
 
-    for val in ((1.1,), [1.1], Exception()):
-        with raises(TypeError):
-            parse_value(val, float)
-
-
-def test_parse_value_str() -> None:
+@mark.parametrize(
+    "value,expected",
+    [
+        (1, "1"),
+        ("a", "a"),
+        (1.1, "1.1"),
+        (("a",), "('a',)"),
+        (["a"], "['a']"),
+        (None, None),
+    ],
+)
+def test_parse_value_str(value, expected) -> None:
     """parse_value parses all str values correctly."""
-    assert parse_value(1, str) == "1", "Error parsing str: provided int"
-    assert parse_value("a", str) == "a", "Error parsing str: provided str"
-    assert parse_value(1.1, str) == "1.1", "Error parsing str: provided float"
-    assert parse_value(("a",), str) == "('a',)", "Error parsing str: provided tuple"
-    assert parse_value(["a"], str) == "['a']", "Error parsing str: provided list"
-    assert parse_value(None, str) is None, "Error parsing str: provided None"
+    assert (
+        parse_value(value, str) == expected
+    ), f"Error parsing str: provided {value}, expected {expected}"
 
 
 @mark.parametrize(
@@ -168,59 +204,50 @@ def test_parse_value_datetime_errors() -> None:
         assert str(exc_info.value) == f"Invalid datetime value {value}: str expected"
 
 
-def test_parse_decimal() -> None:
-    assert parse_value("123.456", DECIMAL(38, 3)) == Decimal(
-        "123.456"
-    ), "Error parsing decimal(38, 3): str provided"
-    assert parse_value(123, DECIMAL(38, 3)) == Decimal(
-        "123"
-    ), "Error parsing decimal(38, 3): int provided"
+@mark.parametrize(
+    "value,expected",
+    [
+        ("123.456", Decimal("123.456")),
+        (123, Decimal("123")),
+        (None, None),
+    ],
+)
+def test_parse_decimal(value, expected) -> None:
     assert (
-        parse_value(None, DECIMAL(38, 3)) is None
-    ), "Error parsing decimal(38, 3): None provided"
+        parse_value(value, DECIMAL(38, 3)) == expected
+    ), "Error parsing decimal(38, 3): provided {value}, expected {expected}"
 
 
-def test_parse_arrays() -> None:
-    """parse_value parses all array values correctly."""
-    assert parse_value([1, 2], ARRAY(int)) == [
-        1,
-        2,
-    ], "Error parsing array(int): list[int] provided"
-    assert parse_value([1, "2"], ARRAY(int)) == [
-        1,
-        2,
-    ], "Error parsing array(int): mixed list provided"
-    assert parse_value(["1", "2"], ARRAY(int)) == [
-        1,
-        2,
-    ], "Error parsing array(int): list[str] provided"
-
-    assert parse_value([1, 2], ARRAY(float)) == [
-        1.0,
-        2.0,
-    ], "Error parsing array(float): list[int] provided"
-
-    assert parse_value(["2021-12-31 23:59:59", "2000-01-01 01:01:01"], ARRAY(str)) == [
-        "2021-12-31 23:59:59",
-        "2000-01-01 01:01:01",
-    ], "Error parsing array(str): list[str] provided"
-
-    assert parse_value(
-        ["2021-12-31 23:59:59", "2000-01-01 01:01:01"], ARRAY(datetime)
-    ) == [
-        datetime(2021, 12, 31, 23, 59, 59),
-        datetime(2000, 1, 1, 1, 1, 1),
-    ], "Error parsing array(datetime): list[str] provided"
-
-    assert parse_value(["2021-12-31", "2000-01-01"], ARRAY(date)) == [
-        date(2021, 12, 31),
-        date(2000, 1, 1),
-    ], "Error parsing array(datetime): list[str] provided"
-
-    for t in (int, float, str, date, datetime, ARRAY(int)):
-        assert (
-            parse_value(None, ARRAY(t)) is None
-        ), f"Error parsing array({str(t)}): None provided"
+@mark.parametrize(
+    "value,expected,type",
+    [
+        ([1, 2], [1, 2], int),
+        ([1, "2"], [1, 2], int),
+        (["1", "2"], [1, 2], int),
+        ([1, 2], [1.0, 2.0], float),
+        (
+            ["2021-12-31 23:59:59", "2000-01-01 00:00:00"],
+            ["2021-12-31 23:59:59", "2000-01-01 00:00:00"],
+            str,
+        ),
+        (
+            ["2021-12-31 23:59:59", "2000-01-01 00:00:00"],
+            [datetime(2021, 12, 31, 23, 59, 59), datetime(2000, 1, 1, 0, 0, 0)],
+            datetime,
+        ),
+        (["2021-12-31", "2000-01-01"], [date(2021, 12, 31), date(2000, 1, 1)], date),
+        (None, None, int),
+        (None, None, float),
+        (None, None, str),
+        (None, None, datetime),
+        (None, None, date),
+        (None, None, ARRAY(int)),
+    ],
+)
+def test_parse_arrays(value, expected, type) -> None:
+    assert (
+        parse_value(value, ARRAY(type)) == expected
+    ), f"Error parsing array({type}): provided {value}, expected {expected}"
 
 
 def test_helpers() -> None:
@@ -238,32 +265,44 @@ def test_helpers() -> None:
         TimeFromTicks(0)
 
 
-def test_parse_value_bool() -> None:
+@mark.parametrize(
+    "value,expected,error",
+    [
+        (True, True, None),
+        (False, False, None),
+        (2, True, None),
+        (0, False, None),
+        (None, None, None),
+        ("true", None, DataError),
+    ],
+)
+def test_parse_value_bool(value, expected, error) -> None:
     """parse_value parses all int values correctly."""
-    assert parse_value(True, bool) == True, "Error parsing boolean: provided true"
-    assert parse_value(False, bool) == False, "Error parsing boolean: provided false"
-    assert parse_value(2, bool) == True, "Error parsing boolean: provided 2"
-    assert parse_value(0, bool) == False, "Error parsing boolean: provided 0"
-    assert parse_value(None, bool) is None, "Error parsing boolean: provided None"
+    if error:
+        with raises(error):
+            parse_value(value, bool)
+    else:
+        assert (
+            parse_value(value, bool) == expected
+        ), f"Error parsing boolean: provided {value}"
 
-    with raises(DataError):
-        parse_value("true", bool)
 
-
-def test_parse_value_bytes() -> None:
+@mark.parametrize(
+    "value,expected,error",
+    [
+        ("\\x616263", b"abc", None),
+        (None, None, None),
+        ("\\xabc", None, ValueError),
+        ("616263", None, ValueError),
+        (1, None, DataError),
+    ],
+)
+def test_parse_value_bytes(value, expected, error) -> None:
     """parse_value parses all int values correctly."""
-    assert (
-        parse_value("\\x616263", bytes) == b"abc"
-    ), "Error parsing bytes: provided str"
-    assert parse_value(None, bytes) is None, "Error parsing bytes: provided None"
-
-    with raises(ValueError):
-        parse_value("\\xabc", bytes)
-
-    # Missing prefix
-    with raises(ValueError):
-        parse_value("616263", bytes)
-
-    for val in (1, True, Exception()):
-        with raises(DataError):
-            parse_value(val, bytes)
+    if error:
+        with raises(error):
+            parse_value(value, bytes)
+    else:
+        assert (
+            parse_value(value, bytes) == expected
+        ), f"Error parsing bytes: provided {value}"
