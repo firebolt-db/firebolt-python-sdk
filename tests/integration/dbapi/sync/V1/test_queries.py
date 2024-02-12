@@ -1,3 +1,4 @@
+import math
 from datetime import date, datetime
 from decimal import Decimal
 from threading import Thread
@@ -118,6 +119,24 @@ def test_select(
         assert_deep_eq(
             data, all_types_query_response, "Invalid data returned by fetchmany"
         )
+
+
+def test_select_inf(connection: Connection) -> None:
+    with connection.cursor() as c:
+        c.execute("SELECT 'inf'::float, '-inf'::float")
+        data = c.fetchall()
+        assert len(data) == 1, "Invalid data size returned by fetchall"
+        assert data[0][0] == float("inf"), "Invalid data returned by fetchall"
+        assert data[0][1] == float("-inf"), "Invalid data returned by fetchall"
+
+
+def test_select_nan(connection: Connection) -> None:
+    with connection.cursor() as c:
+        c.execute("SELECT 'nan'::float, '-nan'::float")
+        data = c.fetchall()
+        assert len(data) == 1, "Invalid data size returned by fetchall"
+        assert math.isnan(data[0][0]), "Invalid data returned by fetchall"
+        assert math.isnan(data[0][1]), "Invalid data returned by fetchall"
 
 
 @mark.slow

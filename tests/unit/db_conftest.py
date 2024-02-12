@@ -580,3 +580,31 @@ def mock_insert_query(
         httpx_mock.add_callback(insert_query_callback, url=query_url)
 
     return inner
+
+
+@fixture
+def types_map() -> Dict[str, type]:
+    base_types = {
+        "int": int,
+        "long": int,
+        "float": float,
+        "double": float,
+        "text": str,
+        "date": date,
+        "pgdate": date,
+        "timestamp": datetime,
+        "timestampntz": datetime,
+        "timestamptz": datetime,
+        "Nothing null": str,
+        "Decimal(123, 4)": DECIMAL(123, 4),
+        "Decimal(38,0)": DECIMAL(38, 0),
+        # Invalid decimal format
+        "Decimal(38)": str,
+        "boolean": bool,
+        "SomeRandomNotExistingType": str,
+        "bytea": bytes,
+    }
+    array_types = {f"array({k})": ARRAY(v) for k, v in base_types.items()}
+    nullable_arrays = {f"{k} null": v for k, v in array_types.items()}
+    nested_arrays = {f"array({k})": ARRAY(v) for k, v in array_types.items()}
+    return {**base_types, **array_types, **nullable_arrays, **nested_arrays}
