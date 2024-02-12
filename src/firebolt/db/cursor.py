@@ -71,13 +71,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def __init__(
         self,
         *args: Any,
-        client: Client,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._client = client
         self.connection = connection
+        self.engine_url = connection.engine_url
         if connection.database:
             self.database = connection.database
 
@@ -104,9 +103,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ) and not self.is_engine_running(self.connection.engine_url):
+        ) and not self.is_engine_running(
+            self.engine_url
+        ):  # TODO: v2 acc conditional check
             raise EngineNotRunningError(
-                f"Firebolt engine {self.connection.engine_url} "
+                f"Firebolt engine {self.engine_url} "
                 "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
             )
         _print_error_body(resp)

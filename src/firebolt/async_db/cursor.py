@@ -17,9 +17,7 @@ from typing import (
     Union,
 )
 
-from httpx import URL
-from httpx import AsyncClient as HttpxAsyncClient
-from httpx import Response, codes
+from httpx import URL, Response, codes
 
 from firebolt.async_db.util import ENGINE_STATUS_RUNNING
 from firebolt.client.client import AsyncClientV1, AsyncClientV2
@@ -76,13 +74,13 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def __init__(
         self,
         *args: Any,
-        client: HttpxAsyncClient,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._client = client
+        assert isinstance(self._client, (AsyncClientV1, AsyncClientV2))
         self.connection = connection
+        self.engine_url = connection.engine_url
         if connection.database:
             self.database = connection.database
 
@@ -117,9 +115,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ) and not await self.is_engine_running(self.connection.engine_url):
+        ) and not await self.is_engine_running(self.engine_url):
             raise EngineNotRunningError(
-                f"Firebolt engine {self.connection.engine_url} "
+                f"Firebolt engine {self.engine_url} "
                 "needs to be running to run queries against it."
             )
         _print_error_body(resp)
@@ -455,7 +453,7 @@ class CursorV2(Cursor):
         if self.connection._is_system:
             assert isinstance(self._client, AsyncClientV2)
             parameters["account_id"] = await self._client.account_id
-        return await self._client.request(
+        return self._client.request(
             url=f"/{path}" if path else "",
             method="POST",
             params=parameters,
@@ -559,7 +557,7 @@ class CursorV1(Cursor):
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        return await self._client.request(
+        return self._client.request(
             url=f"/{path}",
             method="POST",
             params={
