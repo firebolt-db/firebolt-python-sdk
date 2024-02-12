@@ -23,3 +23,17 @@ jobs:
   integration-test-v2:
     uses: ./.github/workflows/integration-tests-v2.yml
     secrets: inherit
+  report-test-results:
+    needs: [integration-test-v1, integration-test-v2]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decorate commit
+        uses: Sibz/github-status-action@v1
+        with:
+          authToken: ${{secrets.GITHUB_TOKEN}}
+          context: 'Integration tests'
+          description: "${{ contains(needs.*.result, 'failure') && 'Failed' || 'Successful' }}"
+          state: "${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}"
+          sha: ${{github.event.pull_request.head.sha || github.sha}}
+          target_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
