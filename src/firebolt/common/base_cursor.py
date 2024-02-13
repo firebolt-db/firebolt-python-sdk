@@ -24,6 +24,7 @@ from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
     DataError,
+    OperationalError,
     QueryNotRunError,
 )
 from firebolt.utils.util import Timer, fix_url_schema
@@ -294,14 +295,23 @@ class BaseCursor:
                     "It will be ignored."
                 )
 
-    def _parse_reset_session(self, reset_session_header: str) -> None:
-        self.flush_parameters()
-
     def _parse_update_endpoint(self, new_engine_endpoint_header: str) -> None:
-        # TODO: strip query parameters from the endpoint
-        engine_url = fix_url_schema(new_engine_endpoint_header)
-        self.engine_url = engine_url
-        self._client.base_url = URL(engine_url)
+        endpoint = URL(fix_url_schema(new_engine_endpoint_header))
+        # Verify account id matches
+        account_id = endpoint.params.get("account_id")
+        if account_id and account_id != self._client.account_id:
+            raise OperationalError(
+                "USE ENGINE command failed. Account parameter mismatch. Contact support"
+            )
+        for key, value in endpoint.params.items():
+            if key in DISALLOWED_PARAMETER_LIST:
+                # TODO: make this better
+                continue
+            else:
+                self._set_parameters[key] = value
+        self.engine_url = endpoint.host
+        # Strip parameters from the endpoint
+        self._client.base_url = endpoint.copy_with(params={})
 
     def _parse_response_headers(self, headers: Headers) -> None:
         """Parse response and update relevant cursor fields."""
@@ -312,7 +322,7 @@ class BaseCursor:
 
         reset_session = headers.get("Firebolt-Reset-Session")
         if reset_session:
-            self._parse_reset_session(reset_session)
+            self.flush_parameters()
 
         new_engine_endpoint = headers.get("Firebolt-Update-Endpoint")
         if new_engine_endpoint:

@@ -396,7 +396,7 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        if self.connection._is_system:
+        if self.connection._is_system or self._client.account_version == 2:
             assert isinstance(self._client, ClientV2)  # Type check
             parameters["account_id"] = self._client.account_id
         return self._client.request(

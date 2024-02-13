@@ -453,7 +453,7 @@ class CursorV2(Cursor):
         if self.connection._is_system:
             assert isinstance(self._client, AsyncClientV2)
             parameters["account_id"] = await self._client.account_id
-        return self._client.request(
+        return await self._client.request(
             url=f"/{path}" if path else "",
             method="POST",
             params=parameters,
@@ -557,7 +557,7 @@ class CursorV1(Cursor):
             parameters = {**(self._set_parameters or {}), **(parameters or {})}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        return self._client.request(
+        return await self._client.request(
             url=f"/{path}",
             method="POST",
             params={

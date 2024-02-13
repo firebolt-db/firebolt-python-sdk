@@ -820,7 +820,7 @@ def test_disallowed_set_parameter(cursor: Cursor, parameter: str) -> None:
     assert cursor._set_parameters == {}, "set parameters should not be updated"
 
 
-def test_cursor_use_engine(
+def test_cursor_use_engine_no_parameters(
     httpx_mock: HTTPXMock,
     query_url: URL,
     cursor: Cursor,
@@ -848,6 +848,48 @@ def test_cursor_use_engine(
     httpx_mock.reset(True)
     # Check updated engine is used in the next query
     new_url = query_url.copy_with(host=query_updated_url)
+    httpx_mock.add_callback(query_callback_with_headers, url=new_url)
+    cursor.execute("select 1")
+    assert cursor.engine_url == f"https://{query_updated_url}"
+
+
+def test_cursor_use_engine_with_parameters(
+    httpx_mock: HTTPXMock,
+    query_url: URL,
+    cursor: Cursor,
+    query_statistics: Dict[str, Any],
+):
+    query_updated_url = "my_dummy_url"
+    param_string_dummy = "param1=1&param2=2"
+
+    header = {
+        "Firebolt-Update-Endpoint": f"https://{query_updated_url}/?{param_string_dummy}"
+    }
+
+    def query_callback_with_headers(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        query_response = {
+            "meta": [{"name": "one", "type": "int"}],
+            "data": [1],
+            "rows": 1,
+            "statistics": query_statistics,
+        }
+        headers = header
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    assert cursor.engine_url == "https://" + query_url.host
+    cursor.execute("USE ENGINE = 'my_dummy_engine'")
+    assert cursor.engine_url == f"https://{query_updated_url}"
+    assert cursor._set_parameters == {"param1": "1", "param2": "2"}
+    assert list(cursor.parameters.keys()) == ["database"]
+
+    httpx_mock.reset(True)
+    # Check new parameters are used in the URL
+    new_url = query_url.copy_with(host=query_updated_url).copy_merge_params(
+        {"param1": "1", "param2": "2"}
+    )
     httpx_mock.add_callback(query_callback_with_headers, url=new_url)
     cursor.execute("select 1")
     assert cursor.engine_url == f"https://{query_updated_url}"

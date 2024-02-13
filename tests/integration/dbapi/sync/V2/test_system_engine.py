@@ -80,3 +80,21 @@ def test_system_engine_v2_account(connection_system_engine_v2: Connection):
     assert (
         connection_system_engine_v2._client._account_version == 2
     ), "Invalid account version"
+
+
+def test_system_engine_use_engine(
+    connection_system_engine_v2: Connection, database_name: str, engine_name: str
+):
+    with connection_system_engine_v2.cursor() as cursor:
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
+        cursor.execute(f"USE DATABASE {database_name}")
+        cursor.execute(f"CREATE ENGINE IF NOT EXISTS {engine_name}")
+        cursor.execute(f"USE ENGINE {engine_name}")
+        cursor.execute("CREATE TABLE IF NOT EXISTS test_table (id int)")
+        # This query fails if we're not on a user engine
+        cursor.execute("INSERT INTO test_table VALUES (1)")
+        cursor.execute("USE ENGINE system")
+        # Werify we've switched to system by making previous query fail
+        with raises(OperationalError):
+            cursor.execute("INSERT INTO test_table VALUES (1)")
+        cursor.execute("DROP TABLE IF EXISTS test_table")
