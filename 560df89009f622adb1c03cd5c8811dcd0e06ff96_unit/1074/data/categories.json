@@ -1,0 +1,441 @@
+{
+  "uid" : "4b4757e66a1912dae1a509f688f20b0f",
+  "children" : [ {
+    "name" : "Product defects",
+    "children" : [ {
+      "name" : "AssertionError: assert 'my_dummy_url' == 'https://my_dummy_url'\n  - https://my_dummy_url\n  ? --------\n  + my_dummy_url",
+      "children" : [ {
+        "name" : "test_cursor_use_engine_no_parameters",
+        "uid" : "71d285d11db12973",
+        "parentUid" : "34f699a5c0563cc4b8895993708bc7ef",
+        "status" : "failed",
+        "time" : {
+          "start" : 1708016628339,
+          "stop" : 1708016628454,
+          "duration" : 115
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_use_engine_with_parameters",
+        "uid" : "5a36f8960197fe16",
+        "parentUid" : "34f699a5c0563cc4b8895993708bc7ef",
+        "status" : "failed",
+        "time" : {
+          "start" : 1708016628543,
+          "stop" : 1708016628653,
+          "duration" : 110
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      } ],
+      "uid" : "34f699a5c0563cc4b8895993708bc7ef"
+    } ],
+    "uid" : "8fb3a91ba5aaf9de24cc8a92edc82b5d"
+  }, {
+    "name" : "Test defects",
+    "children" : [ {
+      "name" : "TypeError: __init__() missing 1 required keyword-only argument: 'client'",
+      "children" : [ {
+        "name" : "test_parse_response_headers[headers0-expected_parameters0]",
+        "uid" : "2020dee9a25934ba",
+        "parentUid" : "7f4cf042202f581e671f9b66cd365da0",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016632056,
+          "stop" : 1708016632056,
+          "duration" : 0
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ "{'database': 'value1'}", "{'Firebolt-Update-Parameters': 'database=value1, key2=value2'}" ]
+      }, {
+        "name" : "test_parse_response_headers[headers1-expected_parameters1]",
+        "uid" : "686e13bab52c5c0f",
+        "parentUid" : "7f4cf042202f581e671f9b66cd365da0",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016632068,
+          "stop" : 1708016632068,
+          "duration" : 0
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ "{'database': 'value1'}", "{'Firebolt-Update-Parameters': 'database =    value1  ,key3=  value3 '}" ]
+      } ],
+      "uid" : "7f4cf042202f581e671f9b66cd365da0"
+    }, {
+      "name" : "AttributeError: 'ClientV2' object has no attribute 'account_version'",
+      "children" : [ {
+        "name" : "test_cursor_initialized",
+        "uid" : "21bc7c9760b9c39a",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016639280,
+          "stop" : 1708016639281,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_connect_engine_name",
+        "uid" : "feb212cf47209823",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016639400,
+          "stop" : 1708016639653,
+          "duration" : 253
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_connection_token_caching",
+        "uid" : "fc5e2e67d5d3330a",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016640552,
+          "stop" : 1708016640755,
+          "duration" : 203
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_connect_with_user_agent",
+        "uid" : "7779a28799086911",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016640931,
+          "stop" : 1708016641027,
+          "duration" : 96
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_connect_no_user_agent",
+        "uid" : "a5f872999824d677",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016641146,
+          "stop" : 1708016641245,
+          "duration" : 99
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_state",
+        "uid" : "3fc0eafa91387689",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016641473,
+          "stop" : 1708016641474,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_no_query",
+        "uid" : "a36d6a6260d537fa",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016641940,
+          "stop" : 1708016641941,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_execute",
+        "uid" : "20b39d63f1779434",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016642175,
+          "stop" : 1708016642176,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_execute_error",
+        "uid" : "72d607fa686c88a4",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016642417,
+          "stop" : 1708016642418,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_fetchone",
+        "uid" : "a0aec534fb5850b8",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016642658,
+          "stop" : 1708016642659,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_fetchmany",
+        "uid" : "d07783967892544a",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016642943,
+          "stop" : 1708016642944,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_fetchall",
+        "uid" : "5c4fcca071a24020",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016643171,
+          "stop" : 1708016643172,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_multi_statement",
+        "uid" : "c1fd0c9f6589b2f0",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016643402,
+          "stop" : 1708016643405,
+          "duration" : 3
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_set_statements",
+        "uid" : "6d360345dfeb71d1",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016643640,
+          "stop" : 1708016643641,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_set_parameters_sent",
+        "uid" : "f6a486206530594b",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016643932,
+          "stop" : 1708016643934,
+          "duration" : 2
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_skip_parse",
+        "uid" : "af5db65015edbc92",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016644169,
+          "stop" : 1708016644171,
+          "duration" : 2
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_server_side_async_execute",
+        "uid" : "d1bc4c3a4120c8dd",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016644400,
+          "stop" : 1708016644402,
+          "duration" : 2
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_server_side_async_cancel",
+        "uid" : "caca1ed25673c3cb",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016644647,
+          "stop" : 1708016644648,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_server_side_async_get_status_completed",
+        "uid" : "ef816c8460b98dae",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016644954,
+          "stop" : 1708016644955,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_server_side_async_get_status_not_yet_available",
+        "uid" : "52cf649ac77f4492",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016645180,
+          "stop" : 1708016645181,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_server_side_async_get_status_error",
+        "uid" : "f2ffd930c35fed4",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016645410,
+          "stop" : 1708016645410,
+          "duration" : 0
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_iterate",
+        "uid" : "a81181162c6e2fc6",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016645636,
+          "stop" : 1708016645637,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_server_side_header_database",
+        "uid" : "9f98d1091f7643d",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016645960,
+          "stop" : 1708016645962,
+          "duration" : 2
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_unknown_error_body_logging",
+        "uid" : "9fb11c9dc61432e1",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016646202,
+          "stop" : 1708016646203,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_use_engine_no_parameters",
+        "uid" : "c9f31285ad0beb57",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016647114,
+          "stop" : 1708016647116,
+          "duration" : 2
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_use_engine_with_parameters",
+        "uid" : "12161b44ae978f36",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016647406,
+          "stop" : 1708016647407,
+          "duration" : 1
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_cursor_reset_session",
+        "uid" : "a64a52ba6a3b55ea",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016647639,
+          "stop" : 1708016647641,
+          "duration" : 2
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      }, {
+        "name" : "test_get_connection",
+        "uid" : "4c3524d6819509b6",
+        "parentUid" : "227ae45e77a6bc2006671b9a7a8f3279",
+        "status" : "broken",
+        "time" : {
+          "start" : 1708016651879,
+          "stop" : 1708016651995,
+          "duration" : 116
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ ]
+      } ],
+      "uid" : "227ae45e77a6bc2006671b9a7a8f3279"
+    } ],
+    "uid" : "bdbf199525818fae7a8651db9eafe741"
+  } ],
+  "name" : "categories"
+}
