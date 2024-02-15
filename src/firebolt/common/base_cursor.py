@@ -7,7 +7,7 @@ from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-from httpx import URL, Headers, Response
+from httpx import URL, Response
 
 from firebolt.client.client import Client
 from firebolt.common._types import (
@@ -24,7 +24,6 @@ from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
     DataError,
-    OperationalError,
     QueryNotRunError,
 )
 from firebolt.utils.util import Timer, fix_url_schema
@@ -62,6 +61,26 @@ SERVER_SIDE_PARAMETERS = ["database"]
 USE_PARAMETER_LIST = ["database", "engine"]
 # parameters that can only be set by the backend
 DISALLOWED_PARAMETER_LIST = ["account_id", "output_format"]
+
+UPDATE_ENDPOINT_HEADER = "Firebolt-Update-Endpoint"
+UPDATE_PARAMETERS_HEADER = "Firebolt-Update-Parameters"
+RESET_SESSION_HEADER = "Firebolt-Reset-Session"
+
+
+def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
+    """Parse update parameters and set them as attributes."""
+    # parse key1=value1,key2=value2 comma separated string into dict
+    param_dict = dict(item.split("=") for item in parameter_header.split(","))
+    # strip whitespace from keys and values
+    param_dict = {key.strip(): value.strip() for key, value in param_dict.items()}
+    return param_dict
+
+
+def _parse_update_endpoint(
+    new_engine_endpoint_header: str,
+) -> Tuple[str, Dict[str, str]]:
+    endpoint = URL(fix_url_schema(new_engine_endpoint_header))
+    return fix_url_schema(endpoint.host), dict(endpoint.params)
 
 
 def _raise_if_internal_set_parameter(parameter: SetParameter) -> None:
@@ -280,53 +299,22 @@ class BaseCursor:
         self._next_set_idx = 0
         self._query_id = ""
 
-    def _parse_update_parameters(self, parameter_header: str) -> None:
-        """Parse update parameters and set them as attributes."""
-        # parse key1=value1,key2=value2 comma separated string into dict
-        param_dict = dict(item.split("=") for item in parameter_header.split(","))
-        # strip whitespace from keys and values
-        param_dict = {key.strip(): value.strip() for key, value in param_dict.items()}
-        for key, value in param_dict.items():
-            if key in SERVER_SIDE_PARAMETERS:
-                self.parameters[key] = value
-            else:
-                logger.debug(
-                    f"Unknown parameter {key} returned by the server. "
-                    "It will be ignored."
-                )
-
-    def _parse_update_endpoint(self, new_engine_endpoint_header: str) -> None:
-        endpoint = URL(fix_url_schema(new_engine_endpoint_header))
-        # Verify account id matches
-        account_id = endpoint.params.get("account_id")
-        if account_id and account_id != self._client.account_id:
-            raise OperationalError(
-                "USE ENGINE command failed. Account parameter mismatch. Contact support"
-            )
-        for key, value in endpoint.params.items():
+    def _update_set_parameters(self, parameters: Dict[str, Any]) -> None:
+        for key, value in parameters.items():
             if key in DISALLOWED_PARAMETER_LIST:
                 # TODO: make this better
                 continue
             else:
                 self._set_parameters[key] = value
-        self.engine_url = endpoint.host
-        # Strip parameters from the endpoint
-        self._client.base_url = endpoint.copy_with(params={})
 
-    def _parse_response_headers(self, headers: Headers) -> None:
-        """Parse response and update relevant cursor fields."""
-        update_parameters = headers.get("Firebolt-Update-Parameters")
-        # parse update parameters dict and set keys as attributes
-        if update_parameters:
-            self._parse_update_parameters(update_parameters)
-
-        reset_session = headers.get("Firebolt-Reset-Session")
-        if reset_session:
-            self.flush_parameters()
-
-        new_engine_endpoint = headers.get("Firebolt-Update-Endpoint")
-        if new_engine_endpoint:
-            self._parse_update_endpoint(new_engine_endpoint)
+    def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
+        for key, value in parameters.items():
+            if key in SERVER_SIDE_PARAMETERS:
+                self.parameters[key] = value
+            else:
+                logger.debug(
+                    f"Trying to set an unknown parameter {key}. " "It will be ignored."
+                )
 
     def _row_set_from_response(
         self, response: Response

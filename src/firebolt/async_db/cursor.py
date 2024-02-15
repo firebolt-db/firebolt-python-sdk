@@ -17,7 +17,7 @@ from typing import (
     Union,
 )
 
-from httpx import URL, Response, codes
+from httpx import URL, Headers, Response, codes
 
 from firebolt.async_db.util import ENGINE_STATUS_RUNNING
 from firebolt.client.client import AsyncClientV1, AsyncClientV2
@@ -31,10 +31,15 @@ from firebolt.common._types import (
 )
 from firebolt.common.base_cursor import (
     JSON_OUTPUT_FORMAT,
+    RESET_SESSION_HEADER,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
     QueryStatus,
     Statistics,
+    _parse_update_endpoint,
+    _parse_update_parameters,
     _raise_if_internal_set_parameter,
     check_not_closed,
     check_query_executed,
@@ -141,6 +146,30 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
 
+    async def _parse_response_headers(self, headers: Headers) -> None:
+        if headers.get(UPDATE_ENDPOINT_HEADER):
+            endpoint, params = _parse_update_endpoint(
+                headers.get(UPDATE_ENDPOINT_HEADER)
+            )
+            if (
+                params.get("account_id", await self._client.account_id)
+                != await self._client.account_id
+            ):
+                raise OperationalError(
+                    "USE ENGINE command failed. Account parameter mismatch. "
+                    "Contact support"
+                )
+            self._update_set_parameters(params)
+            self.engine_url = endpoint
+            self._client.base_url = endpoint
+
+        if headers.get(RESET_SESSION_HEADER):
+            self.flush_parameters()
+
+        if headers.get(UPDATE_PARAMETERS_HEADER):
+            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
+            self._update_server_parameters(param_dict)
+
     async def _do_execute(
         self,
         raw_query: str,
@@ -207,8 +236,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                         query, {"output_format": JSON_OUTPUT_FORMAT}
                     )
                     await self._raise_if_error(resp)
-                    # get parameters from response
-                    self._parse_response_headers(resp.headers)
+                    await self._parse_response_headers(resp.headers)
                     row_set = self._row_set_from_response(resp)
 
                 self._append_row_set(row_set)

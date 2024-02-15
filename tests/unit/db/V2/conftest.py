@@ -23,6 +23,8 @@ def connection(
         account_name=account_name,
         api_endpoint=server,
     ) as connection:
+        # cache account_id for tests
+        connection._client.account_id
         yield connection
 
 

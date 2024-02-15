@@ -15,7 +15,7 @@ from typing import (
     Union,
 )
 
-from httpx import URL, Response, codes
+from httpx import URL, Headers, Response, codes
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import (
@@ -28,10 +28,15 @@ from firebolt.common._types import (
 )
 from firebolt.common.base_cursor import (
     JSON_OUTPUT_FORMAT,
+    RESET_SESSION_HEADER,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
     QueryStatus,
     Statistics,
+    _parse_update_endpoint,
+    _parse_update_parameters,
     _raise_if_internal_set_parameter,
     check_not_closed,
     check_query_executed,
@@ -141,6 +146,30 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
 
+    def _parse_response_headers(self, headers: Headers) -> None:
+        if headers.get(UPDATE_ENDPOINT_HEADER):
+            endpoint, params = _parse_update_endpoint(
+                headers.get(UPDATE_ENDPOINT_HEADER)
+            )
+            if (
+                params.get("account_id", self._client.account_id)
+                != self._client.account_id
+            ):
+                raise OperationalError(
+                    "USE ENGINE command failed. Account parameter mismatch. "
+                    "Contact support"
+                )
+            self._update_set_parameters(params)
+            self.engine_url = endpoint
+            self._client.base_url = endpoint
+
+        if headers.get(RESET_SESSION_HEADER):
+            self.flush_parameters()
+
+        if headers.get(UPDATE_PARAMETERS_HEADER):
+            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
+            self._update_server_parameters(param_dict)
+
     def _do_execute(
         self,
         raw_query: str,
@@ -201,7 +230,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                         query, {"output_format": JSON_OUTPUT_FORMAT}
                     )
                     self._raise_if_error(resp)
-                    # get parameters from response
                     self._parse_response_headers(resp.headers)
                     row_set = self._row_set_from_response(resp)
 
@@ -396,7 +424,7 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        if self.connection._is_system or self._client.account_version == 2:
+        if self.connection._is_system or self._client._account_version == 2:
             assert isinstance(self._client, ClientV2)  # Type check
             parameters["account_id"] = self._client.account_id
         return self._client.request(
