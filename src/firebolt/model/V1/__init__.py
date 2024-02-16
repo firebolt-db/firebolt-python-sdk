@@ -18,18 +18,6 @@ def use_if_version_ge(
     previous_method: str,
     latest_method: str,
 ) -> GenericCallable:
-    """
-    Utility function to get desired method from base model.
-
-    Args:
-        version_ge: The version number that will be used to determine
-            the desired method.
-        obj: The object on which the method will be taken from
-        previous_method: The method previously available in a version
-            smaller than `version_ge`.
-        latest_method:  The method available from `version_ge` onwards.
-
-    """
     if PYDANTIC_VERSION >= version_ge:
         return getattr(obj, latest_method)
     else:
@@ -53,7 +41,7 @@ class FireboltBaseModel(pydantic.BaseModel):
             extra = "forbid"
             allow_population_by_field_name = True  # Pydantic 1.8
 
-    def model_dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+    def model_dict(self, *args: Any, **kwargs: Any) -> dict:
         """Pydantic V2 and V1 compatible method for `dict` -> `model_dump`."""
         return use_if_version_ge(2, self, "dict", "model_dump")(*args, **kwargs)
 
