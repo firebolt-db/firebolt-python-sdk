@@ -199,6 +199,14 @@ class BaseCursor:
         self._query_id = ""
         self._reset()
 
+    @property
+    def database(self) -> Optional[str]:
+        return self.parameters.get("database")
+
+    @database.setter
+    def database(self, database: str) -> None:
+        self.parameters["database"] = database
+
     @property  # type: ignore
     @check_not_closed
     def description(self) -> Optional[List[Column]]:

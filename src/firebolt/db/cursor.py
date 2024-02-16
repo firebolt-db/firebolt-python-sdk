@@ -87,14 +87,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if connection.database:
             self.database = connection.database
 
-    @property
-    def database(self) -> Optional[str]:
-        return self.parameters.get("database")
-
-    @database.setter
-    def database(self, database: str) -> None:
-        self.parameters["database"] = database
-
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
         if resp.status_code == codes.INTERNAL_SERVER_ERROR:
