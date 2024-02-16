@@ -76,10 +76,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def __init__(
         self,
         *args: Any,
+        client: Client,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
+        self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
         if connection.database:
@@ -161,7 +163,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 )
             self._update_set_parameters(params)
             self.engine_url = endpoint
-            self._client.base_url = endpoint
+            self._client.base_url = URL(endpoint)
 
         if headers.get(RESET_SESSION_HEADER):
             self.flush_parameters()

@@ -20,7 +20,7 @@ from typing import (
 from httpx import URL, Headers, Response, codes
 
 from firebolt.async_db.util import ENGINE_STATUS_RUNNING
-from firebolt.client.client import AsyncClientV1, AsyncClientV2
+from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import (
     ColType,
     Column,
@@ -79,11 +79,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def __init__(
         self,
         *args: Any,
+        client: AsyncClient,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        assert isinstance(self._client, (AsyncClientV1, AsyncClientV2))
+        self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
         if connection.database:
@@ -161,7 +162,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 )
             self._update_set_parameters(params)
             self.engine_url = endpoint
-            self._client.base_url = endpoint
+            self._client.base_url = URL(endpoint)
 
         if headers.get(RESET_SESSION_HEADER):
             self.flush_parameters()

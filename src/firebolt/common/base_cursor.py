@@ -9,7 +9,6 @@ from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 from httpx import URL, Response
 
-from firebolt.client.client import Client
 from firebolt.common._types import (
     ColType,
     Column,
@@ -160,7 +159,6 @@ class BaseCursor:
         "connection",
         "parameters",
         "_arraysize",
-        "_client",
         "_state",
         "_descriptions",
         "_statistics",
@@ -176,7 +174,7 @@ class BaseCursor:
 
     default_arraysize = 1
 
-    def __init__(self, *args: Any, client: Client, **kwargs: Any) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self._arraysize = self.default_arraysize
         # These fields initialized here for type annotations purpose
         self._rows: Optional[List[List[RawColType]]] = None
@@ -199,7 +197,6 @@ class BaseCursor:
         self._idx = 0
         self._next_set_idx = 0
         self._query_id = ""
-        self._client = client
         self._reset()
 
     @property  # type: ignore
