@@ -56,7 +56,7 @@ def test_create_binding(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_response(url=bindings_url, method="GET", json={"edges": []})
     httpx_mock.add_response(
-        url=create_binding_url, method="POST", json={"binding": binding.dict()}
+        url=create_binding_url, method="POST", json={"binding": binding.model_dict()}
     )
 
     resource_manager = ResourceManager(settings=settings)
@@ -116,7 +116,9 @@ def test_get_engines_bound_to_db(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(bindings_database_callback, url=database_bindings_url)
     httpx_mock.add_response(
-        url=engines_by_id_url, method="POST", json={"engines": [mock_engine.dict()]}
+        url=engines_by_id_url,
+        method="POST",
+        json={"engines": [mock_engine.model_dict()]},
     )
 
     resource_manager = ResourceManager(settings=settings)

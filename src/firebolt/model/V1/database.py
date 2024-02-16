@@ -65,7 +65,7 @@ class Database(FireboltBaseModel):
     def parse_obj_with_service(
         cls, obj: Any, database_service: DatabaseService
     ) -> Database:
-        database = cls.parse_obj(obj)
+        database = cls.parse_model(obj)
         database._service = database_service
         return database
 

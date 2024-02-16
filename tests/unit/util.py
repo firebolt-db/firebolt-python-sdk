@@ -23,7 +23,7 @@ def list_to_paginated_response(items: List[FireboltBaseModel]) -> Dict:
 
 
 def list_to_paginated_response_v1(items: List[FireboltBaseModelV1]) -> Dict:
-    return {"edges": [{"node": i.dict()} for i in items]}
+    return {"edges": [{"node": i.model_dict()} for i in items]}
 
 
 def execute_generator_requests(
