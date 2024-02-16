@@ -18,6 +18,18 @@ def use_if_version_ge(
     previous_method: str,
     latest_method: str,
 ) -> GenericCallable:
+    """
+    Utility function to get desired method from base model.
+
+    Args:
+        version_ge: The version number that will be used to determine
+            the desired method.
+        obj: The object on which the method will be taken from
+        previous_method: The method previously available in a version
+            smaller than `version_ge`.
+        latest_method:  The method available from `version_ge` onwards.
+
+    """
     if PYDANTIC_VERSION >= version_ge:
         return getattr(obj, latest_method)
     else:
