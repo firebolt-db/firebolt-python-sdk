@@ -1,0 +1,175 @@
+{
+  "uid" : "27d058860faad147",
+  "name" : "test_detect_connectors[stack8-map8-expected8]",
+  "fullName" : "tests.unit.utils.test_usage_tracker#test_detect_connectors",
+  "historyId" : "99b6385c7cf8da679d4ccfe2d4a33b0c",
+  "time" : {
+    "start" : 1708398237722,
+    "stop" : 1708398237723,
+    "duration" : 1
+  },
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1708398237718,
+      "stop" : 1708398237720,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1708398237726,
+      "stop" : 1708398237726,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.utils"
+  }, {
+    "name" : "suite",
+    "value" : "test_usage_tracker"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1245-313"
+  }, {
+    "name" : "thread",
+    "value" : "2244-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.utils.test_usage_tracker"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "expected",
+    "value" : "{'DBT': '0.1.4'}"
+  }, {
+    "name" : "map",
+    "value" : "[('Airflow', 'get_conn', PosixPath('firebolt_provider/hooks/firebolt.py'), 'firebolt_provider'), ('AirbyteDestination', 'establish_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteDestination', 'establish_async_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteSource', 'establish_connection', PosixPath('source_firebolt/source.py'), ''), ('AirbyteSource', 'establish_async_connection', PosixPath('source_firebolt/source.py'), ''), ('FireboltCLI', 'create_connection', PosixPath('firebolt_cli/utils.py'), 'firebolt_cli'), ('DBT', 'open', PosixPath('dbt/adapters/firebolt/connections.py'), 'dbt.adapters.firebolt'), ('Superset', '', PosixPath('superset/models/core.py'), ''), ('Redash', 'run_query', PosixPath('redash/query_runner/firebolt.py'), 'redash'), ('Prefect', 'run', PosixPath('prefect/tasks/firebolt/firebolt.py'), 'prefect')]"
+  }, {
+    "name" : "stack",
+    "value" : "[StackItem(function='open', filename='dbt/adapters/firebolt/connections.py')]"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 9,
+        "unknown" : 0,
+        "total" : 9
+      },
+      "items" : [ {
+        "uid" : "73209f7602e96860",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/85//#testresult/73209f7602e96860",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708311935374,
+          "stop" : 1708311935375,
+          "duration" : 1
+        }
+      }, {
+        "uid" : "e2008b4e266ebff8",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/84//#testresult/e2008b4e266ebff8",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708225553517,
+          "stop" : 1708225553517,
+          "duration" : 0
+        }
+      }, {
+        "uid" : "8f14281c2c59b76a",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/83//#testresult/8f14281c2c59b76a",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708139146132,
+          "stop" : 1708139146132,
+          "duration" : 0
+        }
+      }, {
+        "uid" : "83464cbc822a847f",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/82//#testresult/83464cbc822a847f",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708052767728,
+          "stop" : 1708052767730,
+          "duration" : 2
+        }
+      }, {
+        "uid" : "b309efe176399fae",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/81//#testresult/b309efe176399fae",
+        "status" : "passed",
+        "time" : {
+          "start" : 1707966346145,
+          "stop" : 1707966346147,
+          "duration" : 2
+        }
+      }, {
+        "uid" : "c539f67aae7d5eb6",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/80//#testresult/c539f67aae7d5eb6",
+        "status" : "passed",
+        "time" : {
+          "start" : 1707879941100,
+          "stop" : 1707879941102,
+          "duration" : 2
+        }
+      }, {
+        "uid" : "159300fae6219c25",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/79//#testresult/159300fae6219c25",
+        "status" : "passed",
+        "time" : {
+          "start" : 1707793544296,
+          "stop" : 1707793544298,
+          "duration" : 2
+        }
+      }, {
+        "uid" : "e520c6ea01479690",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/df91977d352faf75371090ebd51b71baa282b6ee_unit/288//#testresult/e520c6ea01479690",
+        "status" : "passed",
+        "time" : {
+          "start" : 1707773342342,
+          "stop" : 1707773342343,
+          "duration" : 1
+        }
+      } ]
+    },
+    "tags" : [ ]
+  },
+  "source" : "27d058860faad147.json",
+  "parameterValues" : [ "{'DBT': '0.1.4'}", "[('Airflow', 'get_conn', PosixPath('firebolt_provider/hooks/firebolt.py'), 'firebolt_provider'), ('AirbyteDestination', 'establish_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteDestination', 'establish_async_connection', PosixPath('destination_firebolt/destination.py'), ''), ('AirbyteSource', 'establish_connection', PosixPath('source_firebolt/source.py'), ''), ('AirbyteSource', 'establish_async_connection', PosixPath('source_firebolt/source.py'), ''), ('FireboltCLI', 'create_connection', PosixPath('firebolt_cli/utils.py'), 'firebolt_cli'), ('DBT', 'open', PosixPath('dbt/adapters/firebolt/connections.py'), 'dbt.adapters.firebolt'), ('Superset', '', PosixPath('superset/models/core.py'), ''), ('Redash', 'run_query', PosixPath('redash/query_runner/firebolt.py'), 'redash'), ('Prefect', 'run', PosixPath('prefect/tasks/firebolt/firebolt.py'), 'prefect')]", "[StackItem(function='open', filename='dbt/adapters/firebolt/connections.py')]" ]
+}
