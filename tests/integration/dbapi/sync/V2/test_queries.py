@@ -287,7 +287,8 @@ def test_parameterized_query(connection: Connection) -> None:
 
 
 def test_queries_fail_without_standard_strings(connection: Connection) -> None:
-    """Queries fail without standard_conforming_strings=0"""
+    """Queries fail without standard_conforming_strings=0
+    if this starts to fail, update bytea and \0 tests"""
     bytea_data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
     with connection.cursor() as c:
         c.execute("DROP TABLE IF EXISTS test_fail_parametrized")
