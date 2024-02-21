@@ -254,6 +254,8 @@ def test_parameterized_query(connection: Connection) -> None:
             "dec decimal(38, 3), ss string) primary index i",
         )
 
+        c.execute("SET standard_conforming_strings=0")  # or \0 is incorrect
+
         params = [
             1,
             1.123,
@@ -282,6 +284,23 @@ def test_parameterized_query(connection: Connection) -> None:
             [params + ["?"]],
             "Invalid data in table after parameterized insert",
         )
+
+
+def test_queries_fail_without_standard_strings(connection: Connection) -> None:
+    """Queries fail without standard_conforming_strings=0"""
+    bytea_data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
+    with connection.cursor() as c:
+        c.execute("DROP TABLE IF EXISTS test_fail_parametrized")
+        c.execute("CREATE TABLE test_fail_parametrized(t text NULL, b bytea NULL)")
+        with raises(OperationalError):
+            c.execute(
+                "INSERT INTO test_fail_parametrized(b) VALUES (?)", [Binary(bytea_data)]
+            )
+        c.execute("INSERT INTO test_fail_parametrized(t) VALUES (?)", ["text\0"])
+        c.execute("SELECT t FROM test_fail_parametrized")
+        result = c.fetchone()
+        assert result[0] != "text\0"
+        assert result[0].startswith("text")
 
 
 def test_multi_statement_query(connection: Connection) -> None:

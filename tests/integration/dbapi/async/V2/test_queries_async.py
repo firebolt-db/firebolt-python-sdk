@@ -252,6 +252,8 @@ async def test_parameterized_query(connection: Connection) -> None:
             "dec decimal(38, 3), ss string) primary index i",
         )
 
+        await c.execute("SET standard_conforming_strings=0")  # or \0 is incorrect
+
         params = [
             1,
             1.123,
