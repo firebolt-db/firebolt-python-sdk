@@ -273,9 +273,6 @@ def test_parameterized_query(connection: Connection) -> None:
             params,
         )
 
-        # \0 is converted to 0
-        params[2] = "text0"
-
         assert (
             c.execute("SELECT * FROM test_tb_parameterized") == 1
         ), "Invalid data length in table after parameterized insert"
@@ -499,6 +496,8 @@ def test_bytea_roundtrip(
         )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
+
+        c.execute("SET standard_conforming_strings=0")  # to allow backslashes in bytea
 
         c.execute("INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),))
         c.execute("SELECT b FROM test_bytea_roundtrip")
