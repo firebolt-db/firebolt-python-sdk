@@ -2,13 +2,15 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
-from random import choice
+from random import choice, randint
 from typing import Callable, List
 
 from pytest import fixture, mark, raises
 
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
+from firebolt.async_db.connection import connect
 from firebolt.async_db.cursor import QueryStatus
+from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType, Column
 from tests.integration.conftest import API_ENDPOINT_ENV
 from tests.integration.dbapi.utils import assert_deep_eq
@@ -466,3 +468,45 @@ async def test_use_database(
             f"WHERE table_name = '{test_table_name}'"
         )
         assert (await c.fetchone()) is None, "Database was not changed"
+
+
+async def test_account_v2_connection_with_db(
+    database_name: str, auth: Auth, account_name_v2: str, api_endpoint: str
+) -> None:
+    async with await connect(
+        database=database_name,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # This fails if we're not running with a db context
+        await connection.cursor().execute(
+            "SELECT * FROM information_schema.tables LIMIT 1"
+        )
+
+
+async def test_account_v2_connection_with_db_and_engine(
+    connection_system_engine_v2: Connection,
+    database_name: str,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
+    engine_v2: str,
+) -> None:
+    system_cursor = connection_system_engine_v2.cursor()
+    # We can only connect to a running engine so start it first
+    # via the system connection to keep test isolated
+    await system_cursor.execute(f"START ENGINE {engine_v2}")
+    async with await connect(
+        database=database_name,
+        engine_name=engine_v2,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # generate a random string to avoid name conflicts
+        rnd_suffix = str(randint(0, 1000))
+        cursor = connection.cursor()
+        await cursor.execute(f"CREATE TABLE test_table_{rnd_suffix} (id int)")
+        # This fails if we're not running on a user engine
+        await cursor.execute(f"INSERT INTO test_table_{rnd_suffix} VALUES (1)")

@@ -89,6 +89,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self.engine_url = connection.engine_url
         if connection.database:
             self.database = connection.database
+        if connection.init_parameters:
+            self._set_parameters = connection.init_parameters.copy()
 
     @abstractmethod
     async def _api_request(
@@ -514,7 +516,7 @@ class CursorV2(Cursor):
             # System engine is always running
             return True
 
-        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
+        engine_name = self.get_engine_name(engine_url)
         assert self.connection._system_engine_connection is not None  # Type check
         system_cursor = self.connection._system_engine_connection.cursor()
         assert isinstance(system_cursor, CursorV2)  # Type check, should always be true

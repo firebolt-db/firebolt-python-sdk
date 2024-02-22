@@ -2,6 +2,7 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
+from random import randint
 from threading import Thread
 from typing import Any, Callable, List
 
@@ -546,3 +547,43 @@ def test_use_database(
             f"WHERE table_name = '{test_table_name}'"
         )
         assert c.fetchone() is None, "Database was not changed"
+
+
+def test_account_v2_connection_with_db(
+    database_name: str, auth: Auth, account_name_v2: str, api_endpoint: str
+) -> None:
+    with connect(
+        database=database_name,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # This fails if we're not running with a db context
+        connection.cursor().execute("SELECT * FROM information_schema.tables LIMIT 1")
+
+
+def test_account_v2_connection_with_db_and_engine(
+    connection_system_engine_v2: Connection,
+    database_name: str,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
+    engine_v2: str,
+) -> None:
+    system_cursor = connection_system_engine_v2.cursor()
+    # We can only connect to a running engine so start it first
+    # via the system connection to keep test isolated
+    system_cursor.execute(f"START ENGINE {engine_v2}")
+    with connect(
+        database=database_name,
+        engine_name=engine_v2,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # generate a random string to avoid name conflicts
+        rnd_suffix = str(randint(0, 1000))
+        cursor = connection.cursor()
+        cursor.execute(f"CREATE TABLE test_table_{rnd_suffix} (id int)")
+        # This fails if we're not running on a user engine
+        cursor.execute(f"INSERT INTO test_table_{rnd_suffix} VALUES (1)")

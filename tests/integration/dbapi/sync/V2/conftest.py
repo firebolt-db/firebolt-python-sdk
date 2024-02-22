@@ -59,20 +59,31 @@ def connection_system_engine(
         yield connection
 
 
-@fixture
+@fixture(scope="session")
 def connection_system_engine_v2(
-    database_name: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
 ) -> Connection:
     with connect(
-        database=database_name,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection
+
+
+@fixture(scope="session")
+def engine_v2(
+    connection_system_engine_v2: Connection,
+    engine_name: str,
+) -> str:
+    cursor = connection_system_engine_v2.cursor()
+    cursor.execute(f"CREATE ENGINE IF NOT EXISTS {engine_name}")
+    cursor.execute(f"START ENGINE {engine_name}")
+    yield engine_name
+    cursor.execute(f"STOP ENGINE {engine_name}")
+    cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
 
 
 @fixture

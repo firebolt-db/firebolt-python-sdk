@@ -128,9 +128,27 @@ def connect_v2(
         None,
         api_endpoint,
     )
+
+    if system_engine_connection._client._account_version == 2:
+        cursor = system_engine_connection.cursor()
+        if database:
+            cursor.execute(f"USE DATABASE {database}")
+        if engine_name:
+            cursor.execute(f"USE ENGINE {engine_name}")
+        # Ensure cursors created from this conection are using the same starting
+        # database and engine
+        return Connection(
+            cursor.engine_url,
+            cursor.database,
+            client,
+            CursorV2,
+            system_engine_connection,
+            api_endpoint,
+            cursor._set_parameters,
+        )
+
     if not engine_name:
         return system_engine_connection
-
     else:
         try:
             cursor = system_engine_connection.cursor()
@@ -215,6 +233,7 @@ class Connection(BaseConnection):
         cursor_type: Type[Cursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str = DEFAULT_API_URL,
+        init_parameters: Optional[Dict[str, Any]] = None,
     ):
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
@@ -222,8 +241,8 @@ class Connection(BaseConnection):
         self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
         self._system_engine_connection = system_engine_connection
-        # Override tcp keepalive settings for connection
         self._client = client
+        self.init_parameters = init_parameters or {}
         super().__init__()
 
     def cursor(self, **kwargs: Any) -> Cursor:

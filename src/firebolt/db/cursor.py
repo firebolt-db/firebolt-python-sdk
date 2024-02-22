@@ -86,6 +86,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self.engine_url = connection.engine_url
         if connection.database:
             self.database = connection.database
+        if connection.init_parameters:
+            self._set_parameters = connection.init_parameters.copy()
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -102,11 +104,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ) and not self.is_engine_running(
-            self.engine_url
-        ):  # TODO: v2 acc conditional check
+        ) and not self.is_engine_running(self.engine_url):
             raise EngineNotRunningError(
-                f"Firebolt engine {self.engine_url} "
+                f"Firebolt engine {self.get_engine_name(self.engine_url)} "
                 "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
             )
         _print_error_body(resp)
@@ -461,7 +461,7 @@ class CursorV2(Cursor):
             # System engine is always running
             return True
 
-        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
+        engine_name = self.get_engine_name(engine_url)
         assert self.connection._system_engine_connection is not None  # Type check
         _, status, _ = self._get_engine_url_status_db(
             self.connection._system_engine_connection, engine_name

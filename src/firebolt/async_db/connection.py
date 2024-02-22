@@ -71,6 +71,7 @@ class Connection(BaseConnection):
         cursor_type: Type[Cursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str,
+        init_parameters: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
         self.api_endpoint = api_endpoint
@@ -80,6 +81,7 @@ class Connection(BaseConnection):
         self._cursors: List[Cursor] = []
         self._system_engine_connection = system_engine_connection
         self._client = client
+        self.init_parameters = init_parameters
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -223,6 +225,25 @@ async def connect_v2(
         None,
         api_endpoint,
     )
+
+    if system_engine_connection._client._account_version == 2:
+        cursor = system_engine_connection.cursor()
+        if database:
+            await cursor.execute(f"USE DATABASE {database}")
+        if engine_name:
+            await cursor.execute(f"USE ENGINE {engine_name}")
+        # Ensure cursors created from this conection are using the same starting
+        # database and engine
+        return Connection(
+            cursor.engine_url,
+            cursor.database,
+            client,
+            CursorV2,
+            system_engine_connection,
+            api_endpoint,
+            cursor._set_parameters,
+        )
+
     if not engine_name:
         return system_engine_connection
 

@@ -321,6 +321,17 @@ class BaseCursor:
                     f"Trying to set an unknown parameter {key}. " "It will be ignored."
                 )
 
+    def get_engine_name(self, engine_url: str) -> str:
+        """
+        Get the name of the engine that we're using.
+
+        Args:
+            engine_url (str): URL of the engine
+        """
+        if self._set_parameters.get("engine"):
+            return self._set_parameters["engine"]
+        return URL(engine_url).host.split(".")[0].replace("-", "_")
+
     def _row_set_from_response(
         self, response: Response
     ) -> Tuple[
