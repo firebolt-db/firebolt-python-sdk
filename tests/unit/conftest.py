@@ -59,6 +59,11 @@ def client_secret() -> str:
 
 
 @fixture
+def server_name() -> str:
+    return "api_dev"
+
+
+@fixture
 def server() -> str:
     return "api-dev.mock.firebolt.io"
 
@@ -234,6 +239,11 @@ def engine_endpoint() -> str:
 @fixture
 def engine_name() -> str:
     return "mock_engine_name"
+
+
+@fixture
+def engine_url(engine_name: str) -> str:
+    return f"{engine_name}.mock.firebolt.io"
 
 
 @fixture

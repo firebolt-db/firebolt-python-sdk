@@ -189,7 +189,7 @@ def test_cursor_execute(
 def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
     get_engines_url: str,
-    server: str,
+    server_name: str,
     db_name: str,
     query_url: str,
     query_statistics: Dict[str, Any],
@@ -323,7 +323,7 @@ def test_cursor_execute_error(
         with raises(EngineNotRunningError) as excinfo:
             query()
         assert cursor._state == CursorState.ERROR
-        assert server in str(excinfo)
+        assert server_name in str(excinfo)
 
         # Engine does not exist
         httpx_mock.add_callback(
