@@ -27,6 +27,7 @@ async def connection(
         yield connection
 
 
+
 @fixture
 async def cursor(connection: Connection) -> Cursor:
     return connection.cursor()
