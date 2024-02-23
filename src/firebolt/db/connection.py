@@ -12,7 +12,7 @@ from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
-from firebolt.db.util import _get_system_engine_url
+from firebolt.db.util import ENGINE_STATUS_RUNNING_LIST, _get_system_engine_url
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -159,7 +159,7 @@ def connect_v2(
                 attached_db,
             ) = cursor._get_engine_url_status_db(system_engine_connection, engine_name)
 
-            if status != "Running":
+            if status not in ENGINE_STATUS_RUNNING_LIST:
                 raise EngineNotRunningError(engine_name)
 
             if database is not None and database != attached_db:

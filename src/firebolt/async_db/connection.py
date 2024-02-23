@@ -6,7 +6,10 @@ from typing import Any, Dict, List, Optional, Type
 from httpx import Timeout
 
 from firebolt.async_db.cursor import Cursor, CursorV1, CursorV2
-from firebolt.async_db.util import _get_system_engine_url
+from firebolt.async_db.util import (
+    ENGINE_STATUS_RUNNING_LIST,
+    _get_system_engine_url,
+)
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
@@ -226,7 +229,8 @@ async def connect_v2(
         api_endpoint,
     )
 
-    if system_engine_connection._client._account_version == 2:
+    account_version = await system_engine_connection._client._account_version
+    if account_version == 2:
         cursor = system_engine_connection.cursor()
         if database:
             await cursor.execute(f"USE DATABASE {database}")
@@ -258,7 +262,7 @@ async def connect_v2(
                     attached_db,
                 ) = await cursor._get_engine_url_status_db(engine_name)
 
-            if status != "Running":
+            if status not in ENGINE_STATUS_RUNNING_LIST:
                 raise EngineNotRunningError(engine_name)
 
             if database is not None and database != attached_db:

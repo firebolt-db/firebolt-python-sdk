@@ -11,7 +11,7 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
-ENGINE_STATUS_RUNNING = "Running"
+ENGINE_STATUS_RUNNING_LIST = ["Running", "ENGINE_STATE_RUNNING"]
 
 
 def _get_system_engine_url(

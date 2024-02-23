@@ -41,7 +41,7 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.db.util import ENGINE_STATUS_RUNNING
+from firebolt.db.util import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
@@ -418,6 +418,7 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
+        # Engines v2 always require account_id
         if self.connection._is_system or self._client._account_version == 2:
             assert isinstance(self._client, ClientV2)  # Type check
             parameters["account_id"] = self._client.account_id
@@ -466,7 +467,7 @@ class CursorV2(Cursor):
         _, status, _ = self._get_engine_url_status_db(
             self.connection._system_engine_connection, engine_name
         )
-        return status == ENGINE_STATUS_RUNNING
+        return status in ENGINE_STATUS_RUNNING_LIST
 
     def _get_engine_url_status_db(
         self, system_engine_connection: Connection, engine_name: str

@@ -19,7 +19,7 @@ from typing import (
 
 from httpx import URL, Headers, Response, codes
 
-from firebolt.async_db.util import ENGINE_STATUS_RUNNING
+from firebolt.async_db.util import ENGINE_STATUS_RUNNING_LIST
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import (
     ColType,
@@ -473,7 +473,8 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        if self.connection._is_system:
+        # Engines v2 always require account_id
+        if self.connection._is_system or (await self._client._account_version) == 2:
             assert isinstance(self._client, AsyncClientV2)
             parameters["account_id"] = await self._client.account_id
         return await self._client.request(
@@ -525,7 +526,7 @@ class CursorV2(Cursor):
             status,
             _,
         ) = await system_cursor._get_engine_url_status_db(engine_name)
-        return status == ENGINE_STATUS_RUNNING
+        return status in ENGINE_STATUS_RUNNING_LIST
 
     async def _get_engine_url_status_db(self, engine_name: str) -> Tuple[str, str, str]:
         await self.execute(
