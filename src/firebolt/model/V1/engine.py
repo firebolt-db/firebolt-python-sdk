@@ -127,7 +127,7 @@ class Engine(FireboltBaseModel):
 
     @classmethod
     def parse_obj_with_service(cls, obj: Any, engine_service: EngineService) -> Engine:
-        engine = cls.parse_obj(obj)
+        engine = cls.parse_model(obj)
         engine._service = engine_service
         return engine
 

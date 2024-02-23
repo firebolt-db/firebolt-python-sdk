@@ -28,7 +28,7 @@ class BindingService(BaseService):
             )
         )
         binding: dict = response.json()["binding"]
-        return Binding.parse_obj(binding)
+        return Binding.parse_model(binding)
 
     def get_many(
         self,
@@ -66,7 +66,7 @@ class BindingService(BaseService):
                 }
             ),
         )
-        return [Binding.parse_obj(i["node"]) for i in response.json()["edges"]]
+        return [Binding.parse_model(i["node"]) for i in response.json()["edges"]]
 
     def get_database_bound_to_engine(self, engine: Engine) -> Optional[Database]:
         """Get the database to which an engine is bound, if any."""
@@ -127,12 +127,12 @@ class BindingService(BaseService):
         )
         assert database.database_id is not None, "Database must have database_id"
         binding = Binding(
-            binding_key=BindingKey(
+            binding_key=BindingKey(  # type: ignore[call-arg]
                 account_id=self.account_id,
                 database_id=database.database_id,
                 engine_id=engine.engine_id,
             ),
-            is_default_engine=is_default_engine,
+            is_default_engine=is_default_engine,  # type: ignore[call-arg]
         )
 
         response = self.client.post(
@@ -145,4 +145,4 @@ class BindingService(BaseService):
                 by_alias=True, include={"binding_key": ..., "is_default_engine": ...}
             ),
         )
-        return Binding.parse_obj(response.json()["binding"])
+        return Binding.parse_model(response.json()["binding"])

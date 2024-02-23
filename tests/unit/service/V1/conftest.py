@@ -234,7 +234,7 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
         assert urlparse(engine_url).path in request.url.path
         return Response(
             status_code=httpx.codes.OK,
-            json={"engine": mock_engine.dict()},
+            json={"engine": mock_engine.model_dict()},
         )
 
     return do_mock
@@ -254,7 +254,7 @@ def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
         assert request.url == account_engine_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"engine": mock_engine.dict()},
+            json={"engine": mock_engine.model_dict()},
         )
 
     return do_mock
@@ -297,7 +297,7 @@ def create_databases_callback(databases_url: str, mock_database) -> Callable:
         assert request.url == databases_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"database": mock_database.dict()},
+            json={"database": mock_database.model_dict()},
         )
 
     return do_mock
@@ -309,7 +309,8 @@ def databases_get_callback(databases_url: str, mock_database) -> Callable:
         request: httpx.Request = None, **kwargs
     ) -> Response:
         return Response(
-            status_code=httpx.codes.OK, json={"edges": [{"node": mock_database.dict()}]}
+            status_code=httpx.codes.OK,
+            json={"edges": [{"node": mock_database.model_dict()}]},
         )
 
     return get_databases_callback_inner
@@ -329,7 +330,7 @@ def database_callback(database_url: str, mock_database) -> Callable:
         assert request.url == database_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"database": mock_database.dict()},
+            json={"database": mock_database.model_dict()},
         )
 
     return do_mock
@@ -407,7 +408,7 @@ def database_get_callback(database_get_url, mock_database) -> Callable:
         assert request.url == database_get_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"database": mock_database.dict()},
+            json={"database": mock_database.model_dict()},
         )
 
     return do_mock
@@ -474,7 +475,7 @@ def create_binding_callback(create_binding_url: str, binding) -> Callable:
         assert request.url == create_binding_url
         return Response(
             status_code=httpx.codes.OK,
-            json={"binding": binding.dict()},
+            json={"binding": binding.model_dict()},
         )
 
     return do_mock
