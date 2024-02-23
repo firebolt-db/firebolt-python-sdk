@@ -159,6 +159,7 @@ class BaseCursor:
         "connection",
         "parameters",
         "_arraysize",
+        "_client",
         "_state",
         "_descriptions",
         "_statistics",
@@ -190,7 +191,7 @@ class BaseCursor:
         ] = []
         # User-defined set parameters
         self._set_parameters: Dict[str, Any] = dict()
-        # Server-side parameters
+        # Server-side parameters (user can't change them)
         self.parameters: Dict[str, str] = dict()
         self.engine_url = ""
         self._rowcount = -1
@@ -306,11 +307,15 @@ class BaseCursor:
 
     def _update_set_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():
-            if key in DISALLOWED_PARAMETER_LIST:
-                # TODO: make this better
-                continue
-            else:
+            if key not in DISALLOWED_PARAMETER_LIST:
                 self._set_parameters[key] = value
+            else:
+                # This should never happen as user parameters are validated
+                # before they are sent to the server
+                logger.debug(
+                    f"Trying to set a disalloed parameter {key} from server. "
+                    "It will be ignored."
+                )
 
     def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():
