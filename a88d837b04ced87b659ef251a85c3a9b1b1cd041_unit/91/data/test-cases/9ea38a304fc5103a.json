@@ -1,0 +1,360 @@
+{
+  "uid" : "9ea38a304fc5103a",
+  "name" : "test_client_different_auths",
+  "fullName" : "tests.unit.client.V2.test_client_async#test_client_different_auths",
+  "historyId" : "feea91786367ef35e7312ca64ba1a4b3",
+  "time" : {
+    "start" : 1708830318683,
+    "stop" : 1708830318745,
+    "duration" : 62
+  },
+  "description" : "\n    Client properly handles such auth types:\n    - tuple(username, password)\n    - Auth\n    - None\n    All other types should raise TypeError.\n    ",
+  "descriptionHtml" : "<pre><code>Client properly handles such auth types:\n- tuple(username, password)\n- Auth\n- None\nAll other types should raise TypeError.\n</code></pre>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1708830318644,
+      "stop" : 1708830318645,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_server",
+    "time" : {
+      "start" : 1708830318682,
+      "stop" : 1708830318682,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1708830318645,
+      "stop" : 1708830318645,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "client_secret",
+    "time" : {
+      "start" : 1708830318645,
+      "stop" : 1708830318645,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1708830318645,
+      "stop" : 1708830318645,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "access_token",
+    "time" : {
+      "start" : 1708830318646,
+      "stop" : 1708830318646,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth",
+    "time" : {
+      "start" : 1708830318646,
+      "stop" : 1708830318682,
+      "duration" : 36
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "client_id",
+    "time" : {
+      "start" : 1708830318645,
+      "stop" : 1708830318645,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1708830318642,
+      "stop" : 1708830318644,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "server",
+    "time" : {
+      "start" : 1708830318682,
+      "stop" : 1708830318682,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_name",
+    "time" : {
+      "start" : 1708830318682,
+      "stop" : 1708830318682,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1708830318645,
+      "stop" : 1708830318645,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "check_token_callback",
+    "time" : {
+      "start" : 1708830318646,
+      "stop" : 1708830318646,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "check_credentials_callback",
+    "time" : {
+      "start" : 1708830318646,
+      "stop" : 1708830318646,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1708830318752,
+      "stop" : 1708830318752,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1708830318750,
+      "stop" : 1708830318751,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1708830318752,
+      "stop" : 1708830318753,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7fdbd3103280>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.client.V2"
+  }, {
+    "name" : "suite",
+    "value" : "test_client_async"
+  }, {
+    "name" : "host",
+    "value" : "fv-az692-711"
+  }, {
+    "name" : "thread",
+    "value" : "2287-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.client.V2.test_client_async"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 5,
+        "unknown" : 0,
+        "total" : 5
+      },
+      "items" : [ {
+        "uid" : "3ce251ac3756beb2",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/a88d837b04ced87b659ef251a85c3a9b1b1cd041_unit/90//#testresult/3ce251ac3756beb2",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708743844347,
+          "stop" : 1708743844410,
+          "duration" : 63
+        }
+      }, {
+        "uid" : "b781485b9dfd12af",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/a88d837b04ced87b659ef251a85c3a9b1b1cd041_unit/89//#testresult/b781485b9dfd12af",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708657531089,
+          "stop" : 1708657531150,
+          "duration" : 61
+        }
+      }, {
+        "uid" : "c82fc5428f75c352",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/a88d837b04ced87b659ef251a85c3a9b1b1cd041_unit/88//#testresult/c82fc5428f75c352",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708571005023,
+          "stop" : 1708571005083,
+          "duration" : 60
+        }
+      }, {
+        "uid" : "85a31a4c053f73f7",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/a88d837b04ced87b659ef251a85c3a9b1b1cd041_unit/289//#testresult/85a31a4c053f73f7",
+        "status" : "passed",
+        "time" : {
+          "start" : 1708514101072,
+          "stop" : 1708514101131,
+          "duration" : 59
+        }
+      } ]
+    },
+    "tags" : [ "trio(run=<function run at 0x7fdbd3103280>)" ]
+  },
+  "source" : "9ea38a304fc5103a.json",
+  "parameterValues" : [ ]
+}
