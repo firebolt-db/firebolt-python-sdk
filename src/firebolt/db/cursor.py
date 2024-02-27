@@ -41,7 +41,7 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.db.util import ENGINE_STATUS_RUNNING_LIST
+from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,

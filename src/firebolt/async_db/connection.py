@@ -6,15 +6,15 @@ from typing import Any, Dict, List, Optional, Type
 from httpx import Timeout
 
 from firebolt.async_db.cursor import Cursor, CursorV1, CursorV2
-from firebolt.async_db.util import (
-    ENGINE_STATUS_RUNNING_LIST,
-    _get_system_engine_url,
-)
+from firebolt.async_db.util import _get_system_engine_url
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.constants import (
+    DEFAULT_TIMEOUT_SECONDS,
+    ENGINE_STATUS_RUNNING_LIST,
+)
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,

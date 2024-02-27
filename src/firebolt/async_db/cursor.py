@@ -19,7 +19,6 @@ from typing import (
 
 from httpx import URL, Headers, Response, codes
 
-from firebolt.async_db.util import ENGINE_STATUS_RUNNING_LIST
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import (
     ColType,
@@ -44,6 +43,7 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
+from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
