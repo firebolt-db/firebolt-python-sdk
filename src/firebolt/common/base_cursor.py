@@ -323,7 +323,7 @@ class BaseCursor:
                 self.parameters[key] = value
             else:
                 logger.debug(
-                    f"Trying to set an unknown parameter {key}. " "It will be ignored."
+                    f"Trying to set an unknown parameter {key}. It will be ignored."
                 )
 
     def get_engine_name(self, engine_url: str) -> str:
