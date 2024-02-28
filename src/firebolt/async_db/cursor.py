@@ -90,7 +90,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if connection.database:
             self.database = connection.database
         if connection.init_parameters:
-            self._set_parameters = connection.init_parameters.copy()
+            self._update_set_parameters(connection.init_parameters)
 
     @abstractmethod
     async def _api_request(
