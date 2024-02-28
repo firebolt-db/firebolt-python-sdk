@@ -87,7 +87,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if connection.database:
             self.database = connection.database
         if connection.init_parameters:
-            self._set_parameters = connection.init_parameters.copy()
+            self._update_set_parameters(connection.init_parameters)
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -162,7 +162,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         if headers.get(UPDATE_PARAMETERS_HEADER):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
-            self._update_server_parameters(param_dict)
+            self._update_set_parameters(param_dict)
 
     def _do_execute(
         self,

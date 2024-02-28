@@ -163,7 +163,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         if headers.get(UPDATE_PARAMETERS_HEADER):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
-            self._update_server_parameters(param_dict)
+            self._update_set_parameters(param_dict)
 
     async def _do_execute(
         self,

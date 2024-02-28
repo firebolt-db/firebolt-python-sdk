@@ -1,4 +1,3 @@
-import logging
 from typing import Dict
 from unittest.mock import MagicMock
 
@@ -45,20 +44,6 @@ def test_flush_parameters(initial_parameters: Dict[str, str], cursor: BaseCursor
     cursor._set_parameters = initial_parameters
     cursor.flush_parameters()
     assert cursor._set_parameters == {}
-
-
-def test_update_server_parameters_unknown_params(
-    initial_parameters: Dict[str, str], cursor: BaseCursor, caplog
-):
-    cursor.parameters = initial_parameters
-
-    with caplog.at_level(logging.DEBUG, logger="firebolt.common.base_cursor"):
-        cursor._update_server_parameters({"key2": "new_value2", "key3": "value3"})
-
-    assert "unknown parameter" in caplog.text
-
-    # Assert that the parameters have not been modified
-    assert cursor.parameters == initial_parameters
 
 
 def test_update_server_parameters_known_params(

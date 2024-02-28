@@ -147,7 +147,7 @@ def connect_v2(
             CursorV2,
             system_engine_connection,
             api_endpoint,
-            cursor._set_parameters,
+            cursor.parameters,
         )
 
     if not engine_name:

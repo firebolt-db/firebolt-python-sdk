@@ -53,13 +53,12 @@ class QueryStatus(Enum):
     EXECUTION_ERROR = 8
 
 
-# known parameters that can be set on the server side
-SERVER_SIDE_PARAMETERS = ["database"]
-
 # Parameters that should be set using USE instead of SET
 USE_PARAMETER_LIST = ["database", "engine"]
 # parameters that can only be set by the backend
 DISALLOWED_PARAMETER_LIST = ["account_id", "output_format"]
+# parameters that are set by the backend and should not be set by the user
+IMMUATABLE_PARAMETER_LIST = USE_PARAMETER_LIST + DISALLOWED_PARAMETER_LIST
 
 UPDATE_ENDPOINT_HEADER = "Firebolt-Update-Endpoint"
 UPDATE_PARAMETERS_HEADER = "Firebolt-Update-Parameters"
@@ -306,25 +305,26 @@ class BaseCursor:
         self._query_id = ""
 
     def _update_set_parameters(self, parameters: Dict[str, Any]) -> None:
-        for key, value in parameters.items():
-            if key not in DISALLOWED_PARAMETER_LIST:
-                self._set_parameters[key] = value
-            else:
-                # This should never happen as user parameters are validated
-                # before they are sent to the server
-                logger.debug(
-                    f"Trying to set a disalloed parameter {key} from server. "
-                    "It will be ignored."
-                )
+        # Split parameters into immutable and user parameters
+        immutable_parameters = {
+            key: value
+            for key, value in parameters.items()
+            if key in IMMUATABLE_PARAMETER_LIST
+        }
+        user_parameters = {
+            key: value
+            for key, value in parameters.items()
+            if key not in IMMUATABLE_PARAMETER_LIST
+        }
+
+        self._update_server_parameters(immutable_parameters)
+
+        for key, value in user_parameters.items():
+            self._set_parameters[key] = value
 
     def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():
-            if key in SERVER_SIDE_PARAMETERS:
-                self.parameters[key] = value
-            else:
-                logger.debug(
-                    f"Trying to set an unknown parameter {key}. It will be ignored."
-                )
+            self.parameters[key] = value
 
     def get_engine_name(self, engine_url: str) -> str:
         """
