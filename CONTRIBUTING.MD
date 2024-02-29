@@ -1,7 +1,7 @@
 ### Links
 
-* [REST API Docs](https://docs.firebolt.io/integrations/connecting-via-rest-api)
-* [Dev Docs](https://api.dev.firebolt.io/devDocs)
+* [REST API Docs](https://docs.firebolt.io/developing-with-firebolt/firebolt-rest-api.html)
+* [OpenAPI Docs](https://api.app.firebolt.io/docs) 
 
 ### Development Setup
 
