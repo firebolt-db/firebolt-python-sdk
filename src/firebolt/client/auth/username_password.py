@@ -33,8 +33,6 @@ class UsernamePassword(_RequestBasedAuth):
         "_user_agent",
     )
 
-    requires_response_body = True
-
     def __init__(
         self,
         username: str,

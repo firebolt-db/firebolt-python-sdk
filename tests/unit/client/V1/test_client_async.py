@@ -157,7 +157,7 @@ async def test_concurent_auth_lock(
     httpx_mock.add_callback(check_credentials, url=auth_url)
 
     async with AsyncClient(
-        auth=UsernamePassword(test_username, test_password),
+        auth=UsernamePassword(test_username, test_password, False),
         api_endpoint=server,
     ) as c:
         c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
