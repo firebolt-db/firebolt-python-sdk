@@ -317,10 +317,9 @@ class BaseCursor:
             if key not in IMMUTABLE_PARAMETER_LIST
         }
 
-        self._update_server_parameters(immutable_parameters)
+        self.parameters.update(immutable_parameters)
 
-        for key, value in user_parameters.items():
-            self._set_parameters[key] = value
+        self._set_parameters.update(user_parameters)
 
     def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():

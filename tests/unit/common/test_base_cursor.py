@@ -50,7 +50,7 @@ def test_update_server_parameters_known_params(
     initial_parameters: Dict[str, str], cursor: BaseCursor
 ):
     cursor.parameters = initial_parameters
-    cursor._update_server_parameters({"database": "new_database"})
+    cursor._update_set_parameters({"database": "new_database"})
 
     # Merge the dictionaries using the update() method
     updated_parameters = initial_parameters.copy()
