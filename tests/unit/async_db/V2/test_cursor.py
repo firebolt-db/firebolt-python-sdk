@@ -955,7 +955,7 @@ async def test_cursor_use_engine_with_parameters(
     query_statistics: Dict[str, Any],
 ):
     query_updated_url = "my_dummy_url"
-    param_string_dummy = "param1=1&param2=2"
+    param_string_dummy = "param1=1&param2=2&engine=my_dummy_engine"
 
     header = {
         "Firebolt-Update-Endpoint": f"https://{query_updated_url}/?{param_string_dummy}"
@@ -978,12 +978,13 @@ async def test_cursor_use_engine_with_parameters(
     await cursor.execute("USE ENGINE = 'my_dummy_engine'")
     assert cursor.engine_url == f"https://{query_updated_url}"
     assert cursor._set_parameters == {"param1": "1", "param2": "2"}
-    assert list(cursor.parameters.keys()) == ["database"]
+    assert list(cursor.parameters.keys()) == ["database", "engine"]
+    assert cursor.engine_name == "my_dummy_engine"
 
     httpx_mock.reset(True)
     # Check new parameters are used in the URL
     new_url = query_url.copy_with(host=query_updated_url).copy_merge_params(
-        {"param1": "1", "param2": "2"}
+        {"param1": "1", "param2": "2", "engine": "my_dummy_engine"}
     )
     httpx_mock.add_callback(query_callback_with_headers, url=new_url)
     await cursor.execute("select 1")

@@ -517,7 +517,6 @@ class CursorV2(Cursor):
             # System engine is always running
             return True
 
-        engine_name = self.get_engine_name(engine_url)
         assert self.connection._system_engine_connection is not None  # Type check
         system_cursor = self.connection._system_engine_connection.cursor()
         assert isinstance(system_cursor, CursorV2)  # Type check, should always be true
@@ -525,7 +524,7 @@ class CursorV2(Cursor):
             _,
             status,
             _,
-        ) = await system_cursor._get_engine_url_status_db(engine_name)
+        ) = await system_cursor._get_engine_url_status_db(self.engine_name)
         return status in ENGINE_STATUS_RUNNING_LIST
 
     async def _get_engine_url_status_db(self, engine_name: str) -> Tuple[str, str, str]:

@@ -326,16 +326,17 @@ class BaseCursor:
         for key, value in parameters.items():
             self.parameters[key] = value
 
-    def get_engine_name(self, engine_url: str) -> str:
+    @property
+    def engine_name(self) -> str:
         """
         Get the name of the engine that we're using.
 
         Args:
             engine_url (str): URL of the engine
         """
-        if self._set_parameters.get("engine"):
-            return self._set_parameters["engine"]
-        return URL(engine_url).host.split(".")[0].replace("-", "_")
+        if self.parameters.get("engine"):
+            return self.parameters["engine"]
+        return URL(self.engine_url).host.split(".")[0].replace("-", "_")
 
     def _row_set_from_response(
         self, response: Response
