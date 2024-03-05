@@ -2,7 +2,7 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
-from random import randint
+from random import choice, randint
 from threading import Thread
 from typing import Any, Callable, Generator, List
 
@@ -283,7 +283,7 @@ def test_parameterized_query(connection: Connection) -> None:
 
         assert_deep_eq(
             c.fetchall(),
-            [params + ["?"]],
+            [params + ["\\?"]],
             "Invalid data in table after parameterized insert",
         )
 

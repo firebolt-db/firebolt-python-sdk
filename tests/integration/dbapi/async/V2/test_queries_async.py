@@ -282,7 +282,7 @@ async def test_parameterized_query(connection: Connection) -> None:
 
         assert_deep_eq(
             await c.fetchall(),
-            [params + ["?"]],
+            [params + ["\\?"]],
             "Invalid data in table after parameterized insert",
         )
 
@@ -449,15 +449,13 @@ async def setup_db(connection_system_engine_v2: Connection, use_db_name: str):
 async def test_use_database(
     setup_db,
     connection_system_engine_no_db: Connection,
-    use_db_name: str,
     database_name: str,
 ) -> None:
-    test_db_name = use_db_name + "_async"
     test_table_name = "verify_use_db_async"
     """Use database works as expected."""
     with connection_system_engine_no_db.cursor() as c:
-        await c.execute(f"USE DATABASE {test_db_name}")
-        assert c.database == test_db_name
+        await c.execute(f"USE DATABASE {setup_db}")
+        assert c.database == setup_db
         await c.execute(f"CREATE TABLE {test_table_name} (id int)")
         await c.execute(
             "SELECT table_name FROM information_schema.tables "
@@ -476,13 +474,12 @@ async def test_use_database(
 
 async def test_account_v2_connection_with_db(
     setup_db: Generator,
-    use_db_name: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
 ) -> None:
     async with await connect(
-        database=use_db_name,
+        database=setup_db,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,
@@ -496,7 +493,6 @@ async def test_account_v2_connection_with_db(
 async def test_account_v2_connection_with_db_and_engine(
     setup_db: Generator,
     connection_system_engine_v2: Connection,
-    use_db_name: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
@@ -507,7 +503,7 @@ async def test_account_v2_connection_with_db_and_engine(
     # via the system connection to keep test isolated
     await system_cursor.execute(f"START ENGINE {engine_v2}")
     async with await connect(
-        database=use_db_name,
+        database=setup_db,
         engine_name=engine_v2,
         auth=auth,
         account_name=account_name_v2,
