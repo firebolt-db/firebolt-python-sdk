@@ -274,7 +274,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         )
 
         # \0 is converted to 0
-        params[2] = "text0"
+        params[2] = "text\\0"
 
         assert (
             await c.execute("SELECT * FROM test_tb_async_parameterized") == 1
@@ -435,13 +435,13 @@ async def test_bytea_roundtrip(
 
 
 @fixture
-async def setup_db(connection_system_engine_no_db: Connection, use_db_name: str):
+async def setup_db(connection_system_engine_v2: Connection, use_db_name: str):
     use_db_name = use_db_name + "_async"
-    with connection_system_engine_no_db.cursor() as cursor:
+    with connection_system_engine_v2.cursor() as cursor:
         # randomize the db name to avoid conflicts
         suffix = "".join(choice("0123456789") for _ in range(2))
         await cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
-        yield
+        yield f"{use_db_name}{suffix}"
         await cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 

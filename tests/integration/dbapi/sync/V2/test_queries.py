@@ -275,7 +275,7 @@ def test_parameterized_query(connection: Connection) -> None:
         )
 
         # \0 is converted to 0
-        params[2] = "text0"
+        params[2] = "text\\0"
 
         assert (
             c.execute("SELECT * FROM test_tb_parameterized") == 1
@@ -515,27 +515,27 @@ def test_bytea_roundtrip(
 
 
 @fixture
-def setup_db(connection_system_engine, use_db_name):
+def setup_db(connection_system_engine_v2, use_db_name):
     use_db_name = f"{use_db_name}_sync"
-    with connection_system_engine.cursor() as cursor:
-        cursor.execute(f"CREATE DATABASE {use_db_name}")
-        yield
-        cursor.execute(f"DROP DATABASE {use_db_name}")
+    with connection_system_engine_v2.cursor() as cursor:
+        # randomize the db name to avoid conflicts
+        suffix = "".join(choice("0123456789") for _ in range(2))
+        cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
+        yield f"{use_db_name}{suffix}"
+        cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 
 @mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
 def test_use_database(
     setup_db,
     connection_system_engine: Connection,
-    use_db_name: str,
     database_name: str,
 ) -> None:
-    test_db_name = f"{use_db_name}_sync"
     test_table_name = "verify_use_db"
     """Use database works as expected."""
     with connection_system_engine.cursor() as c:
-        c.execute(f"USE DATABASE {test_db_name}")
-        assert c.database == test_db_name
+        c.execute(f"USE DATABASE {setup_db}")
+        assert c.database == setup_db
         c.execute(f"CREATE TABLE {test_table_name} (id int)")
         c.execute(
             "SELECT table_name FROM information_schema.tables "
@@ -554,13 +554,12 @@ def test_use_database(
 
 def test_account_v2_connection_with_db(
     setup_db: Generator,
-    use_db_name: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
 ) -> None:
     with connect(
-        database=use_db_name,
+        database=setup_db,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,
@@ -572,7 +571,6 @@ def test_account_v2_connection_with_db(
 def test_account_v2_connection_with_db_and_engine(
     setup_db: Generator,
     connection_system_engine_v2: Connection,
-    use_db_name: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
@@ -583,7 +581,7 @@ def test_account_v2_connection_with_db_and_engine(
     # via the system connection to keep test isolated
     system_cursor.execute(f"START ENGINE {engine_v2}")
     with connect(
-        database=use_db_name,
+        database=setup_db,
         engine_name=engine_v2,
         auth=auth,
         account_name=account_name_v2,
