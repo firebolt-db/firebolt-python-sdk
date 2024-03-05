@@ -435,7 +435,7 @@ async def test_bytea_roundtrip(
 
 
 @fixture
-async def setup_db(connection_system_engine_v2: Connection, use_db_name: str):
+async def setup_v2_db(connection_system_engine_v2: Connection, use_db_name: str):
     use_db_name = use_db_name + "_async"
     with connection_system_engine_v2.cursor() as cursor:
         # randomize the db name to avoid conflicts
@@ -447,15 +447,15 @@ async def setup_db(connection_system_engine_v2: Connection, use_db_name: str):
 
 @mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
 async def test_use_database(
-    setup_db,
+    setup_v2_db,
     connection_system_engine_no_db: Connection,
     database_name: str,
 ) -> None:
     test_table_name = "verify_use_db_async"
     """Use database works as expected."""
     with connection_system_engine_no_db.cursor() as c:
-        await c.execute(f"USE DATABASE {setup_db}")
-        assert c.database == setup_db
+        await c.execute(f"USE DATABASE {setup_v2_db}")
+        assert c.database == setup_v2_db
         await c.execute(f"CREATE TABLE {test_table_name} (id int)")
         await c.execute(
             "SELECT table_name FROM information_schema.tables "
@@ -473,13 +473,13 @@ async def test_use_database(
 
 
 async def test_account_v2_connection_with_db(
-    setup_db: Generator,
+    setup_v2_db: Generator,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
 ) -> None:
     async with await connect(
-        database=setup_db,
+        database=setup_v2_db,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,
@@ -491,7 +491,7 @@ async def test_account_v2_connection_with_db(
 
 
 async def test_account_v2_connection_with_db_and_engine(
-    setup_db: Generator,
+    setup_v2_db: Generator,
     connection_system_engine_v2: Connection,
     auth: Auth,
     account_name_v2: str,
@@ -503,7 +503,7 @@ async def test_account_v2_connection_with_db_and_engine(
     # via the system connection to keep test isolated
     await system_cursor.execute(f"START ENGINE {engine_v2}")
     async with await connect(
-        database=setup_db,
+        database=setup_v2_db,
         engine_name=engine_v2,
         auth=auth,
         account_name=account_name_v2,
