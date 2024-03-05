@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from os import environ
 from random import choice, randint
-from typing import Callable, List
+from typing import Callable, Generator, List
 
 from pytest import fixture, mark, raises
 
@@ -471,10 +471,14 @@ async def test_use_database(
 
 
 async def test_account_v2_connection_with_db(
-    database_name: str, auth: Auth, account_name_v2: str, api_endpoint: str
+    setup_db: Generator,
+    use_db_name: str,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
 ) -> None:
     async with await connect(
-        database=database_name,
+        database=use_db_name,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,
@@ -486,8 +490,9 @@ async def test_account_v2_connection_with_db(
 
 
 async def test_account_v2_connection_with_db_and_engine(
+    setup_db: Generator,
     connection_system_engine_v2: Connection,
-    database_name: str,
+    use_db_name: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
@@ -498,7 +503,7 @@ async def test_account_v2_connection_with_db_and_engine(
     # via the system connection to keep test isolated
     await system_cursor.execute(f"START ENGINE {engine_v2}")
     async with await connect(
-        database=database_name,
+        database=use_db_name,
         engine_name=engine_v2,
         auth=auth,
         account_name=account_name_v2,
