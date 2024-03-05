@@ -2,13 +2,15 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
-from random import choice
-from typing import Callable, List
+from random import choice, randint
+from typing import Callable, Generator, List
 
 from pytest import fixture, mark, raises
 
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
+from firebolt.async_db.connection import connect
 from firebolt.async_db.cursor import QueryStatus
+from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType, Column
 from tests.integration.conftest import API_ENDPOINT_ENV
 from tests.integration.dbapi.utils import assert_deep_eq
@@ -272,7 +274,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         )
 
         # \0 is converted to 0
-        params[2] = "text0"
+        params[2] = "text\\0"
 
         assert (
             await c.execute("SELECT * FROM test_tb_async_parameterized") == 1
@@ -280,7 +282,7 @@ async def test_parameterized_query(connection: Connection) -> None:
 
         assert_deep_eq(
             await c.fetchall(),
-            [params + ["?"]],
+            [params + ["\\?"]],
             "Invalid data in table after parameterized insert",
         )
 
@@ -409,6 +411,9 @@ async def test_bytea_roundtrip(
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
+        # Set standard_conforming_strings to 0 to allow bytea escape sequences
+        # FIR-30650
+        await c.execute("SET standard_conforming_strings=0")
         await c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip_2")
         await c.execute(
             "CREATE FACT TABLE test_bytea_roundtrip_2(id int, b bytea) primary index id"
@@ -423,35 +428,34 @@ async def test_bytea_roundtrip(
 
         bytes_data = (await c.fetchone())[0]
 
+        await c.execute("SET standard_conforming_strings=1")
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
 
 
 @fixture
-async def setup_db(connection_system_engine_no_db: Connection, use_db_name: str):
+async def setup_v2_db(connection_system_engine_v2: Connection, use_db_name: str):
     use_db_name = use_db_name + "_async"
-    with connection_system_engine_no_db.cursor() as cursor:
+    with connection_system_engine_v2.cursor() as cursor:
         # randomize the db name to avoid conflicts
         suffix = "".join(choice("0123456789") for _ in range(2))
         await cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
-        yield
+        yield f"{use_db_name}{suffix}"
         await cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 
 @mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
 async def test_use_database(
-    setup_db,
+    setup_v2_db,
     connection_system_engine_no_db: Connection,
-    use_db_name: str,
     database_name: str,
 ) -> None:
-    test_db_name = use_db_name + "_async"
     test_table_name = "verify_use_db_async"
     """Use database works as expected."""
     with connection_system_engine_no_db.cursor() as c:
-        await c.execute(f"USE DATABASE {test_db_name}")
-        assert c.database == test_db_name
+        await c.execute(f"USE DATABASE {setup_v2_db}")
+        assert c.database == setup_v2_db
         await c.execute(f"CREATE TABLE {test_table_name} (id int)")
         await c.execute(
             "SELECT table_name FROM information_schema.tables "
@@ -466,3 +470,48 @@ async def test_use_database(
             f"WHERE table_name = '{test_table_name}'"
         )
         assert (await c.fetchone()) is None, "Database was not changed"
+
+
+async def test_account_v2_connection_with_db(
+    setup_v2_db: Generator,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
+) -> None:
+    async with await connect(
+        database=setup_v2_db,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # This fails if we're not running with a db context
+        await connection.cursor().execute(
+            "SELECT * FROM information_schema.tables LIMIT 1"
+        )
+
+
+async def test_account_v2_connection_with_db_and_engine(
+    setup_v2_db: Generator,
+    connection_system_engine_v2: Connection,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
+    engine_v2: str,
+) -> None:
+    system_cursor = connection_system_engine_v2.cursor()
+    # We can only connect to a running engine so start it first
+    # via the system connection to keep test isolated
+    await system_cursor.execute(f"START ENGINE {engine_v2}")
+    async with await connect(
+        database=setup_v2_db,
+        engine_name=engine_v2,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # generate a random string to avoid name conflicts
+        rnd_suffix = str(randint(0, 1000))
+        cursor = connection.cursor()
+        await cursor.execute(f"CREATE TABLE test_table_{rnd_suffix} (id int)")
+        # This fails if we're not running on a user engine
+        await cursor.execute(f"INSERT INTO test_table_{rnd_suffix} VALUES (1)")

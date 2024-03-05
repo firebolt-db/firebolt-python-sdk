@@ -17,12 +17,9 @@ from typing import (
     Union,
 )
 
-from httpx import URL
-from httpx import AsyncClient as HttpxAsyncClient
-from httpx import Response, codes
+from httpx import URL, Headers, Response, codes
 
-from firebolt.async_db.util import ENGINE_STATUS_RUNNING
-from firebolt.client.client import AsyncClientV1, AsyncClientV2
+from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import (
     ColType,
     Column,
@@ -33,14 +30,20 @@ from firebolt.common._types import (
 )
 from firebolt.common.base_cursor import (
     JSON_OUTPUT_FORMAT,
+    RESET_SESSION_HEADER,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
     QueryStatus,
     Statistics,
+    _parse_update_endpoint,
+    _parse_update_parameters,
     _raise_if_internal_set_parameter,
     check_not_closed,
     check_query_executed,
 )
+from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
@@ -76,23 +79,18 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def __init__(
         self,
         *args: Any,
-        client: HttpxAsyncClient,
+        client: AsyncClient,
         connection: Connection,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
         self._client = client
         self.connection = connection
+        self.engine_url = connection.engine_url
         if connection.database:
             self.database = connection.database
-
-    @property
-    def database(self) -> Optional[str]:
-        return self.parameters.get("database")
-
-    @database.setter
-    def database(self, database: str) -> None:
-        self.parameters["database"] = database
+        if connection.init_parameters:
+            self._update_set_parameters(connection.init_parameters)
 
     @abstractmethod
     async def _api_request(
@@ -117,9 +115,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ) and not await self.is_engine_running(self.connection.engine_url):
+        ) and not await self.is_engine_running(self.engine_url):
             raise EngineNotRunningError(
-                f"Firebolt engine {self.connection.engine_url} "
+                f"Firebolt engine {self.engine_url} "
                 "needs to be running to run queries against it."
             )
         _print_error_body(resp)
@@ -142,6 +140,30 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
+
+    async def _parse_response_headers(self, headers: Headers) -> None:
+        if headers.get(UPDATE_ENDPOINT_HEADER):
+            endpoint, params = _parse_update_endpoint(
+                headers.get(UPDATE_ENDPOINT_HEADER)
+            )
+            if (
+                params.get("account_id", await self._client.account_id)
+                != await self._client.account_id
+            ):
+                raise OperationalError(
+                    "USE ENGINE command failed. Account parameter mismatch. "
+                    "Contact support"
+                )
+            self._update_set_parameters(params)
+            self.engine_url = endpoint
+            self._client.base_url = URL(endpoint)
+
+        if headers.get(RESET_SESSION_HEADER):
+            self.flush_parameters()
+
+        if headers.get(UPDATE_PARAMETERS_HEADER):
+            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
+            self._update_set_parameters(param_dict)
 
     async def _do_execute(
         self,
@@ -209,8 +231,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                         query, {"output_format": JSON_OUTPUT_FORMAT}
                     )
                     await self._raise_if_error(resp)
-                    # get parameters from response
-                    self._parse_response_headers(resp.headers)
+                    await self._parse_response_headers(resp.headers)
                     row_set = self._row_set_from_response(resp)
 
                 self._append_row_set(row_set)
@@ -452,7 +473,8 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        if self.connection._is_system:
+        # Engines v2 always require account_id
+        if self.connection._is_system or (await self._client._account_version) == 2:
             assert isinstance(self._client, AsyncClientV2)
             parameters["account_id"] = await self._client.account_id
         return await self._client.request(
@@ -495,7 +517,6 @@ class CursorV2(Cursor):
             # System engine is always running
             return True
 
-        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
         assert self.connection._system_engine_connection is not None  # Type check
         system_cursor = self.connection._system_engine_connection.cursor()
         assert isinstance(system_cursor, CursorV2)  # Type check, should always be true
@@ -503,8 +524,8 @@ class CursorV2(Cursor):
             _,
             status,
             _,
-        ) = await system_cursor._get_engine_url_status_db(engine_name)
-        return status == ENGINE_STATUS_RUNNING
+        ) = await system_cursor._get_engine_url_status_db(self.engine_name)
+        return status in ENGINE_STATUS_RUNNING_LIST
 
     async def _get_engine_url_status_db(self, engine_name: str) -> Tuple[str, str, str]:
         await self.execute(

@@ -61,18 +61,29 @@ async def connection_system_engine(
 
 @fixture
 async def connection_system_engine_v2(
-    database_name: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
 ) -> Connection:
     async with await connect(
-        database=database_name,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection
+
+
+@fixture
+async def engine_v2(
+    connection_system_engine_v2: Connection,
+    engine_name: str,
+) -> str:
+    cursor = connection_system_engine_v2.cursor()
+    await cursor.execute(f"CREATE ENGINE IF NOT EXISTS {engine_name}")
+    await cursor.execute(f"START ENGINE {engine_name}")
+    yield engine_name
+    await cursor.execute(f"STOP ENGINE {engine_name}")
+    await cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
 
 
 @fixture
