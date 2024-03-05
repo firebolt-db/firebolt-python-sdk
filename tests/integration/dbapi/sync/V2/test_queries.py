@@ -514,7 +514,7 @@ def test_bytea_roundtrip(
         ), "Invalid bytea data returned after roundtrip"
 
 
-@fixture
+@fixture(scope="module")
 def setup_db(connection_system_engine_v2, use_db_name):
     use_db_name = f"{use_db_name}_sync"
     with connection_system_engine_v2.cursor() as cursor:
