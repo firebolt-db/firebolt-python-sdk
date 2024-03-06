@@ -300,7 +300,7 @@ def format_value(value: ParameterType) -> str:
         return f"'{value.isoformat()}'"
     elif isinstance(value, bytes):
         # Encode each byte into hex
-        return "'" + "".join(f"\\x{b:02x}" for b in value) + "'"
+        return "'\\x" + "".join(f"{b:02x}" for b in value) + "'"
     if value is None:
         return "NULL"
     elif isinstance(value, Sequence):
