@@ -50,7 +50,7 @@ from firebolt.common._types import (
         # None
         (None, "NULL"),
         # Bytea
-        (b"abc", "'\\x61\\x62\\x63'"),
+        (b"abc", "'\\x616263'"),
     ],
 )
 def test_format_value(value: str, result: str) -> None:
