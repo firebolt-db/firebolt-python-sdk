@@ -435,7 +435,7 @@ async def test_bytea_roundtrip(
 async def test_use_database(
     setup_v2_db,
     connection_system_engine_v2: Connection,
-    database_v2: str,
+    async_database_v2: str,
 ) -> None:
     test_table_name = "verify_use_db_async"
     """Use database works as expected."""
@@ -449,8 +449,8 @@ async def test_use_database(
         )
         assert (await c.fetchone())[0] == test_table_name, "Table was not created"
         # Change DB and verify table is not there
-        await c.execute(f"USE DATABASE {database_v2}")
-        assert c.database == database_v2
+        await c.execute(f"USE DATABASE {async_database_v2}")
+        assert c.database == async_database_v2
         await c.execute(
             "SELECT table_name FROM information_schema.tables "
             f"WHERE table_name = '{test_table_name}'"
@@ -459,13 +459,13 @@ async def test_use_database(
 
 
 async def test_account_v2_connection_with_db(
-    database_v2: str,
+    async_database_v2: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
 ) -> None:
     async with await connect(
-        database=database_v2,
+        database=async_database_v2,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,
@@ -477,15 +477,15 @@ async def test_account_v2_connection_with_db(
 
 
 async def test_account_v2_connection_with_db_and_engine(
-    database_v2: str,
-    engine_v2: str,
+    async_database_v2: str,
+    async_engine_v2: str,
     auth: Auth,
     account_name_v2: str,
     api_endpoint: str,
 ) -> None:
     async with await connect(
-        database=database_v2,
-        engine_name=engine_v2,
+        database=async_database_v2,
+        engine_name=async_engine_v2,
         auth=auth,
         account_name=account_name_v2,
         api_endpoint=api_endpoint,

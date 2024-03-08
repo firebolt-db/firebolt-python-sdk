@@ -74,7 +74,7 @@ async def connection_system_engine_v2(
 
 
 @fixture
-async def engine_v2(
+async def async_engine_v2(
     connection_system_engine_v2: Connection,
     engine_name: str,
 ) -> str:
