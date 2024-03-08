@@ -136,7 +136,7 @@ def test_long_query(
 
     with connection.cursor() as c:
         c.execute(
-            "SELECT checksum(*) FROM GENERATE_SERIES(1, 200000000000)",  # approx 6m runtime
+            "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)",  # approx 6m runtime
         )
         data = c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
