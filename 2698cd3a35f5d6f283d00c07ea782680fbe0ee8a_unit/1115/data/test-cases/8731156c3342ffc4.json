@@ -1,0 +1,302 @@
+{
+  "uid" : "8731156c3342ffc4",
+  "name" : "test_true_concurent_requests",
+  "fullName" : "tests.unit.client.V1.test_client_async#test_true_concurent_requests",
+  "historyId" : "7a1da1906c2ce766d220b1c3c1cadaca",
+  "time" : {
+    "start" : 1709922325844,
+    "stop" : 1709922326241,
+    "duration" : 397
+  },
+  "status" : "broken",
+  "statusMessage" : "TypeError: exceptions must derive from BaseException",
+  "statusTrace" : "args = ()\nkwargs = {'auth_callback': <function auth_callback.<locals>.do_mock at 0x7f9292f73940>, 'auth_url': 'https://api-dev.mock.fireb...'httpx_mock': <pytest_httpx._httpx_mock.HTTPXMock object at 0x7f929307e670>, 'server': 'api-dev.mock.firebolt.io', ...}\ne = None, i = 2\n\n    @functools.wraps(func)\n    async def wrapper(*args, **kwargs):\n        e = None\n        for i in range(num_retries):\n            try:\n>               await func(*args, **kwargs)\n\n/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/tests/unit/conftest.py:388: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nhttpx_mock = <pytest_httpx._httpx_mock.HTTPXMock object at 0x7f929307e670>\ntest_username = 'mock_user', test_password = 'mock_password'\nauth_url = 'https://api-dev.mock.firebolt.io/auth/v1/login'\nauth_callback = <function auth_callback.<locals>.do_mock at 0x7f9292f73940>\nserver = 'api-dev.mock.firebolt.io'\n\n    @retry_if_failed(3)\n    async def test_true_concurent_requests(\n        httpx_mock: HTTPXMock,\n        test_username: str,\n        test_password: str,\n        auth_url: str,\n        auth_callback: Callable,\n        server: str,\n    ):\n        url = \"https://url\"\n        CONCURENT_COUNT = 10\n    \n        queue = Queue(CONCURENT_COUNT)\n    \n        # create callback that uses check_token_callback but also pushes URl to a queue\n        async def check_token_callback_with_queue(request: Request, **kwargs) -> Response:\n            nonlocal queue\n            queue.put(str(request.url))\n            return Response(status_code=codes.OK, headers={\"content-length\": \"0\"})\n    \n        async def mock_send_handling_redirects(self, *args: Any, **kwargs: Any) -> Response:\n            # simulate network delay so the context switches\n            # random delay to make sure that requests are not executed in order\n            await sleep(0.01 * random.random())\n            return await AsyncClient._send_handling_redirects(self, *args, **kwargs)\n    \n        httpx_mock.add_callback(auth_callback, url=auth_url)\n    \n        httpx_mock.add_callback(check_token_callback_with_queue, url=compile(f\"{url}/.\"))\n    \n        urls = [f\"{url}/{i}\" for i in range(CONCURENT_COUNT)]\n        async with AsyncClient(\n            auth=UsernamePassword(test_username, test_password),\n            api_endpoint=server,\n        ) as c:\n            c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)\n            async with open_nursery() as nursery:\n                for url in urls:\n                    nursery.start_soon(c.get, url)\n    \n        assert queue.qsize() == CONCURENT_COUNT\n        # Make sure the order is random and not sequential\n>       assert list(queue.queue) != urls\nE       AssertionError: assert ['https://url/0', 'https://url/1', 'https://url/2', 'https://url/3', 'https://url/4', 'https://url/5', ...] != ['https://url/0', 'https://url/1', 'https://url/2', 'https://url/3', 'https://url/4', 'https://url/5', ...]\nE        +  where ['https://url/0', 'https://url/1', 'https://url/2', 'https://url/3', 'https://url/4', 'https://url/5', ...] = list(deque(['https://url/0', 'https://url/1', 'https://url/2', 'https://url/3', 'https://url/4', 'https://url/5', ...]))\nE        +    where deque(['https://url/0', 'https://url/1', 'https://url/2', 'https://url/3', 'https://url/4', 'https://url/5', ...]) = <queue.Queue object at 0x7f9292bd5f40>.queue\n\n/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/tests/unit/client/V1/test_client_async.py:219: AssertionError\n\nDuring handling of the above exception, another exception occurred:\n\nargs = ()\nkwargs = {'auth_callback': <function auth_callback.<locals>.do_mock at 0x7f9292f73940>, 'auth_url': 'https://api-dev.mock.fireb...'httpx_mock': <pytest_httpx._httpx_mock.HTTPXMock object at 0x7f929307e670>, 'server': 'api-dev.mock.firebolt.io', ...}\ne = None, i = 2\n\n    @functools.wraps(func)\n    async def wrapper(*args, **kwargs):\n        e = None\n        for i in range(num_retries):\n            try:\n                await func(*args, **kwargs)\n                break\n            except AssertionError:\n                if i == num_retries - 1:\n>                   raise e\nE                   TypeError: exceptions must derive from BaseException\n\n/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/tests/unit/conftest.py:392: TypeError",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "password",
+    "time" : {
+      "start" : 1709922325843,
+      "stop" : 1709922325843,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1709922325842,
+      "stop" : 1709922325842,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_url",
+    "time" : {
+      "start" : 1709922325843,
+      "stop" : 1709922325843,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1709922325842,
+      "stop" : 1709922325842,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "test_username",
+    "time" : {
+      "start" : 1709922325843,
+      "stop" : 1709922325843,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1709922325842,
+      "stop" : 1709922325842,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "user",
+    "time" : {
+      "start" : 1709922325842,
+      "stop" : 1709922325842,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "server",
+    "time" : {
+      "start" : 1709922325843,
+      "stop" : 1709922325843,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "test_password",
+    "time" : {
+      "start" : 1709922325843,
+      "stop" : 1709922325843,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_url",
+    "time" : {
+      "start" : 1709922326566,
+      "stop" : 1709922326566,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1709922325842,
+      "stop" : 1709922325842,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth_callback",
+    "time" : {
+      "start" : 1709922325843,
+      "stop" : 1709922325844,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1709922325839,
+      "stop" : 1709922325841,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1709922326277,
+      "stop" : 1709922326277,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1709922326279,
+      "stop" : 1709922326279,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1709922326279,
+      "stop" : 1709922326280,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7f92955a1790>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.client.V1"
+  }, {
+    "name" : "suite",
+    "value" : "test_client_async"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1391-248"
+  }, {
+    "name" : "thread",
+    "value" : "2431-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.client.V1.test_client_async"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ {
+      "name" : "Test defects",
+      "matchedStatuses" : [ ],
+      "flaky" : false
+    } ],
+    "tags" : [ "trio(run=<function run at 0x7f92955a1790>)" ]
+  },
+  "source" : "8731156c3342ffc4.json",
+  "parameterValues" : [ ]
+}
