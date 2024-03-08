@@ -372,12 +372,11 @@ def retry_if_failed(num_retries):
     def decorator(func):
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
-            e = None
             for i in range(num_retries):
                 try:
                     await func(*args, **kwargs)
                     break
-                except AssertionError:
+                except AssertionError as e:
                     if i == num_retries - 1:
                         raise e
 
