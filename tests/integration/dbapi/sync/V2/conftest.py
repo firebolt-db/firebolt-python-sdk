@@ -82,11 +82,12 @@ def engine_v2(
     suffix = "".join(choice("0123456789") for _ in range(2))
     engine_name = f"{engine_name}{suffix}_sync"
     cursor = connection_system_engine_v2.cursor()
-    cursor.execute(f"CREATE ENGINE IF NOT EXISTS {engine_name}")
-    cursor.execute(f"START ENGINE {engine_name}")
-    yield engine_name
-    cursor.execute(f"STOP ENGINE {engine_name}")
-    cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
+    sync_engine_name = f"{engine_name}_sync{randint(0, 1000)}"
+    cursor.execute(f"CREATE ENGINE IF NOT EXISTS {sync_engine_name}")
+    cursor.execute(f"START ENGINE {sync_engine_name}")
+    yield sync_engine_name
+    cursor.execute(f"STOP ENGINE {sync_engine_name}")
+    cursor.execute(f"DROP ENGINE IF EXISTS {sync_engine_name}")
 
 
 @fixture(scope="session")
