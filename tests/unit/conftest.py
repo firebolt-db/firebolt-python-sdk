@@ -366,7 +366,7 @@ def settings(
     return seett
 
 
-# test retry decorator that allows to retry test N number of times in case one
+# Retry decorator that allows to retry test N number of times in case one
 # ot the asserts fail
 def retry_if_failed(num_retries):
     def decorator(func):
