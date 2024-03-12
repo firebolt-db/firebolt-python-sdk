@@ -142,6 +142,7 @@ def test_database_update(
     def update_query_callback(request, **kwargs):
         assert "ALTER DATABASE" in request.read().decode()
         assert "new description" in request.read().decode()
+        # Return a dummy response to avoid parsing error
         query_response = {
             "meta": [{"name": "one", "type": "int"}],
             "data": [],
@@ -153,16 +154,14 @@ def test_database_update(
     httpx_mock.add_callback(
         update_query_callback, url=system_engine_no_db_query_url, method="POST"
     )
-    # mock get_attached_engines method to return an engine in a running state
+    # Make sure we return an engine with a running state
     mock_database.get_attached_engines = lambda: [mock_engine]
 
     mocked_service = resource_manager.engines
     mock_database._service = mocked_service
 
-    # Call the update method
     updated_database = mock_database.update(description="new description")
 
-    # Assert the description is updated in the database object
     assert updated_database.description == "new description"
 
 
@@ -170,9 +169,9 @@ def test_database_update_with_attached_engine_in_use(
     mock_database: Database,
     mock_engine_stopping: Engine,
 ):
-    # mock get_attached_engines method to return an engine in a stopping state
+    # Make sure we return an engine that's not running or stopped
+    # to cause an error
     mock_database.get_attached_engines = lambda: [mock_engine_stopping]
 
-    # Call the update method and assert that AttachedEngineInUseError is raised
     with raises(AttachedEngineInUseError):
         mock_database.update(description="new description")
