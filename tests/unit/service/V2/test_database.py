@@ -1,5 +1,6 @@
-from typing import Callable
+from typing import Any, Callable, Dict
 
+from httpx import Response, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
@@ -128,3 +129,49 @@ def test_database_delete_busy_engine(
 
     with raises(AttachedEngineInUseError):
         mock_database.delete()
+
+
+def test_database_update(
+    httpx_mock: HTTPXMock,
+    system_engine_no_db_query_url: str,
+    mock_engine: Engine,
+    mock_database: Database,
+    resource_manager: ResourceManager,
+    query_statistics: Dict[str, Any],
+):
+    def update_query_callback(request, **kwargs):
+        assert "ALTER DATABASE" in request.read().decode()
+        assert "new description" in request.read().decode()
+        # Return a dummy response to avoid parsing error
+        query_response = {
+            "meta": [{"name": "one", "type": "int"}],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+        return Response(status_code=codes.OK, json=query_response)
+
+    httpx_mock.add_callback(
+        update_query_callback, url=system_engine_no_db_query_url, method="POST"
+    )
+    # Make sure we return an engine with a running state
+    mock_database.get_attached_engines = lambda: [mock_engine]
+
+    mocked_service = resource_manager.engines
+    mock_database._service = mocked_service
+
+    updated_database = mock_database.update(description="new description")
+
+    assert updated_database.description == "new description"
+
+
+def test_database_update_with_attached_engine_in_use(
+    mock_database: Database,
+    mock_engine_stopping: Engine,
+):
+    # Make sure we return an engine that's not running or stopped
+    # to cause an error
+    mock_database.get_attached_engines = lambda: [mock_engine_stopping]
+
+    with raises(AttachedEngineInUseError):
+        mock_database.update(description="new description")
