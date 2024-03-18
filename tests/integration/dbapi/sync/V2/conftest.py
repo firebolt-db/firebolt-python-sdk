@@ -78,6 +78,9 @@ def engine_v2(
     connection_system_engine_v2: Connection,
     engine_name: str,
 ) -> str:
+    # randomize the db name to avoid conflicts
+    suffix = "".join(choice("0123456789") for _ in range(2))
+    engine_name = f"{engine_name}{suffix}_sync"
     cursor = connection_system_engine_v2.cursor()
     cursor.execute(f"CREATE ENGINE IF NOT EXISTS {engine_name}")
     cursor.execute(f"START ENGINE {engine_name}")
