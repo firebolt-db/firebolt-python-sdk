@@ -83,18 +83,17 @@ async def test_system_engine_v2_account(connection_system_engine_v2: Connection)
 
 
 async def test_system_engine_use_engine(
-    connection_system_engine_v2: Connection, database_name: str, engine_name: str
+    connection_system_engine_v2: Connection, setup_v2_db: str, engine_v2: str
 ):
+    table_name = "test_table_async"
     with connection_system_engine_v2.cursor() as cursor:
-        await cursor.execute(f"CREATE DATABASE IF NOT EXISTS {database_name}")
-        await cursor.execute(f"USE DATABASE {database_name}")
-        await cursor.execute(f"CREATE ENGINE IF NOT EXISTS {engine_name}")
-        await cursor.execute(f"USE ENGINE {engine_name}")
-        await cursor.execute("CREATE TABLE IF NOT EXISTS test_table (id int)")
+        await cursor.execute(f"USE DATABASE {setup_v2_db}")
+        await cursor.execute(f"USE ENGINE {engine_v2}")
+        await cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id int)")
         # This query fails if we're not on a user engine
-        await cursor.execute("INSERT INTO test_table VALUES (1)")
+        await cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
         await cursor.execute("USE ENGINE system")
         # Werify we've switched to system by making previous query fail
         with raises(OperationalError):
-            await cursor.execute("INSERT INTO test_table VALUES (1)")
-        await cursor.execute("DROP TABLE IF EXISTS test_table")
+            await cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
+        await cursor.execute(f"DROP TABLE IF EXISTS {table_name}")

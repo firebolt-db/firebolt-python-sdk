@@ -2,11 +2,11 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
-from random import choice, randint
+from random import randint
 from threading import Thread
 from typing import Any, Callable, Generator, List
 
-from pytest import fixture, mark, raises
+from pytest import mark, raises
 
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
@@ -512,17 +512,6 @@ def test_bytea_roundtrip(
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
-
-
-@fixture(scope="module")
-def setup_v2_db(connection_system_engine_v2, use_db_name):
-    use_db_name = f"{use_db_name}_sync"
-    with connection_system_engine_v2.cursor() as cursor:
-        # randomize the db name to avoid conflicts
-        suffix = "".join(choice("0123456789") for _ in range(2))
-        cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
-        yield f"{use_db_name}{suffix}"
-        cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 
 @mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")

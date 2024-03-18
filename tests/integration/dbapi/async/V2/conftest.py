@@ -1,4 +1,4 @@
-from random import randint
+from random import choice, randint
 from typing import Tuple
 
 from pytest import fixture
@@ -84,6 +84,17 @@ async def engine_v2(
     yield engine_name
     await cursor.execute(f"STOP ENGINE {engine_name}")
     await cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
+
+
+@fixture
+async def setup_v2_db(connection_system_engine_v2: Connection, use_db_name: str):
+    use_db_name = use_db_name + "_async"
+    with connection_system_engine_v2.cursor() as cursor:
+        # randomize the db name to avoid conflicts
+        suffix = "".join(choice("0123456789") for _ in range(2))
+        await cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
+        yield f"{use_db_name}{suffix}"
+        await cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 
 @fixture
