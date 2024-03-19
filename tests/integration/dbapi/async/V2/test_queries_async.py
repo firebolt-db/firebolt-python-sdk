@@ -1,7 +1,7 @@
 import math
 from datetime import date, datetime
 from decimal import Decimal
-from random import choice, randint
+from random import randint
 from typing import Callable, List
 
 from pytest import mark, raises
