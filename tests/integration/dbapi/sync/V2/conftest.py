@@ -91,7 +91,7 @@ def engine_v2(
 
 
 @fixture(scope="session")
-def setup_v2_db(connection_system_engine_v2, use_db_name):
+def database_v2(connection_system_engine_v2, use_db_name):
     use_db_name = f"{use_db_name}_sync"
     with connection_system_engine_v2.cursor() as cursor:
         # randomize the db name to avoid conflicts

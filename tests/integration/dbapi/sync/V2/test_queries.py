@@ -513,15 +513,14 @@ def test_bytea_roundtrip(
 
 
 def test_use_database(
-    setup_v2_db,
     connection_system_engine_v2: Connection,
     database_v2: str,
 ) -> None:
     test_table_name = "verify_use_db"
     """Use database works as expected."""
     with connection_system_engine_v2.cursor() as c:
-        c.execute(f"USE DATABASE {setup_v2_db}")
-        assert c.database == setup_v2_db
+        c.execute(f"USE DATABASE {database_v2}")
+        assert c.database == database_v2
         c.execute(f"CREATE TABLE {test_table_name} (id int)")
         c.execute(
             "SELECT table_name FROM information_schema.tables "

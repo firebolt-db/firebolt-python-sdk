@@ -83,11 +83,11 @@ def test_system_engine_v2_account(connection_system_engine_v2: Connection):
 
 
 def test_system_engine_use_engine(
-    connection_system_engine_v2: Connection, setup_v2_db: str, engine_v2: str
+    connection_system_engine_v2: Connection, async_database_v2: str, engine_v2: str
 ):
     table_name = "test_table_sync"
     with connection_system_engine_v2.cursor() as cursor:
-        cursor.execute(f"USE DATABASE {setup_v2_db}")
+        cursor.execute(f"USE DATABASE {async_database_v2}")
         cursor.execute(f"USE ENGINE {engine_v2}")
         cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id int)")
         # This query fails if we're not on a user engine

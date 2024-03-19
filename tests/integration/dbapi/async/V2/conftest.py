@@ -90,7 +90,7 @@ async def async_engine_v2(
 
 
 @fixture
-async def setup_v2_db(connection_system_engine_v2: Connection, use_db_name: str):
+async def async_database_v2(connection_system_engine_v2: Connection, use_db_name: str):
     use_db_name = use_db_name + "_async"
     with connection_system_engine_v2.cursor() as cursor:
         # randomize the db name to avoid conflicts

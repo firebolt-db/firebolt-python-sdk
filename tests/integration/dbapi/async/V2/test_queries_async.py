@@ -433,15 +433,14 @@ async def test_bytea_roundtrip(
 
 
 async def test_use_database(
-    setup_v2_db,
     connection_system_engine_v2: Connection,
     async_database_v2: str,
 ) -> None:
     test_table_name = "verify_use_db_async"
     """Use database works as expected."""
     with connection_system_engine_v2.cursor() as c:
-        await c.execute(f"USE DATABASE {setup_v2_db}")
-        assert c.database == setup_v2_db
+        await c.execute(f"USE DATABASE {async_database_v2}")
+        assert c.database == async_database_v2
         await c.execute(f"CREATE TABLE {test_table_name} (id int)")
         await c.execute(
             "SELECT table_name FROM information_schema.tables "
