@@ -48,8 +48,11 @@ async def test_system_engine(
 
         if connection_system_engine.database:
             await c.execute("show tables")
+            await c.execute(
+                "create table if not exists test_async(id int) primary index id"
+            )
             with raises(OperationalError):
-                await c.execute("create table test(id int) primary index id")
+                await c.execute("insert into test values (1)")
         else:
             await c.execute("show databases")
             with raises(OperationalError):
