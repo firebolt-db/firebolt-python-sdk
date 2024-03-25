@@ -1,3 +1,4 @@
+import functools
 from re import Pattern, compile
 from typing import Callable
 
@@ -373,3 +374,22 @@ def settings(
         account_name=account_name,
     )
     return seett
+
+
+# Retry decorator that allows to retry test N number of times in case one
+# ot the asserts fail
+def retry_if_failed(num_retries):
+    def decorator(func):
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            for i in range(num_retries):
+                try:
+                    await func(*args, **kwargs)
+                    break
+                except AssertionError as e:
+                    if i == num_retries - 1:
+                        raise e
+
+        return wrapper
+
+    return decorator

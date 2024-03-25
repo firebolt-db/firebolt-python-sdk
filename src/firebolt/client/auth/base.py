@@ -2,7 +2,7 @@ from abc import abstractmethod
 from time import time
 from typing import AsyncGenerator, Generator, Optional
 
-from anyio import Lock
+from anyio import Lock, get_current_task
 from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
@@ -149,16 +149,27 @@ class Auth(HttpxAuth):
         if self.requires_request_body:
             await request.aread()
 
-        async with self._lock:
-            flow = self.auth_flow(request)
-            request = next(flow)
+        if not self.token or self.expired:
+            await self._lock.acquire()
+            # If another task has already updated the token,
+            # we don't need to hold the lock
+            if self.token and not self.expired:
+                self._lock.release()
 
-            while True:
-                response = yield request
-                if self.requires_response_body:
-                    await response.aread()
+        flow = self.auth_flow(request)
+        request = next(flow)
 
-                try:
-                    request = flow.send(response)
-                except StopIteration:
-                    break
+        while True:
+            response = yield request
+            if self.requires_response_body:
+                await response.aread()
+
+            try:
+                request = flow.send(response)
+            except StopIteration:
+                break
+            finally:
+                # token gets updated only after flow.send is called
+                # so unlock only after that
+                if self._lock.locked() and self._lock._owner_task == get_current_task():
+                    self._lock.release()
