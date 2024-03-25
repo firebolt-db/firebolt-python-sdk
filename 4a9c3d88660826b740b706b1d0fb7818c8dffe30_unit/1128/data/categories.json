@@ -1,0 +1,26 @@
+{
+  "uid" : "4b4757e66a1912dae1a509f688f20b0f",
+  "children" : [ {
+    "name" : "Product defects",
+    "children" : [ {
+      "name" : "AssertionError: Invalid format_value result\nassert \"E'\\\\x61\\\\x62\\\\x63'\" == \"'\\\\x616263'\"\n  - '\\x616263'\n  + E'\\x61\\x62\\x63'\n  ? +     ++  ++",
+      "children" : [ {
+        "name" : "test_format_value[abc-'\\\\x616263']",
+        "uid" : "d8ff74ca60f675ae",
+        "parentUid" : "33437fcd962be4ca78bce00c885d2279",
+        "status" : "failed",
+        "time" : {
+          "start" : 1711357256555,
+          "stop" : 1711357256558,
+          "duration" : 3
+        },
+        "flaky" : false,
+        "newFailed" : false,
+        "parameters" : [ "''\\x616263''", "<class 'bytes'>" ]
+      } ],
+      "uid" : "33437fcd962be4ca78bce00c885d2279"
+    } ],
+    "uid" : "8fb3a91ba5aaf9de24cc8a92edc82b5d"
+  } ],
+  "name" : "categories"
+}
