@@ -411,9 +411,6 @@ async def test_bytea_roundtrip(
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
-        # Set standard_conforming_strings to 0 to allow bytea escape sequences
-        # FIR-30650
-        await c.execute("SET standard_conforming_strings=0")
         await c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip_2")
         await c.execute(
             "CREATE FACT TABLE test_bytea_roundtrip_2(id int, b bytea) primary index id"
@@ -428,7 +425,6 @@ async def test_bytea_roundtrip(
 
         bytes_data = (await c.fetchone())[0]
 
-        await c.execute("SET standard_conforming_strings=1")
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
