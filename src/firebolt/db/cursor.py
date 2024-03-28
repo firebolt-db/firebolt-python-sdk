@@ -418,8 +418,10 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        # Engines v2 always require account_id
-        if self.connection._is_system or self._client._account_version == 2:
+        # Engines v2 system engine will supply account_id dynamically in the url
+        if (self.connection._is_system and self._client._account_version == 1) or (
+            not self.connection._is_system and self._client._account_version == 2
+        ):
             assert isinstance(self._client, ClientV2)  # Type check
             parameters["account_id"] = self._client.account_id
         return self._client.request(
