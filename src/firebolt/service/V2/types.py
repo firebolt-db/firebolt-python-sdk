@@ -53,6 +53,10 @@ class EngineStatus(Enum):
     def __str__(self) -> str:
         return self.value
 
+    @classmethod
+    def from_string(cls, value: str) -> "EngineStatus":
+        return cls(value.capitalize())
+
 
 class DatabaseOrder(Enum):
     DATABASE_ORDER_UNSPECIFIED = "DATABASE_ORDER_UNSPECIFIED"
