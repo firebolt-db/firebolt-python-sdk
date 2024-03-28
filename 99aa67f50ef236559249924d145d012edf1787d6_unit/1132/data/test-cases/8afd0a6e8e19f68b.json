@@ -1,0 +1,202 @@
+{
+  "uid" : "8afd0a6e8e19f68b",
+  "name" : "test_disallowed_set_parameter[account_id]",
+  "fullName" : "tests.unit.async_db.V1.test_cursor#test_disallowed_set_parameter",
+  "historyId" : "2a02ab16739514d3fd601f517eaac0c0",
+  "time" : {
+    "start" : 1711637881739,
+    "stop" : 1711637882051,
+    "duration" : 312
+  },
+  "description" : "Test that setting disallowed parameters raises an error.",
+  "descriptionHtml" : "<p>Test that setting disallowed parameters raises an error.</p>\n",
+  "status" : "broken",
+  "statusMessage" : "exceptiongroup.ExceptionGroup: Exceptions from Trio nursery (1 sub-exception)",
+  "statusTrace" : "+ Exception Group Traceback (most recent call last):\n  |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/trio/_core/_run.py\", line 954, in __aexit__\n  |     raise combined_error_from_nursery\n  | exceptiongroup.ExceptionGroup: Exceptions from Trio nursery (1 sub-exception)\n  +-+---------------- 1 ----------------\n    | Traceback (most recent call last):\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_exceptions.py\", line 10, in map_exceptions\n    |     yield\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_backends/trio.py\", line 132, in connect_tcp\n    |     stream: trio.abc.Stream = await trio.open_tcp_stream(\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/trio/_highlevel_open_tcp_stream.py\", line 278, in open_tcp_stream\n    |     targets = await getaddrinfo(host, port, type=SOCK_STREAM)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/trio/_socket.py\", line 235, in getaddrinfo\n    |     return await trio.to_thread.run_sync(\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/trio/_threads.py\", line 471, in to_thread_run_sync\n    |     return msg_from_thread.unwrap()\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/outcome/_impl.py\", line 213, in unwrap\n    |     raise captured_error\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/trio/_threads.py\", line 397, in do_release_then_return_result\n    |     return result.unwrap()\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/outcome/_impl.py\", line 213, in unwrap\n    |     raise captured_error\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/trio/_threads.py\", line 416, in worker_fn\n    |     ret = context.run(sync_fn, *args)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/socket.py\", line 918, in getaddrinfo\n    |     for res in _socket.getaddrinfo(host, port, family, type, proto, flags):\n    | socket.gaierror: [Errno -2] Name or service not known\n    | \n    | The above exception was the direct cause of the following exception:\n    | \n    | Traceback (most recent call last):\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_transports/default.py\", line 60, in map_httpcore_exceptions\n    |     yield\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_transports/default.py\", line 353, in handle_async_request\n    |     resp = await self._pool.handle_async_request(req)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_async/connection_pool.py\", line 262, in handle_async_request\n    |     raise exc\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_async/connection_pool.py\", line 245, in handle_async_request\n    |     response = await connection.handle_async_request(request)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_async/connection.py\", line 92, in handle_async_request\n    |     raise exc\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_async/connection.py\", line 69, in handle_async_request\n    |     stream = await self._connect(request)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_async/connection.py\", line 117, in _connect\n    |     stream = await self._network_backend.connect_tcp(**kwargs)\n    |   File \"/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/client/http_backend.py\", line 43, in connect_tcp\n    |     stream = await super().connect_tcp(*args, **kwargs)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_backends/auto.py\", line 31, in connect_tcp\n    |     return await self._backend.connect_tcp(\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_backends/trio.py\", line 132, in connect_tcp\n    |     stream: trio.abc.Stream = await trio.open_tcp_stream(\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/contextlib.py\", line 131, in __exit__\n    |     self.gen.throw(type, value, traceback)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpcore/_exceptions.py\", line 14, in map_exceptions\n    |     raise to_exc(exc) from exc\n    | httpcore.ConnectError: [Errno -2] Name or service not known\n    | \n    | The above exception was the direct cause of the following exception:\n    | \n    | Traceback (most recent call last):\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/pytest_trio/plugin.py\", line 195, in _fixture_manager\n    |     yield nursery_fixture\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/pytest_trio/plugin.py\", line 250, in run\n    |     await self._func(**resolved_kwargs)\n    |   File \"/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/tests/unit/async_db/V1/test_cursor.py\", line 896, in test_disallowed_set_parameter\n    |     await cursor.execute(f\"SET {parameter}=dummy\")\n    |   File \"/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/async_db/cursor.py\", line 286, in execute\n    |     await self._do_execute(query, params_list, skip_parsing, async_execution)\n    |   File \"/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/async_db/cursor.py\", line 199, in _do_execute\n    |     await self._validate_set_parameter(query)\n    |   File \"/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/async_db/cursor.py\", line 135, in _validate_set_parameter\n    |     resp = await self._api_request(\"select 1\", {parameter.name: parameter.value})\n    |   File \"/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/async_db/cursor.py\", line 586, in _api_request\n    |     return await self._client.request(\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_client.py\", line 1530, in request\n    |     return await self.send(request, auth=auth, follow_redirects=follow_redirects)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_client.py\", line 1617, in send\n    |     response = await self._send_handling_auth(\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_client.py\", line 1645, in _send_handling_auth\n    |     response = await self._send_handling_redirects(\n    |   File \"/home/runner/work/firebolt-python-sdk/firebolt-python-sdk/src/firebolt/client/client.py\", line 536, in _send_handling_redirects\n    |     return await super()._send_handling_redirects(\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_client.py\", line 1682, in _send_handling_redirects\n    |     response = await self._send_single_request(request)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_client.py\", line 1719, in _send_single_request\n    |     response = await transport.handle_async_request(request)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_transports/default.py\", line 353, in handle_async_request\n    |     resp = await self._pool.handle_async_request(req)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/contextlib.py\", line 131, in __exit__\n    |     self.gen.throw(type, value, traceback)\n    |   File \"/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/httpx/_transports/default.py\", line 77, in map_httpcore_exceptions\n    |     raise mapped_exc(message) from exc\n    | httpx.ConnectError: [Errno -2] Name or service not known\n    +------------------------------------",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "connection",
+    "time" : {
+      "start" : 1711637881737,
+      "stop" : 1711637881737,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "cursor",
+    "time" : {
+      "start" : 1711637881737,
+      "stop" : 1711637881737,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "db_name",
+    "time" : {
+      "start" : 1711637881700,
+      "stop" : 1711637881700,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1711637881697,
+      "stop" : 1711637881700,
+      "duration" : 3
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "server",
+    "time" : {
+      "start" : 1711637881700,
+      "stop" : 1711637881700,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "password",
+    "time" : {
+      "start" : 1711637881701,
+      "stop" : 1711637881701,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "username_password_auth",
+    "time" : {
+      "start" : 1711637881701,
+      "stop" : 1711637881737,
+      "duration" : 36
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "user",
+    "time" : {
+      "start" : 1711637881701,
+      "stop" : 1711637881701,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1711637882123,
+      "stop" : 1711637882124,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7ff01b9c38b0>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.async_db.V1"
+  }, {
+    "name" : "suite",
+    "value" : "test_cursor"
+  }, {
+    "name" : "host",
+    "value" : "fv-az692-845"
+  }, {
+    "name" : "thread",
+    "value" : "2338-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.async_db.V1.test_cursor"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "parameter",
+    "value" : "'account_id'"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ {
+      "name" : "Test defects",
+      "matchedStatuses" : [ ],
+      "flaky" : false
+    } ],
+    "tags" : [ "trio(run=<function run at 0x7ff01b9c38b0>)" ]
+  },
+  "source" : "8afd0a6e8e19f68b.json",
+  "parameterValues" : [ "'account_id'" ]
+}
