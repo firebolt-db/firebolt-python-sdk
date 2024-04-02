@@ -15,7 +15,7 @@ from firebolt.common.constants import (
     ENGINE_STATUS_RUNNING_LIST,
 )
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
-from firebolt.db.util import _get_system_engine_url
+from firebolt.db.util import _get_system_engine_url_and_params
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -109,9 +109,10 @@ def connect_v2(
 
     api_endpoint = fix_url_schema(api_endpoint)
 
-    system_engine_url = fix_url_schema(
-        _get_system_engine_url(auth, account_name, api_endpoint)
+    system_engine_url, system_engine_params = _get_system_engine_url_and_params(
+        auth, account_name, api_endpoint
     )
+    system_engine_url = fix_url_schema(system_engine_url)
 
     client = ClientV2(
         auth=auth,
@@ -130,6 +131,7 @@ def connect_v2(
         CursorV2,
         None,
         api_endpoint,
+        system_engine_params,
     )
 
     if system_engine_connection._client._account_version == 2:
