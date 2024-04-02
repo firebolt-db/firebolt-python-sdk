@@ -12,7 +12,7 @@ from typing import (
     Type,
     TypeVar,
 )
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 from httpx import URL, Response, codes
 
@@ -193,9 +193,12 @@ class Timer:
 
 
 def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
-    raw_url = urlparse(url)
-    url = raw_url.scheme + "://" + raw_url.netloc + raw_url.path
-    query_params = parse_qs(raw_url.query)
+    """Extract URL and query parameters separately from a URL."""
+    url = fix_url_schema(url)
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+    # This strips query parameters from the URL
+    result_url = urljoin(url, parsed_url.path)
     # parse_qs returns a dictionary with values as lists.
     # We want the last value in the list.
     query_params_dict = {}
@@ -204,4 +207,4 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
         if len(values) > 1:
             raise ValueError(f"Multiple values found for key '{key}'")
         query_params_dict[key] = values[-1]
-    return url, query_params_dict
+    return result_url, query_params_dict

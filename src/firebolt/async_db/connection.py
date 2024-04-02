@@ -209,7 +209,6 @@ async def connect_v2(
     system_engine_url, system_engine_params = await _get_system_engine_url_and_params(
         auth, account_name, api_endpoint
     )
-    system_engine_url = fix_url_schema(system_engine_url)
 
     client = AsyncClientV2(
         auth=auth,

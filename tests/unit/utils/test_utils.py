@@ -39,8 +39,14 @@ def test_get_internal_error_code(status_code, content, expected_error_code):
             "http://example.com/path",
             {"param1": "value1", "param2": "value2"},
         ),
+        (
+            "example.com/path?param1=value1&param2=value2",
+            "https://example.com/path",
+            {"param1": "value1", "param2": "value2"},
+        ),
         ("http://example.com/path", "http://example.com/path", {}),
         ("http://example.com/path?param1=", "http://example.com/path", {}),
+        ("example.com/path?param1=", "https://example.com/path", {}),
     ],
 )
 def test_parse_url_and_params(url, expected_url, expected_params):
