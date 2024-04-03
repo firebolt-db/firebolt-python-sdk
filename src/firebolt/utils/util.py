@@ -197,7 +197,8 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
     url = fix_url_schema(url)
     parsed_url = urlparse(url)
     query_params = parse_qs(parsed_url.query)
-    # This strips query parameters from the URL
+    # This strips query parameters from the URL by joining base URL and path
+    # skipping the query parameters.
     result_url = urljoin(url, parsed_url.path)
     # parse_qs returns a dictionary with values as lists.
     # We want the last value in the list.
@@ -206,5 +207,5 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
         # Multiple values for the same key are not expected
         if len(values) > 1:
             raise ValueError(f"Multiple values found for key '{key}'")
-        query_params_dict[key] = values[-1]
+        query_params_dict[key] = values[0]
     return result_url, query_params_dict
