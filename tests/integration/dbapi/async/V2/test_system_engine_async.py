@@ -48,8 +48,11 @@ async def test_system_engine(
 
         if connection_system_engine.database:
             await c.execute("show tables")
+            await c.execute(
+                "create table if not exists test_async(id int) primary index id"
+            )
             with raises(OperationalError):
-                await c.execute("create table test(id int) primary index id")
+                await c.execute("insert into test values (1)")
         else:
             await c.execute("show databases")
             with raises(OperationalError):
@@ -80,3 +83,20 @@ async def test_system_engine_v2_account(connection_system_engine_v2: Connection)
     assert (
         await connection_system_engine_v2._client._account_version
     ) == 2, "Invalid account version"
+
+
+async def test_system_engine_use_engine(
+    connection_system_engine_v2: Connection, setup_v2_db: str, engine_v2: str
+):
+    table_name = "test_table_async"
+    with connection_system_engine_v2.cursor() as cursor:
+        await cursor.execute(f"USE DATABASE {setup_v2_db}")
+        await cursor.execute(f"USE ENGINE {engine_v2}")
+        await cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id int)")
+        # This query fails if we're not on a user engine
+        await cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
+        await cursor.execute("USE ENGINE system")
+        # Werify we've switched to system by making previous query fail
+        with raises(OperationalError):
+            await cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
+        await cursor.execute(f"DROP TABLE IF EXISTS {table_name}")

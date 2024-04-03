@@ -15,7 +15,7 @@ from typing import (
     Union,
 )
 
-from httpx import URL, Response, codes
+from httpx import URL, Headers, Response, codes
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import (
@@ -28,15 +28,20 @@ from firebolt.common._types import (
 )
 from firebolt.common.base_cursor import (
     JSON_OUTPUT_FORMAT,
+    RESET_SESSION_HEADER,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
     QueryStatus,
     Statistics,
+    _parse_update_endpoint,
+    _parse_update_parameters,
     _raise_if_internal_set_parameter,
     check_not_closed,
     check_query_executed,
 )
-from firebolt.db.util import ENGINE_STATUS_RUNNING
+from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
     AsyncExecutionUnavailableError,
     EngineNotRunningError,
@@ -78,16 +83,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         super().__init__(*args, **kwargs)
         self._client = client
         self.connection = connection
+        self.engine_url = connection.engine_url
         if connection.database:
             self.database = connection.database
-
-    @property
-    def database(self) -> Optional[str]:
-        return self.parameters.get("database")
-
-    @database.setter
-    def database(self, database: str) -> None:
-        self.parameters["database"] = database
+        if connection.init_parameters:
+            self._update_set_parameters(connection.init_parameters)
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -104,9 +104,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if (
             resp.status_code == codes.SERVICE_UNAVAILABLE
             or resp.status_code == codes.NOT_FOUND
-        ) and not self.is_engine_running(self.connection.engine_url):
+        ) and not self.is_engine_running(self.engine_url):
             raise EngineNotRunningError(
-                f"Firebolt engine {self.connection.engine_url} "
+                f"Firebolt engine {self.engine_name} "
                 "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
             )
         _print_error_body(resp)
@@ -139,6 +139,30 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
+
+    def _parse_response_headers(self, headers: Headers) -> None:
+        if headers.get(UPDATE_ENDPOINT_HEADER):
+            endpoint, params = _parse_update_endpoint(
+                headers.get(UPDATE_ENDPOINT_HEADER)
+            )
+            if (
+                params.get("account_id", self._client.account_id)
+                != self._client.account_id
+            ):
+                raise OperationalError(
+                    "USE ENGINE command failed. Account parameter mismatch. "
+                    "Contact support"
+                )
+            self._update_set_parameters(params)
+            self.engine_url = endpoint
+            self._client.base_url = URL(endpoint)
+
+        if headers.get(RESET_SESSION_HEADER):
+            self.flush_parameters()
+
+        if headers.get(UPDATE_PARAMETERS_HEADER):
+            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
+            self._update_set_parameters(param_dict)
 
     def _do_execute(
         self,
@@ -200,7 +224,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                         query, {"output_format": JSON_OUTPUT_FORMAT}
                     )
                     self._raise_if_error(resp)
-                    # get parameters from response
                     self._parse_response_headers(resp.headers)
                     row_set = self._row_set_from_response(resp)
 
@@ -395,7 +418,8 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        if self.connection._is_system:
+        # Engines v2 always require account_id
+        if self.connection._is_system or self._client._account_version == 2:
             assert isinstance(self._client, ClientV2)  # Type check
             parameters["account_id"] = self._client.account_id
         return self._client.request(
@@ -438,12 +462,11 @@ class CursorV2(Cursor):
             # System engine is always running
             return True
 
-        engine_name = URL(engine_url).host.split(".")[0].replace("-", "_")
         assert self.connection._system_engine_connection is not None  # Type check
         _, status, _ = self._get_engine_url_status_db(
-            self.connection._system_engine_connection, engine_name
+            self.connection._system_engine_connection, self.engine_name
         )
-        return status == ENGINE_STATUS_RUNNING
+        return status in ENGINE_STATUS_RUNNING_LIST
 
     def _get_engine_url_status_db(
         self, system_engine_connection: Connection, engine_name: str

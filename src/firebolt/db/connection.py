@@ -10,7 +10,10 @@ from httpx import Timeout
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.constants import (
+    DEFAULT_TIMEOUT_SECONDS,
+    ENGINE_STATUS_RUNNING_LIST,
+)
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url
 from firebolt.utils.exception import (
@@ -45,10 +48,10 @@ def connect(
     user_drivers = additional_parameters.get("user_drivers", [])
     user_clients = additional_parameters.get("user_clients", [])
     user_agent_header = get_user_agent_header(user_drivers, user_clients)
-    version = auth.get_firebolt_version()
+    auth_version = auth.get_firebolt_version()
     # Use v2 if auth is ClientCredentials
     # Use v1 if auth is ServiceAccount or UsernamePassword
-    if version == 2:
+    if auth_version == 2:
         assert account_name is not None
         return connect_v2(
             auth=auth,
@@ -58,7 +61,7 @@ def connect(
             engine_name=engine_name,
             api_endpoint=api_endpoint,
         )
-    elif version == 1:
+    elif auth_version == 1:
         return connect_v1(
             auth=auth,
             user_agent_header=user_agent_header,
@@ -128,9 +131,27 @@ def connect_v2(
         None,
         api_endpoint,
     )
+
+    if system_engine_connection._client._account_version == 2:
+        cursor = system_engine_connection.cursor()
+        if database:
+            cursor.execute(f"USE DATABASE {database}")
+        if engine_name:
+            cursor.execute(f"USE ENGINE {engine_name}")
+        # Ensure cursors created from this conection are using the same starting
+        # database and engine
+        return Connection(
+            cursor.engine_url,
+            cursor.database,
+            client,
+            CursorV2,
+            system_engine_connection,
+            api_endpoint,
+            cursor.parameters,
+        )
+
     if not engine_name:
         return system_engine_connection
-
     else:
         try:
             cursor = system_engine_connection.cursor()
@@ -141,7 +162,7 @@ def connect_v2(
                 attached_db,
             ) = cursor._get_engine_url_status_db(system_engine_connection, engine_name)
 
-            if status != "Running":
+            if status not in ENGINE_STATUS_RUNNING_LIST:
                 raise EngineNotRunningError(engine_name)
 
             if database is not None and database != attached_db:
@@ -215,6 +236,7 @@ class Connection(BaseConnection):
         cursor_type: Type[Cursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str = DEFAULT_API_URL,
+        init_parameters: Optional[Dict[str, Any]] = None,
     ):
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
@@ -222,8 +244,8 @@ class Connection(BaseConnection):
         self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
         self._system_engine_connection = system_engine_connection
-        # Override tcp keepalive settings for connection
         self._client = client
+        self.init_parameters = init_parameters or {}
         super().__init__()
 
     def cursor(self, **kwargs: Any) -> Cursor:

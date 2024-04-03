@@ -2,10 +2,11 @@ import math
 from datetime import date, datetime
 from decimal import Decimal
 from os import environ
+from random import randint
 from threading import Thread
-from typing import Any, Callable, List
+from typing import Any, Callable, Generator, List
 
-from pytest import fixture, mark, raises
+from pytest import mark, raises
 
 from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
@@ -137,7 +138,7 @@ def test_long_query(
 
     with connection.cursor() as c:
         c.execute(
-            "SELECT checksum(*) FROM GENERATE_SERIES(1, 200000000000)",  # approx 6m runtime
+            "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)",  # approx 6m runtime
         )
         data = c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
@@ -274,7 +275,7 @@ def test_parameterized_query(connection: Connection) -> None:
         )
 
         # \0 is converted to 0
-        params[2] = "text0"
+        params[2] = "text\\0"
 
         assert (
             c.execute("SELECT * FROM test_tb_parameterized") == 1
@@ -282,7 +283,7 @@ def test_parameterized_query(connection: Connection) -> None:
 
         assert_deep_eq(
             c.fetchall(),
-            [params + ["?"]],
+            [params + ["\\?"]],
             "Invalid data in table after parameterized insert",
         )
 
@@ -504,34 +505,22 @@ def test_bytea_roundtrip(
         c.execute("SELECT b FROM test_bytea_roundtrip")
 
         bytes_data = (c.fetchone())[0]
-
         assert (
             bytes_data.decode("utf-8") == data
         ), "Invalid bytea data returned after roundtrip"
 
 
-@fixture
-def setup_db(connection_system_engine, use_db_name):
-    use_db_name = f"{use_db_name}_sync"
-    with connection_system_engine.cursor() as cursor:
-        cursor.execute(f"CREATE DATABASE {use_db_name}")
-        yield
-        cursor.execute(f"DROP DATABASE {use_db_name}")
-
-
 @mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
 def test_use_database(
-    setup_db,
+    setup_v2_db,
     connection_system_engine: Connection,
-    use_db_name: str,
     database_name: str,
 ) -> None:
-    test_db_name = f"{use_db_name}_sync"
     test_table_name = "verify_use_db"
     """Use database works as expected."""
     with connection_system_engine.cursor() as c:
-        c.execute(f"USE DATABASE {test_db_name}")
-        assert c.database == test_db_name
+        c.execute(f"USE DATABASE {setup_v2_db}")
+        assert c.database == setup_v2_db
         c.execute(f"CREATE TABLE {test_table_name} (id int)")
         c.execute(
             "SELECT table_name FROM information_schema.tables "
@@ -546,3 +535,46 @@ def test_use_database(
             f"WHERE table_name = '{test_table_name}'"
         )
         assert c.fetchone() is None, "Database was not changed"
+
+
+def test_account_v2_connection_with_db(
+    setup_v2_db: Generator,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
+) -> None:
+    with connect(
+        database=setup_v2_db,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # This fails if we're not running with a db context
+        connection.cursor().execute("SELECT * FROM information_schema.tables LIMIT 1")
+
+
+def test_account_v2_connection_with_db_and_engine(
+    setup_v2_db: Generator,
+    connection_system_engine_v2: Connection,
+    auth: Auth,
+    account_name_v2: str,
+    api_endpoint: str,
+    engine_v2: str,
+) -> None:
+    system_cursor = connection_system_engine_v2.cursor()
+    # We can only connect to a running engine so start it first
+    # via the system connection to keep test isolated
+    system_cursor.execute(f"START ENGINE {engine_v2}")
+    with connect(
+        database=setup_v2_db,
+        engine_name=engine_v2,
+        auth=auth,
+        account_name=account_name_v2,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # generate a random string to avoid name conflicts
+        rnd_suffix = str(randint(0, 1000))
+        cursor = connection.cursor()
+        cursor.execute(f"CREATE TABLE test_table_{rnd_suffix} (id int)")
+        # This fails if we're not running on a user engine
+        cursor.execute(f"INSERT INTO test_table_{rnd_suffix} VALUES (1)")

@@ -1,7 +1,7 @@
 from typing import Any, Callable, Dict, List
 from unittest.mock import patch
 
-from httpx import HTTPStatusError, StreamError, codes
+from httpx import URL, HTTPStatusError, Request, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
@@ -189,7 +189,7 @@ def test_cursor_execute(
 def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
     get_engines_url: str,
-    server: str,
+    server_name: str,
     db_name: str,
     query_url: str,
     query_statistics: Dict[str, Any],
@@ -323,7 +323,7 @@ def test_cursor_execute_error(
         with raises(EngineNotRunningError) as excinfo:
             query()
         assert cursor._state == CursorState.ERROR
-        assert server in str(excinfo)
+        assert server_name in str(excinfo)
 
         # Engine does not exist
         httpx_mock.add_callback(
@@ -818,3 +818,120 @@ def test_disallowed_set_parameter(cursor: Cursor, parameter: str) -> None:
         e.value
     ), "invalid error"
     assert cursor._set_parameters == {}, "set parameters should not be updated"
+
+
+def test_cursor_use_engine_no_parameters(
+    httpx_mock: HTTPXMock,
+    query_url: URL,
+    cursor: Cursor,
+    query_statistics: Dict[str, Any],
+):
+    query_updated_url = "my_dummy_url"
+
+    def query_callback_with_headers(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        query_response = {
+            "meta": [{"name": "one", "type": "int"}],
+            "data": [1],
+            "rows": 1,
+            "statistics": query_statistics,
+        }
+        headers = {"Firebolt-Update-Endpoint": f"https://{query_updated_url}"}
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    assert cursor.engine_url == "https://" + query_url.host
+    cursor.execute("USE ENGINE = 'my_dummy_engine'")
+    assert cursor.engine_url == f"https://{query_updated_url}"
+
+    httpx_mock.reset(True)
+    # Check updated engine is used in the next query
+    new_url = query_url.copy_with(host=query_updated_url)
+    httpx_mock.add_callback(query_callback_with_headers, url=new_url)
+    cursor.execute("select 1")
+    assert cursor.engine_url == f"https://{query_updated_url}"
+
+
+def test_cursor_use_engine_with_parameters(
+    httpx_mock: HTTPXMock,
+    query_url: URL,
+    cursor: Cursor,
+    query_statistics: Dict[str, Any],
+):
+    query_updated_url = "my_dummy_url"
+    param_string_dummy = "param1=1&param2=2&engine=my_dummy_engine"
+
+    header = {
+        "Firebolt-Update-Endpoint": f"https://{query_updated_url}/?{param_string_dummy}"
+    }
+
+    def query_callback_with_headers(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        query_response = {
+            "meta": [{"name": "one", "type": "int"}],
+            "data": [1],
+            "rows": 1,
+            "statistics": query_statistics,
+        }
+        headers = header
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    assert cursor.engine_url == "https://" + query_url.host
+    cursor.execute("USE ENGINE = 'my_dummy_engine'")
+    assert cursor.engine_url == f"https://{query_updated_url}"
+    assert cursor._set_parameters == {"param1": "1", "param2": "2"}
+    assert list(cursor.parameters.keys()) == ["database", "engine"]
+    assert cursor.engine_name == "my_dummy_engine"
+
+    httpx_mock.reset(True)
+    # Check new parameters are used in the URL
+    new_url = query_url.copy_with(host=query_updated_url).copy_merge_params(
+        {"param1": "1", "param2": "2", "engine": "my_dummy_engine"}
+    )
+    httpx_mock.add_callback(query_callback_with_headers, url=new_url)
+    cursor.execute("select 1")
+    assert cursor.engine_url == f"https://{query_updated_url}"
+
+
+def test_cursor_reset_session(
+    httpx_mock: HTTPXMock,
+    select_one_query_callback: Callable,
+    set_query_url: str,
+    cursor: Cursor,
+    query_statistics: Dict[str, Any],
+):
+    def query_callback_with_headers(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        query_response = {
+            "meta": [{"name": "one", "type": "int"}],
+            "data": [1],
+            "rows": 1,
+            "statistics": query_statistics,
+        }
+        headers = {"Firebolt-Reset-Session": "any_value_here"}
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
+
+    assert len(cursor._set_parameters) == 0
+
+    cursor.execute("set a = b")
+    assert (
+        len(cursor._set_parameters) == 1
+        and "a" in cursor._set_parameters
+        and cursor._set_parameters["a"] == "b"
+    )
+
+    httpx_mock.reset(True)
+    httpx_mock.add_callback(
+        query_callback_with_headers,
+        url=f"{set_query_url}&a=b&output_format=JSON_Compact",
+    )
+    cursor.execute("SELECT 1")
+    assert len(cursor._set_parameters) == 0
+    assert bool(cursor.engine_url) is True, "engine url is not set"
+    assert bool(cursor.database) is True, "database is not set"

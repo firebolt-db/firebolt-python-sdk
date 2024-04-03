@@ -24,6 +24,8 @@ async def connection(
             api_endpoint=server,
         )
     ) as connection:
+        # cache account_id for tests
+        await connection._client.account_id
         yield connection
 
 

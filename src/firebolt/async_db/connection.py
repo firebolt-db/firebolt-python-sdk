@@ -11,7 +11,10 @@ from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
-from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.constants import (
+    DEFAULT_TIMEOUT_SECONDS,
+    ENGINE_STATUS_RUNNING_LIST,
+)
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -71,6 +74,7 @@ class Connection(BaseConnection):
         cursor_type: Type[Cursor],
         system_engine_connection: Optional["Connection"],
         api_endpoint: str,
+        init_parameters: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
         self.api_endpoint = api_endpoint
@@ -80,6 +84,7 @@ class Connection(BaseConnection):
         self._cursors: List[Cursor] = []
         self._system_engine_connection = system_engine_connection
         self._client = client
+        self.init_parameters = init_parameters
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -142,8 +147,8 @@ async def connect(
     user_agent_header = get_user_agent_header(user_drivers, user_clients)
     # Use v2 if auth is ClientCredentials
     # Use v1 if auth is ServiceAccount or UsernamePassword
-    version = auth.get_firebolt_version()
-    if version == 2:
+    auth_version = auth.get_firebolt_version()
+    if auth_version == 2:
         assert account_name is not None
         return await connect_v2(
             auth=auth,
@@ -153,7 +158,7 @@ async def connect(
             engine_name=engine_name,
             api_endpoint=api_endpoint,
         )
-    elif version == 1:
+    elif auth_version == 1:
         return await connect_v1(
             auth=auth,
             user_agent_header=user_agent_header,
@@ -223,6 +228,26 @@ async def connect_v2(
         None,
         api_endpoint,
     )
+
+    account_version = await system_engine_connection._client._account_version
+    if account_version == 2:
+        cursor = system_engine_connection.cursor()
+        if database:
+            await cursor.execute(f"USE DATABASE {database}")
+        if engine_name:
+            await cursor.execute(f"USE ENGINE {engine_name}")
+        # Ensure cursors created from this conection are using the same starting
+        # database and engine
+        return Connection(
+            cursor.engine_url,
+            cursor.database,
+            client,
+            CursorV2,
+            system_engine_connection,
+            api_endpoint,
+            cursor.parameters,
+        )
+
     if not engine_name:
         return system_engine_connection
 
@@ -237,7 +262,7 @@ async def connect_v2(
                     attached_db,
                 ) = await cursor._get_engine_url_status_db(engine_name)
 
-            if status != "Running":
+            if status not in ENGINE_STATUS_RUNNING_LIST:
                 raise EngineNotRunningError(engine_name)
 
             if database is not None and database != attached_db:

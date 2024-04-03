@@ -7,7 +7,7 @@ from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-from httpx import Headers, Response
+from httpx import URL, Response
 
 from firebolt.common._types import (
     ColType,
@@ -25,7 +25,7 @@ from firebolt.utils.exception import (
     DataError,
     QueryNotRunError,
 )
-from firebolt.utils.util import Timer
+from firebolt.utils.util import Timer, fix_url_schema
 
 logger = logging.getLogger(__name__)
 
@@ -53,13 +53,32 @@ class QueryStatus(Enum):
     EXECUTION_ERROR = 8
 
 
-# known parameters that can be set on the server side
-SERVER_SIDE_PARAMETERS = ["database"]
-
 # Parameters that should be set using USE instead of SET
 USE_PARAMETER_LIST = ["database", "engine"]
 # parameters that can only be set by the backend
 DISALLOWED_PARAMETER_LIST = ["account_id", "output_format"]
+# parameters that are set by the backend and should not be set by the user
+IMMUTABLE_PARAMETER_LIST = USE_PARAMETER_LIST + DISALLOWED_PARAMETER_LIST
+
+UPDATE_ENDPOINT_HEADER = "Firebolt-Update-Endpoint"
+UPDATE_PARAMETERS_HEADER = "Firebolt-Update-Parameters"
+RESET_SESSION_HEADER = "Firebolt-Reset-Session"
+
+
+def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
+    """Parse update parameters and set them as attributes."""
+    # parse key1=value1,key2=value2 comma separated string into dict
+    param_dict = dict(item.split("=") for item in parameter_header.split(","))
+    # strip whitespace from keys and values
+    param_dict = {key.strip(): value.strip() for key, value in param_dict.items()}
+    return param_dict
+
+
+def _parse_update_endpoint(
+    new_engine_endpoint_header: str,
+) -> Tuple[str, Dict[str, str]]:
+    endpoint = URL(fix_url_schema(new_engine_endpoint_header))
+    return fix_url_schema(endpoint.host), dict(endpoint.params)
 
 
 def _raise_if_internal_set_parameter(parameter: SetParameter) -> None:
@@ -150,6 +169,7 @@ class BaseCursor:
         "_next_set_idx",
         "_set_parameters",
         "_query_id",
+        "engine_url",
     )
 
     default_arraysize = 1
@@ -168,13 +188,24 @@ class BaseCursor:
                 Optional[List[List[RawColType]]],
             ]
         ] = []
+        # User-defined set parameters
         self._set_parameters: Dict[str, Any] = dict()
+        # Server-side parameters (user can't change them)
         self.parameters: Dict[str, str] = dict()
+        self.engine_url = ""
         self._rowcount = -1
         self._idx = 0
         self._next_set_idx = 0
         self._query_id = ""
         self._reset()
+
+    @property
+    def database(self) -> Optional[str]:
+        return self.parameters.get("database")
+
+    @database.setter
+    def database(self, database: str) -> None:
+        self.parameters["database"] = database
 
     @property  # type: ignore
     @check_not_closed
@@ -273,25 +304,38 @@ class BaseCursor:
         self._next_set_idx = 0
         self._query_id = ""
 
-    def _parse_response_headers(self, headers: Headers) -> None:
-        """Parse response and update relevant cursor fields."""
-        update_parameters = headers.get("Firebolt-Update-Parameters")
-        # parse update parameters dict and set keys as attributes
-        if update_parameters:
-            # parse key1=value1,key2=value2 comma separated string into dict
-            param_dict = dict(item.split("=") for item in update_parameters.split(","))
-            # strip whitespace from keys and values
-            param_dict = {
-                key.strip(): value.strip() for key, value in param_dict.items()
-            }
-            for key, value in param_dict.items():
-                if key in SERVER_SIDE_PARAMETERS:
-                    self.parameters[key] = value
-                else:
-                    logger.debug(
-                        f"Unknown parameter {key} returned by the server. "
-                        "It will be ignored."
-                    )
+    def _update_set_parameters(self, parameters: Dict[str, Any]) -> None:
+        # Split parameters into immutable and user parameters
+        immutable_parameters = {
+            key: value
+            for key, value in parameters.items()
+            if key in IMMUTABLE_PARAMETER_LIST
+        }
+        user_parameters = {
+            key: value
+            for key, value in parameters.items()
+            if key not in IMMUTABLE_PARAMETER_LIST
+        }
+
+        self.parameters.update(immutable_parameters)
+
+        self._set_parameters.update(user_parameters)
+
+    def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
+        for key, value in parameters.items():
+            self.parameters[key] = value
+
+    @property
+    def engine_name(self) -> str:
+        """
+        Get the name of the engine that we're using.
+
+        Args:
+            engine_url (str): URL of the engine
+        """
+        if self.parameters.get("engine"):
+            return self.parameters["engine"]
+        return URL(self.engine_url).host.split(".")[0].replace("-", "_")
 
     def _row_set_from_response(
         self, response: Response

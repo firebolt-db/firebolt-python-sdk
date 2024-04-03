@@ -1,4 +1,4 @@
-import logging
+from typing import Dict
 from unittest.mock import MagicMock
 
 from pytest import fixture, mark
@@ -13,27 +13,46 @@ def cursor():
     return cursor
 
 
+@fixture
+def initial_parameters() -> Dict[str, str]:
+    return {"key1": "value1", "key2": "value2"}
+
+
 @mark.parametrize(
-    "headers, expected_parameters",
+    "set_params, expected",
     [
         (
-            {"Firebolt-Update-Parameters": "database=value1, key2=value2"},
-            {"database": "value1"},
+            {"key2": "new_value2", "key3": "value3"},
+            {"key1": "value1", "key2": "new_value2", "key3": "value3"},
         ),
-        (
-            {"Firebolt-Update-Parameters": "database =    value1  ,key3=  value3 "},
-            {"database": "value1"},
-        ),
+        ({}, {"key1": "value1", "key2": "value2"}),
     ],
 )
-def test_parse_response_headers(headers, expected_parameters, cursor, caplog):
-    # Capture the debug messages
-    with caplog.at_level(logging.DEBUG, logger="firebolt.common.base_cursor"):
-        # Call the function with the mock headers
-        cursor._parse_response_headers(headers)
-
+def test_update_set_parameters(
+    set_params: Dict[str, str],
+    expected: Dict[str, str],
+    initial_parameters: Dict[str, str],
+    cursor: BaseCursor,
+):
+    cursor._set_parameters = initial_parameters
+    cursor._update_set_parameters(set_params)
     # Assert that the parameters have been correctly updated
-    assert cursor.parameters == expected_parameters
+    assert cursor._set_parameters == expected
 
-    # Check that the debug message has been logged
-    assert "Unknown parameter" in caplog.text
+
+def test_flush_parameters(initial_parameters: Dict[str, str], cursor: BaseCursor):
+    cursor._set_parameters = initial_parameters
+    cursor.flush_parameters()
+    assert cursor._set_parameters == {}
+
+
+def test_update_server_parameters_known_params(
+    initial_parameters: Dict[str, str], cursor: BaseCursor
+):
+    cursor.parameters = initial_parameters
+    cursor._update_set_parameters({"database": "new_database"})
+
+    # Merge the dictionaries using the update() method
+    updated_parameters = initial_parameters.copy()
+    updated_parameters.update({"database": "new_database"})
+    assert cursor.parameters == updated_parameters
