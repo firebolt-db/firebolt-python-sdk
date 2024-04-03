@@ -81,7 +81,7 @@ class Engine(FireboltBaseModel):
             self.spec = self._service.resource_manager.instance_types.get(self.spec)
         if isinstance(self.current_status, str) and self.current_status:
             # Resolve engine status
-            self.current_status = EngineStatus.from_string(self.current_status)
+            self.current_status = EngineStatus(self.current_status)
         if isinstance(self.warmup, str) and self.warmup:
             # Resolve warmup method
             self.warmup = WarmupMethod.from_display_name(self.warmup)
