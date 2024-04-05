@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Dict, Tuple
+
 from httpx import Timeout, codes
 
 from firebolt.client import ClientV2
@@ -10,13 +12,14 @@ from firebolt.utils.exception import (
     InterfaceError,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
+from firebolt.utils.util import parse_url_and_params
 
 
-def _get_system_engine_url(
+def _get_system_engine_url_and_params(
     auth: Auth,
     account_name: str,
     api_endpoint: str,
-) -> str:
+) -> Tuple[str, Dict[str, str]]:
     with ClientV2(
         auth=auth,
         base_url=api_endpoint,
@@ -33,4 +36,4 @@ def _get_system_engine_url(
                 f"Unable to retrieve system engine endpoint {url}: "
                 f"{response.status_code} {response.content.decode()}"
             )
-        return response.json()["engineUrl"]
+        return parse_url_and_params(response.json()["engineUrl"])

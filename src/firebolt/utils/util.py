@@ -3,7 +3,16 @@ from functools import lru_cache
 from os import environ
 from time import time
 from types import TracebackType
-from typing import TYPE_CHECKING, Callable, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
+from urllib.parse import parse_qs, urljoin, urlparse
 
 from httpx import URL, Response, codes
 
@@ -181,3 +190,22 @@ class Timer:
         ):
             log_message = self._message + self.elapsed_time + "s"
             logger.debug(log_message)
+
+
+def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
+    """Extract URL and query parameters separately from a URL."""
+    url = fix_url_schema(url)
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+    # This strips query parameters from the URL by joining base URL and path
+    # skipping the query parameters.
+    result_url = urljoin(url, parsed_url.path)
+    # parse_qs returns a dictionary with values as lists.
+    # We want the last value in the list.
+    query_params_dict = {}
+    for key, values in query_params.items():
+        # Multiple values for the same key are not expected
+        if len(values) > 1:
+            raise ValueError(f"Multiple values found for key '{key}'")
+        query_params_dict[key] = values[0]
+    return result_url, query_params_dict

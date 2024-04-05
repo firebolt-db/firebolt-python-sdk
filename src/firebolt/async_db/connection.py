@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Type
 from httpx import Timeout
 
 from firebolt.async_db.cursor import Cursor, CursorV1, CursorV2
-from firebolt.async_db.util import _get_system_engine_url
+from firebolt.async_db.util import _get_system_engine_url_and_params
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
@@ -206,8 +206,8 @@ async def connect_v2(
 
     api_endpoint = fix_url_schema(api_endpoint)
 
-    system_engine_url = fix_url_schema(
-        await _get_system_engine_url(auth, account_name, api_endpoint)
+    system_engine_url, system_engine_params = await _get_system_engine_url_and_params(
+        auth, account_name, api_endpoint
     )
 
     client = AsyncClientV2(
@@ -227,6 +227,7 @@ async def connect_v2(
         CursorV2,
         None,
         api_endpoint,
+        system_engine_params,
     )
 
     account_version = await system_engine_connection._client._account_version
