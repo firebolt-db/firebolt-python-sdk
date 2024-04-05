@@ -124,7 +124,7 @@ def service_account_no_user(
     with connection_system_engine_no_db.cursor() as cursor:
         cursor.execute(
             f'CREATE SERVICE ACCOUNT "{sa_account_name}" '
-            'WITH DESCRIPTION = "Ecosytem test with no user"'
+            "WITH DESCRIPTION = 'Ecosytem test with no user'"
         )
         cursor.execute(f"CALL fb_GENERATESERVICEACCOUNTKEY('{sa_account_name}')")
         # service_account_name, service_account_id, secret
