@@ -48,10 +48,9 @@ async def test_system_engine(
 
         if connection_system_engine.database:
             await c.execute("show tables")
-            await c.execute(
-                "create table if not exists test_async(id int) primary index id"
-            )
             with raises(OperationalError):
+                # Either one or another query fails if we're not on a user engine
+                await c.execute("create table if not exists test_async(id int)")
                 await c.execute("insert into test values (1)")
         else:
             await c.execute("show databases")

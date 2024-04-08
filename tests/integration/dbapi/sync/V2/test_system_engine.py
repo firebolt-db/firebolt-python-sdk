@@ -48,8 +48,9 @@ def test_system_engine(
 
         if connection_system_engine.database:
             c.execute("show tables")
-            c.execute("create table if not exists test_sync(id int) primary index id")
             with raises(OperationalError):
+                # Either one or another query fails if we're not on a user engine
+                c.execute("create table if not exists test_sync(id int)")
                 c.execute("insert into test values (1)")
         else:
             c.execute("show databases")
