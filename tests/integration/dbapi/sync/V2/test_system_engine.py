@@ -51,7 +51,7 @@ def test_system_engine(
             with raises(OperationalError):
                 # Either one or another query fails if we're not on a user engine
                 c.execute("create table if not exists test_sync(id int)")
-                c.execute("insert into test values (1)")
+                c.execute("insert into test_sync values (1)")
         else:
             c.execute("show databases")
             with raises(OperationalError):
