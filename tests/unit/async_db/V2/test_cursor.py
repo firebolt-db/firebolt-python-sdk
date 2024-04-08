@@ -901,7 +901,6 @@ async def test_cursor_unknown_error_body_logging(
     [
         "database",
         "engine",
-        "account_id",
         "output_format",
     ],
 )

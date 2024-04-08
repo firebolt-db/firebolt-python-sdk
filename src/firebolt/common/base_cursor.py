@@ -56,7 +56,7 @@ class QueryStatus(Enum):
 # Parameters that should be set using USE instead of SET
 USE_PARAMETER_LIST = ["database", "engine"]
 # parameters that can only be set by the backend
-DISALLOWED_PARAMETER_LIST = ["account_id", "output_format"]
+DISALLOWED_PARAMETER_LIST = ["output_format"]
 # parameters that are set by the backend and should not be set by the user
 IMMUTABLE_PARAMETER_LIST = USE_PARAMETER_LIST + DISALLOWED_PARAMETER_LIST
 

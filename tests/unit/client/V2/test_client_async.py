@@ -1,3 +1,5 @@
+import random
+from queue import Queue
 from re import Pattern, compile
 from types import MethodType
 from typing import Any, Callable
@@ -11,7 +13,7 @@ from firebolt.client import AsyncClientV2 as AsyncClient
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from firebolt.utils.util import fix_url_schema
-from tests.unit.conftest import Response
+from tests.unit.conftest import Response, retry_if_failed
 
 
 async def test_client_retry(
@@ -186,3 +188,56 @@ async def test_concurent_auth_lock(
                 nursery.start_soon(c.get, url)
 
     assert checked_creds_times == 1
+
+
+# test that client requests are truly concurrent
+# and are executed not in order that they were started
+# but in order of completion
+@retry_if_failed(3)
+async def test_true_concurent_requests(
+    httpx_mock: HTTPXMock,
+    account_name: str,
+    client_id: str,
+    client_secret: str,
+    auth_url: str,
+    auth_callback: Callable,
+    server: str,
+):
+    url = "https://url"
+    CONCURENT_COUNT = 10
+
+    queue = Queue(CONCURENT_COUNT)
+
+    # create callback that uses check_token_callback but also pushes URl to a queue
+    async def check_token_callback_with_queue(request: Request, **kwargs) -> Response:
+        nonlocal queue
+        queue.put(str(request.url))
+        return Response(status_code=codes.OK, headers={"content-length": "0"})
+
+    async def mock_send_handling_redirects(self, *args: Any, **kwargs: Any) -> Response:
+        # simulate network delay so the context switches
+        # random delay to make sure that requests are not executed in order
+        await sleep(0.1 * random.random())
+        return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
+
+    httpx_mock.add_callback(auth_callback, url=auth_url)
+
+    httpx_mock.add_callback(check_token_callback_with_queue, url=compile(f"{url}/."))
+
+    urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
+    async with AsyncClient(
+        auth=ClientCredentials(client_id, client_secret),
+        api_endpoint=server,
+        account_name=account_name,
+    ) as c:
+        c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
+        async with open_nursery() as nursery:
+            for url in urls:
+                nursery.start_soon(c.get, url)
+
+    assert queue.qsize() == CONCURENT_COUNT
+    # Make sure the order is random and not sequential
+    assert list(queue.queue) != urls
+    # Cover the case when requests might be queued in reverse order
+    urls.reverse()
+    assert list(queue.queue) != urls

@@ -235,7 +235,9 @@ class Engine(FireboltBaseModel):
         ):
             if value is not None:
                 sql += f"{param} = ? "
-                parameters.append(str(value))
+                if isinstance(value, (EngineType, InstanceType, WarmupMethod)):
+                    value = str(value)
+                parameters.append(value)
 
         with self._service._connection.cursor() as c:
             c.execute(sql, parameters)
