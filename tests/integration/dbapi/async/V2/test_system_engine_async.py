@@ -1,3 +1,4 @@
+import re
 from typing import List
 
 from pytest import raises
@@ -6,6 +7,10 @@ from firebolt.async_db import Connection
 from firebolt.common._types import ColType, Column
 from firebolt.utils.exception import OperationalError
 from tests.integration.dbapi.utils import assert_deep_eq
+
+system_error_pattern = re.compile(
+    r"system engine doesn't support .* statements. Run this statement on a user engine."
+)
 
 
 async def test_system_engine(
@@ -48,10 +53,11 @@ async def test_system_engine(
 
         if connection_system_engine.database:
             await c.execute("show tables")
-            with raises(OperationalError):
+            with raises(OperationalError) as e:
                 # Either one or another query fails if we're not on a user engine
                 await c.execute("create table if not exists test_async(id int)")
                 await c.execute("insert into test_async values (1)")
+            assert system_error_pattern.search(str(e.value)), "Invalid error message"
         else:
             await c.execute("show databases")
             with raises(OperationalError):
