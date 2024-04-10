@@ -85,16 +85,28 @@ class DatabaseService(BaseService):
                 condition.append("database_name like ?")
                 parameters.append(f"%{name_contains}%")
             if attached_engine_name_eq:
-                condition.append(
-                    "any_match(eng -> split_part(eng, ' ', 1) = ?,"
-                    " split(',', attached_engines))"
+                params = [
+                    # middle of the list
+                    f"%, {attached_engine_name_eq},%",
+                    # first in the list, default
+                    f"{attached_engine_name_eq} (deafult)",
+                    # first in the list, not default
+                    f"{attached_engine_name_eq},%",
+                    # somewhere in the list, default
+                    f"%, {attached_engine_name_eq} (deafult)",
+                    # only one engine
+                    f"'{attached_engine_name_eq}'",
+                ]
+                attached_conditions = [
+                    "attached_engines like ?",
+                ] * (len(params) - 1)
+                attached_conditions.append(
+                    "attached_engines = ?",  # only one engine
                 )
-                parameters.append(attached_engine_name_eq)
+                condition.append(" OR ".join(attached_conditions))
+                parameters.extend(params)
             if attached_engine_name_contains:
-                condition.append(
-                    "any_match(eng -> split_part(eng, ' ', 1) like ?,"
-                    " split(',', attached_engines))"
-                )
+                condition.append("attached_engines like ?")
                 parameters.append(f"%{attached_engine_name_contains}%")
             if region_eq:
                 condition.append("region = ?")
