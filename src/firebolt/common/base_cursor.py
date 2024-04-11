@@ -39,19 +39,6 @@ class CursorState(Enum):
     CLOSED = 4
 
 
-class QueryStatus(Enum):
-    """Enumeration of query responses on server-side async queries."""
-
-    RUNNING = 1
-    ENDED_SUCCESSFULLY = 2
-    ENDED_UNSUCCESSFULLY = 3
-    NOT_READY = 4
-    STARTED_EXECUTION = 5
-    PARSE_ERROR = 6
-    CANCELED_EXECUTION = 7
-    EXECUTION_ERROR = 8
-
-
 # Parameters that should be set using USE instead of SET
 USE_PARAMETER_LIST = ["database", "engine"]
 # parameters that can only be set by the backend
