@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
 import time
 from abc import ABCMeta, abstractmethod
 from functools import wraps
@@ -35,7 +34,6 @@ from firebolt.common.base_cursor import (
     UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
-    QueryStatus,
     Statistics,
     _parse_update_endpoint,
     _parse_update_parameters,
@@ -57,7 +55,7 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from firebolt.utils.util import Timer, _print_error_body
+from firebolt.utils.util import _print_error_body
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +168,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
-        async_execution: Optional[bool] = False,
     ) -> None:
         self._reset()
         # Allow users to manually skip parsing for performance improvement.
@@ -180,13 +177,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         try:
             for query in queries:
                 start_time = time.time()
-                # Our CREATE EXTERNAL TABLE queries currently require credentials,
-                # so we will skip logging those queries.
-                # https://docs.firebolt.io/sql-reference/commands/create-external-table.html
-                if isinstance(query, SetParameter) or not re.search(
-                    "aws_key_id|credentials", query, flags=re.IGNORECASE
-                ):
-                    logger.debug(f"Running query: {query}")
+                self._log_query(query)
 
                 # Define type for mypy
                 row_set: Tuple[
@@ -197,29 +188,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
                     await self._validate_set_parameter(query)
-                elif async_execution:
-
-                    with Timer(
-                        f"[PERFORMANCE] Running query {query[:50]} "
-                        f"{'... ' if len(query) > 50 else ''}"
-                    ):
-                        response = await self._api_request(
-                            query,
-                            {
-                                "async_execution": 1,
-                                "output_format": JSON_OUTPUT_FORMAT,
-                            },
-                        )
-
-                    await self._raise_if_error(response)
-                    if response.headers.get("content-length", "") == "0":
-                        raise OperationalError("No response to asynchronous query.")
-                    resp = response.json()
-                    if "query_id" not in resp or resp["query_id"] == "":
-                        raise OperationalError(
-                            "Invalid response to asynchronous query: missing query_id."
-                        )
-                    self._query_id = resp["query_id"]
                 else:
                     resp = await self._api_request(
                         query, {"output_format": JSON_OUTPUT_FORMAT}
@@ -247,7 +215,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
-        async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -271,21 +238,19 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized, multi-statement and SET queries,
                 while improving performance
-            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
             int: Query row count.
         """
         params_list = [parameters] if parameters else []
-        await self._do_execute(query, params_list, skip_parsing, async_execution)
-        return self.query_id if async_execution else self.rowcount
+        await self._do_execute(query, params_list, skip_parsing)
+        return self.rowcount
 
     @check_not_closed
     async def executemany(
         self,
         query: str,
         parameters_seq: Sequence[Sequence[ParameterType]],
-        async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -310,46 +275,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
-            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
-            int|str: Query row count for synchronous execution of queries,
-            query ID string for asynchronous execution.
+            int: Query row count.
         """
-        await self._do_execute(query, parameters_seq, async_execution=async_execution)
-        if async_execution:
-            return self.query_id
-        else:
-            return self.rowcount
-
-    @check_not_closed
-    async def get_status(self, query_id: str) -> QueryStatus:
-        """Get status of a server-side async query. Return the state of the query."""
-        try:
-            resp = await self._api_request(
-                # output_format must be empty for status to work correctly.
-                # And set parameters will cause 400 errors.
-                parameters={"query_id": query_id},
-                path="status",
-                use_set_parameters=False,
-            )
-            if resp.status_code == codes.BAD_REQUEST:
-                raise OperationalError(
-                    f"Asynchronous query {query_id} status check failed: "
-                    f"{resp.status_code}."
-                )
-            resp_json = resp.json()
-            if "status" not in resp_json:
-                raise OperationalError(
-                    "Invalid response to asynchronous query: missing status."
-                )
-        except Exception:
-            self._state = CursorState.ERROR
-            raise
-        # Remember that query_id might be empty.
-        if resp_json["status"] == "":
-            return QueryStatus.NOT_READY
-        return QueryStatus[resp_json["status"]]
+        await self._do_execute(query, parameters_seq)
+        return self.rowcount
 
     @abstractmethod
     async def is_db_available(self, database: str) -> bool:
@@ -382,15 +313,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     @wraps(BaseCursor.nextset)
     async def nextset(self) -> None:
         return super().nextset()
-
-    @check_not_closed
-    async def cancel(self, query_id: str) -> None:
-        """Cancel a server-side async query."""
-        await self._api_request(
-            parameters={"query_id": query_id},
-            path="cancel",
-            use_set_parameters=False,
-        )
 
     # Iteration support
     @check_not_closed
@@ -551,7 +473,7 @@ class CursorV1(Cursor):
     async def _api_request(
         self,
         query: Optional[str] = "",
-        parameters: Optional[dict[str, Any]] = {},
+        parameters: Optional[dict[str, Any]] = None,
         path: Optional[str] = "",
         use_set_parameters: Optional[bool] = True,
     ) -> Response:

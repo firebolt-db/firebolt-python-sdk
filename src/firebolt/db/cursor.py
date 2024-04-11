@@ -238,7 +238,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized, multi-statement and SET queries,
                 while improving performance
-            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
             int: Query row count.
@@ -274,11 +273,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
-            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
-            int|str: Query row count for synchronous execution of queries,
-            query ID string for asynchronous execution.
+            int: Query row count.
         """
         self._do_execute(query, parameters_seq)
         return self.rowcount
@@ -422,7 +419,7 @@ class CursorV1(Cursor):
     def _api_request(
         self,
         query: Optional[str] = "",
-        parameters: Optional[dict[str, Any]] = {},
+        parameters: Optional[dict[str, Any]] = None,
         path: Optional[str] = "",
         use_set_parameters: Optional[bool] = True,
     ) -> Response:
