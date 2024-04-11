@@ -197,12 +197,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 if isinstance(query, SetParameter):
                     self._validate_set_parameter(query)
                 elif async_execution:
-                    self._validate_server_side_async_settings(
-                        parameters,
-                        queries,
-                        skip_parsing,
-                        async_execution,
-                    )
                     response = self._api_request(
                         query,
                         {
