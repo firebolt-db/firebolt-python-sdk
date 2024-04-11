@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, fields
 from enum import Enum
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from httpx import URL, Response
 
@@ -322,6 +323,16 @@ class BaseCursor:
     def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():
             self.parameters[key] = value
+
+    @staticmethod
+    def _log_query(query: Union[str, SetParameter]) -> None:
+        # Our CREATE EXTERNAL TABLE queries currently require credentials,
+        # so we will skip logging those queries.
+        # https://docs.firebolt.io/sql-reference/commands/create-external-table.html
+        if isinstance(query, SetParameter) or not re.search(
+            "aws_key_id|credentials", query, flags=re.IGNORECASE
+        ):
+            logger.debug(f"Running query: {query}")
 
     @property
     def engine_name(self) -> str:
