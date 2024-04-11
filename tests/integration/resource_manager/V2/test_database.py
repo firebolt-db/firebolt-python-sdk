@@ -1,3 +1,5 @@
+from pytest import mark
+
 from firebolt.client.auth import Auth
 from firebolt.service.manager import ResourceManager
 
@@ -33,6 +35,7 @@ def test_database_get_default_engine(
     ], "Returned default engine name is neither of known engines"
 
 
+@mark.skip("split is not supported in engines v1 right now")
 def test_databases_get_many(
     auth: Auth,
     account_name: str,
