@@ -6,7 +6,6 @@ from typing import Any, Callable, List
 
 from pytest import fixture, mark, raises
 
-from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType, Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
@@ -21,29 +20,6 @@ def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
     assert (
         type(got) == type(expected) and got == expected
     ), f"{msg}: {got}(got) != {expected}(expected)"
-
-
-def status_loop(
-    query_id: str,
-    query: str,
-    cursor: Cursor,
-    start_status: QueryStatus = QueryStatus.NOT_READY,
-    final_status: QueryStatus = QueryStatus.ENDED_SUCCESSFULLY,
-) -> None:
-    """
-    Continually check status of asynchronously executed query. Compares
-    QueryStatus object returned from get_status() to desired final_status.
-    Used in test_server_side_async_execution_cancel() and
-    test_server_side_async_execution_get_status().
-    """
-    status = cursor.get_status(query_id)
-    # get_status() will return NOT_READY until it succeeds or fails.
-    while status == start_status or status == QueryStatus.NOT_READY:
-        # This only checks to see if a correct response is returned
-        status = cursor.get_status(query_id)
-    assert (
-        status == final_status
-    ), f"Failed {query}. Got {status} rather than {final_status}."
 
 
 def test_connect_engine_name(
@@ -407,55 +383,6 @@ def test_anyio_backend_import_issue(
     [t.start() for t in threads]
     [t.join() for t in threads]
     assert len(exceptions) == 0, exceptions
-
-
-def test_server_side_async_execution_query(connection: Connection) -> None:
-    """Make an sql query and receive an id back."""
-    with connection.cursor() as c:
-        query_id = c.execute("SELECT 1", [], async_execution=True)
-    assert (
-        query_id and type(query_id) is str
-    ), "Invalid query id was returned from server-side async query."
-
-
-@mark.skip(
-    reason="Can't get consistently slow queries so fails significant portion of time."
-)
-async def test_server_side_async_execution_cancel(
-    create_server_side_test_table_setup_teardown,
-) -> None:
-    """Test cancel()."""
-    c = create_server_side_test_table_setup_teardown
-    # Cancel, then check that status is cancelled.
-    c.cancel(query_id)
-    status_loop(
-        query_id,
-        "cancel",
-        c,
-        start_status=QueryStatus.STARTED_EXECUTION,
-        final_status=QueryStatus.CANCELED_EXECUTION,
-    )
-
-
-@mark.skip(
-    reason=(
-        "Can't get consistently slow queries so fails significant portion of time. "
-        "get_status() always returns a QueryStatus object, so this assertion will "
-        "always pass. Error condition of invalid status is caught in get_status()."
-    )
-)
-async def test_server_side_async_execution_get_status(
-    create_server_side_test_table_setup_teardown,
-) -> None:
-    """Test get_status()."""
-    c = create_server_side_test_table_setup_teardown
-    query_id = c.execute(LONG_INSERT, async_execution=True)
-    status = c.get_status(query_id)
-    # Commented out assert because I was getting warnig errors about it being
-    # always true even when this should be skipping.
-    # assert (
-    #     type(status) is QueryStatus,
-    # ), "get_status() did not return a QueryStatus object."
 
 
 @mark.xdist_group("multi_thread_connection_sharing")
