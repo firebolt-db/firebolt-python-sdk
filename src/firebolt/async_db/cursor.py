@@ -43,7 +43,6 @@ from firebolt.common.base_cursor import (
 )
 from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
-    AsyncExecutionUnavailableError,
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltEngineError,
@@ -124,12 +123,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     async def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
         _raise_if_internal_set_parameter(parameter)
-        if parameter.name == "async_execution":
-            raise AsyncExecutionUnavailableError(
-                "It is not possible to set async_execution using a SET command. "
-                "Instead, pass it as an argument to the execute() or "
-                "executemany() function."
-            )
         resp = await self._api_request("select 1", {parameter.name: parameter.value})
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
