@@ -177,7 +177,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         try:
             for query in queries:
                 start_time = time.time()
-                self._log_query(query)
+                Cursor._log_query(query)
 
                 # Define type for mypy
                 row_set: Tuple[
