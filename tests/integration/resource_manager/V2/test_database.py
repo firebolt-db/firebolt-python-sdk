@@ -35,7 +35,7 @@ def test_database_get_default_engine(
     ], "Returned default engine name is neither of known engines"
 
 
-@mark.skip("FIR-32303. Split is not supported in engines v1 right now")
+@mark.skip("FIR-32303. Split is not supported in engines v1 right now.")
 def test_databases_get_many(
     auth: Auth,
     account_name: str,
