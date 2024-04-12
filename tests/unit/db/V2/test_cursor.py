@@ -6,7 +6,7 @@ from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.db import Cursor
-from firebolt.db.cursor import ColType, Column, CursorState, QueryStatus
+from firebolt.db.cursor import ColType, Column, CursorState
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
@@ -611,130 +611,6 @@ def test_cursor_skip_parse(
     with patch("firebolt.db.cursor.split_format_sql") as split_format_sql_mock:
         cursor.execute("non-an-actual-sql", skip_parsing=True)
         split_format_sql_mock.assert_not_called()
-
-
-def test_cursor_server_side_async_execute(
-    httpx_mock: HTTPXMock,
-    server_side_async_id_callback: Callable,
-    server_side_async_id: Callable,
-    query_with_params_url: str,
-    cursor: Cursor,
-):
-    """
-    Cursor is able to execute query server-side asynchronously and
-    query_id is returned.
-    """
-    for query, message in (
-        (
-            lambda: cursor.execute("select * from t", async_execution=True),
-            "server-side asynchronous execute()",
-        ),
-        (
-            lambda: cursor.executemany("select * from t", [], async_execution=True),
-            "server-side asynchronous executemany()",
-        ),
-    ):
-
-        # Query with json output
-        httpx_mock.add_callback(
-            server_side_async_id_callback, url=query_with_params_url
-        )
-
-        assert (
-            query() == server_side_async_id
-        ), f"Invalid query id returned for {message}."
-        assert (
-            cursor.rowcount == -1
-        ), f"Invalid rowcount value for insert using {message}."
-        assert (
-            cursor.description is None
-        ), f"Invalid description for insert using {message}."
-
-
-def test_cursor_server_side_async_cancel(
-    httpx_mock: HTTPXMock,
-    server_side_async_cancel_callback: Callable,
-    server_side_async_id: Callable,
-    query_with_params_url: str,
-    cursor: Cursor,
-):
-    """
-    Cursor is able to cancel query server-side asynchronously and
-    query_id is returned.
-    """
-
-    # Query with json output
-    httpx_mock.add_callback(
-        server_side_async_cancel_callback, url=query_with_params_url
-    )
-    cursor._set_parameters = {"invalid_parameter": "should_not_be_present"}
-    cursor.cancel(server_side_async_id)
-
-    cursor.close()
-    with raises(CursorClosedError):
-        cursor.cancel(server_side_async_id)
-
-
-def test_cursor_server_side_async_get_status_completed(
-    httpx_mock: HTTPXMock,
-    server_side_async_get_status_callback: Callable,
-    server_side_async_id: Callable,
-    query_with_params_url: str,
-    cursor: Cursor,
-):
-    """
-    Cursor is able to execute query server-side asynchronously and
-    query_id is returned.
-    """
-
-    # Query with json output
-    httpx_mock.add_callback(
-        server_side_async_get_status_callback, url=query_with_params_url
-    )
-    status = cursor.get_status(server_side_async_id)
-    assert status == QueryStatus.ENDED_SUCCESSFULLY
-
-
-def test_cursor_server_side_async_get_status_not_yet_available(
-    httpx_mock: HTTPXMock,
-    server_side_async_get_status_not_yet_availabe_callback: Callable,
-    server_side_async_id: Callable,
-    query_with_params_url: str,
-    cursor: Cursor,
-):
-    """
-    Cursor is able to execute query server-side asynchronously and
-    query_id is returned.
-    """
-
-    # Query with json output
-    httpx_mock.add_callback(
-        server_side_async_get_status_not_yet_availabe_callback,
-        url=query_with_params_url,
-    )
-    status = cursor.get_status(server_side_async_id)
-    assert status == QueryStatus.NOT_READY
-
-
-def test_cursor_server_side_async_get_status_error(
-    httpx_mock: HTTPXMock,
-    server_side_async_get_status_error: Callable,
-    server_side_async_id: Callable,
-    query_with_params_url: str,
-    cursor: Cursor,
-):
-    """ """
-    httpx_mock.add_callback(
-        server_side_async_get_status_error, url=query_with_params_url
-    )
-    with raises(OperationalError) as excinfo:
-        cursor.get_status(server_side_async_id)
-
-        assert cursor._state == CursorState.ERROR
-        assert (
-            str(excinfo.value)
-            == f"Asynchronous query {server_side_async_id} status check failed."
-        ), f"Invalid get_status error message."
 
 
 def test_cursor_iterate(

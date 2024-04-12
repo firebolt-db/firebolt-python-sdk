@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import re
 import time
 from abc import ABCMeta, abstractmethod
 from typing import (
@@ -33,7 +32,6 @@ from firebolt.common.base_cursor import (
     UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
-    QueryStatus,
     Statistics,
     _parse_update_endpoint,
     _parse_update_parameters,
@@ -43,7 +41,6 @@ from firebolt.common.base_cursor import (
 )
 from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
-    AsyncExecutionUnavailableError,
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltEngineError,
@@ -125,12 +122,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def _validate_set_parameter(self, parameter: SetParameter) -> None:
         """Validate parameter by executing simple query with it."""
         _raise_if_internal_set_parameter(parameter)
-        if parameter.name == "async_execution":
-            raise AsyncExecutionUnavailableError(
-                "It is not possible to set async_execution using a SET command. "
-                "Instead, pass it as an argument to the execute() or "
-                "executemany() function."
-            )
         resp = self._api_request("select 1", {parameter.name: parameter.value})
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
@@ -169,7 +160,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
-        async_execution: Optional[bool] = False,
     ) -> None:
         self._reset()
         # Allow users to manually skip parsing for performance improvement.
@@ -179,13 +169,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         try:
             for query in queries:
                 start_time = time.time()
-                # Our CREATE EXTERNAL TABLE queries currently require credentials,
-                # so we will skip logging those queries.
-                # https://docs.firebolt.io/sql-reference/commands/create-external-table.html
-                if isinstance(query, SetParameter) or not re.search(
-                    "aws_key_id|credentials", query, flags=re.IGNORECASE
-                ):
-                    logger.debug(f"Running query: {query}")
+
+                Cursor._log_query(query)
 
                 # Define type for mypy
                 row_set: Tuple[
@@ -196,29 +181,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
                     self._validate_set_parameter(query)
-                elif async_execution:
-                    self._validate_server_side_async_settings(
-                        parameters,
-                        queries,
-                        skip_parsing,
-                        async_execution,
-                    )
-                    response = self._api_request(
-                        query,
-                        {
-                            "async_execution": 1,
-                            "output_format": JSON_OUTPUT_FORMAT,
-                        },
-                    )
-                    self._raise_if_error(response)
-                    if response.headers.get("content-length", "") == "0":
-                        raise OperationalError("No response to asynchronous query.")
-                    resp = response.json()
-                    if "query_id" not in resp or resp["query_id"] == "":
-                        raise OperationalError(
-                            "Invalid response to asynchronous query: missing query_id."
-                        )
-                    self._query_id = resp["query_id"]
                 else:
                     resp = self._api_request(
                         query, {"output_format": JSON_OUTPUT_FORMAT}
@@ -246,7 +208,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
-        async_execution: Optional[bool] = False,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -270,21 +231,17 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized, multi-statement and SET queries,
                 while improving performance
-            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
             int: Query row count.
         """
         params_list = [parameters] if parameters else []
-        self._do_execute(query, params_list, skip_parsing, async_execution)
-        return self.query_id if async_execution else self.rowcount
+        self._do_execute(query, params_list, skip_parsing)
+        return self.rowcount
 
     @check_not_closed
     def executemany(
-        self,
-        query: str,
-        parameters_seq: Sequence[Sequence[ParameterType]],
-        async_execution: Optional[bool] = False,
+        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -309,46 +266,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
-            async_execution (bool): flag to determine if query should be asynchronous
 
         Returns:
-            int|str: Query row count for synchronous execution of queries,
-            query ID string for asynchronous execution.
+            int: Query row count.
         """
-        self._do_execute(query, parameters_seq, async_execution=async_execution)
-        if async_execution:
-            return self.query_id
-        else:
-            return self.rowcount
-
-    @check_not_closed
-    def get_status(self, query_id: str) -> QueryStatus:
-        """Get status of a server-side async query. Return the state of the query."""
-        try:
-            resp = self._api_request(
-                # output_format must be empty for status to work correctly.
-                # And set parameters will cause 400 errors.
-                parameters={"query_id": query_id},
-                path="status",
-                use_set_parameters=False,
-            )
-            if resp.status_code == codes.BAD_REQUEST:
-                raise OperationalError(
-                    f"Asynchronous query {query_id} status check failed: "
-                    f"{resp.status_code}."
-                )
-            resp_json = resp.json()
-            if "status" not in resp_json:
-                raise OperationalError(
-                    "Invalid response to asynchronous query: missing status."
-                )
-        except Exception:
-            self._state = CursorState.ERROR
-            raise
-        # Remember that query_id might be empty.
-        if resp_json["status"] == "":
-            return QueryStatus.NOT_READY
-        return QueryStatus[resp_json["status"]]
+        self._do_execute(query, parameters_seq)
+        return self.rowcount
 
     @abstractmethod
     def is_db_available(self, database: str) -> bool:
@@ -359,15 +282,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def is_engine_running(self, engine_url: str) -> bool:
         """Verify that the engine is running."""
         ...
-
-    @check_not_closed
-    def cancel(self, query_id: str) -> None:
-        """Cancel a server-side async query."""
-        self._api_request(
-            parameters={"query_id": query_id},
-            path="cancel",
-            use_set_parameters=False,
-        )
 
     # Iteration support
     @check_not_closed
@@ -498,7 +412,7 @@ class CursorV1(Cursor):
     def _api_request(
         self,
         query: Optional[str] = "",
-        parameters: Optional[dict[str, Any]] = {},
+        parameters: Optional[dict[str, Any]] = None,
         path: Optional[str] = "",
         use_set_parameters: Optional[bool] = True,
     ) -> Response:
