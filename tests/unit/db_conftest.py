@@ -114,29 +114,6 @@ def python_query_data() -> List[List[ColType]]:
 
 
 @fixture
-def server_side_async_id_callback(server_side_async_id) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        query_response = {"query_id": server_side_async_id}
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def server_side_async_missing_id_callback(server_side_async_id) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        query_response = {"no_id": server_side_async_id}
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def server_side_async_id() -> str:
-    return "1a3f53d"
-
-
-@fixture
 def query_statistics() -> Dict[str, Any]:
     # Just some dummy statistics to have in query response
     return {
@@ -148,103 +125,6 @@ def query_statistics() -> Dict[str, Any]:
         "scanned_bytes_cache": 0,
         "scanned_bytes_storage": 0,
     }
-
-
-@fixture
-def server_side_async_cancel_callback(
-    server_side_async_id, query_statistics: Dict[str, Any]
-) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        # Make sure no set parameters are added
-        assert sorted(list(request.url.params.keys())) == [
-            "database",
-            "query_id",
-        ], "invalid query params for async cancel"
-        assert request.url.path == "/cancel"
-        # Cancel has no body
-        assert request.read() == b""
-        query_response = {
-            "meta": [
-                {"name": "host", "type": "String"},
-                {"name": "port", "type": "UInt16"},
-                {"name": "status", "type": "Int64"},
-                {"name": "error", "type": "String"},
-                {"name": "num_hosts_remaining", "type": "UInt64"},
-                {"name": "num_hosts_active", "type": "UInt64"},
-            ],
-            "data": [["node1.node.consul", 9000, 0, "", 0, 0]],
-            "rows": 1,
-            "statistics": query_statistics,
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def server_side_async_cancel_callback_error(server_side_async_id) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        return Response(status_code=codes.BAD_REQUEST, json={})
-
-    return do_query
-
-
-@fixture
-def server_side_async_get_status_callback(server_side_async_id) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        query_response = {
-            "engine_name": "engine",
-            "query_id": server_side_async_id,
-            "status": "ENDED_SUCCESSFULLY",
-            "query_start_time": "2020-07-31 01:01:01.1234",
-            "query_duration_ms": 0.104614307,
-            "original_query": "SELECT 1",
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def server_side_async_get_status_not_yet_availabe_callback(
-    server_side_async_id,
-) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        query_response = {
-            "engine_name": "",
-            "query_id": "",
-            "status": "",
-            "query_start_time": "",
-            "query_duration_ms": "",
-            "original_query": "",
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def server_side_async_get_status_error(server_side_async_id) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        return Response(status_code=codes.OK, json="")
-
-    return do_query
-
-
-@fixture
-def server_side_async_missing_query_id_error(server_side_async_id) -> Response:
-    def do_query(request: Request, **kwargs) -> Response:
-        query_response = {
-            "engine_name": "engine",
-            "query_id": "",
-            "status": "ENDED_SUCCESSFULLY",
-            "query_start_time": "2020-07-31 01:01:01.1234",
-            "query_duration_ms": 0.104614307,
-            "original_query": "SELECT 1",
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
 
 
 @fixture

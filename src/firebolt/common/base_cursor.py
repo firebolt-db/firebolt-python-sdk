@@ -1,25 +1,24 @@
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, fields
 from enum import Enum
 from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from httpx import URL, Response
 
 from firebolt.common._types import (
     ColType,
     Column,
-    ParameterType,
     RawColType,
     SetParameter,
     parse_type,
     parse_value,
 )
 from firebolt.utils.exception import (
-    AsyncExecutionUnavailableError,
     ConfigurationError,
     CursorClosedError,
     DataError,
@@ -38,19 +37,6 @@ class CursorState(Enum):
     ERROR = 2
     DONE = 3
     CLOSED = 4
-
-
-class QueryStatus(Enum):
-    """Enumeration of query responses on server-side async queries."""
-
-    RUNNING = 1
-    ENDED_SUCCESSFULLY = 2
-    ENDED_UNSUCCESSFULLY = 3
-    NOT_READY = 4
-    STARTED_EXECUTION = 5
-    PARSE_ERROR = 6
-    CANCELED_EXECUTION = 7
-    EXECUTION_ERROR = 8
 
 
 # Parameters that should be set using USE instead of SET
@@ -325,6 +311,16 @@ class BaseCursor:
         for key, value in parameters.items():
             self.parameters[key] = value
 
+    @staticmethod
+    def _log_query(query: Union[str, SetParameter]) -> None:
+        # Our CREATE EXTERNAL TABLE queries currently require credentials,
+        # so we will skip logging those queries.
+        # https://docs.firebolt.io/sql-reference/commands/create-external-table.html
+        if isinstance(query, SetParameter) or not re.search(
+            "aws_key_id|credentials", query, flags=re.IGNORECASE
+        ):
+            logger.debug(f"Running query: {query}")
+
     @property
     def engine_name(self) -> str:
         """
@@ -381,33 +377,6 @@ class BaseCursor:
         if self._next_set_idx == 0:
             # Populate values for first set
             self._pop_next_set()
-
-    def _validate_server_side_async_settings(
-        self,
-        parameters: Sequence[Sequence[ParameterType]],
-        queries: List[Union[SetParameter, str]],
-        skip_parsing: bool = False,
-        async_execution: Optional[bool] = False,
-    ) -> None:
-        if async_execution and self._set_parameters.get("use_standard_sql", "1") == "0":
-            raise AsyncExecutionUnavailableError(
-                "It is not possible to execute queries asynchronously if "
-                "use_standard_sql=0."
-            )
-        if parameters and skip_parsing:
-            logger.warning(
-                "Query formatting parameters are provided but skip_parsing "
-                "is specified. They will be ignored."
-            )
-        non_set_queries = 0
-        for query in queries:
-            if type(query) is not SetParameter:
-                non_set_queries += 1
-        if non_set_queries > 1 and async_execution:
-            raise AsyncExecutionUnavailableError(
-                "It is not possible to execute multi-statement "
-                "queries asynchronously."
-            )
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
         """Parse a single data row based on query column types."""

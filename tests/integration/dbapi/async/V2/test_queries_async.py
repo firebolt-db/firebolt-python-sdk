@@ -9,7 +9,6 @@ from pytest import mark, raises
 
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.connection import connect
-from firebolt.async_db.cursor import QueryStatus
 from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType, Column
 from tests.integration.conftest import API_ENDPOINT_ENV
@@ -19,29 +18,6 @@ VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT_2}"
-
-
-async def status_loop(
-    query_id: str,
-    query: str,
-    cursor: Cursor,
-    start_status: QueryStatus = QueryStatus.NOT_READY,
-    final_status: QueryStatus = QueryStatus.ENDED_SUCCESSFULLY,
-) -> None:
-    """
-    Continually check status of asynchronously executed query. Compares
-    QueryStatus object returned from get_status() to desired final_status.
-    Used in test_server_side_async_execution_cancel() and
-    test_server_side_async_execution_get_status().
-    """
-    status = await cursor.get_status(query_id)
-    # get_status() will return NOT_READY until it succeeds or fails.
-    while status == start_status or status == QueryStatus.NOT_READY:
-        # This only checks to see if a correct response is returned
-        status = await cursor.get_status(query_id)
-    assert (
-        status == final_status
-    ), f"Failed {query}. Got {status} rather than {final_status}."
 
 
 async def test_connect_no_db(
@@ -350,60 +326,6 @@ async def test_set_invalid_parameter(connection: Connection):
             await c.execute("SET some_invalid_parameter = 1")
 
         assert len(c._set_parameters) == 0
-
-
-async def test_server_side_async_execution_query(connection: Connection) -> None:
-    """Make an sql query and receive an id back."""
-    with connection.cursor() as c:
-        query_id = await c.execute("SELECT 1", [], async_execution=True)
-    assert (
-        query_id and type(query_id) is str
-    ), "Invalid query id was returned from server-side async query."
-
-
-@mark.skip(
-    reason="Can't get consistently slow queries so fails significant portion of time."
-)
-async def test_server_side_async_execution_cancel(
-    create_server_side_test_table_setup_teardown_async,
-) -> None:
-    """Test cancel."""
-    c = create_server_side_test_table_setup_teardown_async
-    await c.execute(LONG_INSERT, async_execution=True)
-    # Cancel, then check that status is cancelled.
-    await c.cancel(query_id)
-    await status_loop(
-        query_id,
-        "cancel",
-        c,
-        start_status=QueryStatus.STARTED_EXECUTION,
-        final_status=QueryStatus.CANCELED_EXECUTION,
-    )
-
-
-@mark.skip(
-    reason=(
-        "Can't get consistently slow queries so fails significant portion of time. "
-        "get_status() always returns a QueryStatus object, so this assertion will "
-        "always pass. Error condition of invalid status is caught in get_status()."
-    )
-)
-async def test_server_side_async_execution_get_status(
-    create_server_side_test_table_setup_teardown_async,
-) -> None:
-    """
-    Test get_status(). Test for three ending conditions: Simply test to see
-    that a StatusQuery object is returned. Queries are succeeding too quickly
-    to be able to check for specific status states.
-    """
-    c = create_server_side_test_table_setup_teardown_async
-    query_id = await c.execute(LONG_INSERT, async_execution=True)
-    await c.get_status(query_id)
-    # Commented out assert because I was getting warnig errors about it being
-    # always true even when this should be skipping.
-    # assert (
-    #     type(status) is QueryStatus,
-    # ), "get_status() did not return a QueryStatus object."
 
 
 async def test_bytea_roundtrip(
