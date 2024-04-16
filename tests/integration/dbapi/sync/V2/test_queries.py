@@ -153,7 +153,7 @@ def test_drop_create(connection: Connection) -> None:
         test_query(
             c,
             "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
-            "test_drop_create_tb(id, sum(f), count(dt))",
+            "test_drop_create_tb(id, count(f), count(dt))",
         )
 
         # Drop aggregating index
