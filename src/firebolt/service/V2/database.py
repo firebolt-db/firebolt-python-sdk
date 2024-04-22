@@ -87,13 +87,13 @@ class DatabaseService(BaseService):
             if attached_engine_name_eq:
                 condition.append(
                     "any_match(eng -> split_part(eng, ' ', 1) = ?,"
-                    " split(',', attached_engines))"
+                    " string_to_array(attached_engines, ','))"
                 )
                 parameters.append(attached_engine_name_eq)
             if attached_engine_name_contains:
                 condition.append(
                     "any_match(eng -> split_part(eng, ' ', 1) like ?,"
-                    " split(',', attached_engines))"
+                    " string_to_array(attached_engines, ','))"
                 )
                 parameters.append(f"%{attached_engine_name_contains}%")
             if region_eq:
