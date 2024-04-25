@@ -261,6 +261,20 @@ def account_engine_callback(account_engine_url: str, mock_engine) -> Callable:
 
 
 @fixture
+def many_engines_callback(mock_engine: Engine) -> Callable:
+    def do_mock(
+        request: httpx.Request = None,
+        **kwargs,
+    ) -> Response:
+        return Response(
+            status_code=httpx.codes.OK,
+            json={"edges": [{"node": mock_engine.model_dict()}]},
+        )
+
+    return do_mock
+
+
+@fixture
 def account_engine_url(server: str, account_id, mock_engine) -> str:
     return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id,

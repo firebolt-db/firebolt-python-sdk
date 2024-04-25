@@ -16,6 +16,11 @@ def test_get_engine(resource_manager: ResourceManager, engine_name: str):
     )
 
 
+def test_get_many(resource_manager: ResourceManager, engine_name: str):
+    engines = resource_manager.engines.get_many(name_contains=engine_name)
+    assert len(engines) == 1
+
+
 @mark.skip(reason="Interferes with other tests")
 def test_engine_stop_start(resource_manager: ResourceManager, engine_name: str):
     engine = resource_manager.engines.get_by_name(engine_name)
