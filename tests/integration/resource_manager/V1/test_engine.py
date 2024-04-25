@@ -18,7 +18,8 @@ def test_get_engine(resource_manager: ResourceManager, engine_name: str):
 
 def test_get_many(resource_manager: ResourceManager, engine_name: str):
     engines = resource_manager.engines.get_many(name_contains=engine_name)
-    assert len(engines) == 1
+    # >= 1 because we may have a stopped engine with the same name + _stopped
+    assert len(engines) >= 1
 
 
 @mark.skip(reason="Interferes with other tests")
