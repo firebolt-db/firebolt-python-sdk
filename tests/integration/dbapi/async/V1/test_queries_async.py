@@ -220,7 +220,7 @@ async def test_drop_create(connection: Connection) -> None:
         await test_query(
             c,
             "CREATE AGGREGATING INDEX test_db_agg_idx ON "
-            "test_drop_create_async(id, sum(f), count(dt))",
+            "test_drop_create_async(id, count(f), count(dt))",
         )
 
         # Drop aggregating index
