@@ -1,0 +1,196 @@
+{
+  "uid" : "9391f102164bf0d8",
+  "name" : "test_drop_create",
+  "fullName" : "tests.integration.dbapi.sync.V2.test_queries#test_drop_create",
+  "historyId" : "12d1f21b1a3b75d82920a877ff3d826f",
+  "time" : {
+    "start" : 1714663305500,
+    "stop" : 1714663307000,
+    "duration" : 1500
+  },
+  "description" : "Create and drop table/index queries are handled properly.",
+  "descriptionHtml" : "<p>Create and drop table/index queries are handled properly.</p>\n",
+  "status" : "broken",
+  "statusMessage" : "firebolt.utils.exception.OperationalError: Error executing query:\nsum_bigint_is_numeric not supported for LQP1 aggregating index",
+  "statusTrace" : "connection = <firebolt.db.connection.Connection object at 0x7f9ee5b744c0>\n\n    def test_drop_create(connection: Connection) -> None:\n        \"\"\"Create and drop table/index queries are handled properly.\"\"\"\n    \n        def test_query(c: Cursor, query: str) -> None:\n            c.execute(query)\n            assert c.description == None\n            assert c.rowcount == 0\n    \n        \"\"\"Create table query is handled properly\"\"\"\n        with connection.cursor() as c:\n            # Cleanup\n            c.execute(\"DROP AGGREGATING INDEX IF EXISTS test_drop_create_db_agg_idx\")\n            c.execute(\"DROP TABLE IF EXISTS test_drop_create_tb\")\n            c.execute(\"DROP TABLE IF EXISTS test_drop_create_tb_dim\")\n    \n            # Fact table\n            test_query(\n                c,\n                \"CREATE FACT TABLE test_drop_create_tb(id int, sn string null, f float,\"\n                \"d date, dt datetime, b bool, a array(int)) primary index id\",\n            )\n    \n            # Dimension table\n            test_query(\n                c,\n                \"CREATE DIMENSION TABLE test_drop_create_tb_dim(id int, sn string null\"\n                \", f float, d date, dt datetime, b bool, a array(int))\",\n            )\n    \n            # Create aggregating index\n>           test_query(\n                c,\n                \"CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON \"\n                \"test_drop_create_tb(id, sum(f), count(dt))\",\n            )\n\ntests/integration/dbapi/sync/V2/test_queries.py:177: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \ntests/integration/dbapi/sync/V2/test_queries.py:151: in test_query\n    c.execute(query)\n/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/firebolt/common/base_cursor.py:136: in inner\n    return func(self, *args, **kwargs)\n/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/firebolt/db/cursor.py:279: in execute\n    self._do_execute(query, params_list, skip_parsing, async_execution)\n/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/firebolt/db/cursor.py:226: in _do_execute\n    self._raise_if_error(resp)\n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\nself = <firebolt.db.cursor.CursorV2 object at 0x7f9ee5b3c7d0>\nresp = <Response [500 Internal Server Error]>\n\n    def _raise_if_error(self, resp: Response) -> None:\n        \"\"\"Raise a proper error if any\"\"\"\n        if resp.status_code == codes.INTERNAL_SERVER_ERROR:\n>           raise OperationalError(\n                f\"Error executing query:\\n{resp.read().decode('utf-8')}\"\n            )\nE           firebolt.utils.exception.OperationalError: Error executing query:\nE           sum_bigint_is_numeric not supported for LQP1 aggregating index\n\n/opt/hostedtoolcache/Python/3.8.18/x64/lib/python3.8/site-packages/firebolt/db/cursor.py:95: OperationalError",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "account_name",
+    "time" : {
+      "start" : 1714662868363,
+      "stop" : 1714662868364,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "engine_name",
+    "time" : {
+      "start" : 1714662869583,
+      "stop" : 1714662869583,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "auth",
+    "time" : {
+      "start" : 1714662868364,
+      "stop" : 1714662868678,
+      "duration" : 314
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "connection",
+    "time" : {
+      "start" : 1714663303913,
+      "stop" : 1714663305499,
+      "duration" : 1586
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "api_endpoint",
+    "time" : {
+      "start" : 1714662868678,
+      "stop" : 1714662868679,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "service_id",
+    "time" : {
+      "start" : 1714662868364,
+      "stop" : 1714662868364,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "database_name",
+    "time" : {
+      "start" : 1714662868363,
+      "stop" : 1714662868363,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "service_secret",
+    "time" : {
+      "start" : 1714662868364,
+      "stop" : 1714662868364,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "connection::0",
+    "time" : {
+      "start" : 1714663307030,
+      "stop" : 1714663307030,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.integration.dbapi.sync.V2"
+  }, {
+    "name" : "suite",
+    "value" : "test_queries"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1247-807"
+  }, {
+    "name" : "thread",
+    "value" : "2471-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.integration.dbapi.sync.V2.test_queries"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ {
+      "name" : "Test defects",
+      "matchedStatuses" : [ ],
+      "flaky" : false
+    } ],
+    "tags" : [ ]
+  },
+  "source" : "9391f102164bf0d8.json",
+  "parameterValues" : [ ]
+}
