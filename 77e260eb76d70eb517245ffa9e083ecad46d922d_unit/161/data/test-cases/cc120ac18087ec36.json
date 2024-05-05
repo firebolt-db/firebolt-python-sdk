@@ -1,0 +1,309 @@
+{
+  "uid" : "cc120ac18087ec36",
+  "name" : "test_client_retry",
+  "fullName" : "tests.unit.client.V2.test_client_async#test_client_retry",
+  "historyId" : "4500c4e137295802e8d7581834a57c4d",
+  "time" : {
+    "start" : 1714878200891,
+    "stop" : 1714878200924,
+    "duration" : 33
+  },
+  "description" : "\n    Client retries with new auth token\n    if first attempt fails with unauthorized error.\n    ",
+  "descriptionHtml" : "<pre><code>Client retries with new auth token\nif first attempt fails with unauthorized error.\n</code></pre>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "auth",
+    "time" : {
+      "start" : 1714878200854,
+      "stop" : 1714878200890,
+      "duration" : 36
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1714878200854,
+      "stop" : 1714878200854,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1714878200854,
+      "stop" : 1714878200854,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1714878200851,
+      "stop" : 1714878200853,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1714878200853,
+      "stop" : 1714878200854,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "account_name",
+    "time" : {
+      "start" : 1714878200890,
+      "stop" : 1714878200890,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "client_id",
+    "time" : {
+      "start" : 1714878200854,
+      "stop" : 1714878200854,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1714878200854,
+      "stop" : 1714878200854,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "access_token",
+    "time" : {
+      "start" : 1714878200890,
+      "stop" : 1714878200890,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "client_secret",
+    "time" : {
+      "start" : 1714878200854,
+      "stop" : 1714878200854,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1714878200928,
+      "stop" : 1714878200928,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1714878200930,
+      "stop" : 1714878200930,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1714878200929,
+      "stop" : 1714878200929,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7fc1d3c96ca0>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.client.V2"
+  }, {
+    "name" : "suite",
+    "value" : "test_client_async"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1530-39"
+  }, {
+    "name" : "thread",
+    "value" : "2324-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.client.V2.test_client_async"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 6,
+        "unknown" : 0,
+        "total" : 6
+      },
+      "items" : [ {
+        "uid" : "ef16616e96ab4ac4",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/77e260eb76d70eb517245ffa9e083ecad46d922d_unit/160//#testresult/ef16616e96ab4ac4",
+        "status" : "passed",
+        "time" : {
+          "start" : 1714791800233,
+          "stop" : 1714791800266,
+          "duration" : 33
+        }
+      }, {
+        "uid" : "ab664c5ad54b38de",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/77e260eb76d70eb517245ffa9e083ecad46d922d_unit/159//#testresult/ab664c5ad54b38de",
+        "status" : "passed",
+        "time" : {
+          "start" : 1714705407833,
+          "stop" : 1714705407867,
+          "duration" : 34
+        }
+      }, {
+        "uid" : "f1c2309636cdbb17",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/77e260eb76d70eb517245ffa9e083ecad46d922d_unit/158//#testresult/f1c2309636cdbb17",
+        "status" : "passed",
+        "time" : {
+          "start" : 1714618990516,
+          "stop" : 1714618990551,
+          "duration" : 35
+        }
+      }, {
+        "uid" : "c3d5bd0b6691ef8d",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/77e260eb76d70eb517245ffa9e083ecad46d922d_unit/157//#testresult/c3d5bd0b6691ef8d",
+        "status" : "passed",
+        "time" : {
+          "start" : 1714532602107,
+          "stop" : 1714532602141,
+          "duration" : 34
+        }
+      }, {
+        "uid" : "50404e9d70a2ff45",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/77e260eb76d70eb517245ffa9e083ecad46d922d_unit/310//#testresult/50404e9d70a2ff45",
+        "status" : "passed",
+        "time" : {
+          "start" : 1714480456777,
+          "stop" : 1714480456812,
+          "duration" : 35
+        }
+      } ]
+    },
+    "tags" : [ "trio(run=<function run at 0x7fc1d3c96ca0>)" ]
+  },
+  "source" : "cc120ac18087ec36.json",
+  "parameterValues" : [ ]
+}
