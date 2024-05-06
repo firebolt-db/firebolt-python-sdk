@@ -136,6 +136,40 @@ async def test_connect_engine_name(
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
 
+async def test_connect_engine_running(
+    httpx_mock: HTTPXMock,
+    db_name: str,
+    auth_url: str,
+    server: str,
+    auth: Auth,
+    account_name: str,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
+    check_credentials_callback: Callable,
+    engine_name: str,
+    system_engine_query_url: str,
+    get_engine_url_callback_test_status: Callable,
+) -> None:
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(
+        get_engine_url_callback_test_status, url=system_engine_query_url
+    )
+
+    async with await connect(
+        engine_name=engine_name,
+        database=db_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=server,
+    ):
+        # Engine is running, no exception should be raised
+        pass
+
+
 async def test_connect_database(
     db_name: str,
     auth_url: str,
