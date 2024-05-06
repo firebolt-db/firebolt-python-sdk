@@ -1,0 +1,94 @@
+{
+  "uid" : "7f1462c951073cc3",
+  "name" : "test_parse_value_datetime[2021-12-31 23:59:59.1234+05:30:12-expected4-timezone with seconds provided]",
+  "fullName" : "tests.unit.common.test_typing_parse#test_parse_value_datetime",
+  "historyId" : "326fad495bdce4eb1b62a56dfb09e9bd",
+  "time" : {
+    "start" : 1714994656635,
+    "stop" : 1714994656635,
+    "duration" : 0
+  },
+  "description" : "parse_value parses all date values correctly.",
+  "descriptionHtml" : "<p>parse_value parses all date values correctly.</p>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1714994656632,
+      "stop" : 1714994656634,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1714994656638,
+      "stop" : 1714994656638,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false,
+    "stepsCount" : 0
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.common"
+  }, {
+    "name" : "suite",
+    "value" : "test_typing_parse"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1380-759"
+  }, {
+    "name" : "thread",
+    "value" : "2339-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.common.test_typing_parse"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "case",
+    "value" : "'timezone with seconds provided'"
+  }, {
+    "name" : "expected",
+    "value" : "datetime.datetime(2021, 12, 31, 23, 59, 59, 123400, tzinfo=datetime.timezone(datetime.timedelta(seconds=19812)))"
+  }, {
+    "name" : "value",
+    "value" : "'2021-12-31 23:59:59.1234+05:30:12'"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "tags" : [ ]
+  },
+  "source" : "7f1462c951073cc3.json",
+  "parameterValues" : [ "'timezone with seconds provided'", "datetime.datetime(2021, 12, 31, 23, 59, 59, 123400, tzinfo=datetime.timezone(datetime.timedelta(seconds=19812)))", "'2021-12-31 23:59:59.1234+05:30:12'" ]
+}
