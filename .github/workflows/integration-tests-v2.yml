@@ -33,8 +33,7 @@ jobs:
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           account: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
           api-endpoint: "api.staging.firebolt.io"
-        env:
-          FB_INTERNAL_OPTIONS_ENGINE_VERSION: "0.0.0"
+          engine-version: "0.0.0"
 
       - name: Run integration tests
         env:
