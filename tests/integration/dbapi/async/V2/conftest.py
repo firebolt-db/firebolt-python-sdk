@@ -141,7 +141,7 @@ async def service_account_no_user(
             s_id = (await cursor.fetchone())[0]
         # Wrap in secret to avoid leaking the key in the logs
         yield s_id, Secret(key)
-        await cursor.execute(f"DROP SERVICE ACCOUNT {sa_account_name}")
+        await cursor.execute(f'DROP SERVICE ACCOUNT "{sa_account_name}"')
 
 
 @fixture
