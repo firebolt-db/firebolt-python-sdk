@@ -27,13 +27,14 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@add-version-parameter
+        uses: firebolt-db/integration-testing-setup@bump-node-version
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           account: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
           api-endpoint: "api.staging.firebolt.io"
-          engine-version: "0.0.0"
+        env:
+          FB_INTERNAL_OPTIONS_ENGINE_VERSION: "3.34.2"
 
       - name: Run integration tests
         env:
