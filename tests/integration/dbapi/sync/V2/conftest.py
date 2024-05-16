@@ -141,7 +141,7 @@ def service_account_no_user(
             s_id = cursor.fetchone()[0]
         # Wrap in secret to avoid leaking the key in the logs
         yield s_id, Secret(key)
-        cursor.execute(f"DROP SERVICE ACCOUNT {sa_account_name}")
+        cursor.execute(f'DROP SERVICE ACCOUNT "{sa_account_name}"')
 
 
 @fixture
