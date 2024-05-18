@@ -1,0 +1,121 @@
+{
+  "uid" : "550f5c34bb2dea69",
+  "name" : "test_detect_connectors[stack2-map2-expected2]",
+  "fullName" : "tests.unit.utils.test_usage_tracker#test_detect_connectors",
+  "historyId" : "a5c91b32215afa0b413e1e6075ceeb1a",
+  "time" : {
+    "start" : 1716001428652,
+    "stop" : 1716001428653,
+    "duration" : 1
+  },
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1716001428649,
+      "stop" : 1716001428651,
+      "duration" : 2
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1716001428656,
+      "stop" : 1716001428657,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "parentSuite",
+    "value" : "tests.unit.utils"
+  }, {
+    "name" : "suite",
+    "value" : "test_usage_tracker"
+  }, {
+    "name" : "host",
+    "value" : "fv-az525-637"
+  }, {
+    "name" : "thread",
+    "value" : "2331-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.utils.test_usage_tracker"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ {
+    "name" : "expected",
+    "value" : "{'SQLAlchemy': '0.1.2'}"
+  }, {
+    "name" : "map",
+    "value" : "[('SQLAlchemy', 'connect', PosixPath('sqlalchemy/engine/default.py'), 'firebolt_db')]"
+  }, {
+    "name" : "stack",
+    "value" : "[StackItem(function='connect', filename='sqlalchemy/engine/default.py')]"
+  } ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 3,
+        "unknown" : 0,
+        "total" : 3
+      },
+      "items" : [ {
+        "uid" : "767b3d6a593e6b85",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/4e484b9e4130b2d6f1e9019be7f57ba3f85e2c4d_unit/173//#testresult/767b3d6a593e6b85",
+        "status" : "passed",
+        "time" : {
+          "start" : 1715915007053,
+          "stop" : 1715915007053,
+          "duration" : 0
+        }
+      }, {
+        "uid" : "55941365685b5c4f",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/4e484b9e4130b2d6f1e9019be7f57ba3f85e2c4d_unit/317//#testresult/55941365685b5c4f",
+        "status" : "passed",
+        "time" : {
+          "start" : 1715861647494,
+          "stop" : 1715861647495,
+          "duration" : 1
+        }
+      } ]
+    },
+    "tags" : [ ]
+  },
+  "source" : "550f5c34bb2dea69.json",
+  "parameterValues" : [ "{'SQLAlchemy': '0.1.2'}", "[('SQLAlchemy', 'connect', PosixPath('sqlalchemy/engine/default.py'), 'firebolt_db')]", "[StackItem(function='connect', filename='sqlalchemy/engine/default.py')]" ]
+}
