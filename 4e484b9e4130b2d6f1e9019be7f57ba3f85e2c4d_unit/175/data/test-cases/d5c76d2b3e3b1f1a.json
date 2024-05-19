@@ -1,0 +1,246 @@
+{
+  "uid" : "d5c76d2b3e3b1f1a",
+  "name" : "test_auth_refresh_on_expiration",
+  "fullName" : "tests.unit.client.auth.test_auth_async#test_auth_refresh_on_expiration",
+  "historyId" : "3fccee0421ef0b52a53087681428b196",
+  "time" : {
+    "start" : 1716087800390,
+    "stop" : 1716087800450,
+    "duration" : 60
+  },
+  "description" : "Auth refreshes the token on expiration.",
+  "descriptionHtml" : "<p>Auth refreshes the token on expiration.</p>\n",
+  "status" : "passed",
+  "flaky" : false,
+  "newFailed" : false,
+  "beforeStages" : [ {
+    "name" : "monkeypatch",
+    "time" : {
+      "start" : 1716087800388,
+      "stop" : 1716087800389,
+      "duration" : 1
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "access_token",
+    "time" : {
+      "start" : 1716087800389,
+      "stop" : 1716087800389,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs",
+    "time" : {
+      "start" : 1716087800323,
+      "stop" : 1716087800388,
+      "duration" : 65
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "non_mocked_hosts",
+    "time" : {
+      "start" : 1716087800389,
+      "stop" : 1716087800389,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "access_token_2",
+    "time" : {
+      "start" : 1716087800390,
+      "stop" : 1716087800390,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "assert_all_responses_were_requested",
+    "time" : {
+      "start" : 1716087800389,
+      "stop" : 1716087800389,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock",
+    "time" : {
+      "start" : 1716087800389,
+      "stop" : 1716087800389,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "afterStages" : [ {
+    "name" : "monkeypatch::0",
+    "time" : {
+      "start" : 1716087800454,
+      "stop" : 1716087800454,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "global_fake_fs::0",
+    "time" : {
+      "start" : 1716087800455,
+      "stop" : 1716087800455,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  }, {
+    "name" : "httpx_mock::0",
+    "time" : {
+      "start" : 1716087800453,
+      "stop" : 1716087800453,
+      "duration" : 0
+    },
+    "status" : "passed",
+    "steps" : [ ],
+    "attachments" : [ ],
+    "parameters" : [ ],
+    "stepsCount" : 0,
+    "attachmentsCount" : 0,
+    "shouldDisplayMessage" : false,
+    "hasContent" : false
+  } ],
+  "labels" : [ {
+    "name" : "tag",
+    "value" : "trio(run=<function run at 0x7f0b04d050d0>)"
+  }, {
+    "name" : "parentSuite",
+    "value" : "tests.unit.client.auth"
+  }, {
+    "name" : "suite",
+    "value" : "test_auth_async"
+  }, {
+    "name" : "host",
+    "value" : "fv-az1776-295"
+  }, {
+    "name" : "thread",
+    "value" : "2323-MainThread"
+  }, {
+    "name" : "framework",
+    "value" : "pytest"
+  }, {
+    "name" : "language",
+    "value" : "cpython3"
+  }, {
+    "name" : "package",
+    "value" : "tests.unit.client.auth.test_auth_async"
+  }, {
+    "name" : "resultFormat",
+    "value" : "allure2"
+  } ],
+  "parameters" : [ ],
+  "links" : [ ],
+  "hidden" : false,
+  "retry" : false,
+  "extra" : {
+    "severity" : "normal",
+    "retries" : [ ],
+    "categories" : [ ],
+    "history" : {
+      "statistic" : {
+        "failed" : 0,
+        "broken" : 0,
+        "skipped" : 0,
+        "passed" : 4,
+        "unknown" : 0,
+        "total" : 4
+      },
+      "items" : [ {
+        "uid" : "9b50283badf20882",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/4e484b9e4130b2d6f1e9019be7f57ba3f85e2c4d_unit/174//#testresult/9b50283badf20882",
+        "status" : "passed",
+        "time" : {
+          "start" : 1716001407457,
+          "stop" : 1716001407517,
+          "duration" : 60
+        }
+      }, {
+        "uid" : "fca5df00b892098c",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/4e484b9e4130b2d6f1e9019be7f57ba3f85e2c4d_unit/173//#testresult/fca5df00b892098c",
+        "status" : "passed",
+        "time" : {
+          "start" : 1715914986030,
+          "stop" : 1715914986093,
+          "duration" : 63
+        }
+      }, {
+        "uid" : "4e4df12adfaf20ac",
+        "reportUrl" : "https://firebolt-db.github.io/firebolt-python-sdk/4e484b9e4130b2d6f1e9019be7f57ba3f85e2c4d_unit/317//#testresult/4e4df12adfaf20ac",
+        "status" : "passed",
+        "time" : {
+          "start" : 1715861627199,
+          "stop" : 1715861627256,
+          "duration" : 57
+        }
+      } ]
+    },
+    "tags" : [ "trio(run=<function run at 0x7f0b04d050d0>)" ]
+  },
+  "source" : "d5c76d2b3e3b1f1a.json",
+  "parameterValues" : [ ]
+}
