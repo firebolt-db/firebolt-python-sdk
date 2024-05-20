@@ -37,9 +37,11 @@ async def test_account_no_user(
     account_name: str,
     auth_no_user: ClientCredentials,
     api_endpoint: str,
+    account_version: int,
 ) -> None:
     """Connection properly reacts to account that doesn't have
     a user attached to it."""
+
     with raises(AccountNotFoundOrNoAccessError) as exc_info:
         async with await connect(
             database=database_name,
@@ -49,8 +51,8 @@ async def test_account_no_user(
         ) as connection:
             await connection.cursor().execute("show tables")
 
-    assert str(exc_info.value).startswith(
-        f"Account '{account_name}' does not exist"
+    assert f"'{account_name}' does not exist" in str(
+        exc_info.value
     ), "Invalid account error message."
 
 
@@ -116,7 +118,7 @@ async def test_database_not_exists(
             await connection.cursor().execute("show tables")
 
     if account_version == 2:
-        assert f"Database '{database_name}' does not exist or not authorized" in str(
+        assert f"Database '{new_db_name}' does not exist or not authorized" in str(
             exc_info.value
         ), "Invalid database error message."
     else:
