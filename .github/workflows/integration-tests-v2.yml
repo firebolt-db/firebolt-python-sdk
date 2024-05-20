@@ -33,6 +33,7 @@ jobs:
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           account: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
           api-endpoint: "api.staging.firebolt.io"
+          instance-type: "B1"
           engine-version: "3.34.2"
 
       - name: Run integration tests
