@@ -59,9 +59,11 @@ def test_engine_name_not_exists(
     auth: ClientCredentials,
     account_name: str,
     api_endpoint: str,
+    account_version: int,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
-    with raises(FireboltEngineError):
+    error_cls = OperationalError if account_version == 2 else FireboltEngineError
+    with raises(error_cls):
         with connect(
             account_name=account_name,
             engine_name=engine_name + "_________",

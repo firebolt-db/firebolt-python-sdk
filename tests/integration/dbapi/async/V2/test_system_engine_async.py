@@ -1,6 +1,7 @@
 import re
 from typing import List
 
+import pytest
 from pytest import raises
 
 from firebolt.async_db import Connection
@@ -19,11 +20,12 @@ async def test_system_engine(
     all_types_query_description: List[Column],
     all_types_query_system_engine_response: List[ColType],
     timezone_name: str,
+    account_version: int,
 ) -> None:
     """Connecting with engine name is handled properly."""
     assert (
         await connection_system_engine._client._account_version
-    ) == 1, "Invalid account version"
+    ) == account_version, "Invalid account version"
     with connection_system_engine.cursor() as c:
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
@@ -70,6 +72,7 @@ async def test_system_engine_no_db(
     all_types_query_description: List[Column],
     all_types_query_system_engine_response: List[ColType],
     timezone_name: str,
+    account_version: int,
 ) -> None:
     """Connecting with engine name is handled properly."""
     await test_system_engine(
@@ -78,25 +81,29 @@ async def test_system_engine_no_db(
         all_types_query_description,
         all_types_query_system_engine_response,
         timezone_name,
+        account_version,
     )
 
 
-async def test_system_engine_v2_account(connection_system_engine_v2: Connection):
+async def test_system_engine_account(
+    connection_system_engine: Connection, account_version: int
+):
     assert (
-        await connection_system_engine_v2._client.account_id
+        await connection_system_engine._client.account_id
     ), "Can't get account id explicitly"
     assert (
-        await connection_system_engine_v2._client._account_version
-    ) == 2, "Invalid account version"
+        await connection_system_engine._client._account_version
+    ) == account_version, "Invalid account version"
 
 
+@pytest.mark.account_v2
 async def test_system_engine_use_engine(
-    connection_system_engine_v2: Connection, setup_v2_db: str, engine_v2: str
+    connection_system_engine: Connection, database_name: str, engine_name: str
 ):
     table_name = "test_table_async"
-    with connection_system_engine_v2.cursor() as cursor:
-        await cursor.execute(f"USE DATABASE {setup_v2_db}")
-        await cursor.execute(f"USE ENGINE {engine_v2}")
+    with connection_system_engine.cursor() as cursor:
+        await cursor.execute(f"USE DATABASE {database_name}")
+        await cursor.execute(f"USE ENGINE {engine_name}")
         await cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id int)")
         # This query fails if we're not on a user engine
         await cursor.execute(f"INSERT INTO {table_name} VALUES (1)")

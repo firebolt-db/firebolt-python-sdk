@@ -13,8 +13,7 @@ LOGGER = getLogger(__name__)
 ENGINE_NAME_ENV = "ENGINE_NAME"
 STOPPED_ENGINE_NAME_ENV = "STOPPED_ENGINE_NAME"
 DATABASE_NAME_ENV = "DATABASE_NAME"
-ACCOUNT_NAME_V1_ENV = "ACCOUNT_NAME_V1"
-ACCOUNT_NAME_V2_ENV = "ACCOUNT_NAME_V2"
+ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
@@ -31,20 +30,52 @@ def pytest_addoption(parser):
     parser.addoption(
         "--runslow", action="store_true", default=False, help="run slow tests"
     )
+    parser.addoption(
+        "--account-v2",
+        action="store_true",
+        default=False,
+        help="run tests, that are only for account v2 infrastructure",
+    )
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
+    config.addinivalue_line(
+        "markers", "account-v2: mark test as only for account v2 infrastructure"
+    )
+    config.addinivalue_line(
+        "markers", "account-v1: mark test as only for account v1 infrastructure"
+    )
+
+
+account_version_value = None
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--runslow"):
-        # --runslow given in cli: do not skip slow tests
-        return
-    skip_slow = mark.skip(reason="need --runslow option to run")
-    for item in items:
-        if "slow" in item.keywords:
-            item.add_marker(skip_slow)
+    if not config.getoption("--runslow"):
+        # --runslow isn't given in cli: skip slow tests
+        skip_slow = mark.skip(reason="need --runslow option to run")
+        for item in items:
+            if "slow" in item.keywords:
+                item.add_marker(skip_slow)
+
+    global account_version_value
+    if not config.getoption("--account-v2"):
+        # --account-v2 isn't given in cli: skip account v2 tests
+        skip_account_v2 = mark.skip(reason="need --account-v2 option to run")
+        for item in items:
+            if "account-v2" in item.keywords:
+                item.add_marker(skip_account_v2)
+
+        account_version_value = 1
+    else:
+        # --account-v2 is given in cli: skip account v1 tests
+        skip_account_v1 = mark.skip(reason="--account-v2 option is given")
+        for item in items:
+            if "account-v1" in item.keywords:
+                item.add_marker(skip_account_v1)
+
+        account_version_value = 2
 
 
 class Secret:
@@ -94,12 +125,7 @@ def use_db_name(database_name: str):
 
 @fixture(scope="session")
 def account_name() -> str:
-    return must_env(ACCOUNT_NAME_V1_ENV)
-
-
-@fixture(scope="session")
-def account_name_v2() -> str:
-    return must_env(ACCOUNT_NAME_V2_ENV)
+    return must_env(ACCOUNT_NAME_ENV)
 
 
 @fixture(scope="session")
@@ -167,3 +193,9 @@ def minimal_time():
         assert (
             end - start >= limit
         ), f"Test took {end - start} seconds, less than {limit} seconds"
+
+
+@fixture(scope="session")
+def account_version():
+    global account_version_value
+    return account_version_value

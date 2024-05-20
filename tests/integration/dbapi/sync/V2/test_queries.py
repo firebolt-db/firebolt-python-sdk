@@ -1,17 +1,15 @@
 import math
 from datetime import date, datetime
 from decimal import Decimal
-from os import environ
 from random import randint
 from threading import Thread
-from typing import Any, Callable, Generator, List
+from typing import Any, Callable, List
 
 from pytest import mark, raises
 
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType, Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
-from tests.integration.conftest import API_ENDPOINT_ENV
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
@@ -55,10 +53,6 @@ def test_select(
         # For timestamptz test
         assert (
             c.execute(f"SET time_zone={timezone_name}") == -1
-        ), "Invalid set statment row count"
-        # For boolean test
-        assert (
-            c.execute(f"SET bool_output_format=postgres") == -1
         ), "Invalid set statment row count"
 
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
@@ -437,66 +431,41 @@ def test_bytea_roundtrip(
         ), "Invalid bytea data returned after roundtrip"
 
 
-@mark.xfail("dev" not in environ[API_ENDPOINT_ENV], reason="Only works on dev")
-def test_use_database(
-    setup_v2_db,
-    connection_system_engine: Connection,
-    database_name: str,
-) -> None:
-    test_table_name = "verify_use_db"
-    """Use database works as expected."""
-    with connection_system_engine.cursor() as c:
-        c.execute(f"USE DATABASE {setup_v2_db}")
-        assert c.database == setup_v2_db
-        c.execute(f"CREATE TABLE {test_table_name} (id int)")
-        c.execute(
-            "SELECT table_name FROM information_schema.tables "
-            f"WHERE table_name = '{test_table_name}'"
-        )
-        assert c.fetchone()[0] == test_table_name, "Table was not created"
-        # Change DB and verify table is not there
-        c.execute(f"USE DATABASE {database_name}")
-        assert c.database == database_name
-        c.execute(
-            "SELECT table_name FROM information_schema.tables "
-            f"WHERE table_name = '{test_table_name}'"
-        )
-        assert c.fetchone() is None, "Database was not changed"
-
-
+@mark.account_v2
 def test_account_v2_connection_with_db(
-    setup_v2_db: Generator,
+    database_name: str,
     auth: Auth,
-    account_name_v2: str,
+    account_name: str,
     api_endpoint: str,
 ) -> None:
     with connect(
-        database=setup_v2_db,
+        database=database_name,
         auth=auth,
-        account_name=account_name_v2,
+        account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
         # This fails if we're not running with a db context
         connection.cursor().execute("SELECT * FROM information_schema.tables LIMIT 1")
 
 
+@mark.account_v2
 def test_account_v2_connection_with_db_and_engine(
-    setup_v2_db: Generator,
-    connection_system_engine_v2: Connection,
+    database_name: str,
+    connection_system_engine: Connection,
     auth: Auth,
-    account_name_v2: str,
+    account_name: str,
     api_endpoint: str,
-    engine_v2: str,
+    engine_name: str,
 ) -> None:
-    system_cursor = connection_system_engine_v2.cursor()
+    system_cursor = connection_system_engine.cursor()
     # We can only connect to a running engine so start it first
     # via the system connection to keep test isolated
-    system_cursor.execute(f"START ENGINE {engine_v2}")
+    system_cursor.execute(f"START ENGINE {engine_name}")
     with connect(
-        database=setup_v2_db,
-        engine_name=engine_v2,
+        database=database_name,
+        engine_name=engine_name,
         auth=auth,
-        account_name=account_name_v2,
+        account_name=account_name,
         api_endpoint=api_endpoint,
     ) as connection:
         # generate a random string to avoid name conflicts

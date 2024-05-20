@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.common._types import ColType, Column
 from firebolt.db import Connection
@@ -19,10 +19,11 @@ def test_system_engine(
     all_types_query_description: List[Column],
     all_types_query_system_engine_response: List[ColType],
     timezone_name: str,
+    account_version: int,
 ) -> None:
     """Connecting with engine name is handled properly."""
     assert (
-        connection_system_engine._client._account_version == 1
+        connection_system_engine._client._account_version == account_version
     ), "Invalid account version"
     with connection_system_engine.cursor() as c:
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
@@ -70,6 +71,7 @@ def test_system_engine_no_db(
     all_types_query_description: List[Column],
     all_types_query_system_engine_response: List[ColType],
     timezone_name: str,
+    account_version: int,
 ) -> None:
     """Connecting with engine name is handled properly."""
     test_system_engine(
@@ -78,30 +80,34 @@ def test_system_engine_no_db(
         all_types_query_description,
         all_types_query_system_engine_response,
         timezone_name,
+        account_version,
     )
 
 
-def test_system_engine_v2_account(connection_system_engine_v2: Connection):
+def test_system_engine_account(
+    connection_system_engine: Connection, account_version: int
+):
     assert (
-        connection_system_engine_v2._client.account_id
+        connection_system_engine._client.account_id
     ), "Can't get account id explicitly"
     assert (
-        connection_system_engine_v2._client._account_version == 2
+        connection_system_engine._client._account_version == account_version
     ), "Invalid account version"
 
 
+@mark.account_v2
 def test_system_engine_use_engine(
-    connection_system_engine_v2: Connection, setup_v2_db: str, engine_v2: str
+    connection_system_engine: Connection, database_name: str, engine_name: str
 ):
     table_name = "test_table_sync"
-    with connection_system_engine_v2.cursor() as cursor:
-        cursor.execute(f"USE DATABASE {setup_v2_db}")
-        cursor.execute(f"USE ENGINE {engine_v2}")
+    with connection_system_engine.cursor() as cursor:
+        cursor.execute(f"USE DATABASE {database_name}")
+        cursor.execute(f"USE ENGINE {engine_name}")
         cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id int)")
         # This query fails if we're not on a user engine
         cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
         cursor.execute("USE ENGINE system")
-        # Werify we've switched to system by making previous query fail
+        # Verify we've switched to system by making previous query fail
         with raises(OperationalError):
             cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
         cursor.execute(f"DROP TABLE IF EXISTS {table_name}")

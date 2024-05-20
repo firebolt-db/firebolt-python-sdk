@@ -1,6 +1,5 @@
 import random
 import string
-from random import choice
 from typing import Tuple
 
 from pytest import fixture
@@ -59,47 +58,6 @@ async def connection_system_engine(
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection
-
-
-@fixture
-async def connection_system_engine_v2(
-    auth: Auth,
-    account_name_v2: str,
-    api_endpoint: str,
-) -> Connection:
-    async with await connect(
-        auth=auth,
-        account_name=account_name_v2,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        yield connection
-
-
-@fixture
-async def engine_v2(
-    connection_system_engine_v2: Connection,
-    engine_name: str,
-) -> str:
-    cursor = connection_system_engine_v2.cursor()
-    # randomize the db name to avoid conflicts
-    suffix = "".join(choice("0123456789") for _ in range(2))
-    engine_name = f"{engine_name}{suffix}_async"
-    await cursor.execute(f"CREATE ENGINE IF NOT EXISTS {engine_name}")
-    await cursor.execute(f"START ENGINE {engine_name}")
-    yield engine_name
-    await cursor.execute(f"STOP ENGINE {engine_name}")
-    await cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
-
-
-@fixture
-async def setup_v2_db(connection_system_engine_v2: Connection, use_db_name: str):
-    use_db_name = use_db_name + "_async"
-    with connection_system_engine_v2.cursor() as cursor:
-        # randomize the db name to avoid conflicts
-        suffix = "".join(choice("0123456789") for _ in range(2))
-        await cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
-        yield f"{use_db_name}{suffix}"
-        await cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
 
 
 @fixture
