@@ -7,6 +7,8 @@
 ![Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/ptiurin/65d5a42849fd78f4c6e62fad18490d20/raw/firebolt-sdk-coverage.json)
 
 
+
+ 
 ### Installation
 
 * Requires Python `>=3.8`
