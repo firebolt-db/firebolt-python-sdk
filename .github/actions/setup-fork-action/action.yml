@@ -1,0 +1,63 @@
+name: "Setup Fork Action"
+description: "Sets up a fork for integration testing"
+inputs:
+  firebolt-client-id:
+    description: "Firebolt client ID"
+    required: true
+  firebolt-client-secret:
+    description: "Firebolt client secret"
+    required: true
+  account:
+    description: "Firebolt account"
+    required: true
+  api-endpoint:
+    description: "Firebolt API endpoint"
+    required: true
+outputs:
+  database-name:
+    description: "Database name"
+    value: ${{ steps.setup.outputs.database_name }}
+  engine-name:
+    description: "Engine name"
+    value: ${{ steps.setup.outputs.engine_name }}
+  stopped-engine-name:
+    description: "Stopped engine name"
+    value: ${{ steps.setup.outputs.stopped_engine_name }}
+  sa-id:
+    description: "Service account ID"
+    value: ${{ steps.create-scoped-sa.outputs.sa_id }}
+  sa-secret:
+    description: "Service account secret"
+    value: ${{ steps.create-scoped-sa.outputs.sa_secret }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup database and engine
+      id: setup
+      uses: firebolt-db/integration-testing-setup@v2
+      with:
+        firebolt-client-id: ${{ inputs.firebolt-client-id }}
+        firebolt-client-secret: ${{ inputs.firebolt-client-secret }}
+        account: ${{ inputs.account }}
+        api-endpoint: ${{ inputs.api-endpoint }}
+
+    - name: Checkout main
+      uses: actions/checkout@v2
+      with:
+        ref: main
+        persist-credentials: false
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.8
+
+    - name: Create scoped service account and role
+      shell: bash
+      id: create-scoped-sa
+      run: |
+        python3 create_scoped_sa.py ${{ inputs.firebolt-client-id }} \
+          ${{ inputs.firebolt-client-secret }} ${{ inputs.account }} \
+          ${{ inputs.api-endpoint }} ${{ setup.outputs.database_name }} \
+          ${{ setup.outputs.engine_name }} ${{ setup.outputs.stopped_engine_name }}
