@@ -35,15 +35,15 @@ jobs:
           pip install ".[dev]"
 
       - name: Determine account name
-        - id: account
-          run: |
-            if [ "${{ inputs.is_account_v2 }}" == "true" ]; then
-                echo "name=${{ vars.FIREBOLT_ACCOUNT_V2 }}" >> $GITHUB_OUTPUT
-                echo "filter=not V1" >> $GITHUB_OUTPUT
-            else
-                echo "name=${{ vars.FIREBOLT_ACCOUNT_V1 }}" >> $GITHUB_OUTPUT
-                echo "filter=not V1 and not ACCOUNT_V2" >> $GITHUB_OUTPUT
-            fi
+        id: account
+        run: |
+          if [ "${{ inputs.is_account_v2 }}" == "true" ]; then
+              echo "name=${{ vars.FIREBOLT_ACCOUNT_V2 }}" >> $GITHUB_OUTPUT
+              echo "filter=not V1" >> $GITHUB_OUTPUT
+          else
+              echo "name=${{ vars.FIREBOLT_ACCOUNT_V1 }}" >> $GITHUB_OUTPUT
+              echo "filter=not V1 and not ACCOUNT_V2" >> $GITHUB_OUTPUT
+          fi
       - name: Setup database and engine
         id: setup
         uses: firebolt-db/integration-testing-setup@v2
