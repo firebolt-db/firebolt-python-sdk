@@ -34,6 +34,11 @@ class DatabaseService(BaseService):
         "DESCRIPTION",
     )
 
+    DISALLOWED_ACCOUNT_V2_PARAMETERS = [
+        "attached_engine_name_eq",
+        "attached_engine_name_contains",
+    ]
+
     def _get_dict(self, name: str) -> dict:
         with self._connection.cursor() as c:
             count = c.execute(self.GET_BY_NAME_SQL, (name,))
@@ -49,6 +54,21 @@ class DatabaseService(BaseService):
 
     def get_by_name(self, name: str) -> Database:
         return self.get(name)
+
+    def _validate_create_parameters(
+        self,
+        **create_parameters: Optional[str],
+    ) -> None:
+        if self.client._account_version == 2:
+            bad_parameters = [
+                name
+                for name in self.DISALLOWED_ACCOUNT_V2_PARAMETERS
+                if create_parameters.get(name) is not None
+            ]
+            if bad_parameters:
+                raise ValueError(
+                    f"Parameters {bad_parameters} are not supported for this account"
+                )
 
     def get_many(
         self,
@@ -72,6 +92,12 @@ class DatabaseService(BaseService):
         """
         sql = self.GET_SQL
         parameters = []
+        self._validate_create_parameters(
+            name_contains=name_contains,
+            attached_engine_name_eq=attached_engine_name_eq,
+            attached_engine_name_contains=attached_engine_name_contains,
+            region_eq=region_eq,
+        )
         if any(
             (
                 name_contains,

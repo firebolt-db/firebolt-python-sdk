@@ -74,6 +74,7 @@ def test_engine_name_not_exists(
             connection.cursor().execute("show tables")
 
 
+@mark.account_v1
 def test_engine_stopped(
     stopped_engine_name: str,
     database_name: str,

@@ -41,10 +41,10 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line(
-        "markers", "account-v2: mark test as only for account v2 infrastructure"
+        "markers", "account_v2: mark test as only for account v2 infrastructure"
     )
     config.addinivalue_line(
-        "markers", "account-v1: mark test as only for account v1 infrastructure"
+        "markers", "account_v1: mark test as only for account v1 infrastructure"
     )
 
 
@@ -64,7 +64,7 @@ def pytest_collection_modifyitems(config, items):
         # --account-v2 isn't given in cli: skip account v2 tests
         skip_account_v2 = mark.skip(reason="need --account-v2 option to run")
         for item in items:
-            if "account-v2" in item.keywords:
+            if "account_v2" in item.keywords:
                 item.add_marker(skip_account_v2)
 
         account_version_value = 1
@@ -72,7 +72,7 @@ def pytest_collection_modifyitems(config, items):
         # --account-v2 is given in cli: skip account v1 tests
         skip_account_v1 = mark.skip(reason="--account-v2 option is given")
         for item in items:
-            if "account-v1" in item.keywords:
+            if "account_v1" in item.keywords:
                 item.add_marker(skip_account_v1)
 
         account_version_value = 2

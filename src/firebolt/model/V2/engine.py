@@ -60,14 +60,22 @@ class Engine(FireboltBaseModel):
         "WARMUP",
         "ENGINE_TYPE",
     )
+    ALTER_PARAMETER_NAMES_V2: ClassVar[Tuple] = (
+        "NODES",
+        "TYPE",
+        "AUTO_STOP",
+        "RENAME_TO",
+        "",
+        "",
+    )
     DROP_SQL: ClassVar[str] = "DROP ENGINE {}"
 
     _service: EngineService = field(repr=False, compare=False)
 
     name: str = field(metadata={"db_name": "engine_name"})
     region: str = field()
-    spec: InstanceType = field()
-    scale: int = field()
+    spec: InstanceType = field(metadata={"db_name": "type"})
+    scale: int = field(metadata={"db_name": "nodes"})
     current_status: EngineStatus = field(metadata={"db_name": "status"})
     _database_name: str = field(repr=False, metadata={"db_name": "attached_to"})
     version: str = field()
@@ -77,7 +85,12 @@ class Engine(FireboltBaseModel):
     type: EngineType = field(metadata={"db_name": "engine_type"})
 
     def __post_init__(self) -> None:
-        if isinstance(self.spec, str) and self.spec:
+        # Specs are just strings for accounts v2
+        if (
+            isinstance(self.spec, str)
+            and self.spec
+            and self._service.account_version == 1
+        ):
             # Resolve engine specification
             self.spec = self._service.resource_manager.instance_types.get(self.spec)
         if isinstance(self.current_status, str) and self.current_status:
@@ -213,6 +226,9 @@ class Engine(FireboltBaseModel):
         Updates the engine and returns an updated version of the engine. If all
         parameters are set to None, old engine parameter values remain.
         """
+        self._service._validate_create_parameters(
+            name=name, scale=scale, spec=spec, auto_stop=auto_stop, warmup=warmup
+        )
 
         if not any(
             x is not None for x in (name, scale, spec, auto_stop, warmup, engine_type)
@@ -230,15 +246,21 @@ class Engine(FireboltBaseModel):
 
         sql = self.ALTER_PREFIX_SQL.format(self.name)
         parameters = []
+        parameter_names = (
+            self.ALTER_PARAMETER_NAMES_V2
+            if self._service.client._account_version == 2
+            else self.ALTER_PARAMETER_NAMES
+        )
         for param, value in zip(
-            self.ALTER_PARAMETER_NAMES,
+            parameter_names,
             (scale, spec, auto_stop, name, warmup, engine_type),
         ):
             if value is not None:
-                sql += f"{param} = ? "
-                if isinstance(value, (EngineType, InstanceType, WarmupMethod)):
-                    value = str(value)
-                parameters.append(value)
+                sql_part, new_params = self._service._format_engine_attribute_sql(
+                    param, value
+                )
+                sql += sql_part
+                parameters.extend(new_params)
 
         with self._service._connection.cursor() as c:
             c.execute(sql, parameters)
