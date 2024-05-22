@@ -1,20 +1,6 @@
 name: Integration tests FB 2.0
 on:
   workflow_dispatch:
-    inputs:
-      is_account_v2:
-        description: "Whether to use an account with a v2 infrastructure"
-        type: choice
-        required: true
-        default: 'true'
-        options:
-          - true
-          - false
-    secrets:
-      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
-        required: true
-      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
-        required: true
   workflow_call:
     inputs:
       is_account_v2:
