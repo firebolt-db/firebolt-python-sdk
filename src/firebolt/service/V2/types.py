@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Optional
 
 
 class EngineType(Enum):
@@ -50,8 +51,19 @@ class EngineStatus(Enum):
     FAILED = "Failed"
     DELETING = "Deleting"
 
+    @classmethod
+    def _missing_(cls, value: object) -> Optional["EngineStatus"]:
+        """Handle case-insensitive string values."""
+        if isinstance(value, str):
+            return cls(value.capitalize())
+        return super()._missing_(value)
+
     def __str__(self) -> str:
         return self.value
+
+    @classmethod
+    def from_string(cls, value: str) -> "EngineStatus":
+        return cls(value.capitalize())
 
 
 class DatabaseOrder(Enum):

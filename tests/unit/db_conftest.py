@@ -303,6 +303,13 @@ def get_engine_url_not_running_callback(
     return _get_engine_url_callback(engine_name, db_name, query_statistics, "Stopped")
 
 
+@fixture(params=["Running", "RUNNING", "ENGINE_STATE_RUNNING"])
+def get_engine_url_callback_test_status(
+    server: str, db_name: str, query_statistics: Dict[str, Any], request: Any
+) -> Callable:
+    return _get_engine_url_callback(server, db_name, query_statistics, request.param)
+
+
 @fixture
 def get_engine_url_invalid_db_callback(
     engine_name,

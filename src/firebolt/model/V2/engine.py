@@ -35,7 +35,8 @@ def check_attached_to_database(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def inner(self: Engine, *args: Any, **kwargs: Any) -> Any:
-        if self.database is None:
+        # this check is only relevant for account version 1
+        if self._service.client._account_version != 2 and self.database is None:
             raise NoAttachedDatabaseError(method_name=func.__name__)
         return func(self, *args, **kwargs)
 

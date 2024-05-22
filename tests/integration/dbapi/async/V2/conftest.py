@@ -1,4 +1,6 @@
-from random import choice, randint
+import random
+import string
+from random import choice
 from typing import Tuple
 
 from pytest import fixture
@@ -120,7 +122,8 @@ async def service_account_no_user(
     database_name: str,
 ) -> Tuple[str, Secret]:
     # function-level fixture so we need to make sa name is unique
-    sa_account_name = f"{database_name}_sa_no_user_{randint(0, 1000)}"
+    randomness = "".join(random.choices(string.ascii_letters + string.digits, k=2))
+    sa_account_name = f"{database_name}_sa_no_user_{randomness}"
     with connection_system_engine_no_db.cursor() as cursor:
         await cursor.execute(
             f'CREATE SERVICE ACCOUNT "{sa_account_name}" '
@@ -138,7 +141,7 @@ async def service_account_no_user(
             s_id = (await cursor.fetchone())[0]
         # Wrap in secret to avoid leaking the key in the logs
         yield s_id, Secret(key)
-        await cursor.execute(f"DROP SERVICE ACCOUNT {sa_account_name}")
+        await cursor.execute(f'DROP SERVICE ACCOUNT "{sa_account_name}"')
 
 
 @fixture
