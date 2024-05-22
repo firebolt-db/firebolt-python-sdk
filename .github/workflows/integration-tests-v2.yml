@@ -7,11 +7,11 @@ on:
         description: "Whether to use an account with a v2 infrastructure"
         type: boolean
         required: true
-      secrets:
-        FIREBOLT_CLIENT_ID_STG_NEW_IDN:
-          required: true
-        FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
-          required: true
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
+        required: true
 
 jobs:
   tests:
