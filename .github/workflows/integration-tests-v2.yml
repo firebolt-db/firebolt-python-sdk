@@ -7,6 +7,12 @@ on:
         required: true
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
+    inputs:
+      engine-version:
+        description: 'Engine version to use for integration tests'
+        required: false
+        type: string
+        default: ''
 
 jobs:
   tests:
@@ -35,6 +41,7 @@ jobs:
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           account: ${{ vars.FIREBOLT_ACCOUNT }}
           api-endpoint: "api.staging.firebolt.io"
+          engine-version: ${{ inputs.engine-version }}
 
       - name: Run integration tests
         env:
