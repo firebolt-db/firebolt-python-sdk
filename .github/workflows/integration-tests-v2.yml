@@ -13,6 +13,10 @@ on:
         required: false
         type: string
         default: ''
+      token:
+        description: 'GitHub token if called from another workflow'
+        required: false
+        type: string
 
 jobs:
   tests:
@@ -68,7 +72,7 @@ jobs:
         uses: firebolt-db/action-allure-report@add-decoration
         if: always()
         with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
+          github-key: ${{ inputs.token || secrets.GITHUB_TOKEN }}
           test-type: integration
           allure-dir: allure-results
           pages-branch: gh-pages
