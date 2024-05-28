@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from random import randint
 from threading import Thread
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Tuple
 
 from pytest import mark, raises
 
@@ -474,3 +474,24 @@ def test_account_v2_connection_with_db_and_engine(
         cursor.execute(f'CREATE TABLE "test_table_{rnd_suffix}" (id int)')
         # This fails if we're not running on a user engine
         cursor.execute(f'INSERT INTO "test_table_{rnd_suffix}" VALUES (1)')
+
+
+@mark.account_v2
+def test_connection_with_mixed_case_db_and_engine(
+    mixed_case_db_and_engine: Tuple[str, str],
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> None:
+    test_db_name, test_engine_name = mixed_case_db_and_engine
+    with connect(
+        database=test_db_name,
+        engine_name=test_engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        cursor.execute('CREATE TABLE "test_table" (id int)')
+        # This fails if we're not running on a user engine
+        cursor.execute('INSERT INTO "test_table" VALUES (1)')

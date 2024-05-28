@@ -108,3 +108,22 @@ async def auth_no_user(
 ) -> ClientCredentials:
     s_id, s_secret = service_account_no_user
     return ClientCredentials(s_id, s_secret.value)
+
+
+@fixture
+async def mixed_case_db_and_engine(
+    connection_system_engine: Connection,
+    database_name: str,
+    engine_name: str,
+) -> Tuple[str, str]:
+    test_db_name = f"{database_name}_AMixedCase"
+    test_engine_name = f"{engine_name}_AMixedCase"
+    system_cursor = connection_system_engine.cursor()
+    await system_cursor.execute(f'CREATE DATABASE "{test_db_name}"')
+    await system_cursor.execute(f'CREATE ENGINE "{test_engine_name}"')
+
+    yield test_db_name, test_engine_name
+
+    await system_cursor.execute(f'DROP DATABASE "{test_db_name}"')
+    await system_cursor.execute(f'STOP ENGINE "{test_engine_name}"')
+    await system_cursor.execute(f'DROP ENGINE "{test_engine_name}"')
