@@ -24,7 +24,7 @@ jobs:
     uses: ./.github/workflows/integration-tests-v2.yml
     secrets: inherit
   report-test-results:
-    needs: [integration-test-v1, integration-test-v2, integration-test-account-v2]
+    needs: [integration-test-v1, integration-test-v2]
     if: always()
     runs-on: ubuntu-latest
     steps:
