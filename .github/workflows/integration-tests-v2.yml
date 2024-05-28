@@ -44,4 +44,4 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k not V1 --runslow --account-v2
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1" --runslow --account-v2
