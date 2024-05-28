@@ -2,11 +2,6 @@ name: Integration tests FB 2.0
 on:
   workflow_dispatch:
   workflow_call:
-    inputs:
-      is_account_v2:
-        description: "Whether to use an account with a v2 infrastructure"
-        type: boolean
-        required: true
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
@@ -30,23 +25,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Determine account name
-        id: account
-        run: |
-          if [ "${{ inputs.is_account_v2 }}" == "true" ]; then
-              echo "name=${{ vars.FIREBOLT_ACCOUNT_V2 }}" >> $GITHUB_OUTPUT
-              echo "filter=not V1" >> $GITHUB_OUTPUT
-          else
-              echo "name=${{ vars.FIREBOLT_ACCOUNT_V1 }}" >> $GITHUB_OUTPUT
-              echo "filter=not V1 and not ACCOUNT_V2" >> $GITHUB_OUTPUT
-          fi
       - name: Setup database and engine
         id: setup
         uses: firebolt-db/integration-testing-setup@v2
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          account: ${{ steps.account.outputs.name }}
+          account: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
           api-endpoint: "api.staging.firebolt.io"
 
       - name: Run integration tests
@@ -57,6 +42,6 @@ jobs:
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
           API_ENDPOINT: "api.staging.firebolt.io"
-          ACCOUNT_NAME: ${{ steps.account.outputs.name }}
+          ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
         run: |
           pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k ${{ steps.account.outputs.filter }} --runslow
