@@ -28,7 +28,7 @@ def test_engine_create(
         if request.content.startswith(b"CREATE"):
             assert (
                 request.content.decode("utf-8")
-                == "CREATE ENGINE engine_1 WITH REGION = 'us-east-1' ENGINE_TYPE = 'GENERAL_PURPOSE'"
+                == "CREATE ENGINE \"engine_1\" WITH REGION = 'us-east-1' ENGINE_TYPE = 'GENERAL_PURPOSE'"
                 " SPEC = 'B1' SCALE = 2 AUTO_STOP = 7200 WARMUP = 'MINIMAL'"
             )
         return get_objects_from_db_callback([mock_engine])(request)

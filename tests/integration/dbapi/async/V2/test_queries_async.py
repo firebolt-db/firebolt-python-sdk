@@ -15,7 +15,7 @@ from tests.integration.dbapi.utils import assert_deep_eq
 VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
-LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT_2}"
+LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT_2}'
 
 
 async def test_connect_no_db(
@@ -121,40 +121,40 @@ async def test_drop_create(connection: Connection) -> None:
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        await c.execute("DROP AGGREGATING INDEX IF EXISTS test_db_agg_idx")
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async")
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_dim")
+        await c.execute('DROP AGGREGATING INDEX IF EXISTS "test_db_agg_idx"')
+        await c.execute('DROP TABLE IF EXISTS "test_drop_create_async"')
+        await c.execute('DROP TABLE IF EXISTS "test_drop_create_async_dim"')
 
         # Fact table
         await test_query(
             c,
-            "CREATE FACT TABLE test_drop_create_async(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_drop_create_async"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id",
         )
 
         # Dimension table
         await test_query(
             c,
-            "CREATE DIMENSION TABLE test_drop_create_async_dim(id int, sn string null"
+            'CREATE DIMENSION TABLE "test_drop_create_async_dim"(id int, sn string null'
             ", f float, d date, dt datetime, b bool, a array(int))",
         )
 
         # Create aggregating index
         await test_query(
             c,
-            "CREATE AGGREGATING INDEX test_db_agg_idx ON "
+            'CREATE AGGREGATING INDEX "test_db_agg_idx" ON '
             "test_drop_create_async(id, count(f), count(dt))",
         )
 
         # Drop aggregating index
-        await test_query(c, "DROP AGGREGATING INDEX test_db_agg_idx")
+        await test_query(c, 'DROP AGGREGATING INDEX "test_db_agg_idx"')
 
         # Test drop once again
-        await test_query(c, "DROP TABLE test_drop_create_async")
-        await test_query(c, "DROP TABLE IF EXISTS test_drop_create_async")
+        await test_query(c, 'DROP TABLE "test_drop_create_async"')
+        await test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_async"')
 
-        await test_query(c, "DROP TABLE test_drop_create_async_dim")
-        await test_query(c, "DROP TABLE IF EXISTS test_drop_create_async_dim")
+        await test_query(c, 'DROP TABLE "test_drop_create_async_dim"')
+        await test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_async_dim"')
 
 
 async def test_insert(connection: Connection) -> None:
@@ -169,21 +169,21 @@ async def test_insert(connection: Connection) -> None:
         assert len(await c.fetchall()) == 0
 
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_insert_async_tb")
+        await c.execute('DROP TABLE IF EXISTS "test_insert_async_tb"')
         await c.execute(
-            "CREATE FACT TABLE test_insert_async_tb(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_insert_async_tb"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id"
         )
 
         await test_empty_query(
             c,
-            "INSERT INTO test_insert_async_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
+            "INSERT INTO \"test_insert_async_tb\" VALUES (1, 'sn', 1.1, '2021-01-01',"
             "'2021-01-01 01:01:01', true, [1, 2, 3])",
         )
 
         assert (
             await c.execute(
-                "SELECT * FROM test_insert_async_tb ORDER BY test_insert_async_tb.id"
+                'SELECT * FROM "test_insert_async_tb" ORDER BY "test_insert_async_tb".id'
             )
             == 1
         ), "Invalid data length in table after insert"
@@ -217,9 +217,9 @@ async def test_parameterized_query(connection: Connection) -> None:
         assert len(await c.fetchall()) == 0
 
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_tb_async_parameterized")
+        await c.execute('DROP TABLE IF EXISTS "test_tb_async_parameterized"')
         await c.execute(
-            "CREATE FACT TABLE test_tb_async_parameterized(i int, f float, s string, sn"
+            'CREATE FACT TABLE "test_tb_async_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
             "dec decimal(38, 3), ss string) primary index i",
         )
@@ -238,7 +238,7 @@ async def test_parameterized_query(connection: Connection) -> None:
 
         await test_empty_query(
             c,
-            "INSERT INTO test_tb_async_parameterized VALUES "
+            'INSERT INTO "test_tb_async_parameterized" VALUES '
             "(?, ?, ?, ?, ?, ?, ?, ?, ?, '\\?')",
             params,
         )
@@ -247,7 +247,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         params[2] = "text\\0"
 
         assert (
-            await c.execute("SELECT * FROM test_tb_async_parameterized") == 1
+            await c.execute('SELECT * FROM "test_tb_async_parameterized"') == 1
         ), "Invalid data length in table after parameterized insert"
 
         assert_deep_eq(
@@ -261,16 +261,16 @@ async def test_multi_statement_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_tb_async_multi_statement")
+        await c.execute('DROP TABLE IF EXISTS "test_tb_async_multi_statement"')
         await c.execute(
-            "CREATE FACT TABLE test_tb_async_multi_statement(i int, s string)"
+            'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)'
             " primary index i"
         )
 
         await c.execute(
-            "INSERT INTO test_tb_async_multi_statement values (1, 'a'), (2, 'b');"
-            "SELECT * FROM test_tb_async_multi_statement;"
-            "SELECT * FROM test_tb_async_multi_statement WHERE i <= 1"
+            "INSERT INTO \"test_tb_async_multi_statement\" values (1, 'a'), (2, 'b');"
+            'SELECT * FROM "test_tb_async_multi_statement";'
+            'SELECT * FROM "test_tb_async_multi_statement" WHERE i <= 1'
         )
         assert c.description is None, "Invalid description"
 
@@ -327,17 +327,17 @@ async def test_bytea_roundtrip(
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip_2")
+        await c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip_2"')
         await c.execute(
-            "CREATE FACT TABLE test_bytea_roundtrip_2(id int, b bytea) primary index id"
+            'CREATE FACT TABLE "test_bytea_roundtrip_2"(id int, b bytea) primary index id'
         )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
         await c.execute(
-            "INSERT INTO test_bytea_roundtrip_2 VALUES (1, ?)", (Binary(data),)
+            'INSERT INTO "test_bytea_roundtrip_2" VALUES (1, ?)', (Binary(data),)
         )
-        await c.execute("SELECT b FROM test_bytea_roundtrip_2")
+        await c.execute('SELECT b FROM "test_bytea_roundtrip_2"')
 
         bytes_data = (await c.fetchone())[0]
 
@@ -388,6 +388,6 @@ async def test_account_v2_connection_with_db_and_engine(
         # generate a random string to avoid name conflicts
         rnd_suffix = str(randint(0, 1000))
         cursor = connection.cursor()
-        await cursor.execute(f"CREATE TABLE test_table_{rnd_suffix} (id int)")
+        await cursor.execute(f'CREATE TABLE "test_table_{rnd_suffix}" (id int)')
         # This fails if we're not running on a user engine
-        await cursor.execute(f"INSERT INTO test_table_{rnd_suffix} VALUES (1)")
+        await cursor.execute(f'INSERT INTO "test_table_{rnd_suffix}" VALUES (1)')

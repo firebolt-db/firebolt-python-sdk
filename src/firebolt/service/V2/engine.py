@@ -43,7 +43,7 @@ class EngineService(BaseService):
     GET_BY_NAME_SQL = GET_SQL + " WHERE engine_name=?"
     GET_WHERE_SQL = " WHERE "
 
-    CREATE_PREFIX_SQL = "CREATE ENGINE {}{}"
+    CREATE_PREFIX_SQL = 'CREATE ENGINE {}"{}"'
     IF_NOT_EXISTS_SQL = "IF NOT EXISTS "
     CREATE_WITH_SQL = " WITH "
     CREATE_PARAMETER_NAMES = (
@@ -64,8 +64,8 @@ class EngineService(BaseService):
         "",
     )
 
-    ATTACH_TO_DB_SQL = "ATTACH ENGINE {} TO {}"
-    ATTACH_TO_DB_SQL_V2 = "ALTER ENGINE {} SET DEFAULT_DATABASE={}"
+    ATTACH_TO_DB_SQL = 'ATTACH ENGINE "{}" TO "{}"'
+    ATTACH_TO_DB_SQL_V2 = 'ALTER ENGINE "{}" SET DEFAULT_DATABASE="{}"'
     DISALLOWED_ACCOUNT_V2_PARAMETERS = [
         "region",
         "engine_type",

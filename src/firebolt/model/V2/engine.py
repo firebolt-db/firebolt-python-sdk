@@ -49,9 +49,9 @@ class Engine(FireboltBaseModel):
     A Firebolt engine. Responsible for performing work (queries, ingestion).
     """
 
-    START_SQL: ClassVar[str] = "START ENGINE {}"
-    STOP_SQL: ClassVar[str] = "STOP ENGINE {}"
-    ALTER_PREFIX_SQL: ClassVar[str] = "ALTER ENGINE {} SET "
+    START_SQL: ClassVar[str] = 'START ENGINE "{}"'
+    STOP_SQL: ClassVar[str] = 'STOP ENGINE "{}"'
+    ALTER_PREFIX_SQL: ClassVar[str] = 'ALTER ENGINE "{}" SET '
     ALTER_PARAMETER_NAMES: ClassVar[Tuple] = (
         "SCALE",
         "SPEC",
@@ -68,7 +68,7 @@ class Engine(FireboltBaseModel):
         "",
         "",
     )
-    DROP_SQL: ClassVar[str] = "DROP ENGINE {}"
+    DROP_SQL: ClassVar[str] = 'DROP ENGINE "{}"'
 
     _service: EngineService = field(repr=False, compare=False)
 
