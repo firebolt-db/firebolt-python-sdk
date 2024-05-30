@@ -107,7 +107,7 @@ async def test_system_engine_use_engine(
         await cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id int)')
         # This query fails if we're not on a user engine
         await cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
-        await cursor.execute("USE ENGINE system")
+        await cursor.execute('USE ENGINE "system"')
         # Werify we've switched to system by making previous query fail
         with raises(OperationalError):
             await cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')

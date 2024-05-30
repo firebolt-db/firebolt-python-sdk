@@ -106,7 +106,7 @@ def test_system_engine_use_engine(
         cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id int)')
         # This query fails if we're not on a user engine
         cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
-        cursor.execute("USE ENGINE system")
+        cursor.execute('USE ENGINE "system"')
         # Verify we've switched to system by making previous query fail
         with raises(OperationalError):
             cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
