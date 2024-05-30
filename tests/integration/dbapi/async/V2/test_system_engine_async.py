@@ -57,8 +57,8 @@ async def test_system_engine(
             await c.execute("show tables")
             with raises(OperationalError) as e:
                 # Either one or another query fails if we're not on a user engine
-                await c.execute("create table if not exists test_async(id int)")
-                await c.execute("insert into test_async values (1)")
+                await c.execute('create table if not exists "test_async"(id int)')
+                await c.execute('insert into "test_async" values (1)')
             assert system_error_pattern.search(str(e.value)), "Invalid error message"
         else:
             await c.execute("show databases")
@@ -102,13 +102,13 @@ async def test_system_engine_use_engine(
 ):
     table_name = "test_table_async"
     with connection_system_engine.cursor() as cursor:
-        await cursor.execute(f"USE DATABASE {database_name}")
-        await cursor.execute(f"USE ENGINE {engine_name}")
-        await cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id int)")
+        await cursor.execute(f'USE DATABASE "{database_name}"')
+        await cursor.execute(f'USE ENGINE "{engine_name}"')
+        await cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id int)')
         # This query fails if we're not on a user engine
-        await cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
-        await cursor.execute("USE ENGINE system")
+        await cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
+        await cursor.execute('USE ENGINE "system"')
         # Werify we've switched to system by making previous query fail
         with raises(OperationalError):
-            await cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
-        await cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+            await cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
+        await cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')

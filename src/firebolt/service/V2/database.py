@@ -25,7 +25,7 @@ class DatabaseService(BaseService):
     GET_BY_NAME_SQL = GET_SQL + " WHERE database_name=?"
     GET_WHERE_SQL = " WHERE "
 
-    CREATE_PREFIX_SQL = "CREATE DATABASE {}{}"
+    CREATE_PREFIX_SQL = 'CREATE DATABASE {}"{}"'
     CREATE_WITH_SQL = " WITH "
     IF_NOT_EXISTS_SQL = "IF NOT EXISTS "
     CREATE_PARAMETER_NAMES = (

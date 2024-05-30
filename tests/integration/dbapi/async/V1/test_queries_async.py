@@ -12,9 +12,9 @@ from firebolt.common._types import ColType, Column
 VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
-LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT_2}"
+LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT_2}'
 
-CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS ex_lineitem (
+CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS "ex_lineitem" (
   l_orderkey              LONG,
   l_partkey               LONG,
   l_suppkey               LONG,
@@ -36,7 +36,7 @@ URL = 's3://firebolt-publishing-public/samples/tpc-h/parquet/lineitem/'
 OBJECT_PATTERN = '*.parquet'
 TYPE = (PARQUET);"""
 
-CREATE_FACT_TABLE = """CREATE FACT TABLE IF NOT EXISTS lineitem (
+CREATE_FACT_TABLE = """CREATE FACT TABLE IF NOT EXISTS "lineitem" (
 -- In this example, these fact table columns
 -- map directly to the external table columns.
   l_orderkey              LONG,
@@ -197,41 +197,41 @@ async def test_drop_create(connection: Connection) -> None:
     with connection.cursor() as c:
         # Cleanup
         await c.execute(
-            "DROP AGGREGATING INDEX IF EXISTS test_drop_create_async_db_agg_idx"
+            'DROP AGGREGATING INDEX IF EXISTS "test_drop_create_async_db_agg_idx"'
         )
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_tb")
-        await c.execute("DROP TABLE IF EXISTS test_drop_create_async_tb_dim")
+        await c.execute('DROP TABLE IF EXISTS "test_drop_create_async_tb"')
+        await c.execute('DROP TABLE IF EXISTS "test_drop_create_async_tb_dim"')
 
         # Fact table
         await test_query(
             c,
-            "CREATE FACT TABLE test_drop_create_async(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_drop_create_async"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id",
         )
 
         # Dimension table
         await test_query(
             c,
-            "CREATE DIMENSION TABLE test_drop_create_async_dim(id int, sn string null"
+            'CREATE DIMENSION TABLE "test_drop_create_async_dim"(id int, sn string null'
             ", f float, d date, dt datetime, b bool, a array(int))",
         )
 
         # Create aggregating index
         await test_query(
             c,
-            "CREATE AGGREGATING INDEX test_db_agg_idx ON "
-            "test_drop_create_async(id, count(f), count(dt))",
+            'CREATE AGGREGATING INDEX "test_db_agg_idx" ON '
+            '"test_drop_create_async"(id, count(f), count(dt))',
         )
 
         # Drop aggregating index
-        await test_query(c, "DROP AGGREGATING INDEX test_db_agg_idx")
+        await test_query(c, 'DROP AGGREGATING INDEX "test_db_agg_idx"')
 
         # Test drop once again
-        await test_query(c, "DROP TABLE test_drop_create_async")
-        await test_query(c, "DROP TABLE IF EXISTS test_drop_create_async")
+        await test_query(c, 'DROP TABLE "test_drop_create_async"')
+        await test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_async"')
 
-        await test_query(c, "DROP TABLE test_drop_create_async_dim")
-        await test_query(c, "DROP TABLE IF EXISTS test_drop_create_async_dim")
+        await test_query(c, 'DROP TABLE "test_drop_create_async_dim"')
+        await test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_async_dim"')
 
 
 async def test_insert(connection: Connection) -> None:
@@ -246,21 +246,21 @@ async def test_insert(connection: Connection) -> None:
         assert len(await c.fetchall()) == 0
 
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_insert_async_tb")
+        await c.execute('DROP TABLE IF EXISTS "test_insert_async_tb"')
         await c.execute(
-            "CREATE FACT TABLE test_insert_async_tb(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_insert_async_tb"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id"
         )
 
         await test_empty_query(
             c,
-            "INSERT INTO test_insert_async_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
+            "INSERT INTO \"test_insert_async_tb\" VALUES (1, 'sn', 1.1, '2021-01-01',"
             "'2021-01-01 01:01:01', true, [1, 2, 3])",
         )
 
         assert (
             await c.execute(
-                "SELECT * FROM test_insert_async_tb ORDER BY test_insert_async_tb.id"
+                'SELECT * FROM "test_insert_async_tb" ORDER BY "test_insert_async_tb".id'
             )
             == 1
         ), "Invalid data length in table after insert"
@@ -294,9 +294,9 @@ async def test_parameterized_query(connection: Connection) -> None:
         assert len(await c.fetchall()) == 0
 
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_tb_async_parameterized")
+        await c.execute('DROP TABLE IF EXISTS "test_tb_async_parameterized"')
         await c.execute(
-            "CREATE FACT TABLE test_tb_async_parameterized(i int, f float, s string, sn"
+            'CREATE FACT TABLE "test_tb_async_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
             "dec decimal(38, 3), ss string) primary index i",
         )
@@ -315,7 +315,7 @@ async def test_parameterized_query(connection: Connection) -> None:
 
         await test_empty_query(
             c,
-            "INSERT INTO test_tb_async_parameterized VALUES "
+            'INSERT INTO "test_tb_async_parameterized" VALUES '
             "(?, ?, ?, ?, ?, ?, ?, ?, ?, '\\?')",
             params,
         )
@@ -324,7 +324,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         params[2] = "text0"
 
         assert (
-            await c.execute("SELECT * FROM test_tb_async_parameterized") == 1
+            await c.execute('SELECT * FROM "test_tb_async_parameterized"') == 1
         ), "Invalid data length in table after parameterized insert"
 
         assert_deep_eq(
@@ -338,16 +338,16 @@ async def test_multi_statement_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_tb_async_multi_statement")
+        await c.execute('DROP TABLE IF EXISTS "test_tb_async_multi_statement"')
         await c.execute(
-            "CREATE FACT TABLE test_tb_async_multi_statement(i int, s string)"
+            'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)'
             " primary index i"
         )
 
         await c.execute(
-            "INSERT INTO test_tb_async_multi_statement values (1, 'a'), (2, 'b');"
-            "SELECT * FROM test_tb_async_multi_statement;"
-            "SELECT * FROM test_tb_async_multi_statement WHERE i <= 1"
+            "INSERT INTO \"test_tb_async_multi_statement\" values (1, 'a'), (2, 'b');"
+            'SELECT * FROM "test_tb_async_multi_statement";'
+            'SELECT * FROM "test_tb_async_multi_statement" WHERE i <= 1'
         )
         assert c.description is None, "Invalid description"
 
@@ -404,17 +404,17 @@ async def test_bytea_roundtrip(
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
-        await c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip")
+        await c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip"')
         await c.execute(
-            "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
+            'CREATE FACT TABLE "test_bytea_roundtrip"(id int, b bytea) primary index id'
         )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
         await c.execute(
-            "INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),)
+            'INSERT INTO "test_bytea_roundtrip" VALUES (1, ?)', (Binary(data),)
         )
-        await c.execute("SELECT b FROM test_bytea_roundtrip")
+        await c.execute('SELECT b FROM "test_bytea_roundtrip"')
 
         bytes_data = (await c.fetchone())[0]
 
@@ -428,9 +428,9 @@ async def setup_db(connection_no_engine: Connection, use_db_name: str):
     use_db_name = f"{use_db_name}_async"
     with connection_no_engine.cursor() as cursor:
         suffix = "".join(choice("0123456789") for _ in range(2))
-        await cursor.execute(f"CREATE DATABASE {use_db_name}{suffix}")
+        await cursor.execute(f'CREATE DATABASE "{use_db_name}{suffix}"')
         yield
-        await cursor.execute(f"DROP DATABASE {use_db_name}{suffix}")
+        await cursor.execute(f'DROP DATABASE "{use_db_name}{suffix}"')
 
 
 @mark.xfail(reason="USE DATABASE is not yet available in 1.0 Firebolt")
@@ -444,16 +444,16 @@ async def test_use_database(
     test_table_name = "verify_use_db_async"
     """Use database works as expected."""
     with connection_no_engine.cursor() as c:
-        await c.execute(f"USE DATABASE {test_db_name}")
+        await c.execute(f'USE DATABASE "{test_db_name}"')
         assert c.database == test_db_name
-        await c.execute(f"CREATE TABLE {test_table_name} (id int)")
+        await c.execute(f'CREATE TABLE "{test_table_name}" (id int)')
         await c.execute(
             "SELECT table_name FROM information_schema.tables "
             f"WHERE table_name = '{test_table_name}'"
         )
         assert (await c.fetchone())[0] == test_table_name, "Table was not created"
         # Change DB and verify table is not there
-        await c.execute(f"USE DATABASE {database_name}")
+        await c.execute(f'USE DATABASE "{database_name}"')
         assert c.database == database_name
         await c.execute(
             "SELECT table_name FROM information_schema.tables "

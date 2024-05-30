@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from random import randint
 from threading import Thread
-from typing import Any, Callable, List
+from typing import Any, Callable, List, Tuple
 
 from pytest import mark, raises
 
@@ -125,40 +125,40 @@ def test_drop_create(connection: Connection) -> None:
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        c.execute("DROP AGGREGATING INDEX IF EXISTS test_drop_create_db_agg_idx")
-        c.execute("DROP TABLE IF EXISTS test_drop_create_tb")
-        c.execute("DROP TABLE IF EXISTS test_drop_create_tb_dim")
+        c.execute('DROP AGGREGATING INDEX IF EXISTS "test_drop_create_db_agg_idx"')
+        c.execute('DROP TABLE IF EXISTS "test_drop_create_tb"')
+        c.execute('DROP TABLE IF EXISTS "test_drop_create_tb_dim"')
 
         # Fact table
         test_query(
             c,
-            "CREATE FACT TABLE test_drop_create_tb(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_drop_create_tb"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id",
         )
 
         # Dimension table
         test_query(
             c,
-            "CREATE DIMENSION TABLE test_drop_create_tb_dim(id int, sn string null"
+            'CREATE DIMENSION TABLE "test_drop_create_tb_dim"(id int, sn string null'
             ", f float, d date, dt datetime, b bool, a array(int))",
         )
 
         # Create aggregating index
         test_query(
             c,
-            "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
+            'CREATE AGGREGATING INDEX "test_drop_create_db_agg_idx" ON '
             "test_drop_create_tb(id, count(f), count(dt))",
         )
 
         # Drop aggregating index
-        test_query(c, "DROP AGGREGATING INDEX test_drop_create_db_agg_idx")
+        test_query(c, 'DROP AGGREGATING INDEX "test_drop_create_db_agg_idx"')
 
         # Test drop once again
-        test_query(c, "DROP TABLE test_drop_create_tb")
-        test_query(c, "DROP TABLE IF EXISTS test_drop_create_tb")
+        test_query(c, 'DROP TABLE "test_drop_create_tb"')
+        test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_tb"')
 
-        test_query(c, "DROP TABLE test_drop_create_tb_dim")
-        test_query(c, "DROP TABLE IF EXISTS test_drop_create_tb_dim")
+        test_query(c, 'DROP TABLE "test_drop_create_tb_dim"')
+        test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_tb_dim"')
 
 
 def test_insert(connection: Connection) -> None:
@@ -173,20 +173,20 @@ def test_insert(connection: Connection) -> None:
         assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_insert_tb")
+        c.execute('DROP TABLE IF EXISTS "test_insert_tb"')
         c.execute(
-            "CREATE FACT TABLE test_insert_tb(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_insert_tb"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id"
         )
 
         test_empty_query(
             c,
-            "INSERT INTO test_insert_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
+            "INSERT INTO \"test_insert_tb\" VALUES (1, 'sn', 1.1, '2021-01-01',"
             "'2021-01-01 01:01:01', true, [1, 2, 3])",
         )
 
         assert (
-            c.execute("SELECT * FROM test_insert_tb ORDER BY test_insert_tb.id") == 1
+            c.execute('SELECT * FROM "test_insert_tb" ORDER BY test_insert_tb.id') == 1
         ), "Invalid data length in table after insert"
 
         assert_deep_eq(
@@ -218,9 +218,9 @@ def test_parameterized_query(connection: Connection) -> None:
         assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
+        c.execute('DROP TABLE IF EXISTS "test_tb_parameterized"')
         c.execute(
-            "CREATE FACT TABLE test_tb_parameterized(i int, f float, s string, sn"
+            'CREATE FACT TABLE "test_tb_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
             "dec decimal(38, 3), ss string) primary index i",
         )
@@ -239,7 +239,7 @@ def test_parameterized_query(connection: Connection) -> None:
 
         test_empty_query(
             c,
-            "INSERT INTO test_tb_parameterized VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,"
+            'INSERT INTO "test_tb_parameterized" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,'
             " '\\?')",
             params,
         )
@@ -248,7 +248,7 @@ def test_parameterized_query(connection: Connection) -> None:
         params[2] = "text\\0"
 
         assert (
-            c.execute("SELECT * FROM test_tb_parameterized") == 1
+            c.execute('SELECT * FROM "test_tb_parameterized"') == 1
         ), "Invalid data length in table after parameterized insert"
 
         assert_deep_eq(
@@ -262,15 +262,15 @@ def test_multi_statement_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_tb_multi_statement")
+        c.execute('DROP TABLE IF EXISTS "test_tb_multi_statement"')
         c.execute(
-            "CREATE FACT TABLE test_tb_multi_statement(i int, s string) primary index i"
+            'CREATE FACT TABLE "test_tb_multi_statement"(i int, s string) primary index i'
         )
 
         c.execute(
-            "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
-            "SELECT * FROM test_tb_multi_statement;"
-            "SELECT * FROM test_tb_multi_statement WHERE i <= 1"
+            "INSERT INTO \"test_tb_multi_statement\" values (1, 'a'), (2, 'b');"
+            'SELECT * FROM "test_tb_multi_statement";'
+            'SELECT * FROM "test_tb_multi_statement" WHERE i <= 1'
         )
         assert c.description is None, "Invalid description"
 
@@ -415,15 +415,15 @@ def test_bytea_roundtrip(
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip")
+        c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip"')
         c.execute(
-            "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
+            'CREATE FACT TABLE "test_bytea_roundtrip"(id int, b bytea) primary index id'
         )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
-        c.execute("INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),))
-        c.execute("SELECT b FROM test_bytea_roundtrip")
+        c.execute('INSERT INTO "test_bytea_roundtrip" VALUES (1, ?)', (Binary(data),))
+        c.execute('SELECT b FROM "test_bytea_roundtrip"')
 
         bytes_data = (c.fetchone())[0]
         assert (
@@ -460,7 +460,7 @@ def test_account_v2_connection_with_db_and_engine(
     system_cursor = connection_system_engine.cursor()
     # We can only connect to a running engine so start it first
     # via the system connection to keep test isolated
-    system_cursor.execute(f"START ENGINE {engine_name}")
+    system_cursor.execute(f'START ENGINE "{engine_name}"')
     with connect(
         database=database_name,
         engine_name=engine_name,
@@ -471,6 +471,27 @@ def test_account_v2_connection_with_db_and_engine(
         # generate a random string to avoid name conflicts
         rnd_suffix = str(randint(0, 1000))
         cursor = connection.cursor()
-        cursor.execute(f"CREATE TABLE test_table_{rnd_suffix} (id int)")
+        cursor.execute(f'CREATE TABLE "test_table_{rnd_suffix}" (id int)')
         # This fails if we're not running on a user engine
-        cursor.execute(f"INSERT INTO test_table_{rnd_suffix} VALUES (1)")
+        cursor.execute(f'INSERT INTO "test_table_{rnd_suffix}" VALUES (1)')
+
+
+@mark.account_v2
+def test_connection_with_mixed_case_db_and_engine(
+    mixed_case_db_and_engine: Tuple[str, str],
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> None:
+    test_db_name, test_engine_name = mixed_case_db_and_engine
+    with connect(
+        database=test_db_name,
+        engine_name=test_engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        cursor.execute('CREATE TABLE "test_table" (id int)')
+        # This fails if we're not running on a user engine
+        cursor.execute('INSERT INTO "test_table" VALUES (1)')

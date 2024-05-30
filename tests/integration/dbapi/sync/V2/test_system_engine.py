@@ -56,8 +56,8 @@ def test_system_engine(
             c.execute("show tables")
             with raises(OperationalError) as e:
                 # Either one or another query fails if we're not on a user engine
-                c.execute("create table if not exists test_sync(id int)")
-                c.execute("insert into test_sync values (1)")
+                c.execute('create table if not exists "test_sync"(id int)')
+                c.execute('insert into "test_sync" values (1)')
             assert system_error_pattern.search(str(e.value)), "Invalid error message"
         else:
             c.execute("show databases")
@@ -101,13 +101,13 @@ def test_system_engine_use_engine(
 ):
     table_name = "test_table_sync"
     with connection_system_engine.cursor() as cursor:
-        cursor.execute(f"USE DATABASE {database_name}")
-        cursor.execute(f"USE ENGINE {engine_name}")
-        cursor.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id int)")
+        cursor.execute(f'USE DATABASE "{database_name}"')
+        cursor.execute(f'USE ENGINE "{engine_name}"')
+        cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id int)')
         # This query fails if we're not on a user engine
-        cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
-        cursor.execute("USE ENGINE system")
+        cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
+        cursor.execute('USE ENGINE "system"')
         # Verify we've switched to system by making previous query fail
         with raises(OperationalError):
-            cursor.execute(f"INSERT INTO {table_name} VALUES (1)")
-        cursor.execute(f"DROP TABLE IF EXISTS {table_name}")
+            cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
+        cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')
