@@ -140,7 +140,6 @@ class ClientV2(Client):
             **kwargs,
         )
 
-    # @cached_property
     @property
     def _account_info(self) -> _AccountInfo:
         cache_key = f"{self.account_name}-{self._api_endpoint.host}"
