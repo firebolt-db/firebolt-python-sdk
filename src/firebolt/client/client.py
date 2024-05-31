@@ -356,7 +356,6 @@ class AsyncClientV2(AsyncClient):
             api_endpoint=api_endpoint,
             **kwargs,
         )
-        # self.acount_info_cache: Dict[str, _AccountInfo] = {}
 
     async def _account_info(self) -> _AccountInfo:
         cache_key = f"{self.account_name}-{self._api_endpoint.host}"
