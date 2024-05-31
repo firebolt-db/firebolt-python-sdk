@@ -47,6 +47,8 @@ FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
 _AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
 
+_firebolt_acount_info_cache: Dict[str, _AccountInfo] = {}
+
 
 class FireboltClientMixin(FireboltClientMixinBase):
     """HttpxAsyncClient mixin with Firebolt authentication functionality."""
@@ -138,8 +140,12 @@ class ClientV2(Client):
             **kwargs,
         )
 
-    @cached_property
+    # @cached_property
+    @property
     def _account_info(self) -> _AccountInfo:
+        cache_key = f"{self.account_name}-{self._api_endpoint.host}"
+        if cache_key in _firebolt_acount_info_cache:
+            return _firebolt_acount_info_cache[cache_key]
         response = self.get(
             url=self._api_endpoint.copy_with(
                 path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
@@ -153,7 +159,10 @@ class ClientV2(Client):
         account_id = response.json()["id"]
         # If no version assume 1
         account_version = int(response.json().get("infraVersion", 1))
-        return _AccountInfo(id=account_id, version=account_version)
+        account_info = _AccountInfo(id=account_id, version=account_version)
+        # cache for future use
+        _firebolt_acount_info_cache[cache_key] = account_info
+        return account_info
 
     @property
     def _account_version(self) -> int:
@@ -348,12 +357,13 @@ class AsyncClientV2(AsyncClient):
             api_endpoint=api_endpoint,
             **kwargs,
         )
-        self.acount_info_cache: Dict[str, _AccountInfo] = {}
+        # self.acount_info_cache: Dict[str, _AccountInfo] = {}
 
     async def _account_info(self) -> _AccountInfo:
+        cache_key = f"{self.account_name}-{self._api_endpoint.host}"
         # manual caching to avoid async_cached_property issues
-        if self.account_name in self.acount_info_cache:
-            return self.acount_info_cache[self.account_name]
+        if cache_key in _firebolt_acount_info_cache:
+            return _firebolt_acount_info_cache[cache_key]
 
         response = await self.get(
             url=self._api_endpoint.copy_with(
@@ -369,8 +379,7 @@ class AsyncClientV2(AsyncClient):
         account_version = int(response.json().get("infraVersion", 1))
         account_info = _AccountInfo(id=account_id, version=account_version)
         # cache for future use
-        if self.account_name:
-            self.acount_info_cache[self.account_name] = account_info
+        _firebolt_acount_info_cache[cache_key] = account_info
         return account_info
 
     @property

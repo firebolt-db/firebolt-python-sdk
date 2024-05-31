@@ -8,8 +8,9 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials, UsernamePassword
-from firebolt.client.client import ClientV2
+from firebolt.client.client import ClientV2, _firebolt_acount_info_cache
 from firebolt.common.settings import Settings
+from firebolt.db.util import _get_system_engine_url_and_params
 from firebolt.utils.exception import (
     AccountNotFoundError,
     DatabaseError,
@@ -47,6 +48,12 @@ def global_fake_fs(request) -> None:
     else:
         with Patcher(additional_skip_names=["logger", "allure-pytest"]):
             yield
+
+
+@fixture(autouse=True)
+def clear_cache() -> None:
+    _get_system_engine_url_and_params.cache_clear()
+    _firebolt_acount_info_cache.clear()
 
 
 @fixture

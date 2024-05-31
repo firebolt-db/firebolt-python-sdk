@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import Dict, Tuple
 
 from httpx import Timeout, codes
@@ -15,6 +16,7 @@ from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from firebolt.utils.util import parse_url_and_params
 
 
+@lru_cache()
 def _get_system_engine_url_and_params(
     auth: Auth,
     account_name: str,
