@@ -200,9 +200,7 @@ async def test_connect_database(
         await connection.cursor().execute("select*")
 
     httpx_mock.reset(True)
-    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(query_callback, url=system_engine_query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     async with await connect(
         database=db_name,
@@ -237,6 +235,52 @@ async def test_connect_invalid_account(
             api_endpoint=server,
         ) as connection:
             await connection.cursor().execute("select*")
+
+
+async def test_connect_caching(
+    db_name: str,
+    auth_url: str,
+    server: str,
+    auth: Auth,
+    account_name: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    account_id_url: str,
+    account_id_callback: Callable,
+    system_engine_query_url: str,
+    query_callback: Callable,
+):
+    system_engine_call_counter = 0
+    account_id_call_counter = 0
+
+    def system_engine_callback_counter(request, **kwargs):
+        nonlocal system_engine_call_counter
+        system_engine_call_counter += 1
+        return get_system_engine_callback(request, **kwargs)
+
+    def account_id_callback_counter(request, **kwargs):
+        nonlocal account_id_call_counter
+        account_id_call_counter += 1
+        return account_id_callback(request, **kwargs)
+
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(account_id_callback_counter, url=account_id_url)
+    httpx_mock.add_callback(query_callback, url=system_engine_query_url)
+
+    for _ in range(3):
+        async with await connect(
+            database=db_name,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=server,
+        ) as connection:
+            await connection.cursor().execute("select*")
+
+    assert system_engine_call_counter == 1, "System engine URL was not cached"
+    assert account_id_call_counter == 1, "Account ID was not cached"
 
 
 async def test_connect_system_engine_404(

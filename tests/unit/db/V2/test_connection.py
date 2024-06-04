@@ -205,9 +205,7 @@ def test_connect_database(
         connection.cursor().execute("select*")
 
     httpx_mock.reset(True)
-    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(query_callback, url=system_engine_query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     with connect(
         database=db_name,

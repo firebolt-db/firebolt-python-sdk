@@ -14,12 +14,17 @@ from firebolt.utils.exception import (
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from firebolt.utils.util import parse_url_and_params
 
+_firebolt_system_engine_cache: Dict[str, Tuple[str, Dict[str, str]]] = {}
+
 
 async def _get_system_engine_url_and_params(
     auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Tuple[str, Dict[str, str]]:
+    cache_key = f"{account_name}-{api_endpoint}"
+    if cache_key in _firebolt_system_engine_cache:
+        return _firebolt_system_engine_cache[cache_key]
     async with AsyncClientV2(
         auth=auth,
         base_url=api_endpoint,
@@ -36,4 +41,6 @@ async def _get_system_engine_url_and_params(
                 f"Unable to retrieve system engine endpoint {url}: "
                 f"{response.status_code} {response.content.decode()}"
             )
-        return parse_url_and_params(response.json()["engineUrl"])
+        result = parse_url_and_params(response.json()["engineUrl"])
+        _firebolt_system_engine_cache[cache_key] = result
+        return result
