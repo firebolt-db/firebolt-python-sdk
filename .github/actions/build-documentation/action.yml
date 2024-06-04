@@ -1,6 +1,10 @@
 name: 'Build Documentation'
 description: 'Build the Sphinx documentation'
 
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
 
 runs:
   using: 'composite'
@@ -29,6 +33,6 @@ runs:
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        github_token: ${{ inputs.github-token }}
         publish_dir: ./docs_compiled
         destination_dir: docs
