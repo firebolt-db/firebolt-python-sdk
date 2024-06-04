@@ -48,7 +48,7 @@ FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
 _AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
 
-_firebolt_acount_info_cache = UtilCache()
+_firebolt_acount_info_cache = UtilCache[_AccountInfo]()
 
 
 class FireboltClientMixin(FireboltClientMixinBase):
@@ -144,8 +144,8 @@ class ClientV2(Client):
     @property
     def _account_info(self) -> _AccountInfo:
         cache_key = f"{self.account_name}-{self._api_endpoint.host}"
-        if cache_key in _firebolt_acount_info_cache:
-            return _firebolt_acount_info_cache.get(cache_key)
+        if account_info := _firebolt_acount_info_cache.get(cache_key):
+            return account_info
         response = self.get(
             url=self._api_endpoint.copy_with(
                 path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
@@ -361,8 +361,8 @@ class AsyncClientV2(AsyncClient):
     async def _account_info(self) -> _AccountInfo:
         cache_key = f"{self.account_name}-{self._api_endpoint.host}"
         # manual caching to avoid async_cached_property issues
-        if cache_key in _firebolt_acount_info_cache:
-            return _firebolt_acount_info_cache.get(cache_key)
+        if account_info := _firebolt_acount_info_cache.get(cache_key):
+            return account_info
 
         response = await self.get(
             url=self._api_endpoint.copy_with(

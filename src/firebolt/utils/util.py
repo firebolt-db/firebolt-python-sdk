@@ -5,9 +5,9 @@ from time import time
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
-    Any,
     Callable,
     Dict,
+    Generic,
     Optional,
     Tuple,
     Type,
@@ -212,7 +212,7 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
     return result_url, query_params_dict
 
 
-class UtilCache:
+class UtilCache(Generic[T]):
     """
     Generic cache implementation to store key-value pairs.
     Created to abstract the cache implementation in case we find a better
@@ -220,12 +220,12 @@ class UtilCache:
     """
 
     def __init__(self) -> None:
-        self._cache: Dict[str, Any] = {}
+        self._cache: Dict[str, T] = {}
 
-    def get(self, key: str) -> Any:
+    def get(self, key: str) -> Optional[T]:
         return self._cache.get(key)
 
-    def set(self, key: str, value: Any) -> None:
+    def set(self, key: str, value: T) -> None:
         self._cache[key] = value
 
     def delete(self, key: str) -> None:

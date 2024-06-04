@@ -14,7 +14,7 @@ from firebolt.utils.exception import (
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from firebolt.utils.util import UtilCache, parse_url_and_params
 
-_firebolt_system_engine_cache = UtilCache()
+_firebolt_system_engine_cache = UtilCache[Tuple[str, Dict[str, str]]]()
 
 
 async def _get_system_engine_url_and_params(
@@ -23,8 +23,8 @@ async def _get_system_engine_url_and_params(
     api_endpoint: str,
 ) -> Tuple[str, Dict[str, str]]:
     cache_key = f"{account_name}-{api_endpoint}"
-    if cache_key in _firebolt_system_engine_cache:
-        return _firebolt_system_engine_cache.get(cache_key)
+    if result := _firebolt_system_engine_cache.get(cache_key):
+        return result
     async with AsyncClientV2(
         auth=auth,
         base_url=api_endpoint,
