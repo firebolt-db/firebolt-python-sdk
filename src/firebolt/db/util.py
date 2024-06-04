@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import Dict, Tuple
 
 from httpx import Timeout, codes
@@ -13,15 +12,19 @@ from firebolt.utils.exception import (
     InterfaceError,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-from firebolt.utils.util import parse_url_and_params
+from firebolt.utils.util import UtilCache, parse_url_and_params
+
+_firebolt_system_engine_cache = UtilCache[Tuple[str, Dict[str, str]]]()
 
 
-@lru_cache()
 def _get_system_engine_url_and_params(
     auth: Auth,
     account_name: str,
     api_endpoint: str,
 ) -> Tuple[str, Dict[str, str]]:
+    cache_key = f"{account_name}-{api_endpoint}"
+    if result := _firebolt_system_engine_cache.get(cache_key):
+        return result
     with ClientV2(
         auth=auth,
         base_url=api_endpoint,
@@ -38,4 +41,6 @@ def _get_system_engine_url_and_params(
                 f"Unable to retrieve system engine endpoint {url}: "
                 f"{response.status_code} {response.content.decode()}"
             )
-        return parse_url_and_params(response.json()["engineUrl"])
+        result = parse_url_and_params(response.json()["engineUrl"])
+        _firebolt_system_engine_cache.set(cache_key, result)
+        return result
