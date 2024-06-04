@@ -25,3 +25,10 @@ runs:
       run: |
         python -m sphinx -T -b html -d _build/doctrees -D language=en docsrc docs_compiled
         ls docs_compiled
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs_compiled
+        destination_dir: docs
