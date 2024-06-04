@@ -1,0 +1,25 @@
+name: 'Build Documentation'
+description: 'Build the Sphinx documentation'
+
+
+runs:
+  using: 'composite'
+
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.x
+
+    - name: Install dependencies
+      shell: bash
+      run: pip install -e .[docs]
+
+    - name: Build Sphinx documentation
+      shell: bash
+      run: |
+        sphinx-build -M html docsrc docs_compiled
+        ls docs_compiled
