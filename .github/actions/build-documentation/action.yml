@@ -16,10 +16,12 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: pip install -e .[docs]
+      run: |
+        pip install -U pip
+        pip install -e .[docs]
 
     - name: Build Sphinx documentation
       shell: bash
       run: |
-        sphinx-build -M html docsrc docs_compiled
+        python -m sphinx -T -b html -d _build/doctrees -D language=en docsrc docs_compiled
         ls docs_compiled
