@@ -5,6 +5,7 @@ from time import time
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     Dict,
     Optional,
@@ -209,3 +210,31 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
             raise ValueError(f"Multiple values found for key '{key}'")
         query_params_dict[key] = values[0]
     return result_url, query_params_dict
+
+
+class UtilCache:
+    """
+    Generic cache implementation to store key-value pairs.
+    Created to abstract the cache implementation in case we find a better
+    implementation in the future.
+    """
+
+    def __init__(self) -> None:
+        self._cache: Dict[str, Any] = {}
+
+    def get(self, key: str) -> Any:
+        return self._cache.get(key)
+
+    def set(self, key: str, value: Any) -> None:
+        self._cache[key] = value
+
+    def delete(self, key: str) -> None:
+        if key in self._cache:
+            del self._cache[key]
+
+    def clear(self) -> None:
+        self._cache.clear()
+
+    def __contains__(self, key: str) -> bool:
+        """Support for 'in' operator to check if key is present in cache."""
+        return key in self._cache

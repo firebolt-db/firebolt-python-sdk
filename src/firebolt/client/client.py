@@ -36,6 +36,7 @@ from firebolt.utils.urls import (
     ACCOUNT_URL,
 )
 from firebolt.utils.util import (
+    UtilCache,
     cached_property,
     fix_url_schema,
     get_auth_endpoint,
@@ -47,7 +48,7 @@ FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
 _AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
 
-_firebolt_acount_info_cache: Dict[str, _AccountInfo] = {}
+_firebolt_acount_info_cache = UtilCache()
 
 
 class FireboltClientMixin(FireboltClientMixinBase):
@@ -144,7 +145,7 @@ class ClientV2(Client):
     def _account_info(self) -> _AccountInfo:
         cache_key = f"{self.account_name}-{self._api_endpoint.host}"
         if cache_key in _firebolt_acount_info_cache:
-            return _firebolt_acount_info_cache[cache_key]
+            return _firebolt_acount_info_cache.get(cache_key)
         response = self.get(
             url=self._api_endpoint.copy_with(
                 path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
@@ -160,7 +161,7 @@ class ClientV2(Client):
         account_version = int(response.json().get("infraVersion", 1))
         account_info = _AccountInfo(id=account_id, version=account_version)
         # cache for future use
-        _firebolt_acount_info_cache[cache_key] = account_info
+        _firebolt_acount_info_cache.set(cache_key, account_info)
         return account_info
 
     @property
@@ -361,7 +362,7 @@ class AsyncClientV2(AsyncClient):
         cache_key = f"{self.account_name}-{self._api_endpoint.host}"
         # manual caching to avoid async_cached_property issues
         if cache_key in _firebolt_acount_info_cache:
-            return _firebolt_acount_info_cache[cache_key]
+            return _firebolt_acount_info_cache.get(cache_key)
 
         response = await self.get(
             url=self._api_endpoint.copy_with(
@@ -377,7 +378,7 @@ class AsyncClientV2(AsyncClient):
         account_version = int(response.json().get("infraVersion", 1))
         account_info = _AccountInfo(id=account_id, version=account_version)
         # cache for future use
-        _firebolt_acount_info_cache[cache_key] = account_info
+        _firebolt_acount_info_cache.set(cache_key, account_info)
         return account_info
 
     @property
