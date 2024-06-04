@@ -51,6 +51,13 @@ _AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
 _firebolt_acount_info_cache = UtilCache[_AccountInfo]()
 
 
+def parse_response_for_account_info(response: Response) -> _AccountInfo:
+    """Construct account info object from the API response."""
+    account_id = response.json()["id"]
+    account_version = int(response.json().get("infraVersion", 1))
+    return _AccountInfo(id=account_id, version=account_version)
+
+
 class FireboltClientMixin(FireboltClientMixinBase):
     """HttpxAsyncClient mixin with Firebolt authentication functionality."""
 
@@ -156,11 +163,7 @@ class ClientV2(Client):
             raise AccountNotFoundOrNoAccessError(self.account_name)
         # process all other status codes
         response.raise_for_status()
-        account_id = response.json()["id"]
-        # If no version assume 1
-        account_version = int(response.json().get("infraVersion", 1))
-        account_info = _AccountInfo(id=account_id, version=account_version)
-        # cache for future use
+        account_info = parse_response_for_account_info(response)
         _firebolt_acount_info_cache.set(cache_key, account_info)
         return account_info
 
@@ -374,9 +377,7 @@ class AsyncClientV2(AsyncClient):
             raise AccountNotFoundOrNoAccessError(self.account_name)
         # process all other status codes
         response.raise_for_status()
-        account_id = response.json()["id"]
-        account_version = int(response.json().get("infraVersion", 1))
-        account_info = _AccountInfo(id=account_id, version=account_version)
+        account_info = parse_response_for_account_info(response)
         # cache for future use
         _firebolt_acount_info_cache.set(cache_key, account_info)
         return account_info
