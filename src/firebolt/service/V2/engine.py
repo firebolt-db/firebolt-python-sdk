@@ -184,6 +184,16 @@ class EngineService(BaseService):
     def _format_engine_attribute_sql(
         self, param: str, value: Union[str, int, EngineType, InstanceType, WarmupMethod]
     ) -> Tuple[str, List]:
+        """Format an engine attribute for use in a SQL query.
+
+        Args:
+            param: The name of the parameter
+            value: The value of the parameter
+
+        Returns:
+            A tuple containing the formatted SQL string and a list of parameters
+            to pass for execution
+        """
         if param == "TYPE":
             return f"{param} = {self._format_engine_parameter(value)} ", []
         return f"{param} = ? ", [self._format_engine_parameter(value)]

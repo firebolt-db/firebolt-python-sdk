@@ -59,7 +59,7 @@ class DatabaseService(BaseService):
         self,
         **create_parameters: Optional[str],
     ) -> None:
-        if self.client._account_version == 2:
+        if self.account_version == 2:
             bad_parameters = [
                 name
                 for name in self.DISALLOWED_ACCOUNT_V2_PARAMETERS

@@ -74,7 +74,7 @@ class Engine(FireboltBaseModel):
 
     name: str = field(metadata={"db_name": "engine_name"})
     region: str = field()
-    spec: InstanceType = field(metadata={"db_name": "type"})
+    spec: Union[str, InstanceType] = field(metadata={"db_name": "type"})
     scale: int = field(metadata={"db_name": "nodes"})
     current_status: EngineStatus = field(metadata={"db_name": "status"})
     _database_name: str = field(repr=False, metadata={"db_name": "attached_to"})
