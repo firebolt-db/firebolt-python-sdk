@@ -235,6 +235,13 @@ class UtilCache(Generic[T]):
     def clear(self) -> None:
         self._cache.clear()
 
+    def create_key(self, *args: Optional[str]) -> str:
+        key = "-".join([arg for arg in args if arg is not None])
+        if not key:
+            # We should be able to cache even if all args are None
+            key = "-empty-key-"
+        return key
+
     def __contains__(self, key: str) -> bool:
         """Support for 'in' operator to check if key is present in cache."""
         return key in self._cache

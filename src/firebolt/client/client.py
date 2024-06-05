@@ -150,7 +150,10 @@ class ClientV2(Client):
 
     @property
     def _account_info(self) -> _AccountInfo:
-        cache_key = f"{self.account_name}-{self._api_endpoint.host}"
+        cache_key = _firebolt_account_info_cache.create_key(
+            self.account_name, self._api_endpoint.host
+        )
+
         if account_info := _firebolt_account_info_cache.get(cache_key):
             return account_info
         response = self.get(
@@ -362,7 +365,10 @@ class AsyncClientV2(AsyncClient):
         )
 
     async def _account_info(self) -> _AccountInfo:
-        cache_key = f"{self.account_name}-{self._api_endpoint.host}"
+        cache_key = _firebolt_account_info_cache.create_key(
+            self.account_name, self._api_endpoint.host
+        )
+
         # manual caching to avoid async_cached_property issues
         if account_info := _firebolt_account_info_cache.get(cache_key):
             return account_info
