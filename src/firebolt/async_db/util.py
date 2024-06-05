@@ -6,15 +6,14 @@ from httpx import Timeout, codes
 
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClientV2
+from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     InterfaceError,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-from firebolt.utils.util import UtilCache, parse_url_and_params
-
-_firebolt_async_system_engine_cache = UtilCache[Tuple[str, Dict[str, str]]]()
+from firebolt.utils.util import parse_url_and_params
 
 
 async def _get_system_engine_url_and_params(
@@ -22,7 +21,7 @@ async def _get_system_engine_url_and_params(
     account_name: str,
     api_endpoint: str,
 ) -> Tuple[str, Dict[str, str]]:
-    if result := _firebolt_async_system_engine_cache.get([account_name, api_endpoint]):
+    if result := _firebolt_system_engine_cache.get([account_name, api_endpoint]):
         return result
     async with AsyncClientV2(
         auth=auth,
@@ -41,7 +40,7 @@ async def _get_system_engine_url_and_params(
                 f"{response.status_code} {response.content.decode()}"
             )
         result = parse_url_and_params(response.json()["engineUrl"])
-        _firebolt_async_system_engine_cache.set(
+        _firebolt_system_engine_cache.set(
             key=[account_name, api_endpoint], value=result
         )
         return result

@@ -21,6 +21,7 @@ from firebolt.client.http_backend import (
     AsyncKeepaliveTransport,
     KeepaliveTransport,
 )
+from firebolt.common.cache import UtilCache
 from firebolt.utils.exception import (
     AccountNotFoundError,
     AccountNotFoundOrNoAccessError,
@@ -36,7 +37,6 @@ from firebolt.utils.urls import (
     ACCOUNT_URL,
 )
 from firebolt.utils.util import (
-    UtilCache,
     cached_property,
     fix_url_schema,
     get_auth_endpoint,

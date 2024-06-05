@@ -6,15 +6,14 @@ from httpx import Timeout, codes
 
 from firebolt.client import ClientV2
 from firebolt.client.auth import Auth
+from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     InterfaceError,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-from firebolt.utils.util import UtilCache, parse_url_and_params
-
-_firebolt_system_engine_cache = UtilCache[Tuple[str, Dict[str, str]]]()
+from firebolt.utils.util import parse_url_and_params
 
 
 def _get_system_engine_url_and_params(

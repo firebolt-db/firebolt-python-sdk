@@ -7,11 +7,10 @@ from httpx import Request
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.async_db.util import _firebolt_async_system_engine_cache
 from firebolt.client.auth import Auth, ClientCredentials, UsernamePassword
 from firebolt.client.client import ClientV2, _firebolt_account_info_cache
+from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.settings import Settings
-from firebolt.db.util import _firebolt_system_engine_cache
 from firebolt.utils.exception import (
     AccountNotFoundError,
     DatabaseError,
@@ -53,7 +52,6 @@ def global_fake_fs(request) -> None:
 
 @fixture(autouse=True)
 def clear_cache() -> None:
-    _firebolt_async_system_engine_cache.clear()
     _firebolt_system_engine_cache.clear()
     _firebolt_account_info_cache.clear()
 
