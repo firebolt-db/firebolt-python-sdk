@@ -11,7 +11,7 @@ from firebolt.common._types import ColType, Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
-LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
+LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT}'
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -145,40 +145,40 @@ def test_drop_create(connection: Connection) -> None:
     """Create table query is handled properly"""
     with connection.cursor() as c:
         # Cleanup
-        c.execute("DROP AGGREGATING INDEX IF EXISTS test_drop_create_db_agg_idx")
-        c.execute("DROP TABLE IF EXISTS test_drop_create_tb")
-        c.execute("DROP TABLE IF EXISTS test_drop_create_tb_dim")
+        c.execute('DROP AGGREGATING INDEX IF EXISTS "test_drop_create_db_agg_idx"')
+        c.execute('DROP TABLE IF EXISTS "test_drop_create_tb"')
+        c.execute('DROP TABLE IF EXISTS "test_drop_create_tb_dim"')
 
         # Fact table
         test_query(
             c,
-            "CREATE FACT TABLE test_drop_create_tb(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_drop_create_tb"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id",
         )
 
         # Dimension table
         test_query(
             c,
-            "CREATE DIMENSION TABLE test_drop_create_tb_dim(id int, sn string null"
+            'CREATE DIMENSION TABLE "test_drop_create_tb_dim"(id int, sn string null'
             ", f float, d date, dt datetime, b bool, a array(int))",
         )
 
         # Create aggregating index
         test_query(
             c,
-            "CREATE AGGREGATING INDEX test_drop_create_db_agg_idx ON "
+            'CREATE AGGREGATING INDEX "test_drop_create_db_agg_idx" ON '
             "test_drop_create_tb(id, count(f), count(dt))",
         )
 
         # Drop aggregating index
-        test_query(c, "DROP AGGREGATING INDEX test_drop_create_db_agg_idx")
+        test_query(c, 'DROP AGGREGATING INDEX "test_drop_create_db_agg_idx"')
 
         # Test drop once again
-        test_query(c, "DROP TABLE test_drop_create_tb")
-        test_query(c, "DROP TABLE IF EXISTS test_drop_create_tb")
+        test_query(c, 'DROP TABLE "test_drop_create_tb"')
+        test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_tb"')
 
-        test_query(c, "DROP TABLE test_drop_create_tb_dim")
-        test_query(c, "DROP TABLE IF EXISTS test_drop_create_tb_dim")
+        test_query(c, 'DROP TABLE "test_drop_create_tb_dim"')
+        test_query(c, 'DROP TABLE IF EXISTS "test_drop_create_tb_dim"')
 
 
 def test_insert(connection: Connection) -> None:
@@ -193,20 +193,21 @@ def test_insert(connection: Connection) -> None:
         assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_insert_tb")
+        c.execute('DROP TABLE IF EXISTS "test_insert_tb"')
         c.execute(
-            "CREATE FACT TABLE test_insert_tb(id int, sn string null, f float,"
+            'CREATE FACT TABLE "test_insert_tb"(id int, sn string null, f float,'
             "d date, dt datetime, b bool, a array(int)) primary index id"
         )
 
         test_empty_query(
             c,
-            "INSERT INTO test_insert_tb VALUES (1, 'sn', 1.1, '2021-01-01',"
+            "INSERT INTO \"test_insert_tb\" VALUES (1, 'sn', 1.1, '2021-01-01',"
             "'2021-01-01 01:01:01', true, [1, 2, 3])",
         )
 
         assert (
-            c.execute("SELECT * FROM test_insert_tb ORDER BY test_insert_tb.id") == 1
+            c.execute('SELECT * FROM "test_insert_tb" ORDER BY "test_insert_tb".id')
+            == 1
         ), "Invalid data length in table after insert"
 
         assert_deep_eq(
@@ -238,9 +239,9 @@ def test_parameterized_query(connection: Connection) -> None:
         assert len(c.fetchall()) == 0
 
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_tb_parameterized")
+        c.execute('DROP TABLE IF EXISTS "test_tb_parameterized"')
         c.execute(
-            "CREATE FACT TABLE test_tb_parameterized(i int, f float, s string, sn"
+            'CREATE FACT TABLE "test_tb_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
             "dec decimal(38, 3), ss string) primary index i",
         )
@@ -259,7 +260,7 @@ def test_parameterized_query(connection: Connection) -> None:
 
         test_empty_query(
             c,
-            "INSERT INTO test_tb_parameterized VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,"
+            'INSERT INTO "test_tb_parameterized" VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,'
             " '\\?')",
             params,
         )
@@ -268,7 +269,7 @@ def test_parameterized_query(connection: Connection) -> None:
         params[2] = "text0"
 
         assert (
-            c.execute("SELECT * FROM test_tb_parameterized") == 1
+            c.execute('SELECT * FROM "test_tb_parameterized"') == 1
         ), "Invalid data length in table after parameterized insert"
 
         assert_deep_eq(
@@ -282,15 +283,15 @@ def test_multi_statement_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_tb_multi_statement")
+        c.execute('DROP TABLE IF EXISTS "test_tb_multi_statement"')
         c.execute(
-            "CREATE FACT TABLE test_tb_multi_statement(i int, s string) primary index i"
+            'CREATE FACT TABLE "test_tb_multi_statement"(i int, s string) primary index i'
         )
 
         c.execute(
-            "INSERT INTO test_tb_multi_statement values (1, 'a'), (2, 'b');"
-            "SELECT * FROM test_tb_multi_statement;"
-            "SELECT * FROM test_tb_multi_statement WHERE i <= 1"
+            "INSERT INTO \"test_tb_multi_statement\" values (1, 'a'), (2, 'b');"
+            'SELECT * FROM "test_tb_multi_statement";'
+            'SELECT * FROM "test_tb_multi_statement" WHERE i <= 1'
         )
         assert c.description is None, "Invalid description"
 
@@ -435,15 +436,15 @@ def test_bytea_roundtrip(
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
-        c.execute("DROP TABLE IF EXISTS test_bytea_roundtrip")
+        c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip"')
         c.execute(
-            "CREATE FACT TABLE test_bytea_roundtrip(id int, b bytea) primary index id"
+            'CREATE FACT TABLE "test_bytea_roundtrip"(id int, b bytea) primary index id'
         )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
-        c.execute("INSERT INTO test_bytea_roundtrip VALUES (1, ?)", (Binary(data),))
-        c.execute("SELECT b FROM test_bytea_roundtrip")
+        c.execute('INSERT INTO "test_bytea_roundtrip" VALUES (1, ?)', (Binary(data),))
+        c.execute('SELECT b FROM "test_bytea_roundtrip"')
 
         bytes_data = (c.fetchone())[0]
 
@@ -456,9 +457,9 @@ def test_bytea_roundtrip(
 def setup_db(connection_no_engine, use_db_name):
     use_db_name = f"{use_db_name}_sync"
     with connection_no_engine.cursor() as cursor:
-        cursor.execute(f"CREATE DATABASE {use_db_name}")
+        cursor.execute(f'CREATE DATABASE "{use_db_name}"')
         yield
-        cursor.execute(f"DROP DATABASE {use_db_name}")
+        cursor.execute(f'DROP DATABASE "{use_db_name}"')
 
 
 @mark.xfail(reason="USE DATABASE is not yet available in 1.0 Firebolt")
@@ -472,16 +473,16 @@ def test_use_database(
     test_table_name = "verify_use_db"
     """Use database works as expected."""
     with connection_no_engine.cursor() as c:
-        c.execute(f"USE DATABASE {test_db_name}")
+        c.execute(f'USE DATABASE "{test_db_name}"')
         assert c.database == test_db_name
-        c.execute(f"CREATE TABLE {test_table_name} (id int)")
+        c.execute(f'CREATE TABLE "{test_table_name}" (id int)')
         c.execute(
             "SELECT table_name FROM information_schema.tables "
             f"WHERE table_name = '{test_table_name}'"
         )
         assert c.fetchone()[0] == test_table_name, "Table was not created"
         # Change DB and verify table is not there
-        c.execute(f"USE DATABASE {database_name}")
+        c.execute(f'USE DATABASE "{database_name}"')
         assert c.database == database_name
         c.execute(
             "SELECT table_name FROM information_schema.tables "
