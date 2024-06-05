@@ -8,6 +8,10 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db.connection import Connection, connect
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common._types import ColType
+from firebolt.common.cache import (
+    _firebolt_account_info_cache,
+    _firebolt_system_engine_cache,
+)
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     ConfigurationError,
@@ -237,6 +241,7 @@ async def test_connect_invalid_account(
             await connection.cursor().execute("select*")
 
 
+@mark.parametrize("cache_enabled", [True, False])
 async def test_connect_caching(
     db_name: str,
     auth_url: str,
@@ -251,6 +256,7 @@ async def test_connect_caching(
     account_id_callback: Callable,
     system_engine_query_url: str,
     query_callback: Callable,
+    cache_enabled: bool,
 ):
     system_engine_call_counter = 0
     account_id_call_counter = 0
@@ -276,11 +282,20 @@ async def test_connect_caching(
             auth=auth,
             account_name=account_name,
             api_endpoint=server,
+            disable_cache=not cache_enabled,
         ) as connection:
             await connection.cursor().execute("select*")
 
-    assert system_engine_call_counter == 1, "System engine URL was not cached"
-    assert account_id_call_counter == 1, "Account ID was not cached"
+    if cache_enabled:
+        assert system_engine_call_counter == 1, "System engine URL was not cached"
+        assert account_id_call_counter == 1, "Account ID was not cached"
+    else:
+        assert system_engine_call_counter != 1, "System engine URL was cached"
+        assert account_id_call_counter != 1, "Account ID was cached"
+
+    # Reset caches for the next test iteration
+    _firebolt_system_engine_cache.enable()
+    _firebolt_account_info_cache.enable()
 
 
 async def test_connect_system_engine_404(

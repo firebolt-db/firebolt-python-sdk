@@ -62,6 +62,8 @@ ParameterType = Union[int, float, str, datetime, date, bool, Decimal, Sequence, 
 # These definitions are required by PEP-249
 Date = date
 
+_AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
+
 
 def DateFromTicks(t: int) -> date:  # NOSONAR
     """Convert `ticks` to `date` for Firebolt DB."""

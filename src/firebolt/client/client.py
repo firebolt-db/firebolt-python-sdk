@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple
 from json import JSONDecodeError
 from typing import Any, Dict, Optional
 
@@ -21,7 +20,8 @@ from firebolt.client.http_backend import (
     AsyncKeepaliveTransport,
     KeepaliveTransport,
 )
-from firebolt.common.cache import UtilCache
+from firebolt.common._types import _AccountInfo
+from firebolt.common.cache import _firebolt_account_info_cache
 from firebolt.utils.exception import (
     AccountNotFoundError,
     AccountNotFoundOrNoAccessError,
@@ -45,10 +45,6 @@ from firebolt.utils.util import (
 )
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
-
-_AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
-
-_firebolt_account_info_cache = UtilCache[_AccountInfo]()
 
 
 def parse_response_for_account_info(response: Response) -> _AccountInfo:
