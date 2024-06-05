@@ -1,4 +1,4 @@
-name: Build documenation
+name: Integration tests FB 2.0
 
 on:
   workflow_dispatch:
@@ -40,17 +40,17 @@ jobs:
         id: resolve_name_tag
         shell: bash
         run: |
-            if [[ -n "${{ github.event.inputs.custom-path }}" ]]; then
-                echo "::set-output name=path::${{ github.event.inputs.custom-path }}"
-            # 0.x releases deploy to 0.x path, all other releases deploy to latest path
-            elif [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.tag_name }}" == 0.* ]]; then
-                echo "::set-output name=path::0.x"
-            # for manual builds deploy to the branch name path
-            elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-                echo "::set-output name=path::${{ github.ref_name }}"
-            else
-                echo "::set-output name=path::latest"
-            fi
+          if [[ -n "${{ github.event.inputs.custom-path }}" ]]; then
+              echo "path=${{ github.event.inputs.custom-path }}" >> $GITHUB_OUTPUT
+          # 0.x releases deploy to 0.x path, all other releases deploy to latest path
+          elif [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.tag_name }}" == 0.* ]]; then
+              echo "path=0.x" >> $GITHUB_OUTPUT
+          # for manual builds deploy to the branch name path
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+              echo "path=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+              echo "path=latest" >> $GITHUB_OUTPUT
+          fi
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -58,3 +58,9 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs_compiled
           destination_dir: sdk_documenation/${{ steps.resolve_name_tag.outputs.path }}
+
+      - name: Add URL to the Job Summary
+        shell: bash
+        run: |
+          url="https://docs.firebolt.io/firebolt-python-sdk/sdk_documenation/${{ steps.resolve_name_tag.outputs.path }}"
+          echo "[Documentation]($url)" >> $GITHUB_STEP_SUMMARY
