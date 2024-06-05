@@ -65,6 +65,7 @@ class Engine(FireboltBaseModel):
         "TYPE",
         "AUTO_STOP",
         "RENAME_TO",
+        # Empty strings for WARMUP and ENGINE_TYPE, since they are not supported in V2
         "",
         "",
     )
