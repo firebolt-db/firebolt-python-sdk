@@ -234,9 +234,9 @@ async def connect_v2(
     if account_version == 2:
         cursor = system_engine_connection.cursor()
         if database:
-            await cursor.execute(f"USE DATABASE {database}")
+            await cursor.execute(f'USE DATABASE "{database}"')
         if engine_name:
-            await cursor.execute(f"USE ENGINE {engine_name}")
+            await cursor.execute(f'USE ENGINE "{engine_name}"')
         # Ensure cursors created from this conection are using the same starting
         # database and engine
         return Connection(

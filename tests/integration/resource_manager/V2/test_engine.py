@@ -1,5 +1,6 @@
 from collections import namedtuple
 
+import pytest
 from pytest import mark
 
 from firebolt.client.auth import Auth
@@ -13,39 +14,51 @@ def test_create_start_stop_engine(
     account_name: str,
     api_endpoint: str,
     start_stop_engine_name: str,
+    account_version: int,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
     )
     name = start_stop_engine_name
 
-    spec = rm.instance_types.get("B1")
+    spec = rm.instance_types.get("B1") if account_version == 1 else "S"
 
-    engine = rm.engines.create(
-        name=name,
-        region="us-east-1",
-        engine_type=EngineType.DATA_ANALYTICS,
-        spec=spec,
-        scale=1,
-        auto_stop=120,
-        warmup=WarmupMethod.MINIMAL,
-    )
+    create_parameters = {
+        "name": name,
+        "spec": spec,
+        "scale": 1,
+        "auto_stop": 120,
+    }
+    if account_version == 1:
+        create_parameters["region"] = "us-east-1"
+        create_parameters["engine_type"] = EngineType.DATA_ANALYTICS
+        create_parameters["warmup"] = WarmupMethod.MINIMAL
+
+    engine = rm.engines.create(**create_parameters)
     assert engine.name == name
 
-    database = rm.databases.create(name=name)
-    assert database.name == name
+    try:
+        database = rm.databases.create(name=name)
+        assert database.name == name
 
-    engine.attach_to_database(database)
-    assert engine.database == database
+        try:
+            engine.attach_to_database(database)
+            assert engine.database == database
 
-    engine.start()
-    assert engine.current_status == EngineStatus.RUNNING
+            engine.start()
+            assert engine.current_status == EngineStatus.RUNNING
 
-    engine.stop()
-    assert engine.current_status in {EngineStatus.STOPPING, EngineStatus.STOPPED}
+            engine.stop()
+            assert engine.current_status in {
+                EngineStatus.STOPPING,
+                EngineStatus.STOPPED,
+            }
+        finally:
+            database.delete()
 
-    engine.delete()
-    database.delete()
+    finally:
+        engine.stop()
+        engine.delete()
 
 
 ParamValue = namedtuple("ParamValue", "set expected")
@@ -56,6 +69,16 @@ ENGINE_UPDATE_PARAMS = {
     "warmup": ParamValue(WarmupMethod.PRELOAD_ALL_DATA, WarmupMethod.PRELOAD_ALL_DATA),
     "engine_type": ParamValue(EngineType.DATA_ANALYTICS, EngineType.DATA_ANALYTICS),
 }
+ENGINE_UPDATE_PARAMS_V2 = {
+    "scale": ParamValue(3, 3),
+    "spec": ParamValue("S", "S"),
+    "auto_stop": ParamValue(123, 123),
+}
+
+
+@pytest.fixture
+def engine_update_params(account_version: int):
+    return ENGINE_UPDATE_PARAMS if account_version == 1 else ENGINE_UPDATE_PARAMS_V2
 
 
 def test_engine_update_single_parameter(
@@ -64,6 +87,7 @@ def test_engine_update_single_parameter(
     api_endpoint: str,
     database_name: str,
     single_param_engine_name: str,
+    engine_update_params: dict,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
@@ -72,22 +96,28 @@ def test_engine_update_single_parameter(
     name = single_param_engine_name
     engine = rm.engines.create(name=name)
 
-    engine.attach_to_database(rm.databases.get(database_name))
-    assert engine.database.name == database_name
+    try:
+        engine.attach_to_database(rm.databases.get(database_name))
+        assert engine.database.name == database_name
 
-    for param, value in ENGINE_UPDATE_PARAMS.items():
-        engine.update(**{param: value.set})
+        for param, value in engine_update_params.items():
+            engine.update(**{param: value.set})
 
-        engine_new = rm.engines.get(name)
-        if param == "spec":
-            current_value = engine_new.spec.name
-        elif param == "engine_type":
-            current_value = engine_new.type
-        else:
-            current_value = getattr(engine_new, param)
-        assert current_value == value.expected, f"Invalid {param} value"
-
-    engine.delete()
+            engine_new = rm.engines.get(name)
+            if param == "spec":
+                current_value = (
+                    engine_new.spec
+                    if isinstance(engine_new.spec, str)
+                    else engine_new.spec.name
+                )
+            elif param == "engine_type":
+                current_value = engine_new.type
+            else:
+                current_value = getattr(engine_new, param)
+            assert current_value == value.expected, f"Invalid {param} value"
+    finally:
+        engine.stop()
+        engine.delete()
 
 
 def test_engine_update_multiple_parameters(
@@ -96,6 +126,8 @@ def test_engine_update_multiple_parameters(
     api_endpoint: str,
     database_name: str,
     multi_param_engine_name: str,
+    engine_update_params: dict,
+    account_version: int,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
@@ -104,22 +136,34 @@ def test_engine_update_multiple_parameters(
     name = multi_param_engine_name
     engine = rm.engines.create(name=name)
 
-    engine.attach_to_database(rm.databases.get(database_name))
-    assert engine.database.name == database_name
+    try:
+        engine.attach_to_database(rm.databases.get(database_name))
+        assert engine.database.name == database_name
 
-    engine.update(
-        **dict({(param, value.set) for param, value in ENGINE_UPDATE_PARAMS.items()})
-    )
+        if account_version == 2:
+            # auto_stop cannot be simultaneously updated with spec and scale
+            engine_update_params.pop("auto_stop")
+        engine.update(
+            **dict(
+                {(param, value.set) for param, value in engine_update_params.items()}
+            )
+        )
 
-    engine_new = rm.engines.get(name)
+        engine_new = rm.engines.get(name)
 
-    for param, value in ENGINE_UPDATE_PARAMS.items():
-        if param == "spec":
-            current_value = engine_new.spec.name
-        elif param == "engine_type":
-            current_value = engine_new.type
-        else:
-            current_value = getattr(engine_new, param)
-        assert current_value == value.expected, f"Invalid {param} value"
+        for param, value in engine_update_params.items():
+            if param == "spec":
+                current_value = (
+                    engine_new.spec
+                    if isinstance(engine_new.spec, str)
+                    else engine_new.spec.name
+                )
+            elif param == "engine_type":
+                current_value = engine_new.type
+            else:
+                current_value = getattr(engine_new, param)
+            assert current_value == value.expected, f"Invalid {param} value"
 
-    engine.delete()
+    finally:
+        engine.stop()
+        engine.delete()
