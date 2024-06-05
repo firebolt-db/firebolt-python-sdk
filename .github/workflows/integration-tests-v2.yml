@@ -1,21 +1,44 @@
-name: Integration tests FB 2.0
+name: Build documenation
+
 on:
   workflow_dispatch:
-  workflow_call:
-    secrets:
-      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
-        required: true
-      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
-        required: true
+  release:
+    types:
+      - created
 
 jobs:
-  tests:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build Documentation
-        uses: ./.github/actions/build-documentation
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          python-version: 3.x
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          pip install -U pip
+          pip install -e .[docs]
+
+      - name: Build Sphinx documentation
+        shell: bash
+        run: |
+          python -m sphinx -T -b html -d _build/doctrees -D language=en docsrc docs_compiled
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs_compiled
+          destination_dir: sdk_documenation/latest
