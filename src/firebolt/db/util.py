@@ -22,8 +22,7 @@ def _get_system_engine_url_and_params(
     account_name: str,
     api_endpoint: str,
 ) -> Tuple[str, Dict[str, str]]:
-    cache_key = f"{account_name}-{api_endpoint}"
-    if result := _firebolt_system_engine_cache.get(cache_key):
+    if result := _firebolt_system_engine_cache.get([account_name, api_endpoint]):
         return result
     with ClientV2(
         auth=auth,
@@ -42,5 +41,7 @@ def _get_system_engine_url_and_params(
                 f"{response.status_code} {response.content.decode()}"
             )
         result = parse_url_and_params(response.json()["engineUrl"])
-        _firebolt_system_engine_cache.set(cache_key, result)
+        _firebolt_system_engine_cache.set(
+            key=[account_name, api_endpoint], value=result
+        )
         return result

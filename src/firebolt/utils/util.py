@@ -9,6 +9,7 @@ from typing import (
     Dict,
     Generic,
     Optional,
+    Protocol,
     Tuple,
     Type,
     TypeVar,
@@ -212,6 +213,11 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
     return result_url, query_params_dict
 
 
+class ReprCacheable(Protocol):
+    def __repr__(self) -> str:
+        ...
+
+
 class UtilCache(Generic[T]):
     """
     Generic cache implementation to store key-value pairs.
@@ -222,25 +228,24 @@ class UtilCache(Generic[T]):
     def __init__(self) -> None:
         self._cache: Dict[str, T] = {}
 
-    def get(self, key: str) -> Optional[T]:
-        return self._cache.get(key)
+    def get(self, key: ReprCacheable) -> Optional[T]:
+        s_key = self.create_key(key)
+        return self._cache.get(s_key)
 
-    def set(self, key: str, value: T) -> None:
-        self._cache[key] = value
+    def set(self, key: ReprCacheable, value: T) -> None:
+        s_key = self.create_key(key)
+        self._cache[s_key] = value
 
-    def delete(self, key: str) -> None:
-        if key in self._cache:
-            del self._cache[key]
+    def delete(self, key: ReprCacheable) -> None:
+        s_key = self.create_key(key)
+        if s_key in self._cache:
+            del self._cache[s_key]
 
     def clear(self) -> None:
         self._cache.clear()
 
-    def create_key(self, *args: Optional[str]) -> str:
-        key = "-".join([arg for arg in args if arg is not None])
-        if not key:
-            # We should be able to cache even if all args are None
-            key = "-empty-key-"
-        return key
+    def create_key(self, obj: ReprCacheable) -> str:
+        return repr(obj)
 
     def __contains__(self, key: str) -> bool:
         """Support for 'in' operator to check if key is present in cache."""

@@ -150,11 +150,9 @@ class ClientV2(Client):
 
     @property
     def _account_info(self) -> _AccountInfo:
-        cache_key = _firebolt_account_info_cache.create_key(
-            self.account_name, self._api_endpoint.host
-        )
-
-        if account_info := _firebolt_account_info_cache.get(cache_key):
+        if account_info := _firebolt_account_info_cache.get(
+            [self.account_name, self._api_endpoint.host]
+        ):
             return account_info
         response = self.get(
             url=self._api_endpoint.copy_with(
@@ -167,7 +165,9 @@ class ClientV2(Client):
         # process all other status codes
         response.raise_for_status()
         account_info = parse_response_for_account_info(response)
-        _firebolt_account_info_cache.set(cache_key, account_info)
+        _firebolt_account_info_cache.set(
+            key=[self.account_name, self._api_endpoint.host], value=account_info
+        )
         return account_info
 
     @property
@@ -365,12 +365,10 @@ class AsyncClientV2(AsyncClient):
         )
 
     async def _account_info(self) -> _AccountInfo:
-        cache_key = _firebolt_account_info_cache.create_key(
-            self.account_name, self._api_endpoint.host
-        )
-
         # manual caching to avoid async_cached_property issues
-        if account_info := _firebolt_account_info_cache.get(cache_key):
+        if account_info := _firebolt_account_info_cache.get(
+            [self.account_name, self._api_endpoint.host]
+        ):
             return account_info
 
         response = await self.get(
@@ -385,7 +383,9 @@ class AsyncClientV2(AsyncClient):
         response.raise_for_status()
         account_info = parse_response_for_account_info(response)
         # cache for future use
-        _firebolt_account_info_cache.set(cache_key, account_info)
+        _firebolt_account_info_cache.set(
+            key=[self.account_name, self._api_endpoint.host], value=account_info
+        )
         return account_info
 
     @property
