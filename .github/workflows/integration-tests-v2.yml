@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: 3.x
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
@@ -36,9 +36,25 @@ jobs:
         run: |
           python -m sphinx -T -b html -d _build/doctrees -D language=en docsrc docs_compiled
 
+      - name: Resolve name tag
+        id: resolve_name_tag
+        shell: bash
+        run: |
+            if [[ -n "${{ github.event.inputs.custom-path }}" ]]; then
+                echo "::set-output name=path::${{ github.event.inputs.custom-path }}"
+            # 0.x releases deploy to 0.x path, all other releases deploy to latest path
+            elif [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.tag_name }}" == 0.* ]]; then
+                echo "::set-output name=path::0.x"
+            # for manual builds deploy to the branch name path
+            elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+                echo "::set-output name=path::${{ github.ref_name }}"
+            else
+                echo "::set-output name=path::latest"
+            fi
+
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./docs_compiled
-          destination_dir: sdk_documenation/latest
+          destination_dir: sdk_documenation/${{ steps.resolve_name_tag.outputs.path }}
