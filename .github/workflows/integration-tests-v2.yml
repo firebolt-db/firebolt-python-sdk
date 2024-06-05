@@ -1,66 +1,48 @@
 name: Integration tests FB 2.0
-
 on:
   workflow_dispatch:
-  release:
-    types:
-      - created
+  workflow_call:
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN:
+        required: true
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
+        required: true
 
 jobs:
-  build:
+  tests:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Check out code
+        uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
         with:
-          python-version: 3.x
-
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+          python-version: 3.8
 
       - name: Install dependencies
-        shell: bash
         run: |
-          pip install -U pip
-          pip install -e .[docs]
+          python -m pip install --upgrade pip
+          pip install ".[dev]"
 
-      - name: Build Sphinx documentation
-        shell: bash
-        run: |
-          python -m sphinx -T -b html -d _build/doctrees -D language=en docsrc docs_compiled
-
-      - name: Resolve name tag
-        id: resolve_name_tag
-        shell: bash
-        run: |
-          if [[ -n "${{ github.event.inputs.custom-path }}" ]]; then
-              echo "path=${{ github.event.inputs.custom-path }}" >> $GITHUB_OUTPUT
-          # 0.x releases deploy to 0.x path, all other releases deploy to latest path
-          elif [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.tag_name }}" == 0.* ]]; then
-              echo "path=0.x" >> $GITHUB_OUTPUT
-          # for manual builds deploy to the branch name path
-          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-              echo "path=${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          else
-              echo "path=latest" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Setup database and engine
+        id: setup
+        uses: firebolt-db/integration-testing-setup@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs_compiled
-          destination_dir: sdk_documenation/${{ steps.resolve_name_tag.outputs.path }}
+          firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          account: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
+          api-endpoint: "api.staging.firebolt.io"
 
-      - name: Add URL to the Job Summary
-        shell: bash
+      - name: Run integration tests
+        env:
+          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
+          ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
+          STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
+          API_ENDPOINT: "api.staging.firebolt.io"
+          ACCOUNT_NAME_V1: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
+          ACCOUNT_NAME_V2: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
         run: |
-          url="https://docs.firebolt.io/firebolt-python-sdk/sdk_documenation/${{ steps.resolve_name_tag.outputs.path }}"
-          echo "[Documentation]($url)" >> $GITHUB_STEP_SUMMARY
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1" --runslow
