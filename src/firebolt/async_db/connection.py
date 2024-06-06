@@ -11,6 +11,10 @@ from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import BaseConnection
+from firebolt.common.cache import (
+    _firebolt_account_info_cache,
+    _firebolt_system_engine_cache,
+)
 from firebolt.common.constants import (
     DEFAULT_TIMEOUT_SECONDS,
     ENGINE_STATUS_RUNNING_LIST,
@@ -132,6 +136,7 @@ async def connect(
     engine_name: Optional[str] = None,
     engine_url: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
+    disable_cache: bool = False,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
     # auth parameter is optional in function signature
@@ -145,6 +150,9 @@ async def connect(
     user_drivers = additional_parameters.get("user_drivers", [])
     user_clients = additional_parameters.get("user_clients", [])
     user_agent_header = get_user_agent_header(user_drivers, user_clients)
+    if disable_cache:
+        _firebolt_system_engine_cache.disable()
+        _firebolt_account_info_cache.disable()
     # Use v2 if auth is ClientCredentials
     # Use v1 if auth is ServiceAccount or UsernamePassword
     auth_version = auth.get_firebolt_version()
