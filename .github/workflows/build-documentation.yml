@@ -1,0 +1,71 @@
+name: Build documenation
+
+on:
+  workflow_dispatch:
+    inputs:
+      custom-path:
+        description: 'Custom path to deploy documentation to'
+        required: false
+        default: ''
+  release:
+    types:
+      - created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install -U pip
+        pip install -e .[docs]
+
+    - name: Build Sphinx documentation
+      shell: bash
+      run: |
+        python -m sphinx -T -b html -d _build/doctrees -D language=en docsrc docs_compiled
+
+    - name: Resolve url path
+      id: resolve_url_path
+      shell: bash
+      run: |
+        if [[ -n "${{ github.event.inputs.custom-path }}" ]]; then
+            echo "path=${{ github.event.inputs.custom-path }}" >> $GITHUB_OUTPUT
+        # 0.x releases deploy to 0.x path, all other releases deploy to latest path
+        elif [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.tag_name }}" == 0.* ]]; then
+            echo "path=0.x" >> $GITHUB_OUTPUT
+        # for manual builds deploy to the branch name path
+        elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "path=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+        else
+            echo "path=latest" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs_compiled
+        destination_dir: sdk_documenation/${{ steps.resolve_url_path.outputs.path }}
+
+    - name: Add URL to the Job Summary
+      shell: bash
+      run: |
+        url="https://docs.firebolt.io/firebolt-python-sdk/sdk_documenation/${{ steps.resolve_url_path.outputs.path }}"
+        echo "[Documentation]($url)" >> $GITHUB_STEP_SUMMARY

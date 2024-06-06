@@ -22,3 +22,7 @@ class BaseService:
     @property
     def _connection(self) -> Connection:
         return self.resource_manager._connection
+
+    @property
+    def account_version(self) -> int:
+        return self.client._account_version
