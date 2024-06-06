@@ -48,6 +48,9 @@ async def test_account_no_user(
             auth=auth_no_user,
             account_name=account_name,
             api_endpoint=api_endpoint,
+            # Disable cache since for this test we want to make sure
+            # the error is raised
+            disable_cache=True,
         ) as connection:
             await connection.cursor().execute("show tables")
 
