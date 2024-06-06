@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Model &mdash; firebolt-python-sdk  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Service" href="firebolt.service.html" />
+    <link rel="prev" title="db" href="firebolt.db.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            firebolt-python-sdk
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="Connecting_and_queries.html">Connecting and querying</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Managing_resources.html">Managing resources</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="firebolt.async_db.html">Async DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.common.html">Common</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.db.html">DB</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Model</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.model.database">Database</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.database.Database"><code class="docutils literal notranslate"><span class="pre">Database</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.attach_to_engine"><code class="docutils literal notranslate"><span class="pre">Database.attach_to_engine()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.compute_region_key"><code class="docutils literal notranslate"><span class="pre">Database.compute_region_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.create_actor"><code class="docutils literal notranslate"><span class="pre">Database.create_actor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.create_time"><code class="docutils literal notranslate"><span class="pre">Database.create_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.current_status"><code class="docutils literal notranslate"><span class="pre">Database.current_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.data_size_compressed"><code class="docutils literal notranslate"><span class="pre">Database.data_size_compressed</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.data_size_full"><code class="docutils literal notranslate"><span class="pre">Database.data_size_full</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.database_id"><code class="docutils literal notranslate"><span class="pre">Database.database_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.database_key"><code class="docutils literal notranslate"><span class="pre">Database.database_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.delete"><code class="docutils literal notranslate"><span class="pre">Database.delete()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.description"><code class="docutils literal notranslate"><span class="pre">Database.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.desired_status"><code class="docutils literal notranslate"><span class="pre">Database.desired_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.emoji"><code class="docutils literal notranslate"><span class="pre">Database.emoji</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.get_attached_engines"><code class="docutils literal notranslate"><span class="pre">Database.get_attached_engines()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.get_default_engine"><code class="docutils literal notranslate"><span class="pre">Database.get_default_engine()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.health_status"><code class="docutils literal notranslate"><span class="pre">Database.health_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.is_system_database"><code class="docutils literal notranslate"><span class="pre">Database.is_system_database</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.last_update_actor"><code class="docutils literal notranslate"><span class="pre">Database.last_update_actor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.last_update_time"><code class="docutils literal notranslate"><span class="pre">Database.last_update_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.name"><code class="docutils literal notranslate"><span class="pre">Database.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.parse_obj_with_service"><code class="docutils literal notranslate"><span class="pre">Database.parse_obj_with_service()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.storage_bucket_name"><code class="docutils literal notranslate"><span class="pre">Database.storage_bucket_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.database.Database.update"><code class="docutils literal notranslate"><span class="pre">Database.update()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.model.engine">Engine</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.engine.Engine"><code class="docutils literal notranslate"><span class="pre">Engine</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.attach_to_database"><code class="docutils literal notranslate"><span class="pre">Engine.attach_to_database()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.compute_region_key"><code class="docutils literal notranslate"><span class="pre">Engine.compute_region_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.create_actor"><code class="docutils literal notranslate"><span class="pre">Engine.create_actor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.create_time"><code class="docutils literal notranslate"><span class="pre">Engine.create_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.current_status"><code class="docutils literal notranslate"><span class="pre">Engine.current_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.current_status_summary"><code class="docutils literal notranslate"><span class="pre">Engine.current_status_summary</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.database"><code class="docutils literal notranslate"><span class="pre">Engine.database</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.delete"><code class="docutils literal notranslate"><span class="pre">Engine.delete()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.description"><code class="docutils literal notranslate"><span class="pre">Engine.description</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.desired_status"><code class="docutils literal notranslate"><span class="pre">Engine.desired_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.emoji"><code class="docutils literal notranslate"><span class="pre">Engine.emoji</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.endpoint"><code class="docutils literal notranslate"><span class="pre">Engine.endpoint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.endpoint_desired_revision_key"><code class="docutils literal notranslate"><span class="pre">Engine.endpoint_desired_revision_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.endpoint_serving_revision_key"><code class="docutils literal notranslate"><span class="pre">Engine.endpoint_serving_revision_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.engine_id"><code class="docutils literal notranslate"><span class="pre">Engine.engine_id</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.get_connection"><code class="docutils literal notranslate"><span class="pre">Engine.get_connection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.get_latest"><code class="docutils literal notranslate"><span class="pre">Engine.get_latest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.health_status"><code class="docutils literal notranslate"><span class="pre">Engine.health_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.key"><code class="docutils literal notranslate"><span class="pre">Engine.key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.last_update_actor"><code class="docutils literal notranslate"><span class="pre">Engine.last_update_actor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.last_update_time"><code class="docutils literal notranslate"><span class="pre">Engine.last_update_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.last_use_time"><code class="docutils literal notranslate"><span class="pre">Engine.last_use_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.latest_revision_key"><code class="docutils literal notranslate"><span class="pre">Engine.latest_revision_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.name"><code class="docutils literal notranslate"><span class="pre">Engine.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.parse_obj_with_service"><code class="docutils literal notranslate"><span class="pre">Engine.parse_obj_with_service()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.restart"><code class="docutils literal notranslate"><span class="pre">Engine.restart()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.settings"><code class="docutils literal notranslate"><span class="pre">Engine.settings</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.start"><code class="docutils literal notranslate"><span class="pre">Engine.start()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.stop"><code class="docutils literal notranslate"><span class="pre">Engine.stop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.Engine.update"><code class="docutils literal notranslate"><span class="pre">Engine.update()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.engine.EngineSettings"><code class="docutils literal notranslate"><span class="pre">EngineSettings</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.EngineSettings.auto_stop_delay_duration"><code class="docutils literal notranslate"><span class="pre">EngineSettings.auto_stop_delay_duration</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.EngineSettings.default"><code class="docutils literal notranslate"><span class="pre">EngineSettings.default()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.EngineSettings.is_read_only"><code class="docutils literal notranslate"><span class="pre">EngineSettings.is_read_only</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.EngineSettings.minimum_logging_level"><code class="docutils literal notranslate"><span class="pre">EngineSettings.minimum_logging_level</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.EngineSettings.preset"><code class="docutils literal notranslate"><span class="pre">EngineSettings.preset</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine.EngineSettings.warm_up"><code class="docutils literal notranslate"><span class="pre">EngineSettings.warm_up</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.model.engine_revision">Engine revision</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision"><code class="docutils literal notranslate"><span class="pre">EngineRevision</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.create_actor"><code class="docutils literal notranslate"><span class="pre">EngineRevision.create_actor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.create_time"><code class="docutils literal notranslate"><span class="pre">EngineRevision.create_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.current_status"><code class="docutils literal notranslate"><span class="pre">EngineRevision.current_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.desired_status"><code class="docutils literal notranslate"><span class="pre">EngineRevision.desired_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.health_status"><code class="docutils literal notranslate"><span class="pre">EngineRevision.health_status</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.key"><code class="docutils literal notranslate"><span class="pre">EngineRevision.key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.last_update_actor"><code class="docutils literal notranslate"><span class="pre">EngineRevision.last_update_actor</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.last_update_time"><code class="docutils literal notranslate"><span class="pre">EngineRevision.last_update_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevision.specification"><code class="docutils literal notranslate"><span class="pre">EngineRevision.specification</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_count"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification.db_compute_instances_count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_type_key"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification.db_compute_instances_type_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_use_spot"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification.db_compute_instances_use_spot</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_version"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification.db_version</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification.proxy_instances_count"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification.proxy_instances_count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification.proxy_instances_type_key"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification.proxy_instances_type_key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification.proxy_version"><code class="docutils literal notranslate"><span class="pre">EngineRevisionSpecification.proxy_version</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.model.instance_type">Instance type</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType"><code class="docutils literal notranslate"><span class="pre">InstanceType</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.cpu_virtual_cores_count"><code class="docutils literal notranslate"><span class="pre">InstanceType.cpu_virtual_cores_count</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.create_time"><code class="docutils literal notranslate"><span class="pre">InstanceType.create_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.is_spot_available"><code class="docutils literal notranslate"><span class="pre">InstanceType.is_spot_available</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.key"><code class="docutils literal notranslate"><span class="pre">InstanceType.key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.last_update_time"><code class="docutils literal notranslate"><span class="pre">InstanceType.last_update_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.memory_size_bytes"><code class="docutils literal notranslate"><span class="pre">InstanceType.memory_size_bytes</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.name"><code class="docutils literal notranslate"><span class="pre">InstanceType.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.price_per_hour_cents"><code class="docutils literal notranslate"><span class="pre">InstanceType.price_per_hour_cents</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.instance_type.InstanceType.storage_size_bytes"><code class="docutils literal notranslate"><span class="pre">InstanceType.storage_size_bytes</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.model.provider">Provider</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.provider.Provider"><code class="docutils literal notranslate"><span class="pre">Provider</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.provider.Provider.create_time"><code class="docutils literal notranslate"><span class="pre">Provider.create_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.provider.Provider.display_name"><code class="docutils literal notranslate"><span class="pre">Provider.display_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.provider.Provider.last_update_time"><code class="docutils literal notranslate"><span class="pre">Provider.last_update_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.provider.Provider.name"><code class="docutils literal notranslate"><span class="pre">Provider.name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.provider.Provider.provider_id"><code class="docutils literal notranslate"><span class="pre">Provider.provider_id</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.model.region">Region</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.model.region.Region"><code class="docutils literal notranslate"><span class="pre">Region</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.region.Region.create_time"><code class="docutils literal notranslate"><span class="pre">Region.create_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.region.Region.display_name"><code class="docutils literal notranslate"><span class="pre">Region.display_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.region.Region.key"><code class="docutils literal notranslate"><span class="pre">Region.key</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.region.Region.last_update_time"><code class="docutils literal notranslate"><span class="pre">Region.last_update_time</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.model.region.Region.name"><code class="docutils literal notranslate"><span class="pre">Region.name</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.service.html">Service</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">firebolt-python-sdk</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/firebolt.model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="model">
+<h1>Model<a class="headerlink" href="#model" title="Link to this heading"></a></h1>
+<p>The model package contains various classes and functions for managing Firebolt engines and databases.</p>
+<section id="module-firebolt.model.database">
+<span id="database"></span><span id="model-database"></span><h2>Database<a class="headerlink" href="#module-firebolt.model.database" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.database.Database">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.database.</span></span><span class="sig-name descname"><span class="pre">Database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConstrainedStrValue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_region_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">RegionKey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DatabaseKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConstrainedStrValue</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emoji</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConstrainedStrValue</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_size_full</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_size_compressed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_system_database</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storage_bucket_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_actor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_actor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desired_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.database.Database" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<p>A Firebolt database.</p>
+<p>Databases belong to a region and have a description,
+but otherwise are not configurable.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.attach_to_engine">
+<span class="sig-name descname"><span class="pre">attach_to_engine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_default_engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Binding</span></span></span><a class="headerlink" href="#firebolt.model.database.Database.attach_to_engine" title="Link to this definition"></a></dt>
+<dd><p>Attach an engine to this database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>engine</strong> – The engine to attach.</p></li>
+<li><p><strong>is_default_engine</strong> – Whether this engine should be used as default for this database.
+Only one engine can be set as default for a single database.
+This will overwrite any existing default.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.compute_region_key">
+<span class="sig-name descname"><span class="pre">compute_region_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">RegionKey</span></em><a class="headerlink" href="#firebolt.model.database.Database.compute_region_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.create_actor">
+<span class="sig-name descname"><span class="pre">create_actor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.create_actor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.create_time">
+<span class="sig-name descname"><span class="pre">create_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.create_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.current_status">
+<span class="sig-name descname"><span class="pre">current_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.current_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.data_size_compressed">
+<span class="sig-name descname"><span class="pre">data_size_compressed</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.data_size_compressed" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.data_size_full">
+<span class="sig-name descname"><span class="pre">data_size_full</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.data_size_full" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.database_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">database_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.database_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.database_key">
+<span class="sig-name descname"><span class="pre">database_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">DatabaseKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.database_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">Database</span></a></span></span><a class="headerlink" href="#firebolt.model.database.Database.delete" title="Link to this definition"></a></dt>
+<dd><p>Delete a database from Firebolt.</p>
+<p>Raises an error if there are any attached engines.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.description">
+<span class="sig-name descname"><span class="pre">description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.description" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.desired_status">
+<span class="sig-name descname"><span class="pre">desired_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.desired_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.emoji">
+<span class="sig-name descname"><span class="pre">emoji</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.emoji" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.get_attached_engines">
+<span class="sig-name descname"><span class="pre">get_attached_engines</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.model.database.Database.get_attached_engines" title="Link to this definition"></a></dt>
+<dd><p>Get a list of engines that are attached to this database.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.get_default_engine">
+<span class="sig-name descname"><span class="pre">get_default_engine</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.model.database.Database.get_default_engine" title="Link to this definition"></a></dt>
+<dd><p>Returns: default engine of the database, or None if default engine is missing</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.health_status">
+<span class="sig-name descname"><span class="pre">health_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.health_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.is_system_database">
+<span class="sig-name descname"><span class="pre">is_system_database</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.is_system_database" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.last_update_actor">
+<span class="sig-name descname"><span class="pre">last_update_actor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.last_update_actor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.last_update_time">
+<span class="sig-name descname"><span class="pre">last_update_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.last_update_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.database.Database.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.parse_obj_with_service">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_obj_with_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">database_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.database.DatabaseService" title="firebolt.service.database.DatabaseService"><span class="pre">DatabaseService</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">Database</span></a></span></span><a class="headerlink" href="#firebolt.model.database.Database.parse_obj_with_service" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.storage_bucket_name">
+<span class="sig-name descname"><span class="pre">storage_bucket_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.database.Database.storage_bucket_name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.database.Database.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">Database</span></a></span></span><a class="headerlink" href="#firebolt.model.database.Database.update" title="Link to this definition"></a></dt>
+<dd><p>Updates a database description.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-firebolt.model.engine">
+<span id="engine"></span><span id="model-engine"></span><h2>Engine<a class="headerlink" href="#module-firebolt.model.engine" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.engine.</span></span><span class="sig-name descname"><span class="pre">Engine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConstrainedStrValue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">compute_region_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">RegionKey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">settings</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.model.engine.EngineSettings" title="firebolt.model.engine.EngineSettings"><span class="pre">EngineSettings</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EngineKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emoji</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.types.EngineStatus" title="firebolt.service.types.EngineStatus"><span class="pre">EngineStatus</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_status_summary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.types.EngineStatusSummary" title="firebolt.service.types.EngineStatusSummary"><span class="pre">EngineStatusSummary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latest_revision_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint_serving_revision_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_actor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_actor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_use_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desired_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">endpoint_desired_revision_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.engine.Engine" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<p>A Firebolt engine. Responsible for performing work (queries, ingestion).</p>
+<p>Engines are configured in <a class="reference internal" href="#firebolt.model.engine.EngineSettings" title="firebolt.model.engine.EngineSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">Settings</span></code></a>
+and in <a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification" title="firebolt.model.engine_revision.EngineRevisionSpecification"><code class="xref py py-class docutils literal notranslate"><span class="pre">EngineRevisionSpecification</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.attach_to_database">
+<span class="sig-name descname"><span class="pre">attach_to_database</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">Database</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_default_engine</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Binding</span></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.attach_to_database" title="Link to this definition"></a></dt>
+<dd><p>Attach this engine to a database.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>database</strong> – Database to which the engine will be attached</p></li>
+<li><p><strong>is_default_engine</strong> – Whether this engine should be used as default for this database.
+Only one engine can be set as default for a single database.
+This will overwrite any existing default.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.compute_region_key">
+<span class="sig-name descname"><span class="pre">compute_region_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">RegionKey</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.compute_region_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.create_actor">
+<span class="sig-name descname"><span class="pre">create_actor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.create_actor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.create_time">
+<span class="sig-name descname"><span class="pre">create_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.create_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.current_status">
+<span class="sig-name descname"><span class="pre">current_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="firebolt.service.html#firebolt.service.types.EngineStatus" title="firebolt.service.types.EngineStatus"><span class="pre">EngineStatus</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.current_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.current_status_summary">
+<span class="sig-name descname"><span class="pre">current_status_summary</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="firebolt.service.html#firebolt.service.types.EngineStatusSummary" title="firebolt.service.types.EngineStatusSummary"><span class="pre">EngineStatusSummary</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.current_status_summary" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.database">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">database</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#firebolt.model.database.Database" title="firebolt.model.database.Database"><span class="pre">Database</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.database" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.delete">
+<span class="sig-name descname"><span class="pre">delete</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.delete" title="Link to this definition"></a></dt>
+<dd><p>Delete an engine from Firebolt.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.description">
+<span class="sig-name descname"><span class="pre">description</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.description" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.desired_status">
+<span class="sig-name descname"><span class="pre">desired_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.desired_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.emoji">
+<span class="sig-name descname"><span class="pre">emoji</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.emoji" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.endpoint">
+<span class="sig-name descname"><span class="pre">endpoint</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.endpoint" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.endpoint_desired_revision_key">
+<span class="sig-name descname"><span class="pre">endpoint_desired_revision_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.endpoint_desired_revision_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.endpoint_serving_revision_key">
+<span class="sig-name descname"><span class="pre">endpoint_serving_revision_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.endpoint_serving_revision_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.engine_id">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">engine_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.engine_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.get_connection">
+<span class="sig-name descname"><span class="pre">get_connection</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="firebolt.db.html#firebolt.db.connection.Connection" title="firebolt.db.connection.Connection"><span class="pre">Connection</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.get_connection" title="Link to this definition"></a></dt>
+<dd><p>Get a connection to the attached database for running queries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>engine connection instance</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="firebolt.db.html#firebolt.db.connection.Connection" title="firebolt.db.connection.Connection">firebolt.db.connection.Connection</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.get_latest">
+<span class="sig-name descname"><span class="pre">get_latest</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.get_latest" title="Link to this definition"></a></dt>
+<dd><p>Get an up-to-date instance of the engine from Firebolt.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.health_status">
+<span class="sig-name descname"><span class="pre">health_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.health_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.key">
+<span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">EngineKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.last_update_actor">
+<span class="sig-name descname"><span class="pre">last_update_actor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.last_update_actor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.last_update_time">
+<span class="sig-name descname"><span class="pre">last_update_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.last_update_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.last_use_time">
+<span class="sig-name descname"><span class="pre">last_use_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.last_use_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.latest_revision_key">
+<span class="sig-name descname"><span class="pre">latest_revision_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.latest_revision_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine.Engine.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.parse_obj_with_service">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_obj_with_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_service</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.engine.EngineService" title="firebolt.service.engine.EngineService"><span class="pre">EngineService</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.parse_obj_with_service" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.restart">
+<span class="sig-name descname"><span class="pre">restart</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wait_for_startup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_timeout_seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3600</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.restart" title="Link to this definition"></a></dt>
+<dd><p>Restart an engine.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wait_for_startup</strong> – If True, wait for startup to complete.
+If False, return immediately after requesting startup.</p></li>
+<li><p><strong>wait_timeout_seconds</strong> – Number of seconds to wait for startup to complete
+before raising a TimeoutError.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The updated engine from Firebolt.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.settings">
+<span class="sig-name descname"><span class="pre">settings</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#firebolt.model.engine.EngineSettings" title="firebolt.model.engine.EngineSettings"><span class="pre">EngineSettings</span></a></em><a class="headerlink" href="#firebolt.model.engine.Engine.settings" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.start">
+<span class="sig-name descname"><span class="pre">start</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wait_for_startup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_timeout_seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.start" title="Link to this definition"></a></dt>
+<dd><p>Start an engine. If it’s already started, do nothing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wait_for_startup</strong> – If True, wait for startup to complete.
+If False, return immediately after requesting startup.</p></li>
+<li><p><strong>wait_timeout_seconds</strong> – Number of seconds to wait for startup to complete
+before raising a TimeoutError</p></li>
+<li><p><strong>verbose</strong> – If True, print dots periodically while waiting for engine start.
+If False, do not print any dots.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The updated engine from Firebolt.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.stop">
+<span class="sig-name descname"><span class="pre">stop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wait_for_stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wait_timeout_seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3600</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.stop" title="Link to this definition"></a></dt>
+<dd><p>Stop an Engine running on Firebolt.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.Engine.update">
+<span class="sig-name descname"><span class="pre">update</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">engine_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.types.EngineType" title="firebolt.service.types.EngineType"><span class="pre">EngineType</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">spec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_stop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warmup</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.types.WarmupMethod" title="firebolt.service.types.WarmupMethod"><span class="pre">WarmupMethod</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_spot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.Engine" title="firebolt.model.engine.Engine"><span class="pre">Engine</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.Engine.update" title="Link to this definition"></a></dt>
+<dd><p>Updates the engine and returns an updated version of the engine. If all
+parameters are set to None, old engine parameter values remain.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.engine.EngineSettings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.engine.</span></span><span class="sig-name descname"><span class="pre">EngineSettings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_stop_delay_duration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ConstrainedStrValue</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum_logging_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_read_only</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warm_up</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.engine.EngineSettings" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<p>Engine settings.</p>
+<p>See also: <a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification" title="firebolt.model.engine_revision.EngineRevisionSpecification"><code class="xref py py-class docutils literal notranslate"><span class="pre">EngineRevisionSpecification</span></code></a>
+which also contains engine configuration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.EngineSettings.auto_stop_delay_duration">
+<span class="sig-name descname"><span class="pre">auto_stop_delay_duration</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine.EngineSettings.auto_stop_delay_duration" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.model.engine.EngineSettings.default">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">default</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.types.EngineType" title="firebolt.service.types.EngineType"><span class="pre">EngineType</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">EngineType.GENERAL_PURPOSE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">auto_stop_delay_duration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'1200s'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warm_up</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="firebolt.service.html#firebolt.service.types.WarmupMethod" title="firebolt.service.types.WarmupMethod"><span class="pre">WarmupMethod</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">WarmupMethod.PRELOAD_INDEXES</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">minimum_logging_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ENGINE_SETTINGS_LOGGING_LEVEL_INFO'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#firebolt.model.engine.EngineSettings" title="firebolt.model.engine.EngineSettings"><span class="pre">EngineSettings</span></a></span></span><a class="headerlink" href="#firebolt.model.engine.EngineSettings.default" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.EngineSettings.is_read_only">
+<span class="sig-name descname"><span class="pre">is_read_only</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#firebolt.model.engine.EngineSettings.is_read_only" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.EngineSettings.minimum_logging_level">
+<span class="sig-name descname"><span class="pre">minimum_logging_level</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine.EngineSettings.minimum_logging_level" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.EngineSettings.preset">
+<span class="sig-name descname"><span class="pre">preset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine.EngineSettings.preset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine.EngineSettings.warm_up">
+<span class="sig-name descname"><span class="pre">warm_up</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine.EngineSettings.warm_up" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-firebolt.model.engine_revision">
+<span id="engine-revision"></span><h2>Engine revision<a class="headerlink" href="#module-firebolt.model.engine_revision" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.engine_revision.</span></span><span class="sig-name descname"><span class="pre">EngineRevision</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">specification</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification" title="firebolt.model.engine_revision.EngineRevisionSpecification"><span class="pre">EngineRevisionSpecification</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_actor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_actor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">desired_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">health_status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<p>A Firebolt engine revision,
+which contains a specification (instance types, counts).</p>
+<p>As engines are updated with new settings, revisions are created.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.create_actor">
+<span class="sig-name descname"><span class="pre">create_actor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.create_actor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.create_time">
+<span class="sig-name descname"><span class="pre">create_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.create_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.current_status">
+<span class="sig-name descname"><span class="pre">current_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.current_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.desired_status">
+<span class="sig-name descname"><span class="pre">desired_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.desired_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.health_status">
+<span class="sig-name descname"><span class="pre">health_status</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.health_status" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.key">
+<span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">EngineRevisionKey</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.last_update_actor">
+<span class="sig-name descname"><span class="pre">last_update_actor</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.last_update_actor" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.last_update_time">
+<span class="sig-name descname"><span class="pre">last_update_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.last_update_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevision.specification">
+<span class="sig-name descname"><span class="pre">specification</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#firebolt.model.engine_revision.EngineRevisionSpecification" title="firebolt.model.engine_revision.EngineRevisionSpecification"><span class="pre">EngineRevisionSpecification</span></a></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevision.specification" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.engine_revision.</span></span><span class="sig-name descname"><span class="pre">EngineRevisionSpecification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_compute_instances_type_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InstanceTypeKey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_compute_instances_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveInt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_compute_instances_use_spot</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">db_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proxy_instances_type_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InstanceTypeKey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proxy_instances_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PositiveInt</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">proxy_version</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<p>An EngineRevision specification.</p>
+<p>Determines which instance types and how many of them its engine gets.</p>
+<p>See Also: <a class="reference internal" href="#firebolt.model.engine.EngineSettings" title="firebolt.model.engine.EngineSettings"><code class="xref py py-class docutils literal notranslate"><span class="pre">Settings</span></code></a>,
+which also contains engine configuration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_count">
+<span class="sig-name descname"><span class="pre">db_compute_instances_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveInt</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_count" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_type_key">
+<span class="sig-name descname"><span class="pre">db_compute_instances_type_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">InstanceTypeKey</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_type_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_use_spot">
+<span class="sig-name descname"><span class="pre">db_compute_instances_use_spot</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_compute_instances_use_spot" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification.db_version">
+<span class="sig-name descname"><span class="pre">db_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification.db_version" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification.proxy_instances_count">
+<span class="sig-name descname"><span class="pre">proxy_instances_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">PositiveInt</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification.proxy_instances_count" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification.proxy_instances_type_key">
+<span class="sig-name descname"><span class="pre">proxy_instances_type_key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">InstanceTypeKey</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification.proxy_instances_type_key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.engine_revision.EngineRevisionSpecification.proxy_version">
+<span class="sig-name descname"><span class="pre">proxy_version</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.engine_revision.EngineRevisionSpecification.proxy_version" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-firebolt.model.instance_type">
+<span id="instance-type"></span><h2>Instance type<a class="headerlink" href="#module-firebolt.model.instance_type" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.instance_type.</span></span><span class="sig-name descname"><span class="pre">InstanceType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">InstanceTypeKey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_spot_available</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpu_virtual_cores_count</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">memory_size_bytes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">storage_size_bytes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">price_per_hour_cents</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.instance_type.InstanceType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.cpu_virtual_cores_count">
+<span class="sig-name descname"><span class="pre">cpu_virtual_cores_count</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.cpu_virtual_cores_count" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.create_time">
+<span class="sig-name descname"><span class="pre">create_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.create_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.is_spot_available">
+<span class="sig-name descname"><span class="pre">is_spot_available</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.is_spot_available" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.key">
+<span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">InstanceTypeKey</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.last_update_time">
+<span class="sig-name descname"><span class="pre">last_update_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.last_update_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.memory_size_bytes">
+<span class="sig-name descname"><span class="pre">memory_size_bytes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.memory_size_bytes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.price_per_hour_cents">
+<span class="sig-name descname"><span class="pre">price_per_hour_cents</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.price_per_hour_cents" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.instance_type.InstanceType.storage_size_bytes">
+<span class="sig-name descname"><span class="pre">storage_size_bytes</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.instance_type.InstanceType.storage_size_bytes" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-firebolt.model.provider">
+<span id="provider"></span><h2>Provider<a class="headerlink" href="#module-firebolt.model.provider" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.provider.Provider">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.provider.</span></span><span class="sig-name descname"><span class="pre">Provider</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.provider.Provider" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.provider.Provider.create_time">
+<span class="sig-name descname"><span class="pre">create_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.provider.Provider.create_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.provider.Provider.display_name">
+<span class="sig-name descname"><span class="pre">display_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.provider.Provider.display_name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.provider.Provider.last_update_time">
+<span class="sig-name descname"><span class="pre">last_update_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.provider.Provider.last_update_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.provider.Provider.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.provider.Provider.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.provider.Provider.provider_id">
+<span class="sig-name descname"><span class="pre">provider_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.provider.Provider.provider_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-firebolt.model.region">
+<span id="region"></span><h2>Region<a class="headerlink" href="#module-firebolt.model.region" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.model.region.Region">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.model.region.</span></span><span class="sig-name descname"><span class="pre">Region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">RegionKey</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">create_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_update_time</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.model.region.Region" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltBaseModel</span></code></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.region.Region.create_time">
+<span class="sig-name descname"><span class="pre">create_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.region.Region.create_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.region.Region.display_name">
+<span class="sig-name descname"><span class="pre">display_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.region.Region.display_name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.region.Region.key">
+<span class="sig-name descname"><span class="pre">key</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">RegionKey</span></em><a class="headerlink" href="#firebolt.model.region.Region.key" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.region.Region.last_update_time">
+<span class="sig-name descname"><span class="pre">last_update_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#firebolt.model.region.Region.last_update_time" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.model.region.Region.name">
+<span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#firebolt.model.region.Region.name" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="firebolt.db.html" class="btn btn-neutral float-left" title="db" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="firebolt.service.html" class="btn btn-neutral float-right" title="Service" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Firebolt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

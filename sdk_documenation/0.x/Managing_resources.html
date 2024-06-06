@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Managing engines and databases &mdash; firebolt-python-sdk  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Async db" href="firebolt.async_db.html" />
+    <link rel="prev" title="Connecting and running queries" href="Connecting_and_queries.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            firebolt-python-sdk
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Connecting_and_queries.html">Connecting and querying</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Managing resources</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-resourcemanager-object">Setting up a ResourceManager object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-resourcemanager-object-legacy">Setting up a ResourceManager object (legacy)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#database-function-examples">Database function examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#listing-out-databases">Listing out databases</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#creating-a-new-database">Creating a new database</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#locating-a-database">Locating a database</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getting-database-status">Getting database status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dropping-a-database">Dropping a database</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#engine-function-examples">Engine function examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#creating-an-engine">Creating an engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#listing-out-engines">Listing out engines</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#locating-an-engine">Locating an engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#attaching-an-engine">Attaching an engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#starting-an-engine">Starting an engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#stopping-an-engine">Stopping an engine</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#getting-engine-status">Getting engine status</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.async_db.html">Async DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.common.html">Common</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.db.html">DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.service.html">Service</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">firebolt-python-sdk</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Managing engines and databases</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Managing_resources.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="managing-engines-and-databases">
+<h1>Managing engines and databases<a class="headerlink" href="#managing-engines-and-databases" title="Link to this heading"></a></h1>
+<p>This topic provides a walkthrough and examples for using the Firebolt Python SDK to
+create and modify Firebolt databases and engines.</p>
+<section id="setting-up-a-resourcemanager-object">
+<h2>Setting up a ResourceManager object<a class="headerlink" href="#setting-up-a-resourcemanager-object" title="Link to this heading"></a></h2>
+<p>You can perform various functions on Firebolt databases and engines by calling a
+<code class="docutils literal notranslate"><span class="pre">ResourceManager</span></code> object, which must be configured with its own user credentials
+through the imported <code class="docutils literal notranslate"><span class="pre">Settings</span></code> class.</p>
+<p>To get started, follow the steps below:</p>
+<p><strong>1. Import modules</strong></p>
+<blockquote>
+<div><p>To initialize a <code class="docutils literal notranslate"><span class="pre">ResourceManager</span></code> object, import the modules shown below.</p>
+</div></blockquote>
+<blockquote id="required-resourcemanager-imports">
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebolt.client.auth</span> <span class="kn">import</span> <span class="n">UsernamePassword</span>
+<span class="kn">from</span> <span class="nn">firebolt.service.manager</span> <span class="kn">import</span> <span class="n">ResourceManager</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>2. Initialize a ResourceManager object</strong></p>
+<blockquote>
+<div><p>A ResourceManager object contains the user credentials and other information needed to
+manage Firebolt databases and engines.</p>
+<p>ResourceManager uses the following parameters:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">auth</span></code></p></td>
+<td><p>Auth object, containing your credentials. See <a class="reference internal" href="firebolt.client.html#module-firebolt.client.auth.username_password.UsernamePassword"><span class="std std-ref">Auth</span></a> for more details.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">api_endpoint</span></code></p></td>
+<td><p>The API hostname for logging in. Defaults to <code class="docutils literal notranslate"><span class="pre">api.app.firebolt.io</span></code> if not included.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">account_name</span></code></p></td>
+<td><p>The name of the account you’re using to connect to Firebolt. Must be specified in order to authenticate.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span> <span class="o">=</span> <span class="n">ResourceManager</span><span class="p">(</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">UsernamePassword</span><span class="p">(</span><span class="s2">&quot;your_username&quot;</span><span class="p">,</span> <span class="s2">&quot;your_password&quot;</span><span class="p">),</span>
+    <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;your_acc_name&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="setting-up-a-resourcemanager-object-legacy">
+<h2>Setting up a ResourceManager object (legacy)<a class="headerlink" href="#setting-up-a-resourcemanager-object-legacy" title="Link to this heading"></a></h2>
+<p><strong>1. Import modules</strong></p>
+<blockquote>
+<div><p>To initialize a <code class="docutils literal notranslate"><span class="pre">ResourceManager</span></code> object, import the modules shown below.</p>
+</div></blockquote>
+<blockquote id="id1">
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebolt.client.auth</span> <span class="kn">import</span> <span class="n">UsernamePassword</span>
+<span class="kn">from</span> <span class="nn">firebolt.service.manager</span> <span class="kn">import</span> <span class="n">ResourceManager</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>2. Initialize a Settings object</strong></p>
+<blockquote>
+<div><p>A Settings object contains the user credentials and other information needed to
+manage Firebolt databases and engines.</p>
+<p>The Settings object uses the following parameters:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">user</span></code></p></td>
+<td><p>The email address associated with your Firebolt user profile.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">password</span></code></p></td>
+<td><p>The password used for connecting to Firebolt.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">server</span></code></p></td>
+<td><p>The API hostname for logging in. Defaults to <code class="docutils literal notranslate"><span class="pre">api.app.firebolt.io</span></code> if not included.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">default_region</span></code></p></td>
+<td><p>The default region for creating new databases and engines.</p>
+<p>For more information, see <a class="reference external" href="https://docs.firebolt.io/general-reference/available-regions.html">Available AWS Regions</a>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>A <code class="docutils literal notranslate"><span class="pre">Settings</span></code> object can be configured with parameters by multiple methods.</p>
+<blockquote>
+<div><ul>
+<li><p>Add the parameters manually in your command script:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">(</span>
+    <span class="n">user</span><span class="o">=</span><span class="s2">&quot;your_username&quot;</span><span class="p">,</span>
+    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span><span class="p">,</span>
+    <span class="n">server</span><span class="o">=</span><span class="s2">&quot;api.app.firebolt.io&quot;</span>
+    <span class="n">default_region</span><span class="o">=</span><span class="s2">&quot;your_region&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>Use a <code class="docutils literal notranslate"><span class="pre">.env</span></code> file located in your root directory containing the following parameters:</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">FIREBOLT_USER</span><span class="o">=</span><span class="s2">&quot;your_username&quot;</span><span class="p">,</span>
+<span class="n">FIREBOLT_PASSWORD</span><span class="o">=</span><span class="s2">&quot;your_password&quot;</span><span class="p">,</span>
+<span class="n">FIREBOLT_SERVER</span><span class="o">=</span><span class="s2">&quot;api.app.firebolt.io&quot;</span>
+<span class="n">FIREBOLT_DEFAULT_REGION</span><span class="o">=</span><span class="s2">&quot;your_region&quot;</span>
+</pre></div>
+</div>
+<p>In your application file, the <code class="docutils literal notranslate"><span class="pre">Settings</span></code> object can read the values from the
+<code class="docutils literal notranslate"><span class="pre">.env</span></code> file if it is set to <code class="docutils literal notranslate"><span class="pre">None</span></code> instead of having values, as shown below:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">settings</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ul>
+</div></blockquote>
+</div></blockquote>
+<p><strong>3. Initialize a ResourceManager object</strong></p>
+<blockquote>
+<div><p>After the <code class="docutils literal notranslate"><span class="pre">Settings</span></code> are configured, create a <code class="docutils literal notranslate"><span class="pre">ResourceManager</span></code> object, which is
+given the variable name <code class="docutils literal notranslate"><span class="pre">rm</span></code> in the example below.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">rm</span> <span class="o">=</span> <span class="n">ResourceManager</span><span class="p">(</span><span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Subsequent examples on this page use the <code class="docutils literal notranslate"><span class="pre">rm</span></code> object for database and engine functions.</p>
+</div>
+</section>
+<section id="database-function-examples">
+<h2>Database function examples<a class="headerlink" href="#database-function-examples" title="Link to this heading"></a></h2>
+<p>This section includes Python examples of various common functions for creating and managing
+Firebolt resources.</p>
+<section id="listing-out-databases">
+<h3>Listing out databases<a class="headerlink" href="#listing-out-databases" title="Link to this heading"></a></h3>
+<p>List out the names of all databases under your account by using the <code class="docutils literal notranslate"><span class="pre">get_many</span></code> function.</p>
+<blockquote>
+<div><p><strong>List out all databases and their metadata</strong></p>
+<blockquote>
+<div><p>This produces an inventory of all databases and their metadata from your account.
+The Python <a class="reference external" href="https://pypi.org/project/devtools/">devtools</a> module used in the
+example below helps format the metadata to be more readable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">devtools</span> <span class="kn">import</span> <span class="n">debug</span>
+
+<span class="n">debug</span><span class="p">(</span><span class="n">rm</span><span class="o">.</span><span class="n">databases</span><span class="o">.</span><span class="n">get_many</span><span class="p">())</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>Listing out databases by name</strong></p>
+<blockquote>
+<div><p>This function call lists out the names of your databases, but it can be modified
+to list out other attributes. This is helpful for tracking down a particular
+database in your account.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">all_dbs</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">databases</span><span class="o">.</span><span class="n">get_many</span><span class="p">()</span>
+<span class="n">all_db_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">all_dbs</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">db</span> <span class="ow">in</span> <span class="n">db_names</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">db</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a list of all database attributes, see <a class="reference internal" href="firebolt.model.html#model-database"><span class="std std-ref">Database</span></a>.</p>
+</div>
+</div></blockquote>
+</section>
+<section id="creating-a-new-database">
+<h3>Creating a new database<a class="headerlink" href="#creating-a-new-database" title="Link to this heading"></a></h3>
+<p>Launch a new database and use it to create a <code class="docutils literal notranslate"><span class="pre">database</span></code> object.</p>
+<p>A newly created database uses the default region from your Settings unless you specify a different region as a parameter.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">database</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">databases</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;database_name&quot;</span><span class="p">,</span> <span class="n">region</span><span class="o">=</span><span class="s2">&quot;us-east-1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a list of all database parameters, see <a class="reference internal" href="firebolt.service.html#service-database"><span class="std std-ref">Database</span></a></p>
+</div>
+</div></blockquote>
+</section>
+<section id="locating-a-database">
+<h3>Locating a database<a class="headerlink" href="#locating-a-database" title="Link to this heading"></a></h3>
+<p>Find a specific Firebolt database by using its name or ID. These functions are useful as
+a starting point to create a <code class="docutils literal notranslate"><span class="pre">database</span></code> object that can be called in other database functions.</p>
+<p>In the examples below, replace the values for <code class="docutils literal notranslate"><span class="pre">database_name</span></code> and <code class="docutils literal notranslate"><span class="pre">database_id</span></code> with
+your database name or ID.</p>
+<blockquote>
+<div><p><strong>Locating by name</strong></p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">database</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">databases</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;database_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>Locating by ID</strong></p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">database</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">databases</span><span class="o">.</span><span class="n">get_by_id</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s2">&quot;database_id&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+</section>
+<section id="getting-database-status">
+<h3>Getting database status<a class="headerlink" href="#getting-database-status" title="Link to this heading"></a></h3>
+<p>Use the Python <a class="reference external" href="https://pypi.org/project/devtools/">devtools</a> module to format metadata
+from a <code class="docutils literal notranslate"><span class="pre">database</span></code> object. This is a helpful command to run after a database operation to
+check if its execution was successful.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">devtools</span> <span class="kn">import</span> <span class="n">debug</span>
+<span class="n">debug</span><span class="p">(</span><span class="n">database</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="dropping-a-database">
+<h3>Dropping a database<a class="headerlink" href="#dropping-a-database" title="Link to this heading"></a></h3>
+<p>Delete a database by calling the <code class="docutils literal notranslate"><span class="pre">delete</span></code> function. The database is deleted along with
+all of its tables.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">database</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+<section id="engine-function-examples">
+<h2>Engine function examples<a class="headerlink" href="#engine-function-examples" title="Link to this heading"></a></h2>
+<p>This section includes Python examples of various common functions for creating and managing
+Firebolt engines.</p>
+<section id="creating-an-engine">
+<h3>Creating an engine<a class="headerlink" href="#creating-an-engine" title="Link to this heading"></a></h3>
+<p>Launch a new Firebolt engine and create an <code class="docutils literal notranslate"><span class="pre">engine</span></code> object. The created engine uses the
+default region included in your Settings unless you specify a different region as a parameter.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">engine</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">engines</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;engine_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a list of all engine parameters, see <a class="reference internal" href="firebolt.service.html#service-engine"><span class="std std-ref">Engine</span></a></p>
+</div>
+</section>
+<section id="listing-out-engines">
+<h3>Listing out engines<a class="headerlink" href="#listing-out-engines" title="Link to this heading"></a></h3>
+<p>List out the names of all engines under your account by using the <code class="docutils literal notranslate"><span class="pre">get_many</span></code> function.</p>
+<blockquote>
+<div><p><strong>List out all engines and metadata</strong></p>
+<blockquote>
+<div><p>This produces an inventory of all engines and their metadata from your account.
+The Python <a class="reference external" href="https://pypi.org/project/devtools/">devtools</a> module used in the
+example below helps format the metadata to be more readable.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">devtools</span> <span class="kn">import</span> <span class="n">debug</span>
+
+<span class="n">debug</span><span class="p">(</span><span class="n">rm</span><span class="o">.</span><span class="n">engines</span><span class="o">.</span><span class="n">get_many</span><span class="p">())</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>List out engines by name</strong></p>
+<blockquote>
+<div><p>This function call lists out the names of your engines, but it can be modified to
+list out other attributes. This is helpful for tracking down a particular engine
+in your account.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">all_engines</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">engines</span><span class="o">.</span><span class="n">get_many</span><span class="p">()</span>
+<span class="n">all_engine_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">all_engines</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">all_engine_names</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a list of all engine attributes, see <a class="reference internal" href="firebolt.model.html#model-engine"><span class="std std-ref">Engine</span></a></p>
+</div>
+</div></blockquote>
+</section>
+<section id="locating-an-engine">
+<h3>Locating an engine<a class="headerlink" href="#locating-an-engine" title="Link to this heading"></a></h3>
+<p>Find a specific Firebolt engine by using its name or ID. These functions are useful as a
+starting point to create an <code class="docutils literal notranslate"><span class="pre">engine</span></code> object that can be called in other engine functions.</p>
+<p>In the examples below, replace the values for <code class="docutils literal notranslate"><span class="pre">engine_name</span></code> and <code class="docutils literal notranslate"><span class="pre">engine_id</span></code> with your
+engine name or ID.</p>
+<blockquote>
+<div><p><strong>Locating by name</strong></p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">engine</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">engines</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;engine_name&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</div></blockquote>
+</section>
+<section id="attaching-an-engine">
+<h3>Attaching an engine<a class="headerlink" href="#attaching-an-engine" title="Link to this heading"></a></h3>
+<p>Attach an engine to a database. An engine must be attached to a database and started before
+it can run SQL commands or queries.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">engine</span> <span class="o">=</span> <span class="n">rm</span><span class="o">.</span><span class="n">engines</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;engine_name&quot;</span><span class="p">)</span>
+<span class="n">engine</span><span class="o">.</span><span class="n">attach_to_database</span><span class="p">(</span>
+    <span class="n">database</span><span class="o">=</span><span class="n">rm</span><span class="o">.</span><span class="n">databases</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;database_name&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="starting-an-engine">
+<h3>Starting an engine<a class="headerlink" href="#starting-an-engine" title="Link to this heading"></a></h3>
+<p>Start an engine by calling the <code class="docutils literal notranslate"><span class="pre">start</span></code> function on an <code class="docutils literal notranslate"><span class="pre">engine</span></code> object. An engine must
+be attached to a database and started before it can run SQL commands or queries.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="stopping-an-engine">
+<h3>Stopping an engine<a class="headerlink" href="#stopping-an-engine" title="Link to this heading"></a></h3>
+<p>Stop an engine by calling the <code class="docutils literal notranslate"><span class="pre">stop</span></code> function. When stopped, an engine is not available
+to run queries and does not accrue additional usage time on your account.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">engine</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+<section id="getting-engine-status">
+<h3>Getting engine status<a class="headerlink" href="#getting-engine-status" title="Link to this heading"></a></h3>
+<p>Use the Python <a class="reference external" href="https://pypi.org/project/devtools/">devtools</a> module to format metadata
+from an <code class="docutils literal notranslate"><span class="pre">engine</span></code> object. This is a helpful command to run after an engine operation to
+check if its execution was successful.</p>
+<blockquote>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">devtools</span> <span class="kn">import</span> <span class="n">debug</span>
+<span class="n">debug</span><span class="p">(</span><span class="n">engine</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Connecting_and_queries.html" class="btn btn-neutral float-left" title="Connecting and running queries" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="firebolt.async_db.html" class="btn btn-neutral float-right" title="Async db" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Firebolt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
