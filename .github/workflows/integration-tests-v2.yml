@@ -57,7 +57,7 @@ jobs:
             path: gh-pages
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@main
+        uses: firebolt-db/action-allure-report@add-decoration
         if: always()
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
