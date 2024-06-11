@@ -54,7 +54,7 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from firebolt.utils.util import _print_error_body
+from firebolt.utils.util import _print_error_body, raise_errors_from_body
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +117,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 f"Firebolt engine {self.engine_url} "
                 "needs to be running to run queries against it."
             )
+        raise_errors_from_body(resp)
+        # If no structure for error is found, log the body and raise the error
         _print_error_body(resp)
         resp.raise_for_status()
 
