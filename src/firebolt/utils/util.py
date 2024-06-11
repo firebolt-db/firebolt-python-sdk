@@ -184,6 +184,8 @@ def raise_errors_from_body(resp: Response) -> None:
             raise FireboltStructuredError(decoded)
 
     except Exception:
+        # If we can't parse the body, let the rest of the code handle it
+        # we can't raise an exception here because it would mask the original error
         pass
 
 
