@@ -273,7 +273,7 @@ class ConfigurationError(InterfaceError):
 
 
 class FireboltStructuredError(Error):
-    """Base class for structured errors."""
+    """Base class for structured errors received in JSON body."""
 
     # Output will look like this after formatting:
     # "{severity}: {name} ({code}) - {description}, see {helpLink}"

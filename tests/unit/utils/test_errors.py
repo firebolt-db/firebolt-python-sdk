@@ -1,4 +1,4 @@
-from pytest import fixture, raises
+from pytest import fixture, mark, raises
 
 from firebolt.utils.exception import FireboltStructuredError
 
@@ -41,8 +41,20 @@ def error_missing_fields():
     }
 
 
-def test_firebolt_structured_error(error_1):
-    error_json = {"errors": [error_1]}
+@fixture
+def error_extra_fields(error_1):
+    return {
+        **error_1,
+        "extra": "Extra Field",
+    }
+
+
+@mark.parametrize(
+    "error_fixture",
+    ["error_1", "error_extra_fields"],
+)
+def test_firebolt_structured_error(request, error_fixture):
+    error_json = {"errors": [request.getfixturevalue(error_fixture)]}
 
     error = FireboltStructuredError(error_json)
 
