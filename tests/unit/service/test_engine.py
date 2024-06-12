@@ -13,7 +13,7 @@ from firebolt.utils.exception import (
     NoAttachedDatabaseError,
 )
 from tests.unit.response import Response
-from tests.unit.service.V2.conftest import get_objects_from_db_callback
+from tests.unit.service.conftest import get_objects_from_db_callback
 
 
 def test_engine_create(

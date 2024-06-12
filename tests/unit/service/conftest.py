@@ -23,7 +23,9 @@ def region() -> str:
 
 
 @fixture
-def mock_engine(region: str, server: str, instance_type_1: InstanceType) -> Engine:
+def mock_engine(
+    region: str, api_endpoint: str, instance_type_1: InstanceType
+) -> Engine:
     return Engine(
         name="engine_1",
         region=region,
@@ -31,7 +33,7 @@ def mock_engine(region: str, server: str, instance_type_1: InstanceType) -> Engi
         scale=2,
         current_status=EngineStatus.STOPPED,
         version="",
-        endpoint=server,
+        endpoint=api_endpoint,
         warmup=WarmupMethod.MINIMAL,
         auto_stop=7200,
         type=EngineType.GENERAL_PURPOSE,
@@ -42,7 +44,7 @@ def mock_engine(region: str, server: str, instance_type_1: InstanceType) -> Engi
 
 @fixture
 def mock_engine_stopping(
-    region: str, server: str, instance_type_1: InstanceType
+    region: str, api_endpoint: str, instance_type_1: InstanceType
 ) -> Engine:
     return Engine(
         name="engine_1",
@@ -51,7 +53,7 @@ def mock_engine_stopping(
         scale=2,
         current_status=EngineStatus.STOPPING,
         version="",
-        endpoint=server,
+        endpoint=api_endpoint,
         warmup=WarmupMethod.MINIMAL,
         auto_stop=7200,
         type=EngineType.GENERAL_PURPOSE,
@@ -182,9 +184,9 @@ def instance_type_empty_callback() -> Callable:
 
 
 @fixture
-def instance_type_url(server: str, account_id: str) -> str:
+def instance_type_url(api_endpoint: str, account_id: str) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
         + "?page.first=5000"
     )
@@ -398,8 +400,10 @@ def database_get_callback(mock_database) -> Callable:
 def resource_manager(
     auth: Auth,
     account_name: str,
-    server: str,
+    api_endpoint: str,
     mock_system_engine_connection_flow: Callable,
 ) -> ResourceManager:
     mock_system_engine_connection_flow()
-    return ResourceManager(auth=auth, account_name=account_name, api_endpoint=server)
+    return ResourceManager(
+        auth=auth, account_name=account_name, api_endpoint=api_endpoint
+    )
