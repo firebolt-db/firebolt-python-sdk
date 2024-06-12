@@ -227,7 +227,6 @@ async def connect_v2(
         system_engine_params,
     )
 
-    await system_engine_connection._client._account_version
     cursor = system_engine_connection.cursor()
     if database:
         await cursor.execute(f'USE DATABASE "{database}"')
