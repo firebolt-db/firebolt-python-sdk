@@ -90,7 +90,7 @@ async def test_connect_engine_name(
     account_name: str,
     engine_name: str,
     auth: Auth,
-    server: str,
+    api_endpoint: str,
     python_query_data: List[List[ColType]],
     httpx_mock: HTTPXMock,
     mock_query: Callable,
@@ -124,7 +124,7 @@ async def test_connect_engine_name(
                 auth=auth,
                 engine_name=engine_name,
                 account_name=account_name,
-                api_endpoint=server,
+                api_endpoint=api_endpoint,
             ):
                 pass
 
@@ -135,7 +135,7 @@ async def test_connect_engine_name(
         database=db_name,
         auth=auth,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
@@ -144,7 +144,7 @@ async def test_connect_engine_running(
     httpx_mock: HTTPXMock,
     db_name: str,
     auth_url: str,
-    server: str,
+    api_endpoint: str,
     auth: Auth,
     account_name: str,
     get_system_engine_url: str,
@@ -168,7 +168,7 @@ async def test_connect_engine_running(
         database=db_name,
         auth=auth,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ):
         # Engine is running, no exception should be raised
         pass
@@ -177,7 +177,7 @@ async def test_connect_engine_running(
 async def test_connect_database(
     db_name: str,
     auth_url: str,
-    server: str,
+    api_endpoint: str,
     auth: Auth,
     account_name: str,
     python_query_data: List[List[ColType]],
@@ -199,7 +199,7 @@ async def test_connect_database(
         database=None,
         auth=auth,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         await connection.cursor().execute("select*")
 
@@ -210,7 +210,7 @@ async def test_connect_database(
         database=db_name,
         auth=auth,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
@@ -218,7 +218,7 @@ async def test_connect_database(
 async def test_connect_invalid_account(
     db_name: str,
     auth_url: str,
-    server: str,
+    api_endpoint: str,
     auth: Auth,
     account_name: str,
     httpx_mock: HTTPXMock,
@@ -236,7 +236,7 @@ async def test_connect_invalid_account(
             database=db_name,
             auth=auth,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
 
@@ -301,7 +301,7 @@ async def test_connect_caching(
 async def test_connect_system_engine_404(
     db_name: str,
     auth_url: str,
-    server: str,
+    api_endpoint: str,
     auth: Auth,
     account_name: str,
     httpx_mock: HTTPXMock,
@@ -316,7 +316,7 @@ async def test_connect_system_engine_404(
             database=db_name,
             auth=auth,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
 
@@ -333,7 +333,7 @@ async def test_connection_commit(connection: Connection):
 @mark.nofakefs
 async def test_connection_token_caching(
     db_name: str,
-    server: str,
+    api_endpoint: str,
     access_token: str,
     client_id: str,
     client_secret: str,
@@ -353,7 +353,7 @@ async def test_connection_token_caching(
             auth=ClientCredentials(client_id, client_secret, use_token_cache=True),
             engine_name=engine_name,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
@@ -367,7 +367,7 @@ async def test_connection_token_caching(
             auth=ClientCredentials(client_id, client_secret, use_token_cache=True),
             engine_name=engine_name,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
@@ -382,7 +382,7 @@ async def test_connection_token_caching(
             auth=ClientCredentials(client_id, client_secret, use_token_cache=False),
             engine_name=engine_name,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
@@ -396,7 +396,7 @@ async def test_connection_token_caching(
 async def test_connect_with_user_agent(
     engine_name: str,
     account_name: str,
-    server: str,
+    api_endpoint: str,
     db_name: str,
     auth: Auth,
     access_token: str,
@@ -419,7 +419,7 @@ async def test_connect_with_user_agent(
             database=db_name,
             engine_name=engine_name,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
             additional_parameters={
                 "user_clients": [("MyConnector", "1.0")],
                 "user_drivers": [("DriverA", "1.1")],
@@ -432,7 +432,7 @@ async def test_connect_with_user_agent(
 async def test_connect_no_user_agent(
     engine_name: str,
     account_name: str,
-    server: str,
+    api_endpoint: str,
     db_name: str,
     auth: Auth,
     access_token: str,
@@ -453,7 +453,7 @@ async def test_connect_no_user_agent(
             database=db_name,
             engine_name=engine_name,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
         ut.assert_called_with([], [])

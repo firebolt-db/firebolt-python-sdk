@@ -7,7 +7,7 @@ from tests.unit.db_conftest import *  # noqa
 
 @fixture
 async def connection(
-    server: str,
+    api_endpoint: str,
     db_name: str,
     auth: Auth,
     engine_name: str,
@@ -21,7 +21,7 @@ async def connection(
             database=db_name,
             auth=auth,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         )
     ) as connection:
         # cache account_id for tests

@@ -51,7 +51,7 @@ async def test_cursors_closed_on_close(connection: Connection) -> None:
 
 
 async def test_cursor_initialized(
-    server: str,
+    api_endpoint: str,
     db_name: str,
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -64,7 +64,7 @@ async def test_cursor_initialized(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
-    for url in (server, f"https://{server}"):
+    for url in (api_endpoint, f"https://{api_endpoint}"):
         async with (
             await connect(
                 engine_url=url,
@@ -73,7 +73,7 @@ async def test_cursor_initialized(
                     "u",
                     "p",
                 ),
-                api_endpoint=server,
+                api_endpoint=api_endpoint,
             )
         ) as connection:
             cursor = connection.cursor()
@@ -99,7 +99,7 @@ async def test_connect_empty_parameters():
 
 
 async def test_connect_access_token(
-    server: str,
+    api_endpoint: str,
     db_name: str,
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -112,10 +112,10 @@ async def test_connect_access_token(
     httpx_mock.add_callback(check_token_callback, url=query_url)
     async with (
         await connect(
-            engine_url=server,
+            engine_url=api_endpoint,
             database=db_name,
             auth=Token(access_token),
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         )
     ) as connection:
         cursor = connection.cursor()
@@ -127,7 +127,7 @@ async def test_connect_access_token(
 
 
 async def test_connect_engine_name(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     db_name: str,
     httpx_mock: HTTPXMock,
@@ -163,11 +163,11 @@ async def test_connect_engine_name(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
 
-    engine_name = server.split(".")[0]
+    engine_name = api_endpoint.split(".")[0]
 
     # Mock engine id lookup error
     httpx_mock.add_response(
-        url=f"https://{server}"
+        url=f"https://{api_endpoint}"
         + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
         + f"?engine_name={engine_name}",
         status_code=codes.NOT_FOUND,
@@ -182,13 +182,13 @@ async def test_connect_engine_name(
             ),
             engine_name=engine_name,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ):
             pass
 
     # Mock engine id lookup by name
     httpx_mock.add_response(
-        url=f"https://{server}"
+        url=f"https://{api_endpoint}"
         + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
         + f"?engine_name={engine_name}",
         status_code=codes.OK,
@@ -203,13 +203,13 @@ async def test_connect_engine_name(
             "p",
         ),
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
 
 async def test_connect_default_engine(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     db_name: str,
     httpx_mock: HTTPXMock,
@@ -231,7 +231,7 @@ async def test_connect_default_engine(
         url=engine_by_db_url,
         status_code=codes.OK,
         json={
-            "engine_url": server,
+            "engine_url": api_endpoint,
         },
     )
     async with await connect(
@@ -241,7 +241,7 @@ async def test_connect_default_engine(
             "p",
         ),
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         assert await connection.cursor().execute("select*") == len(python_query_data)
 
@@ -257,7 +257,7 @@ async def test_connection_commit(connection: Connection):
 
 @mark.nofakefs
 async def test_connection_token_caching(
-    server: str,
+    api_endpoint: str,
     user: str,
     password: str,
     account_name: str,
@@ -284,9 +284,9 @@ async def test_connection_token_caching(
                 password,
                 use_token_cache=True,
             ),
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
@@ -303,9 +303,9 @@ async def test_connection_token_caching(
                 password,
                 use_token_cache=False,
             ),
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
@@ -318,7 +318,7 @@ async def test_connection_token_caching(
 
 async def test_connect_with_auth(
     httpx_mock: HTTPXMock,
-    server: str,
+    api_endpoint: str,
     user: str,
     account_name: str,
     password: str,
@@ -346,9 +346,9 @@ async def test_connect_with_auth(
         async with await connect(
             auth=auth,
             database=db_name,
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
 
@@ -356,7 +356,7 @@ async def test_connect_with_auth(
 async def test_connect_account_name(
     httpx_mock: HTTPXMock,
     username_password_auth: Auth,
-    server: str,
+    api_endpoint: str,
     account_name: str,
     db_name: str,
     auth_url: str,
@@ -371,25 +371,25 @@ async def test_connect_account_name(
         async with await connect(
             auth=username_password_auth,
             database=db_name,
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name="invalid",
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ):
             pass
 
     async with await connect(
         auth=username_password_auth,
         database=db_name,
-        engine_url=server,
+        engine_url=api_endpoint,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ):
         pass
 
 
 async def test_connect_with_user_agent(
     httpx_mock: HTTPXMock,
-    server: str,
+    api_endpoint: str,
     db_name: str,
     query_callback: Callable,
     query_url: str,
@@ -406,8 +406,8 @@ async def test_connect_with_user_agent(
         async with await connect(
             auth=Token(access_token),
             database=db_name,
-            engine_url=server,
-            api_endpoint=server,
+            engine_url=api_endpoint,
+            api_endpoint=api_endpoint,
             additional_parameters={
                 "user_clients": [("MyConnector", "1.0")],
                 "user_drivers": [("DriverA", "1.1")],
@@ -419,7 +419,7 @@ async def test_connect_with_user_agent(
 
 async def test_connect_no_user_agent(
     httpx_mock: HTTPXMock,
-    server: str,
+    api_endpoint: str,
     db_name: str,
     query_callback: Callable,
     query_url: str,
@@ -434,8 +434,8 @@ async def test_connect_no_user_agent(
         async with await connect(
             auth=Token(access_token),
             database=db_name,
-            engine_url=server,
-            api_endpoint=server,
+            engine_url=api_endpoint,
+            api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
         ut.assert_called_once_with([], [])
@@ -447,19 +447,19 @@ def test_from_asyncio(
     auth_url: str,
     query_callback: Callable,
     query_url: str,
-    server: str,
+    api_endpoint: str,
     db_name: str,
 ):
     async def async_flow() -> None:
         async with (
             await connect(
-                engine_url=server,
+                engine_url=api_endpoint,
                 database=db_name,
                 auth=UsernamePassword(
                     "u",
                     "p",
                 ),
-                api_endpoint=server,
+                api_endpoint=api_endpoint,
             )
         ) as connection:
             cursor = connection.cursor()

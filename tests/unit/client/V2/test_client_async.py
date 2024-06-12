@@ -60,8 +60,8 @@ async def test_client_different_auths(
     check_token_callback: Callable,
     auth: Auth,
     account_name: str,
-    auth_server: str,
-    server: str,
+    auth_endpoint,
+    api_endpoint: str,
 ):
     """
     Client properly handles such auth types:
@@ -73,19 +73,19 @@ async def test_client_different_auths(
 
     httpx_mock.add_callback(
         check_credentials_callback,
-        url=f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}",
+        url=f"https://{auth_endpoint}{AUTH_SERVICE_ACCOUNT_URL}",
     )
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
     async with AsyncClient(
-        account_name=account_name, auth=auth, api_endpoint=server
+        account_name=account_name, auth=auth, api_endpoint=api_endpoint
     ) as client:
         await client.get("https://url")
 
     with raises(TypeError) as excinfo:
         async with AsyncClient(
-            account_name=account_name, auth=lambda r: r, api_endpoint=server
+            account_name=account_name, auth=lambda r: r, api_endpoint=api_endpoint
         ):
             await client.get("https://url")
 
@@ -103,7 +103,7 @@ async def test_client_account_id(
     account_id_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -111,8 +111,8 @@ async def test_client_account_id(
     async with AsyncClient(
         account_name=account_name,
         auth=auth,
-        base_url=fix_url_schema(server),
-        api_endpoint=server,
+        base_url=fix_url_schema(api_endpoint),
+        api_endpoint=api_endpoint,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
         assert await c._account_version == 1, "Invalid account version returned"
@@ -127,7 +127,7 @@ async def test_client_account_v2(
     account_id_v2_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     httpx_mock.add_callback(account_id_v2_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -135,8 +135,8 @@ async def test_client_account_v2(
     async with AsyncClient(
         account_name=account_name,
         auth=auth,
-        base_url=fix_url_schema(server),
-        api_endpoint=server,
+        base_url=fix_url_schema(api_endpoint),
+        api_endpoint=api_endpoint,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
         assert await c._account_version == 2, "Invalid account version returned"
@@ -145,7 +145,7 @@ async def test_client_account_v2(
 async def test_concurent_auth_lock(
     httpx_mock: HTTPXMock,
     account_name: str,
-    server: str,
+    api_endpoint: str,
     client_id: str,
     client_secret: str,
     access_token: str,
@@ -178,7 +178,7 @@ async def test_concurent_auth_lock(
 
     async with AsyncClient(
         auth=ClientCredentials(client_id, client_secret),
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
         account_name=account_name,
     ) as c:
         c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
@@ -201,7 +201,7 @@ async def test_true_concurent_requests(
     client_secret: str,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     url = "https://url"
     CONCURENT_COUNT = 10
@@ -227,7 +227,7 @@ async def test_true_concurent_requests(
     urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
     async with AsyncClient(
         auth=ClientCredentials(client_id, client_secret),
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
         account_name=account_name,
     ) as c:
         c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)

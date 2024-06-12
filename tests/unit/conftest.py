@@ -67,17 +67,17 @@ def client_secret() -> str:
 
 
 @fixture
-def server_name() -> str:
+def env_name() -> str:
     return "api_dev"
 
 
 @fixture
-def server() -> str:
+def api_endpoint() -> str:
     return "api-dev.mock.firebolt.io"
 
 
 @fixture
-def auth_server() -> str:
+def auth_endpoint() -> str:
     return "id.mock.firebolt.io"
 
 
@@ -133,14 +133,14 @@ def username_password_auth(user: str, password: str) -> Auth:
 
 @fixture
 def client(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     auth: Auth,
 ) -> ClientV2:
     return ClientV2(
         account_name=account_name,
         auth=auth,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     )
 
 
@@ -160,8 +160,8 @@ def auth_callback(auth_url: str) -> Callable:
 
 
 @fixture
-def auth_url(auth_server: str) -> str:
-    return f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}"
+def auth_url(auth_endpoint) -> str:
+    return f"https://{auth_endpoint}{AUTH_SERVICE_ACCOUNT_URL}"
 
 
 @fixture
@@ -175,9 +175,9 @@ def db_name_updated() -> str:
 
 
 @fixture
-def account_id_url(server: str, account_name: str) -> Pattern:
+def account_id_url(api_endpoint: str, account_name: str) -> Pattern:
     account_name_re = r"[^\\\\]*"
-    base = f"https://{server}{ACCOUNT_BY_NAME_URL}"
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     base = base.format(account_name=account_name_re)
     return compile(base)
@@ -255,20 +255,22 @@ def engine_url(engine_name: str) -> str:
 
 
 @fixture
-def get_engine_name_by_id_url(server: str, account_id: str, engine_id: str) -> str:
-    return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
+def get_engine_name_by_id_url(
+    api_endpoint: str, account_id: str, engine_id: str
+) -> str:
+    return f"https://{api_endpoint}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
 @fixture
-def get_engines_url(server: str) -> str:
-    return f"https://{server}{ENGINES_URL}"
+def get_engines_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}{ENGINES_URL}"
 
 
 @fixture
-def get_databases_url(server: str) -> str:
-    return f"https://{server}{DATABASES_URL}"
+def get_databases_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}{DATABASES_URL}"
 
 
 @fixture
@@ -277,9 +279,9 @@ def database_id() -> str:
 
 
 @fixture
-def database_by_name_url(server: str, account_id: str, db_name: str) -> str:
+def database_by_name_url(api_endpoint: str, account_id: str, db_name: str) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         f"{ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)}"
         f"?database_name={db_name}"
     )
@@ -372,10 +374,13 @@ def region_string() -> str:
 
 @fixture
 def settings(
-    server: str, region_string: str, username_password_auth: Auth, account_name: str
+    api_endpoint: str,
+    region_string: str,
+    username_password_auth: Auth,
+    account_name: str,
 ) -> Settings:
     seett = Settings(
-        server=server,
+        server=api_endpoint,
         auth=username_password_auth,
         default_region=region_string,
         account_name=account_name,

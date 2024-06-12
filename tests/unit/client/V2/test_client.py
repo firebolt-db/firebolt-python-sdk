@@ -59,8 +59,8 @@ def test_client_different_auths(
     check_token_callback: Callable,
     auth: Auth,
     account_name: str,
-    auth_server: str,
-    server: str,
+    auth_endpoint,
+    api_endpoint: str,
 ):
     """
     Client properly handles such auth types:
@@ -71,12 +71,12 @@ def test_client_different_auths(
 
     httpx_mock.add_callback(
         check_credentials_callback,
-        url=f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}",
+        url=f"https://{auth_endpoint}{AUTH_SERVICE_ACCOUNT_URL}",
     )
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    ClientV2(account_name=account_name, auth=auth, api_endpoint=server).get(
+    ClientV2(account_name=account_name, auth=auth, api_endpoint=api_endpoint).get(
         "https://url"
     )
 
@@ -97,7 +97,7 @@ def test_client_account_id(
     account_id_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -105,8 +105,8 @@ def test_client_account_id(
     with ClientV2(
         account_name=account_name,
         auth=auth,
-        base_url=fix_url_schema(server),
-        api_endpoint=server,
+        base_url=fix_url_schema(api_endpoint),
+        api_endpoint=api_endpoint,
     ) as cursor:
         assert cursor.account_id == account_id, "Invalid account id returned"
         assert cursor._account_version == 1, "Invalid account version returned"
@@ -121,7 +121,7 @@ def test_client_account_v2(
     account_id_v2_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     httpx_mock.add_callback(account_id_v2_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
@@ -129,8 +129,8 @@ def test_client_account_v2(
     with ClientV2(
         account_name=account_name,
         auth=auth,
-        base_url=fix_url_schema(server),
-        api_endpoint=server,
+        base_url=fix_url_schema(api_endpoint),
+        api_endpoint=api_endpoint,
     ) as cursor:
         assert cursor.account_id == account_id, "Invalid account id returned"
         assert cursor._account_version == 2, "Invalid account version returned"

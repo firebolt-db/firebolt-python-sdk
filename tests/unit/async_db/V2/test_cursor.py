@@ -192,7 +192,7 @@ async def test_cursor_execute(
 
 async def test_cursor_execute_error(
     httpx_mock: HTTPXMock,
-    server: str,
+    api_endpoint: str,
     query_url: str,
     get_engines_url: str,
     db_name: str,
@@ -328,7 +328,7 @@ async def test_cursor_execute_error(
         with raises(EngineNotRunningError) as excinfo:
             await query()
         assert cursor._state == CursorState.ERROR
-        assert server in str(excinfo)
+        assert api_endpoint in str(excinfo)
 
         # Engine does not exist
         httpx_mock.add_callback(

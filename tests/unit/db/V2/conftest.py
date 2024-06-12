@@ -8,7 +8,7 @@ from firebolt.db import Connection, Cursor, connect
 
 @fixture
 def connection(
-    server: str,
+    api_endpoint: str,
     db_name: str,
     auth: Auth,
     engine_name: str,
@@ -21,7 +21,7 @@ def connection(
         database=db_name,
         auth=auth,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         # cache account_id for tests
         connection._client.account_id
@@ -30,7 +30,7 @@ def connection(
 
 @fixture
 def system_connection(
-    server: str,
+    api_endpoint: str,
     db_name: str,
     auth: Auth,
     account_name: str,
@@ -41,7 +41,7 @@ def system_connection(
         database=db_name,
         auth=auth,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         yield connection
 

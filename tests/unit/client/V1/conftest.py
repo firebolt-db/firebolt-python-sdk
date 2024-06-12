@@ -90,9 +90,9 @@ def check_service_credentials_callback(
 
 
 @fixture
-def account_id_url(server: str) -> Pattern:
-    base = f"https://{server}{ACCOUNT_BY_NAME_URL}?account_name="
-    default_base = f"https://{server}{ACCOUNT_URL}"
+def account_id_url(api_endpoint: str) -> Pattern:
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}?account_name="
+    default_base = f"https://{api_endpoint}{ACCOUNT_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     default_base = default_base.replace("/", "\\/").replace("?", "\\?")
     return compile(f"(?:{base}.*|{default_base})")
@@ -121,5 +121,5 @@ def account_id_callback(
 
 
 @fixture
-def auth_url(server: str) -> str:
-    return f"https://{server}{AUTH_URL}"
+def auth_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}{AUTH_URL}"

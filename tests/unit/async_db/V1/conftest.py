@@ -21,14 +21,14 @@ from tests.unit.db_conftest import *  # noqa
 
 @fixture
 async def connection(
-    server: str, db_name: str, username_password_auth: UsernamePassword
+    api_endpoint: str, db_name: str, username_password_auth: UsernamePassword
 ) -> Connection:
     async with (
         await connect(
-            engine_url=server,
+            engine_url=api_endpoint,
             database=db_name,
             auth=username_password_auth,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         )
     ) as connection:
         yield connection
@@ -40,20 +40,20 @@ async def cursor(connection: Connection) -> Cursor:
 
 
 @fixture
-def auth_url(server: str) -> str:
-    return f"https://{server}{AUTH_URL}"
+def auth_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}{AUTH_URL}"
 
 
 @fixture
-def get_engine_url_by_id_url(server: str, account_id: str, engine_id: str) -> str:
-    return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
+def get_engine_url_by_id_url(api_endpoint: str, account_id: str, engine_id: str) -> str:
+    return f"https://{api_endpoint}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id, engine_id=engine_id
     )
 
 
 @fixture
 def get_engine_url_by_id_callback(
-    get_engine_url_by_id_url: str, engine_id: str, server: str
+    get_engine_url_by_id_url: str, engine_id: str, api_endpoint: str
 ) -> Callable:
     def do_mock(
         request: Request = None,
@@ -76,7 +76,7 @@ def get_engine_url_by_id_callback(
                         "is_read_only": False,
                         "warm_up": "",
                     },
-                    "endpoint": f"https://{server}",
+                    "endpoint": f"https://{api_endpoint}",
                 }
             },
         )
@@ -85,9 +85,9 @@ def get_engine_url_by_id_callback(
 
 
 @fixture
-def account_id_url(server: str) -> Pattern:
-    base = f"https://{server}{ACCOUNT_BY_NAME_URL}?account_name="
-    default_base = f"https://{server}{ACCOUNT_URL}"
+def account_id_url(api_endpoint: str) -> Pattern:
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}?account_name="
+    default_base = f"https://{api_endpoint}{ACCOUNT_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     default_base = default_base.replace("/", "\\/").replace("?", "\\?")
     return compile(f"(?:{base}.*|{default_base})")
@@ -115,23 +115,23 @@ def account_id_callback(
 
 
 @fixture
-def engine_by_db_url(server: str, account_id: str) -> str:
+def engine_by_db_url(api_endpoint: str, account_id: str) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         f"{ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1.format(account_id=account_id)}"
     )
 
 
 @fixture
 def client(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     auth: Auth,
 ) -> Client:
     return Client(
         account_name=account_name,
         auth=auth,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     )
 
 

@@ -52,7 +52,7 @@ def test_cursors_closed_on_close(connection: Connection) -> None:
 
 
 def test_cursor_initialized(
-    server: str,
+    api_endpoint: str,
     db_name: str,
     httpx_mock: HTTPXMock,
     auth_callback: Callable,
@@ -65,12 +65,12 @@ def test_cursor_initialized(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
-    for url in (server, f"https://{server}"):
+    for url in (api_endpoint, f"https://{api_endpoint}"):
         with connect(
             engine_url=url,
             database=db_name,
             auth=UsernamePassword("u", "p"),
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
 
             cursor = connection.cursor()
@@ -96,7 +96,7 @@ def test_connect_empty_parameters():
 
 
 def test_connect_engine_name(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     db_name: str,
     httpx_mock: HTTPXMock,
@@ -127,11 +127,11 @@ def test_connect_engine_name(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
 
-    engine_name = server.split(".")[0]
+    engine_name = api_endpoint.split(".")[0]
 
     # Mock engine id lookup error
     httpx_mock.add_response(
-        url=f"https://{server}"
+        url=f"https://{api_endpoint}"
         + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
         + f"?engine_name={engine_name}",
         status_code=codes.NOT_FOUND,
@@ -143,12 +143,12 @@ def test_connect_engine_name(
             auth=UsernamePassword("u", "p"),
             engine_name=engine_name,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         )
 
     # Mock engine id lookup by name
     httpx_mock.add_response(
-        url=f"https://{server}"
+        url=f"https://{api_endpoint}"
         + ACCOUNT_ENGINE_ID_BY_NAME_URL.format(account_id=account_id)
         + f"?engine_name={engine_name}",
         status_code=codes.OK,
@@ -160,13 +160,13 @@ def test_connect_engine_name(
         database=db_name,
         auth=UsernamePassword("u", "p"),
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
 
 
 def test_connect_default_engine(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     db_name: str,
     httpx_mock: HTTPXMock,
@@ -190,14 +190,14 @@ def test_connect_default_engine(
         url=engine_by_db_url,
         status_code=codes.OK,
         json={
-            "engine_url": server,
+            "engine_url": api_endpoint,
         },
     )
     with connect(
         database=db_name,
         auth=UsernamePassword("u", "p"),
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as connection:
         assert connection.cursor().execute("select*") == len(python_query_data)
 
@@ -233,7 +233,7 @@ def test_connection_commit(connection: Connection):
 
 @mark.nofakefs
 def test_connection_token_caching(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     user: str,
     password: str,
@@ -256,9 +256,9 @@ def test_connection_token_caching(
         with connect(
             database=db_name,
             auth=UsernamePassword(user, password, use_token_cache=True),
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
         ts = TokenSecureStorage(username=user, password=password)
@@ -269,9 +269,9 @@ def test_connection_token_caching(
         with connect(
             database=db_name,
             auth=UsernamePassword(user, password, use_token_cache=False),
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
         ts = TokenSecureStorage(username=user, password=password)
@@ -285,7 +285,7 @@ def test_connect_with_auth(
     user: str,
     password: str,
     account_name: str,
-    server: str,
+    api_endpoint: str,
     db_name: str,
     check_credentials_callback: Callable,
     auth_url: str,
@@ -310,9 +310,9 @@ def test_connect_with_auth(
         with connect(
             auth=auth,
             database=db_name,
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ) as connection:
             connection.cursor().execute("select*")
 
@@ -321,7 +321,7 @@ def test_connect_account_name(
     httpx_mock: HTTPXMock,
     auth: Auth,
     account_name: str,
-    server: str,
+    api_endpoint: str,
     db_name: str,
     auth_url: str,
     check_credentials_callback: Callable,
@@ -335,17 +335,17 @@ def test_connect_account_name(
         with connect(
             auth=auth,
             database=db_name,
-            engine_url=server,
+            engine_url=api_endpoint,
             account_name="invalid",
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         ):
             pass
 
     with connect(
         auth=auth,
         database=db_name,
-        engine_url=server,
+        engine_url=api_endpoint,
         account_name=account_name,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ):
         pass
