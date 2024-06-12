@@ -111,15 +111,15 @@ async def test_client_account_id(
     account_id_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     async with AsyncClient(
         auth=UsernamePassword(test_username, test_password),
-        base_url=fix_url_schema(server),
-        api_endpoint=server,
+        base_url=fix_url_schema(api_endpoint),
+        api_endpoint=api_endpoint,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
         assert await c._account_version == 1, "Invalid account version returned."
@@ -127,7 +127,7 @@ async def test_client_account_id(
 
 async def test_concurent_auth_lock(
     httpx_mock: HTTPXMock,
-    server: str,
+    api_endpoint: str,
     test_username: str,
     test_password: str,
     test_token: str,
@@ -160,7 +160,7 @@ async def test_concurent_auth_lock(
 
     async with AsyncClient(
         auth=UsernamePassword(test_username, test_password, False),
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as c:
         c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
         urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
@@ -181,7 +181,7 @@ async def test_true_concurent_requests(
     test_password: str,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     url = "https://url"
     CONCURENT_COUNT = 10
@@ -207,7 +207,7 @@ async def test_true_concurent_requests(
     urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
     async with AsyncClient(
         auth=UsernamePassword(test_username, test_password),
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     ) as c:
         c._send_handling_redirects = MethodType(mock_send_handling_redirects, c)
         async with open_nursery() as nursery:

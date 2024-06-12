@@ -101,15 +101,15 @@ def test_client_account_id(
     account_id_callback: Callable,
     auth_url: str,
     auth_callback: Callable,
-    server: str,
+    api_endpoint: str,
 ):
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
     with Client(
         auth=UsernamePassword(test_username, test_password),
-        base_url=fix_url_schema(server),
-        api_endpoint=server,
+        base_url=fix_url_schema(api_endpoint),
+        api_endpoint=api_endpoint,
     ) as c:
         assert c.account_id == account_id, "Invalid account id returned"
         assert c._account_version == 1, "Invalid account version returned"
