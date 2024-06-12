@@ -119,6 +119,13 @@ class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
     def _account_version(self) -> int:
         ...
 
+    def _send_handling_redirects(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        return super()._send_handling_redirects(
+            self._merge_auth_request(request), *args, **kwargs
+        )
+
 
 class ClientV2(Client):
     """An HTTP client, based on httpx.Client.
@@ -192,13 +199,6 @@ class ClientV2(Client):
             AccountNotFoundError: No account found with provided name
         """
         return self._account_info.id
-
-    def _send_handling_redirects(
-        self, request: Request, *args: Any, **kwargs: Any
-    ) -> Response:
-        return super()._send_handling_redirects(
-            self._merge_auth_request(request), *args, **kwargs
-        )
 
 
 class ClientV1(Client):
@@ -313,13 +313,6 @@ class ClientV1(Client):
                 f"Unable to retrieve engine endpoint {url}."
             )
 
-    def _send_handling_redirects(
-        self, request: Request, *args: Any, **kwargs: Any
-    ) -> Response:
-        return super()._send_handling_redirects(
-            self._merge_auth_request(request), *args, **kwargs
-        )
-
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
     def __init__(self, *args: Any, **kwargs: Any):
@@ -334,6 +327,13 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
     @abstractmethod
     async def _account_version(self) -> int:
         ...
+
+    async def _send_handling_redirects(
+        self, request: Request, *args: Any, **kwargs: Any
+    ) -> Response:
+        return await super()._send_handling_redirects(
+            self._merge_auth_request(request), *args, **kwargs
+        )
 
 
 class AsyncClientV2(AsyncClient):
@@ -411,13 +411,6 @@ class AsyncClientV2(AsyncClient):
         """
         return (await self._account_info()).version
 
-    async def _send_handling_redirects(
-        self, request: Request, *args: Any, **kwargs: Any
-    ) -> Response:
-        return await super()._send_handling_redirects(
-            self._merge_auth_request(request), *args, **kwargs
-        )
-
 
 class AsyncClientV1(AsyncClient):
     """An HTTP client, based on httpx.Client.
@@ -442,7 +435,7 @@ class AsyncClientV1(AsyncClient):
             api_endpoint=api_endpoint,
             **kwargs,
         )
-        self.acount_id_cache: Dict[str, str] = {}
+        self.account_id_cache: Dict[str, str] = {}
         self._auth_endpoint = URL(fix_url_schema(api_endpoint))
 
     @property
@@ -465,8 +458,8 @@ class AsyncClientV1(AsyncClient):
             AccountNotFoundError: No account found with provided name
         """
         # manual caching to avoid async_cached_property issues
-        if self.account_name in self.acount_id_cache:
-            return self.acount_id_cache[self.account_name]
+        if self.account_name in self.account_id_cache:
+            return self.account_id_cache[self.account_name]
 
         if self.account_name:
             response = await self.get(
@@ -484,7 +477,7 @@ class AsyncClientV1(AsyncClient):
             self.account_name = account_response["name"]
             assert self.account_name is not None  # type check
         # cache for future use
-        self.acount_id_cache[self.account_name] = account_id
+        self.account_id_cache[self.account_name] = account_id
         return account_id
 
     async def _get_database_default_engine_url(
@@ -540,10 +533,3 @@ class AsyncClientV1(AsyncClient):
                 f"Error {e.__class__.__name__}: "
                 f"Unable to retrieve engine endpoint {url}."
             )
-
-    async def _send_handling_redirects(
-        self, request: Request, *args: Any, **kwargs: Any
-    ) -> Response:
-        return await super()._send_handling_redirects(
-            self._merge_auth_request(request), *args, **kwargs
-        )
