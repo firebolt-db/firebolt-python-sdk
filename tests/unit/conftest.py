@@ -7,9 +7,11 @@ from httpx import Request
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.client.auth import Auth, ClientCredentials, UsernamePassword
-from firebolt.client.client import ClientV2, _firebolt_account_info_cache
+from firebolt.client.client import _firebolt_account_info_cache
 from firebolt.common.cache import _firebolt_system_engine_cache
+
+from firebolt.client.auth import Auth, ClientCredentials
+from firebolt.client.client import ClientV2
 from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
     AccountNotFoundError,
@@ -24,14 +26,7 @@ from firebolt.utils.exception import (
     ProgrammingError,
     Warning,
 )
-from firebolt.utils.urls import (
-    ACCOUNT_BY_NAME_URL,
-    ACCOUNT_DATABASE_BY_NAME_URL,
-    ACCOUNT_ENGINE_URL,
-    AUTH_SERVICE_ACCOUNT_URL,
-    DATABASES_URL,
-    ENGINES_URL,
-)
+from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, AUTH_SERVICE_ACCOUNT_URL
 from tests.unit.db_conftest import *  # noqa
 from tests.unit.response import Response
 
@@ -87,12 +82,7 @@ def account_id() -> str:
 
 
 @fixture
-def account_version_1() -> int:
-    return 1
-
-
-@fixture
-def account_version_2() -> int:
+def account_version() -> int:
     return 2
 
 
@@ -112,23 +102,8 @@ def access_token_2() -> str:
 
 
 @fixture
-def user() -> str:
-    return "mock_user"
-
-
-@fixture
-def password() -> str:
-    return "mock_password"
-
-
-@fixture
 def auth(client_id: str, client_secret: str) -> Auth:
     return ClientCredentials(client_id, client_secret)
-
-
-@fixture
-def username_password_auth(user: str, password: str) -> Auth:
-    return UsernamePassword(user, password)
 
 
 @fixture
@@ -185,9 +160,9 @@ def account_id_url(api_endpoint: str, account_name: str) -> Pattern:
 
 @fixture
 def account_id_callback(
-    account_id: str,
-    account_version_1: int,
-    account_name: str,
+        account_id: str,
+        account_version: int,
+        account_name: str,
 ) -> Callable:
     def do_mock(
         request: Request,
@@ -197,27 +172,7 @@ def account_id_callback(
             raise AccountNotFoundError(request.url.path.split("/")[-2])
         return Response(
             status_code=httpx.codes.OK,
-            json={"id": account_id, "infraVersion": account_version_1},
-        )
-
-    return do_mock
-
-
-@fixture
-def account_id_v2_callback(
-    account_id: str,
-    account_version_2: int,
-    account_name: str,
-) -> Callable:
-    def do_mock(
-        request: Request,
-        **kwargs,
-    ) -> Response:
-        if request.url.path.split("/")[-2] != account_name:
-            raise AccountNotFoundError(request.url.path.split("/")[-2])
-        return Response(
-            status_code=httpx.codes.OK,
-            json={"id": account_id, "infraVersion": account_version_2},
+            json={"id": account_id, "infraVersion": account_version},
         )
 
     return do_mock
@@ -235,16 +190,6 @@ def account_id_invalid_callback() -> Callable:
 
 
 @fixture
-def engine_id() -> str:
-    return "mock_engine_id"
-
-
-@fixture
-def engine_endpoint() -> str:
-    return "mock_engine_endpoint"
-
-
-@fixture
 def engine_name() -> str:
     return "mock_engine_name"
 
@@ -252,58 +197,6 @@ def engine_name() -> str:
 @fixture
 def engine_url(engine_name: str) -> str:
     return f"{engine_name}.mock.firebolt.io"
-
-
-@fixture
-def get_engine_name_by_id_url(
-    api_endpoint: str, account_id: str, engine_id: str
-) -> str:
-    return f"https://{api_endpoint}" + ACCOUNT_ENGINE_URL.format(
-        account_id=account_id, engine_id=engine_id
-    )
-
-
-@fixture
-def get_engines_url(api_endpoint: str) -> str:
-    return f"https://{api_endpoint}{ENGINES_URL}"
-
-
-@fixture
-def get_databases_url(api_endpoint: str) -> str:
-    return f"https://{api_endpoint}{DATABASES_URL}"
-
-
-@fixture
-def database_id() -> str:
-    return "database_id"
-
-
-@fixture
-def database_by_name_url(api_endpoint: str, account_id: str, db_name: str) -> str:
-    return (
-        f"https://{api_endpoint}"
-        f"{ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)}"
-        f"?database_name={db_name}"
-    )
-
-
-@fixture
-def database_by_name_callback(account_id: str, database_id: str) -> str:
-    def do_mock(
-        request: Request = None,
-        **kwargs,
-    ) -> Response:
-        return Response(
-            status_code=httpx.codes.OK,
-            json={
-                "database_id": {
-                    "database_id": database_id,
-                    "account_id": account_id,
-                }
-            },
-        )
-
-    return do_mock
 
 
 @fixture

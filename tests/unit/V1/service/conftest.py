@@ -62,13 +62,15 @@ def db_id() -> str:
 
 
 @fixture
-def mock_engine(engine_name, region_key, engine_settings, account_id, server) -> Engine:
+def mock_engine(
+    engine_name, region_key, engine_settings, account_id, api_endpoint
+) -> Engine:
     return Engine(
         name=engine_name,
         compute_region_id=region_key,
         settings=engine_settings,
         key=EngineKey(account_id=account_id, engine_id="mock_engine_id_1"),
-        endpoint=f"https://{server}",
+        endpoint=f"https://{api_endpoint}",
     )
 
 
@@ -101,8 +103,8 @@ def provider_callback(provider_url: str, mock_providers) -> Callable:
 
 
 @fixture
-def provider_url(server: str) -> str:
-    return f"https://{server}{PROVIDERS_URL}"
+def provider_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}{PROVIDERS_URL}"
 
 
 @fixture
@@ -148,8 +150,8 @@ def region_callback(region_url: str, mock_regions) -> Callable:
 
 
 @fixture
-def region_url(server: str) -> str:
-    return f"https://{server}{REGIONS_URL}?page.first=5000"
+def region_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}{REGIONS_URL}?page.first=5000"
 
 
 @fixture
@@ -199,27 +201,31 @@ def instance_type_empty_callback() -> Callable:
 
 
 @fixture
-def instance_type_url(server: str, account_id: str) -> str:
+def instance_type_url(api_endpoint: str, account_id: str) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
         + "?page.first=5000"
     )
 
 
 @fixture
-def instance_type_region_1_url(server: str, region_1: Region, account_id: str) -> str:
+def instance_type_region_1_url(
+    api_endpoint: str, region_1: Region, account_id: str
+) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
         + f"?page.first=5000&filter.id_region_id_eq={region_1.key.region_id}"
     )
 
 
 @fixture
-def instance_type_region_2_url(server: str, region_2: Region, account_id: str) -> str:
+def instance_type_region_2_url(
+    api_endpoint: str, region_2: Region, account_id: str
+) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
         + f"?page.first=5000&filter.id_region_id_eq={region_2.key.region_id}"
     )
@@ -241,8 +247,10 @@ def engine_callback(engine_url: str, mock_engine) -> Callable:
 
 
 @fixture
-def engine_url(server: str, account_id) -> str:
-    return f"https://{server}" + ACCOUNT_LIST_ENGINES_URL.format(account_id=account_id)
+def engine_url(api_endpoint: str, account_id) -> str:
+    return f"https://{api_endpoint}" + ACCOUNT_LIST_ENGINES_URL.format(
+        account_id=account_id
+    )
 
 
 @fixture
@@ -275,8 +283,8 @@ def many_engines_callback(mock_engine: Engine) -> Callable:
 
 
 @fixture
-def account_engine_url(server: str, account_id, mock_engine) -> str:
-    return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
+def account_engine_url(api_endpoint: str, account_id, mock_engine) -> str:
+    return f"https://{api_endpoint}" + ACCOUNT_ENGINE_URL.format(
         account_id=account_id,
         engine_id=mock_engine.engine_id,
     )
@@ -331,8 +339,10 @@ def databases_get_callback(databases_url: str, mock_database) -> Callable:
 
 
 @fixture
-def databases_url(server: str, account_id: str) -> str:
-    return f"https://{server}" + ACCOUNT_DATABASES_URL.format(account_id=account_id)
+def databases_url(api_endpoint: str, account_id: str) -> str:
+    return f"https://{api_endpoint}" + ACCOUNT_DATABASES_URL.format(
+        account_id=account_id
+    )
 
 
 @fixture
@@ -366,8 +376,8 @@ def database_not_found_callback(database_url: str) -> Callable:
 
 
 @fixture
-def database_url(server: str, account_id: str, database_id: str) -> str:
-    return f"https://{server}" + ACCOUNT_DATABASE_URL.format(
+def database_url(api_endpoint: str, account_id: str, database_id: str) -> str:
+    return f"https://{api_endpoint}" + ACCOUNT_DATABASE_URL.format(
         account_id=account_id, database_id=database_id
     )
 
@@ -388,9 +398,9 @@ def database_get_by_name_callback(database_get_by_name_url, mock_database) -> Ca
 
 
 @fixture
-def database_get_by_name_url(server: str, account_id: str, mock_database) -> str:
+def database_get_by_name_url(api_endpoint: str, account_id: str, mock_database) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         + ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)
         + f"?database_name={mock_database.name}"
     )
@@ -430,8 +440,8 @@ def database_get_callback(database_get_url, mock_database) -> Callable:
 
 # duplicates database_url
 @fixture
-def database_get_url(server: str, account_id: str, mock_database) -> str:
-    return f"https://{server}" + ACCOUNT_DATABASE_URL.format(
+def database_get_url(api_endpoint: str, account_id: str, mock_database) -> str:
+    return f"https://{api_endpoint}" + ACCOUNT_DATABASE_URL.format(
         account_id=account_id, database_id=mock_database.database_id
     )
 
@@ -452,18 +462,20 @@ def no_bindings_callback(bindings_url: str) -> Callable:
 
 
 @fixture
-def bindings_url(server: str, account_id: str, mock_engine: Engine) -> str:
+def bindings_url(api_endpoint: str, account_id: str, mock_engine: Engine) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         + ACCOUNT_BINDINGS_URL.format(account_id=account_id)
         + f"?page.first=5000&filter.id_engine_id_eq={mock_engine.engine_id}"
     )
 
 
 @fixture
-def database_bindings_url(server: str, account_id: str, mock_database: Database) -> str:
+def database_bindings_url(
+    api_endpoint: str, account_id: str, mock_database: Database
+) -> str:
     return (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         + ACCOUNT_BINDINGS_URL.format(account_id=account_id)
         + f"?page.first=5000&filter.id_database_id_eq={mock_database.database_id}"
     )
@@ -471,9 +483,9 @@ def database_bindings_url(server: str, account_id: str, mock_database: Database)
 
 @fixture
 def create_binding_url(
-    server: str, account_id: str, mock_database: Database, mock_engine: Engine
+    api_endpoint: str, account_id: str, mock_database: Database, mock_engine: Engine
 ) -> str:
-    return f"https://{server}" + ACCOUNT_DATABASE_BINDING_URL.format(
+    return f"https://{api_endpoint}" + ACCOUNT_DATABASE_BINDING_URL.format(
         account_id=account_id,
         database_id=mock_database.database_id,
         engine_id=mock_engine.engine_id,
@@ -540,8 +552,8 @@ def bindings_database_callback(
 
 
 @fixture
-def auth_url(server: str) -> str:
-    return f"https://{server}{AUTH_URL}"
+def auth_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}{AUTH_URL}"
 
 
 @fixture
@@ -581,9 +593,9 @@ def check_credentials_callback(user: str, password: str, access_token: str) -> C
 
 
 @fixture
-def account_id_url(server: str) -> Pattern:
-    base = f"https://{server}{ACCOUNT_BY_NAME_URL}?account_name="
-    default_base = f"https://{server}{ACCOUNT_URL}"
+def account_id_url(api_endpoint: str) -> Pattern:
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}?account_name="
+    default_base = f"https://{api_endpoint}{ACCOUNT_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     default_base = default_base.replace("/", "\\/").replace("?", "\\?")
     return compile(f"(?:{base}.*|{default_base})")
@@ -616,5 +628,5 @@ def auth(username_password_auth) -> Auth:
 
 
 @fixture
-def engines_by_id_url(server: str) -> str:
-    return f"https://{server}" + ENGINES_BY_IDS_URL
+def engines_by_id_url(api_endpoint: str) -> str:
+    return f"https://{api_endpoint}" + ENGINES_BY_IDS_URL

@@ -240,7 +240,7 @@ def set_params() -> Dict:
 
 
 @fixture
-def query_url(api_endpoint: str, db_name: str) -> str:
+def query_url(api_endpoint: str, db_name: str) -> URL:
     return URL(
         f"https://{api_endpoint}/",
         params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name},
@@ -248,7 +248,7 @@ def query_url(api_endpoint: str, db_name: str) -> str:
 
 
 @fixture
-def query_url_updated(api_endpoint: str, db_name_updated: str) -> str:
+def query_url_updated(api_endpoint: str, db_name_updated: str) -> URL:
     return URL(
         f"https://{api_endpoint}/",
         params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name_updated},
@@ -256,28 +256,21 @@ def query_url_updated(api_endpoint: str, db_name_updated: str) -> str:
 
 
 @fixture
-def set_query_url(api_endpoint: str, db_name: str) -> str:
+def set_query_url(api_endpoint: str, db_name: str) -> URL:
     return URL(f"https://{api_endpoint}/?database={db_name}")
 
 
-@fixture
-def query_with_params_url(query_url: str, set_params: str) -> str:
-    params_encoded = "&".join([f"{k}={encode_param(v)}" for k, v in set_params.items()])
-    query_url = f"{query_url}&{params_encoded}"
-
-
 def _get_engine_url_callback(
-    api_endpoint: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
+    engine_url: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
 ) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         set_parameters = request.url.params
         assert (
-            len(set_parameters) == 3
+            len(set_parameters) == 2
             and "output_format" in set_parameters
             and "database" in set_parameters
-            and "account_id" in set_parameters
         )
-        data = [[api_endpoint, db_name, status]]
+        data = [[engine_url, db_name, status]]
         query_response = {
             "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
             "data": data,
@@ -291,63 +284,34 @@ def _get_engine_url_callback(
 
 @fixture
 def get_engine_url_callback(
-    api_endpoint: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
+    engine_url: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
 ) -> Callable:
-    return _get_engine_url_callback(api_endpoint, db_name, query_statistics)
+    return _get_engine_url_callback(engine_url, db_name, query_statistics)
 
 
 @fixture
 def get_engine_url_not_running_callback(
-    engine_name, db_name, query_statistics: Dict[str, Any]
+    engine_url, db_name, query_statistics: Dict[str, Any]
 ) -> Callable:
-    return _get_engine_url_callback(engine_name, db_name, query_statistics, "Stopped")
+    return _get_engine_url_callback(engine_url, db_name, query_statistics, "Stopped")
 
 
 @fixture(params=["Running", "RUNNING", "ENGINE_STATE_RUNNING"])
 def get_engine_url_callback_test_status(
-    api_endpoint: str, db_name: str, query_statistics: Dict[str, Any], request: Any
+    engine_url: str, db_name: str, query_statistics: Dict[str, Any], request: Any
 ) -> Callable:
     return _get_engine_url_callback(
-        api_endpoint, db_name, query_statistics, request.param
+        engine_url, db_name, query_statistics, request.param
     )
 
 
 @fixture
 def get_engine_url_invalid_db_callback(
-    engine_name,
+    engine_url,
     db_name,
     query_statistics: Dict[str, Any],
 ) -> Callable:
-    return _get_engine_url_callback(engine_name, "not_" + db_name, query_statistics)
-
-
-def _get_default_db_engine_callback(
-    api_endpoint: str, query_statistics: Dict[str, Any], status="Running"
-) -> Callable:
-    def do_query(request: Request, **kwargs) -> Response:
-        set_parameters = request.url.params
-        assert len(set_parameters) == 1 and "output_format" in set_parameters
-        data = [[api_endpoint, status]]
-        query_response = {
-            "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
-            "data": data,
-            "rows": len(data),
-            # Real example of statistics field value, not used by our code
-            "statistics": query_statistics,
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def get_default_db_engine_callback(api_endpoint: str) -> Callable:
-    return _get_default_db_engine_callback(api_endpoint)
-
-
-@fixture
-def get_default_db_engine_not_running_callback(api_endpoint: str) -> Callable:
-    return _get_default_db_engine_callback(api_endpoint, "Failed")
+    return _get_engine_url_callback(engine_url, "not_" + db_name, query_statistics)
 
 
 @fixture
@@ -359,16 +323,16 @@ def system_engine_url() -> str:
 def system_engine_query_url(
     system_engine_url: str, db_name: str, account_id: str
 ) -> str:
-    return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}&account_id={account_id}"
+    return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}"
 
 
 @fixture
 def system_engine_no_db_query_url(system_engine_url: str, account_id: str) -> str:
-    return f"{system_engine_url}/?output_format=JSON_Compact&account_id={account_id}"
+    return f"{system_engine_url}/?output_format=JSON_Compact"
 
 
 @fixture
-def get_system_engine_url(api_endpoint: str, account_name: str) -> str:
+def get_system_engine_url(api_endpoint: str, account_name: str) -> URL:
     return URL(
         f"https://{api_endpoint}"
         f"{GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)}"
