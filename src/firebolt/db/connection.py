@@ -10,22 +10,15 @@ from httpx import Timeout
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
+
 from firebolt.common.cache import (
     _firebolt_account_info_cache,
     _firebolt_system_engine_cache,
 )
-from firebolt.common.constants import (
-    DEFAULT_TIMEOUT_SECONDS,
-    ENGINE_STATUS_RUNNING_LIST,
-)
+from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url_and_params
-from firebolt.utils.exception import (
-    ConfigurationError,
-    ConnectionClosedError,
-    EngineNotRunningError,
-    InterfaceError,
-)
+from firebolt.utils.exception import ConfigurationError, ConnectionClosedError
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
@@ -141,69 +134,22 @@ def connect_v2(
         system_engine_params,
     )
 
-    if system_engine_connection._client._account_version == 2:
-        cursor = system_engine_connection.cursor()
-        if database:
-            cursor.execute(f'USE DATABASE "{database}"')
-        if engine_name:
-            cursor.execute(f'USE ENGINE "{engine_name}"')
-        # Ensure cursors created from this conection are using the same starting
-        # database and engine
-        return Connection(
-            cursor.engine_url,
-            cursor.database,
-            client,
-            CursorV2,
-            system_engine_connection,
-            api_endpoint,
-            cursor.parameters,
-        )
-
-    if not engine_name:
-        return system_engine_connection
-    else:
-        try:
-            cursor = system_engine_connection.cursor()
-            assert isinstance(cursor, CursorV2)
-            (
-                engine_url,
-                status,
-                attached_db,
-            ) = cursor._get_engine_url_status_db(system_engine_connection, engine_name)
-
-            if status not in ENGINE_STATUS_RUNNING_LIST:
-                raise EngineNotRunningError(engine_name)
-
-            if database is not None and database != attached_db:
-                raise InterfaceError(
-                    f"Engine {engine_name} is attached to {attached_db} "
-                    f"instead of {database}"
-                )
-            elif database is None:
-                database = attached_db
-
-            assert engine_url is not None
-
-            engine_url = fix_url_schema(engine_url)
-            client = ClientV2(
-                auth=auth,
-                account_name=account_name,
-                base_url=engine_url,
-                api_endpoint=api_endpoint,
-                timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-                headers={"User-Agent": user_agent_header},
-            )
-            return Connection(
-                engine_url,
-                database,
-                client,
-                CursorV2,
-                system_engine_connection,
-                api_endpoint,
-            )
-        except:  # noqa
-            system_engine_connection.close()
-            raise
+    cursor = system_engine_connection.cursor()
+    if database:
+        cursor.execute(f'USE DATABASE "{database}"')
+    if engine_name:
+        cursor.execute(f'USE ENGINE "{engine_name}"')
+    # Ensure cursors created from this conection are using the same starting
+    # database and engine
+    return Connection(
+        cursor.engine_url,
+        cursor.database,
+        client,
+        CursorV2,
+        system_engine_connection,
+        api_endpoint,
+        cursor.parameters,
+    )
 
 
 class Connection(BaseConnection):
