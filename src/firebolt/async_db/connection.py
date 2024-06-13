@@ -72,12 +72,13 @@ class Connection(BaseConnection):
         super().__init__()
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
-        self.database = database
         self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
         self._system_engine_connection = system_engine_connection
         self._client = client
-        self.init_parameters = init_parameters
+        self.init_parameters = init_parameters or {}
+        if database:
+            self.init_parameters["database"] = database
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -219,7 +220,7 @@ async def connect_v2(
     # and used in a resulting connection
     system_engine_connection = Connection(
         system_engine_url,
-        database,
+        None,
         client,
         CursorV2,
         None,

@@ -16,11 +16,6 @@ class BaseConnection:
             pass
 
     @property
-    def _is_system(self) -> bool:
-        """`True` if connection is a system engine connection; `False` otherwise."""
-        return self._system_engine_connection is None  # type: ignore
-
-    @property
     def closed(self) -> bool:
         """`True` if connection is closed; `False` otherwise."""
         return self._is_closed

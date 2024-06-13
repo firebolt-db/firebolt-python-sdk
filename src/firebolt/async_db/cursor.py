@@ -41,11 +41,9 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
-    FireboltEngineError,
     OperationalError,
     ProgrammingError,
 )
@@ -84,8 +82,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
-        if connection.database:
-            self.database = connection.database
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
@@ -419,34 +415,7 @@ class CursorV2(Cursor):
             connection (firebolt.async_db.connection.Connection): connection.
             engine_url (str): URL of the engine
         """
-
-        if self.connection._is_system:
-            # System engine is always running
-            return True
-
-        assert self.connection._system_engine_connection is not None  # Type check
-        system_cursor = self.connection._system_engine_connection.cursor()
-        assert isinstance(system_cursor, CursorV2)  # Type check, should always be true
-        (
-            _,
-            status,
-            _,
-        ) = await system_cursor._get_engine_url_status_db(self.engine_name)
-        return status in ENGINE_STATUS_RUNNING_LIST
-
-    async def _get_engine_url_status_db(self, engine_name: str) -> Tuple[str, str, str]:
-        await self.execute(
-            """
-            SELECT url, attached_to, status FROM information_schema.engines
-            WHERE engine_name=?
-            """,
-            [engine_name],
-        )
-        row = await self.fetchone()
-        if row is None:
-            raise FireboltEngineError(f"Engine with name {engine_name} doesn't exist")
-        engine_url, database, status = row
-        return str(engine_url), str(status), str(database)  # Mypy check
+        return True
 
 
 class CursorV1(Cursor):
