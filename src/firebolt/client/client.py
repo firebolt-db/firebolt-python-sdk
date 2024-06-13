@@ -104,6 +104,16 @@ class FireboltClientMixin(FireboltClientMixinBase):
         """Don't automatically append trailing slach to a base url"""
         return url
 
+    def clone(self) -> "Client":
+        return self.__class__(
+            auth=self.auth,
+            account_name=self.account_name,
+            base_url=self.base_url,
+            api_endpoint=str(self._api_endpoint),
+            timeout=self.timeout,
+            headers=self.headers,
+        )
+
 
 class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
     def __init__(self, *args: Any, **kwargs: Any):

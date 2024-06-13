@@ -1,17 +1,18 @@
 from re import Pattern
 from typing import Callable
 
-from httpx import codes
+from httpx import Request, Timeout, codes
 from pyfakefs.fake_filesystem import FakeFilesystem
 from pytest import raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import ClientV2
+from firebolt.client import ClientV2 as Client
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from firebolt.utils.util import fix_url_schema
+from tests.unit.conftest import Response
 
 
 def test_client_retry(
@@ -24,8 +25,7 @@ def test_client_retry(
     Client retries with new auth token
     if first attempt fails with unauthorized error.
     """
-    with ClientV2(account_name=account_name, auth=auth) as client:
-
+    with Client(account_name=account_name, auth=auth) as client:
         # auth get token
         httpx_mock.add_response(
             status_code=codes.OK,
@@ -76,12 +76,12 @@ def test_client_different_auths(
 
     httpx_mock.add_callback(check_token_callback, url="https://url")
 
-    ClientV2(account_name=account_name, auth=auth, api_endpoint=api_endpoint).get(
+    Client(account_name=account_name, auth=auth, api_endpoint=api_endpoint).get(
         "https://url"
     )
 
     with raises(TypeError) as excinfo:
-        ClientV2(account_name=account_name, auth=lambda r: r).get("https://url")
+        Client(account_name=account_name, auth=lambda r: r).get("https://url")
 
     assert str(excinfo.value).startswith(
         'Invalid "auth" argument'
@@ -103,7 +103,7 @@ def test_client_account_id(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(auth_callback, url=auth_url)
 
-    with ClientV2(
+    with Client(
         account_name=account_name,
         auth=auth,
         base_url=fix_url_schema(api_endpoint),
@@ -131,7 +131,7 @@ def test_refresh_with_hooks(
     tss = TokenSecureStorage(client_id, client_secret)
     tss.cache_token(access_token, 2**32)
 
-    client = ClientV2(
+    client = Client(
         account_name=account_name,
         auth=ClientCredentials(client_id, client_secret),
         event_hooks={
@@ -158,3 +158,46 @@ def test_refresh_with_hooks(
     assert (
         client.get("https://url").status_code == codes.OK
     ), "request failed with firebolt client"
+
+
+def test_client_clone(
+    httpx_mock: HTTPXMock,
+    client_id: str,
+    client_secret: str,
+    account_name: str,
+    api_endpoint: str,
+    access_token: str,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    check_token_callback: Callable,
+):
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+
+    url = "https://base_url"
+    path = "/path"
+    headers = {"User-Agent": "test"}
+    timeout = Timeout(123, read=None)
+
+    def validate_client_callback(request: Request, **kwargs) -> Response:
+        check_token_callback(request)
+        assert [request.headers[k] == v for k, v in headers.items()]
+        return Response(status_code=codes.OK, headers={"content-length": "0"})
+
+    httpx_mock.add_callback(validate_client_callback, url=url + path)
+
+    with Client(
+        auth=ClientCredentials(client_id, client_secret, use_token_cache=False),
+        account_name=account_name,
+        base_url=url,
+        api_endpoint=api_endpoint,
+        timeout=timeout,
+        headers=headers,
+    ) as c:
+        c.get(path)
+
+        # clone the client and make sure the clone works
+        c2 = c.clone()
+        c2.get(path)
+
+        # not sure how to test the timeout, but at least make sure it's the same
+        assert c2._timeout == timeout

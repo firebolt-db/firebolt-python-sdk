@@ -4,7 +4,7 @@ from re import Pattern, compile
 from types import MethodType
 from typing import Any, Callable
 
-from httpx import Request, codes
+from httpx import Request, Timeout, codes
 from pytest import raises
 from pytest_httpx import HTTPXMock
 from trio import open_nursery, sleep
@@ -220,3 +220,46 @@ async def test_true_concurent_requests(
     # Cover the case when requests might be queued in reverse order
     urls.reverse()
     assert list(queue.queue) != urls
+
+
+async def test_client_clone(
+    httpx_mock: HTTPXMock,
+    client_id: str,
+    client_secret: str,
+    account_name: str,
+    api_endpoint: str,
+    access_token: str,
+    auth_url: str,
+    check_credentials_callback: Callable,
+    check_token_callback: Callable,
+):
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+
+    url = "https://base_url"
+    path = "/path"
+    headers = {"User-Agent": "test"}
+    timeout = Timeout(123, read=None)
+
+    def validate_client_callback(request: Request, **kwargs) -> Response:
+        check_token_callback(request)
+        assert [request.headers[k] == v for k, v in headers.items()]
+        return Response(status_code=codes.OK, headers={"content-length": "0"})
+
+    httpx_mock.add_callback(validate_client_callback, url=url + path)
+
+    async with AsyncClient(
+        auth=ClientCredentials(client_id, client_secret, use_token_cache=False),
+        account_name=account_name,
+        base_url=url,
+        api_endpoint=api_endpoint,
+        timeout=timeout,
+        headers=headers,
+    ) as c:
+        await c.get(path)
+
+        # clone the client and make sure the clone works
+        c2 = c.clone()
+        await c2.get(path)
+
+        # not sure how to test the timeout, but at least make sure it's the same
+        assert c2._timeout == timeout
