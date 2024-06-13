@@ -7,6 +7,7 @@ from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltEngineError,
+    FireboltStructuredError,
     OperationalError,
 )
 
@@ -132,3 +133,17 @@ def test_sql_error(connection: Connection) -> None:
         assert str(exc_info.value).startswith(
             "Error executing query"
         ), "Invalid SQL error message"
+
+
+def test_structured_error(connection_system_engine_no_db: Connection) -> None:
+    """Connection properly reacts to structured error."""
+    with connection_system_engine_no_db.cursor() as c:
+        c.execute("SET advanced_mode=1")
+        c.execute("SET enable_json_error_output_format=true")
+
+        with raises(FireboltStructuredError) as exc_info:
+            c.execute("select 'dummy'::int")
+
+        assert "Cannot parse string" in str(
+            exc_info.value
+        ), "Invalid structured error message"
