@@ -215,6 +215,7 @@ def get_objects_from_db_callback(objs: List[dataclass]) -> Callable:
             "str": _InternalType.Text.value,
             "datetime": _InternalType.Text.value,  # we receive datetime as text from db
             "InstanceType": _InternalType.Text.value,
+            "Union[str, InstanceType]": _InternalType.Text.value,
             "EngineType": _InternalType.Text.value,
             "EngineStatus": _InternalType.Text.value,
             "WarmupMethod": _InternalType.Text.value,

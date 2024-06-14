@@ -12,9 +12,9 @@ from firebolt.db import ARRAY, DECIMAL, Connection
 LOGGER = getLogger(__name__)
 
 CREATE_TEST_TABLE = (
-    "CREATE DIMENSION TABLE IF NOT EXISTS test_tbl (id int, name string)"
+    'CREATE DIMENSION TABLE IF NOT EXISTS "test_tbl" (id int, name string)'
 )
-DROP_TEST_TABLE = "DROP TABLE IF EXISTS test_tbl CASCADE"
+DROP_TEST_TABLE = 'DROP TABLE IF EXISTS "test_tbl" CASCADE'
 
 
 @fixture

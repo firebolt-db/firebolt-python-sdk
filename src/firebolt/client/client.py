@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from collections import namedtuple
 from json import JSONDecodeError
 from typing import Any, Dict, Optional
 
@@ -21,6 +20,8 @@ from firebolt.client.http_backend import (
     AsyncKeepaliveTransport,
     KeepaliveTransport,
 )
+from firebolt.common._types import _AccountInfo
+from firebolt.common.cache import _firebolt_account_info_cache
 from firebolt.utils.exception import (
     AccountNotFoundError,
     AccountNotFoundOrNoAccessError,
@@ -45,7 +46,12 @@ from firebolt.utils.util import (
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 
-_AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
+
+def parse_response_for_account_info(response: Response) -> _AccountInfo:
+    """Construct account info object from the API response."""
+    account_id = response.json()["id"]
+    account_version = int(response.json().get("infraVersion", 1))
+    return _AccountInfo(id=account_id, version=account_version)
 
 
 class FireboltClientMixin(FireboltClientMixinBase):
@@ -138,8 +144,12 @@ class ClientV2(Client):
             **kwargs,
         )
 
-    @cached_property
+    @property
     def _account_info(self) -> _AccountInfo:
+        if account_info := _firebolt_account_info_cache.get(
+            [self.account_name, self._api_endpoint.host]
+        ):
+            return account_info
         response = self.get(
             url=self._api_endpoint.copy_with(
                 path=ACCOUNT_BY_NAME_URL.format(account_name=self.account_name)
@@ -150,10 +160,11 @@ class ClientV2(Client):
             raise AccountNotFoundOrNoAccessError(self.account_name)
         # process all other status codes
         response.raise_for_status()
-        account_id = response.json()["id"]
-        # If no version assume 1
-        account_version = int(response.json().get("infraVersion", 1))
-        return _AccountInfo(id=account_id, version=account_version)
+        account_info = parse_response_for_account_info(response)
+        _firebolt_account_info_cache.set(
+            key=[self.account_name, self._api_endpoint.host], value=account_info
+        )
+        return account_info
 
     @property
     def _account_version(self) -> int:
@@ -348,12 +359,13 @@ class AsyncClientV2(AsyncClient):
             api_endpoint=api_endpoint,
             **kwargs,
         )
-        self.acount_info_cache: Dict[str, _AccountInfo] = {}
 
     async def _account_info(self) -> _AccountInfo:
         # manual caching to avoid async_cached_property issues
-        if self.account_name in self.acount_info_cache:
-            return self.acount_info_cache[self.account_name]
+        if account_info := _firebolt_account_info_cache.get(
+            [self.account_name, self._api_endpoint.host]
+        ):
+            return account_info
 
         response = await self.get(
             url=self._api_endpoint.copy_with(
@@ -365,12 +377,11 @@ class AsyncClientV2(AsyncClient):
             raise AccountNotFoundOrNoAccessError(self.account_name)
         # process all other status codes
         response.raise_for_status()
-        account_id = response.json()["id"]
-        account_version = int(response.json().get("infraVersion", 1))
-        account_info = _AccountInfo(id=account_id, version=account_version)
+        account_info = parse_response_for_account_info(response)
         # cache for future use
-        if self.account_name:
-            self.acount_info_cache[self.account_name] = account_info
+        _firebolt_account_info_cache.set(
+            key=[self.account_name, self._api_endpoint.host], value=account_info
+        )
         return account_info
 
     @property

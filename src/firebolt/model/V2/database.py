@@ -25,9 +25,9 @@ class Database(FireboltBaseModel):
     but otherwise are not configurable.
     """
 
-    ALTER_SQL: ClassVar[str] = "ALTER DATABASE {} SET DESCRIPTION = ?"
+    ALTER_SQL: ClassVar[str] = 'ALTER DATABASE "{}" SET DESCRIPTION = ?'
 
-    DROP_SQL: ClassVar[str] = "DROP DATABASE {}"
+    DROP_SQL: ClassVar[str] = 'DROP DATABASE "{}"'
 
     # internal
     _service: DatabaseService = field(repr=False, compare=False)

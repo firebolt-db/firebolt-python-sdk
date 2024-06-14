@@ -45,6 +45,9 @@ def test_account_no_user(
             auth=auth_no_user,
             account_name=account_name,
             api_endpoint=api_endpoint,
+            # Disable cache since for this test we want to make sure
+            # the error is raised
+            disable_cache=True,
         ) as connection:
             connection.cursor().execute("show tables")
 
@@ -59,9 +62,11 @@ def test_engine_name_not_exists(
     auth: ClientCredentials,
     account_name: str,
     api_endpoint: str,
+    account_version: int,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
-    with raises(FireboltEngineError):
+    error_cls = OperationalError if account_version == 2 else FireboltEngineError
+    with raises(error_cls):
         with connect(
             account_name=account_name,
             engine_name=engine_name + "_________",
@@ -72,6 +77,7 @@ def test_engine_name_not_exists(
             connection.cursor().execute("show tables")
 
 
+@mark.account_v1
 def test_engine_stopped(
     stopped_engine_name: str,
     database_name: str,

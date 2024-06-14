@@ -37,9 +37,9 @@ def setup_dbs(connection_system_engine, db_name, second_db_name, engine_name, re
 
         yield
 
-        cursor.execute(f"DROP ENGINE IF EXISTS {engine_name}")
-        cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
-        cursor.execute(f"DROP DATABASE IF EXISTS {second_db_name}")
+        cursor.execute(f'DROP ENGINE IF EXISTS "{engine_name}"')
+        cursor.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
+        cursor.execute(f'DROP DATABASE IF EXISTS "{second_db_name}"')
 
 
 def engine_specs(region):
@@ -47,13 +47,13 @@ def engine_specs(region):
 
 
 def create_database(name, specs=None):
-    query = f"CREATE DATABASE {name}"
+    query = f'CREATE DATABASE "{name}"'
     query += f" WITH {specs}" if specs else ""
     return query
 
 
 def create_engine(name, specs=None):
-    query = f"CREATE ENGINE {name}"
+    query = f'CREATE ENGINE "{name}"'
     query += f" WITH {specs}" if specs else ""
     return query
 
@@ -68,7 +68,7 @@ def db_specs(region, attached_engine):
 
 @mark.parametrize(
     "query",
-    ["CREATE DIMENSION TABLE dummy(id INT)"],
+    ['CREATE DIMENSION TABLE "dummy"(id INT)'],
 )
 def test_query_errors(connection_system_engine, query):
     with connection_system_engine.cursor() as cursor:
@@ -102,19 +102,19 @@ def test_detach_engine(
 
     with connection_system_engine.cursor() as cursor:
         check_engine_exists(cursor, engine_name, db_name=second_db_name)
-        cursor.execute(f"DETACH ENGINE {engine_name} FROM {second_db_name}")
+        cursor.execute(f'DETACH ENGINE "{engine_name}" FROM "{second_db_name}"')
 
         # When engine not attached db is -
         check_engine_exists(cursor, engine_name, db_name="-")
 
-        cursor.execute(f"ATTACH ENGINE {engine_name} TO {second_db_name}")
+        cursor.execute(f'ATTACH ENGINE "{engine_name}" TO "{second_db_name}"')
         check_engine_exists(cursor, engine_name, db_name=second_db_name)
 
 
 @mark.xdist_group(name="system_engine")
 def test_alter_engine(setup_dbs, connection_system_engine, engine_name):
     with connection_system_engine.cursor() as cursor:
-        cursor.execute(f"ALTER ENGINE {engine_name} SET SPEC = 'B2'")
+        cursor.execute(f"ALTER ENGINE \"{engine_name}\" SET SPEC = 'B2'")
 
         cursor.execute("SHOW ENGINES")
         engines = cursor.fetchall()
@@ -134,9 +134,9 @@ def test_start_stop_engine(setup_dbs, connection_system_engine, engine_name):
 
     with connection_system_engine.cursor() as cursor:
         check_engine_status(cursor, engine_name, "Stopped")
-        cursor.execute(f"START ENGINE {engine_name}")
+        cursor.execute(f'START ENGINE "{engine_name}"')
         check_engine_status(cursor, engine_name, "Running")
-        cursor.execute(f"STOP ENGINE {engine_name}")
+        cursor.execute(f'STOP ENGINE "{engine_name}"')
         check_engine_status(cursor, engine_name, "Stopped")
 
 
