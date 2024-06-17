@@ -7,19 +7,15 @@ from pytest_httpx import HTTPXMock
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine, EngineStatus
 from firebolt.service.manager import ResourceManager
-from firebolt.utils.exception import (
-    EngineNotFoundError,
-    NoAttachedDatabaseError,
-)
+from firebolt.utils.exception import EngineNotFoundError
 from tests.unit.response import Response
 from tests.unit.service.conftest import get_objects_from_db_callback
 
 
 def test_engine_create(
     httpx_mock: HTTPXMock,
+    engine_name: str,
     resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
     mock_engine: Engine,
     system_engine_no_db_query_url: str,
 ):
@@ -27,12 +23,10 @@ def test_engine_create(
         if request.content.startswith(b"CREATE"):
             assert (
                 request.content.decode("utf-8")
-                == "CREATE ENGINE \"engine_1\" WITH REGION = 'us-east-1' ENGINE_TYPE = 'GENERAL_PURPOSE'"
-                " SPEC = 'B1' SCALE = 2 AUTO_STOP = 7200 WARMUP = 'MINIMAL'"
+                == f'CREATE ENGINE "{engine_name}" WITH TYPE = M NODES = 2 AUTO_STOP = 7200'
             )
         return get_objects_from_db_callback([mock_engine])(request)
 
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(create_engine_callback, url=system_engine_no_db_query_url)
 
     for value in (1.0, False, int):
@@ -41,15 +35,16 @@ def test_engine_create(
 
     engine = resource_manager.engines.create(
         name=mock_engine.name,
-        region=mock_engine.region,
-        engine_type=mock_engine.type,
         spec=mock_engine.spec,
         scale=mock_engine.scale,
         auto_stop=mock_engine.auto_stop,
-        warmup=mock_engine.warmup,
     )
 
     assert engine == mock_engine
+
+    for key in ("region", "engine_type", "warmup"):
+        with raises(ValueError):
+            resource_manager.engines.create(name="failed", **{key: "test"})
 
 
 def test_engine_not_found(
@@ -66,43 +61,19 @@ def test_engine_not_found(
         resource_manager.engines.get("invalid name")
 
 
-def test_engine_no_attached_database(
-    httpx_mock: HTTPXMock,
-    resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
-    get_engine_callback: Callable,
-    database_not_found_callback: Callable,
-    system_engine_no_db_query_url: str,
-):
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(
-        database_not_found_callback, url=system_engine_no_db_query_url
-    )
-
-    engine = resource_manager.engines.get("engine_name")
-
-    with raises(NoAttachedDatabaseError):
-        engine.start()
-
-
 def test_get_connection(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
     get_engine_callback: Callable,
     database_get_callback: Callable,
     system_engine_no_db_query_url: str,
     system_engine_query_url: str,
-    get_engine_url_callback: Callable,
+    mock_connection_flow: Callable,
     mock_query: Callable,
 ):
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(database_get_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
+    mock_connection_flow()
     mock_query()
 
     engine = resource_manager.engines.get("engine_name")
@@ -110,12 +81,13 @@ def test_get_connection(
     with engine.get_connection() as connection:
         connection.cursor().execute("select 1")
 
+    # Some endpoints from connection flow are not used in this test
+    httpx_mock.reset(False)
+
 
 def test_attach_to_database(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
     mock_database: Database,
     mock_engine: Engine,
     get_engine_callback: Callable,
@@ -123,7 +95,6 @@ def test_attach_to_database(
     attach_engine_to_db_callback: Callable,
     system_engine_no_db_query_url: str,
 ):
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(database_get_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(
@@ -143,15 +114,12 @@ def test_attach_to_database(
 def test_engine_update(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
     mock_engine: Engine,
     get_engine_callback: Callable,
     update_engine_callback: Callable,
     system_engine_no_db_query_url: str,
     updated_engine_scale: int,
 ):
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(update_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
@@ -169,15 +137,12 @@ def test_engine_update(
 def test_engine_update_auto_stop_zero(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
     mock_engine: Engine,
     get_engine_callback: Callable,
     update_engine_callback: Callable,
     system_engine_no_db_query_url: str,
     updated_auto_stop: int,
 ):
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(update_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
@@ -193,37 +158,15 @@ def test_engine_update_auto_stop_zero(
 def test_engine_get_by_name(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
     get_engine_callback: Callable,
     system_engine_no_db_query_url: str,
     mock_engine: Engine,
 ):
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
 
     engine = resource_manager.engines.get_by_name(mock_engine.name)
 
     assert engine == mock_engine
-
-
-def test_engine_deleteting(
-    httpx_mock: HTTPXMock,
-    resource_manager: ResourceManager,
-    instance_type_callback: Callable,
-    instance_type_url: str,
-    system_engine_no_db_query_url: str,
-    mock_engine: Engine,
-):
-    mock_engine.current_status = "Deleting"
-    get_engine_callback = get_objects_from_db_callback([mock_engine])
-
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
-
-    engine = resource_manager.engines.get_by_name(mock_engine.name)
-
-    assert engine.current_status == EngineStatus.DELETING
 
 
 @mark.parametrize(

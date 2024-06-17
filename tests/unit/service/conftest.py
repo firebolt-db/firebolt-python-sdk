@@ -16,11 +16,13 @@ from tests.unit.response import Response
 
 
 @fixture
-def mock_engine(api_endpoint: str, instance_type_1: InstanceType) -> Engine:
+def mock_engine(
+    engine_name: str, api_endpoint: str, instance_type: InstanceType
+) -> Engine:
     return Engine(
-        name="engine_1",
+        name=engine_name,
         region="",
-        spec=instance_type_1,
+        spec=instance_type,
         scale=2,
         current_status=EngineStatus.STOPPED,
         version="",
@@ -34,11 +36,13 @@ def mock_engine(api_endpoint: str, instance_type_1: InstanceType) -> Engine:
 
 
 @fixture
-def mock_engine_stopping(api_endpoint: str, instance_type_1: InstanceType) -> Engine:
+def mock_engine_stopping(
+    engine_name: str, api_endpoint: str, instance_type: InstanceType
+) -> Engine:
     return Engine(
-        name="engine_1",
+        name=engine_name,
         region="",
-        spec=instance_type_1,
+        spec=instance_type,
         scale=2,
         current_status=EngineStatus.STOPPING,
         version="",
@@ -52,36 +56,14 @@ def mock_engine_stopping(api_endpoint: str, instance_type_1: InstanceType) -> En
 
 
 @fixture
-def instance_type_1() -> InstanceType:
+def instance_type() -> InstanceType:
     return InstanceType.M
 
 
 @fixture
-def instance_type_2() -> InstanceType:
-    return InstanceType.S
-
-
-@fixture
-def instance_type_3() -> InstanceType:
-    return InstanceType.L
-
-
-@fixture
-def cheapest_instance(instance_type_2) -> InstanceType:
-    return instance_type_2
-
-
-@fixture
-def mock_instance_types(
-    instance_type_1, instance_type_2, instance_type_3
-) -> List[InstanceType]:
-    return [instance_type_1, instance_type_2, instance_type_3]
-
-
-@fixture
-def mock_database() -> Database:
+def mock_database(db_name: str) -> Database:
     return Database(
-        name="database",
+        name=db_name,
         description="mock_db_description",
         region="",
         data_size_full=0,

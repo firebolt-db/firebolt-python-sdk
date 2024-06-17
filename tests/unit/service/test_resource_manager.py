@@ -16,7 +16,7 @@ def test_rm_credentials(
     httpx_mock: HTTPXMock,
     auth: Auth,
     account_name: str,
-    server: str,
+    api_endpoint: str,
     check_token_callback: Callable,
     mock_system_engine_connection_flow: Callable,
 ) -> None:
@@ -26,7 +26,9 @@ def test_rm_credentials(
     mock_system_engine_connection_flow()
     httpx_mock.add_callback(check_token_callback, url=url)
 
-    rm = ResourceManager(auth=auth, account_name=account_name, api_endpoint=server)
+    rm = ResourceManager(
+        auth=auth, account_name=account_name, api_endpoint=api_endpoint
+    )
     rm._client.get(url)
 
 
@@ -35,7 +37,7 @@ def test_rm_token_cache(
     httpx_mock: HTTPXMock,
     check_token_callback: Callable,
     auth: Auth,
-    server: str,
+    api_endpoint: str,
     account_name: str,
     access_token: str,
     mock_system_engine_connection_flow: Callable,
@@ -52,7 +54,7 @@ def test_rm_token_cache(
                 auth.client_id, auth.client_secret, use_token_cache=True
             ),
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         )
         rm._client.get(url)
 
@@ -66,7 +68,7 @@ def test_rm_token_cache(
                 auth.client_id, auth.client_secret, use_token_cache=False
             ),
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
         )
         rm._client.get(url)
 
@@ -79,7 +81,7 @@ def test_rm_token_cache(
 def test_rm_invalid_account_name(
     httpx_mock: HTTPXMock,
     auth: Auth,
-    server: str,
+    api_endpoint: str,
     auth_url: str,
     check_credentials_callback: Callable,
     account_id_url: Pattern,
@@ -88,7 +90,7 @@ def test_rm_invalid_account_name(
 ) -> None:
     """Resource manager raises an error on invalid account name."""
     get_system_engine_url = (
-        f"https://{server}"
+        f"https://{api_endpoint}"
         f"{GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name='invalid')}"
     )
 
@@ -97,4 +99,4 @@ def test_rm_invalid_account_name(
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     with raises(AccountNotFoundError):
-        ResourceManager(auth=auth, account_name="invalid", api_endpoint=server)
+        ResourceManager(auth=auth, account_name="invalid", api_endpoint=api_endpoint)
