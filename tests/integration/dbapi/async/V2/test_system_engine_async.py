@@ -1,7 +1,6 @@
 import re
 from typing import List
 
-import pytest
 from pytest import raises
 
 from firebolt.async_db import Connection
@@ -96,7 +95,6 @@ async def test_system_engine_account(
     ) == account_version, "Invalid account version"
 
 
-@pytest.mark.account_v2
 async def test_system_engine_use_engine(
     connection_system_engine: Connection, database_name: str, engine_name: str
 ):

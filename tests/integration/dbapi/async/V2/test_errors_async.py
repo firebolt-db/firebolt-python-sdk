@@ -1,10 +1,9 @@
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.async_db import Connection, connect
 from firebolt.client.auth import ClientCredentials
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
-    EngineNotRunningError,
     FireboltEngineError,
     FireboltStructuredError,
     InterfaceError,
@@ -73,26 +72,6 @@ async def test_engine_name_not_exists(
     with raises(error_cls):
         async with await connect(
             engine_name=engine_name + "_________",
-            database=database_name,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        ) as connection:
-            await connection.cursor().execute("show tables")
-
-
-@mark.account_v1
-async def test_engine_stopped(
-    stopped_engine_name: str,
-    database_name: str,
-    auth: ClientCredentials,
-    account_name: str,
-    api_endpoint: str,
-) -> None:
-    """Connection properly reacts to invalid engine name error."""
-    with raises(EngineNotRunningError):
-        async with await connect(
-            engine_name=stopped_engine_name,
             database=database_name,
             auth=auth,
             account_name=account_name,

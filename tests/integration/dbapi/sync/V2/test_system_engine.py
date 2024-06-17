@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.common._types import ColType, Column
 from firebolt.db import Connection
@@ -95,7 +95,6 @@ def test_system_engine_account(
     ), "Invalid account version"
 
 
-@mark.account_v2
 def test_system_engine_use_engine(
     connection_system_engine: Connection, database_name: str, engine_name: str
 ):

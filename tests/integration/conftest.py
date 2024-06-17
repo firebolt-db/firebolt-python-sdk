@@ -30,25 +30,10 @@ def pytest_addoption(parser):
     parser.addoption(
         "--runslow", action="store_true", default=False, help="run slow tests"
     )
-    parser.addoption(
-        "--account-v1",
-        action="store_true",
-        default=False,
-        help="run tests, that are only for account v2 infrastructure",
-    )
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
-    config.addinivalue_line(
-        "markers", "account_v2: mark test as only for account v2 infrastructure"
-    )
-    config.addinivalue_line(
-        "markers", "account_v1: mark test as only for account v1 infrastructure"
-    )
-
-
-account_version_value = None
 
 
 def pytest_collection_modifyitems(config, items):
@@ -58,24 +43,6 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "slow" in item.keywords:
                 item.add_marker(skip_slow)
-
-    global account_version_value
-    if config.getoption("--account-v1"):
-        # --account-v2 isn't given in cli: skip account v2 tests
-        skip_account_v2 = mark.skip(reason="--account-v1 option is given")
-        for item in items:
-            if "account_v2" in item.keywords:
-                item.add_marker(skip_account_v2)
-
-        account_version_value = 1
-    else:
-        # --account-v2 is given in cli: skip account v1 tests
-        skip_account_v1 = mark.skip(reason="need --account-v1 option to run")
-        for item in items:
-            if "account_v1" in item.keywords:
-                item.add_marker(skip_account_v1)
-
-        account_version_value = 2
 
 
 class Secret:

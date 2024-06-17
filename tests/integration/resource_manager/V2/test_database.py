@@ -1,39 +1,7 @@
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.client.auth import Auth
 from firebolt.service.manager import ResourceManager
-
-
-@mark.account_v1
-def test_database_get_default_engine(
-    auth: Auth,
-    account_name: str,
-    api_endpoint: str,
-    database_name: str,
-    stopped_engine_name: str,
-    engine_name: str,
-    single_param_engine_name: str,
-    start_stop_engine_name: str,
-    multi_param_engine_name: str,
-):
-    """
-    Checks that the default engine is either running or stopped engine
-    """
-    rm = ResourceManager(
-        auth=auth, account_name=account_name, api_endpoint=api_endpoint
-    )
-
-    db = rm.databases.get(database_name)
-
-    engine = db.get_attached_engines()[0]
-    assert engine is not None, "engine is None, but shouldn't be"
-    assert engine.name in [
-        stopped_engine_name,
-        engine_name,
-        single_param_engine_name,
-        start_stop_engine_name,
-        multi_param_engine_name,
-    ], "Returned default engine name is neither of known engines"
 
 
 def test_databases_get_many(
