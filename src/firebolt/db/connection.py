@@ -117,7 +117,6 @@ def connect_v2(
     client = ClientV2(
         auth=auth,
         account_name=account_name,
-        base_url=system_engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
@@ -142,11 +141,9 @@ def connect_v2(
     # Ensure cursors created from this connection are using the same starting
     # database and engine
     return Connection(
-        # TODO: we duplicate the base_url here, but it's already stored in the client
-        # rework the whole logic to make engine url stored in a single place
-        str(cursor._client.base_url),
+        cursor.engine_url,
         cursor.database,
-        cursor._client.clone(),
+        client,
         CursorV2,
         api_endpoint,
         cursor.parameters,
@@ -205,7 +202,7 @@ class Connection(BaseConnection):
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = self.cursor_type(client=self._client.clone(), connection=self, **kwargs)
+        c = self.cursor_type(client=self._client, connection=self, **kwargs)
         self._cursors.append(c)
         return c
 
@@ -296,7 +293,6 @@ def connect_v1(
     client = ClientV1(
         auth=auth,
         account_name=account_name,
-        base_url=engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},

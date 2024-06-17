@@ -205,7 +205,6 @@ async def connect_v2(
     client = AsyncClientV2(
         auth=auth,
         account_name=account_name,
-        base_url=system_engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
@@ -230,11 +229,9 @@ async def connect_v2(
     # Ensure cursors created from this connection are using the same starting
     # database and engine
     return Connection(
-        # TODO: we duplicate the base_url here, but it's already stored in the client
-        # rework the whole logic to make engine url stored in a single place
-        str(cursor._client.base_url),
+        cursor.engine_url,
         cursor.database,
-        cursor._client.clone(),
+        client,
         CursorV2,
         api_endpoint,
         cursor.parameters,
@@ -292,7 +289,6 @@ async def connect_v1(
     client = AsyncClientV1(
         auth=auth,
         account_name=account_name,
-        base_url=engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},

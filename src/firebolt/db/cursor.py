@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from abc import ABCMeta, abstractmethod
 from typing import (
@@ -144,7 +145,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 )
             self._update_set_parameters(params)
             self.engine_url = endpoint
-            self._client.base_url = URL(endpoint)
 
         if headers.get(RESET_SESSION_HEADER):
             self.flush_parameters()
@@ -331,7 +331,7 @@ class CursorV2(Cursor):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         return self._client.request(
-            url=f"/{path}" if path else "",
+            url=os.path.join(self.engine_url, path or ""),
             method="POST",
             params=parameters,
             content=query,
@@ -398,7 +398,7 @@ class CursorV1(Cursor):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         return self._client.request(
-            url=f"/{path}",
+            url=os.path.join(self.engine_url, path or ""),
             method="POST",
             params={
                 **(parameters or dict()),
