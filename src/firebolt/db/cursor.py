@@ -345,17 +345,9 @@ class CursorV2(Cursor):
             connection (firebolt.db.connection.Connection)
             database_name (str): Name of a database
         """
-        system_engine = self.connection._system_engine_connection or self.connection
-        with system_engine.cursor() as cursor:
-            return (
-                cursor.execute(
-                    """
-                    SELECT 1 FROM information_schema.databases WHERE database_name=?
-                    """,
-                    [database_name],
-                )
-                > 0
-            )
+        # For v2 accounts if we're connected it automatically
+        # means the database is available
+        return True
 
     def is_engine_running(self, engine_url: str) -> bool:
         """
@@ -366,6 +358,8 @@ class CursorV2(Cursor):
             engine_url (str): URL of the engine
         """
 
+        # For v2 accounts we don't have the engine context,
+        # so we can't check if it's running
         return True
 
 

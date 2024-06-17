@@ -54,7 +54,6 @@ class Connection(BaseConnection):
         "engine_url",
         "api_endpoint",
         "_is_closed",
-        "_system_engine_connection",
         "client_class",
         "cursor_type",
     )
@@ -65,7 +64,6 @@ class Connection(BaseConnection):
         database: Optional[str],
         client: AsyncClient,
         cursor_type: Type[Cursor],
-        system_engine_connection: Optional["Connection"],
         api_endpoint: str,
         init_parameters: Optional[Dict[str, Any]] = None,
     ):
@@ -74,7 +72,6 @@ class Connection(BaseConnection):
         self.engine_url = engine_url
         self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
-        self._system_engine_connection = system_engine_connection
         self._client = client
         self.init_parameters = init_parameters or {}
         if database:
@@ -84,7 +81,7 @@ class Connection(BaseConnection):
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = self.cursor_type(client=self._client, connection=self, **kwargs)
+        c = self.cursor_type(client=self._client.clone(), connection=self, **kwargs)
         self._cursors.append(c)
         return c
 
@@ -109,9 +106,6 @@ class Connection(BaseConnection):
             c.close()
         await self._client.aclose()
         self._is_closed = True
-
-        if self._system_engine_connection:
-            await self._system_engine_connection.aclose()
 
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
@@ -223,7 +217,6 @@ async def connect_v2(
         None,
         client,
         CursorV2,
-        None,
         api_endpoint,
         system_engine_params,
     )
@@ -238,9 +231,8 @@ async def connect_v2(
     return Connection(
         cursor.engine_url,
         cursor.database,
-        client,
+        client.clone(),
         CursorV2,
-        system_engine_connection,
         api_endpoint,
         cursor.parameters,
     )
@@ -302,4 +294,4 @@ async def connect_v1(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
-    return Connection(engine_url, database, client, CursorV1, None, api_endpoint)
+    return Connection(engine_url, database, client, CursorV1, api_endpoint)

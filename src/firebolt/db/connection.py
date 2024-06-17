@@ -129,7 +129,6 @@ def connect_v2(
         None,
         client,
         CursorV2,
-        None,
         api_endpoint,
         system_engine_params,
     )
@@ -139,14 +138,13 @@ def connect_v2(
         cursor.execute(f'USE DATABASE "{database}"')
     if engine_name:
         cursor.execute(f'USE ENGINE "{engine_name}"')
-    # Ensure cursors created from this conection are using the same starting
+    # Ensure cursors created from this connection are using the same starting
     # database and engine
     return Connection(
         cursor.engine_url,
         cursor.database,
-        client,
+        client.clone(),
         CursorV2,
-        system_engine_connection,
         api_endpoint,
         cursor.parameters,
     )
@@ -178,7 +176,6 @@ class Connection(BaseConnection):
         "engine_url",
         "api_endpoint",
         "_is_closed",
-        "_system_engine_connection",
         "client_class",
         "cursor_type",
     )
@@ -189,7 +186,6 @@ class Connection(BaseConnection):
         database: Optional[str],
         client: Client,
         cursor_type: Type[Cursor],
-        system_engine_connection: Optional["Connection"],
         api_endpoint: str = DEFAULT_API_URL,
         init_parameters: Optional[Dict[str, Any]] = None,
     ):
@@ -198,7 +194,6 @@ class Connection(BaseConnection):
         self.engine_url = engine_url
         self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
-        self._system_engine_connection = system_engine_connection
         self._client = client
         self.init_parameters = init_parameters or {}
         if database:
@@ -208,7 +203,7 @@ class Connection(BaseConnection):
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = self.cursor_type(client=self._client, connection=self, **kwargs)
+        c = self.cursor_type(client=self._client.clone(), connection=self, **kwargs)
         self._cursors.append(c)
         return c
 
@@ -230,9 +225,6 @@ class Connection(BaseConnection):
             c.close()
         self._client.close()
         self._is_closed = True
-
-        if self._system_engine_connection:
-            self._system_engine_connection.close()
 
     # Context manager support
     def __enter__(self) -> Connection:
@@ -307,4 +299,4 @@ def connect_v1(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
-    return Connection(engine_url, database, client, CursorV1, None, api_endpoint)
+    return Connection(engine_url, database, client, CursorV1, api_endpoint)
