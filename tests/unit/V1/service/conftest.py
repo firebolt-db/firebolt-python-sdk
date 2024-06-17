@@ -37,6 +37,11 @@ from tests.unit.util import (
 
 
 @fixture
+def region() -> str:
+    return "us-east-1"
+
+
+@fixture
 def engine_name() -> str:
     return "my_engine"
 

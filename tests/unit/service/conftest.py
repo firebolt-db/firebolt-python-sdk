@@ -11,52 +11,41 @@ from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine
 from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.manager import ResourceManager
-from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
-from firebolt.utils.urls import ACCOUNT_INSTANCE_TYPES_URL
+from firebolt.service.V2.types import EngineStatus
 from tests.unit.response import Response
-from tests.unit.util import list_to_paginated_response
 
 
 @fixture
-def region() -> str:
-    return "us-east-1"
-
-
-@fixture
-def mock_engine(
-    region: str, api_endpoint: str, instance_type_1: InstanceType
-) -> Engine:
+def mock_engine(api_endpoint: str, instance_type_1: InstanceType) -> Engine:
     return Engine(
         name="engine_1",
-        region=region,
+        region="",
         spec=instance_type_1,
         scale=2,
         current_status=EngineStatus.STOPPED,
         version="",
         endpoint=api_endpoint,
-        warmup=WarmupMethod.MINIMAL,
+        warmup="",
         auto_stop=7200,
-        type=EngineType.GENERAL_PURPOSE,
+        type="",
         _database_name="database",
         _service=None,
     )
 
 
 @fixture
-def mock_engine_stopping(
-    region: str, api_endpoint: str, instance_type_1: InstanceType
-) -> Engine:
+def mock_engine_stopping(api_endpoint: str, instance_type_1: InstanceType) -> Engine:
     return Engine(
         name="engine_1",
-        region=region,
+        region="",
         spec=instance_type_1,
         scale=2,
         current_status=EngineStatus.STOPPING,
         version="",
         endpoint=api_endpoint,
-        warmup=WarmupMethod.MINIMAL,
+        warmup="",
         auto_stop=7200,
-        type=EngineType.GENERAL_PURPOSE,
+        type="",
         _database_name="database",
         _service=None,
     )
@@ -64,50 +53,17 @@ def mock_engine_stopping(
 
 @fixture
 def instance_type_1() -> InstanceType:
-    return InstanceType(
-        name="B1",
-        price_per_hour_cents=40,
-        storage_size_bytes=0,
-        is_spot_available=True,
-        cpu_virtual_cores_count=0,
-        memory_size_bytes=0,
-        create_time=datetime.now().isoformat(),
-        last_update_time=datetime.now().isoformat(),
-        _key={},
-        _service=None,
-    )
+    return InstanceType.M
 
 
 @fixture
 def instance_type_2() -> InstanceType:
-    return InstanceType(
-        name="B2",
-        price_per_hour_cents=20,
-        storage_size_bytes=500,
-        is_spot_available=True,
-        cpu_virtual_cores_count=0,
-        memory_size_bytes=0,
-        create_time=datetime.now().isoformat(),
-        last_update_time=datetime.now().isoformat(),
-        _key={},
-        _service=None,
-    )
+    return InstanceType.S
 
 
 @fixture
 def instance_type_3() -> InstanceType:
-    return InstanceType(
-        name="B3",
-        price_per_hour_cents=30,
-        storage_size_bytes=500,
-        is_spot_available=True,
-        cpu_virtual_cores_count=0,
-        memory_size_bytes=0,
-        create_time=datetime.now().isoformat(),
-        last_update_time=datetime.now().isoformat(),
-        _key={},
-        _service=None,
-    )
+    return InstanceType.L
 
 
 @fixture
@@ -123,11 +79,11 @@ def mock_instance_types(
 
 
 @fixture
-def mock_database(region: str) -> Database:
+def mock_database() -> Database:
     return Database(
         name="database",
         description="mock_db_description",
-        region=region,
+        region="",
         data_size_full=0,
         data_size_compressed=0,
         create_time=datetime.now().isoformat(),
@@ -139,11 +95,11 @@ def mock_database(region: str) -> Database:
 
 
 @fixture
-def mock_database_2(region: str) -> Database:
+def mock_database_2() -> Database:
     return Database(
         name="database2",
         description="completely different db",
-        region=region,
+        region="",
         data_size_full=0,
         data_size_compressed=0,
         create_time=datetime.now().isoformat(),
@@ -151,44 +107,6 @@ def mock_database_2(region: str) -> Database:
         _attached_engine_names="-",
         _errors="",
         _service=None,
-    )
-
-
-@fixture
-def instance_type_callback(instance_type_url: str, mock_instance_types) -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request.url == instance_type_url
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response(mock_instance_types),
-        )
-
-    return do_mock
-
-
-@fixture
-def instance_type_empty_callback() -> Callable:
-    def do_mock(
-        request: httpx.Request = None,
-        **kwargs,
-    ) -> Response:
-        return Response(
-            status_code=httpx.codes.OK,
-            json=list_to_paginated_response([]),
-        )
-
-    return do_mock
-
-
-@fixture
-def instance_type_url(api_endpoint: str, account_id: str) -> str:
-    return (
-        f"https://{api_endpoint}"
-        + ACCOUNT_INSTANCE_TYPES_URL.format(account_id=account_id)
-        + "?page.first=5000"
     )
 
 
@@ -218,25 +136,14 @@ def get_objects_from_db_callback(objs: List[dataclass]) -> Callable:
             "datetime": _InternalType.Text.value,  # we receive datetime as text from db
             "InstanceType": _InternalType.Text.value,
             "Union[str, InstanceType]": _InternalType.Text.value,
-            "EngineType": _InternalType.Text.value,
             "EngineStatus": _InternalType.Text.value,
-            "WarmupMethod": _InternalType.Text.value,
         }
         dc_fields = [f for f in fields(objs[0]) if f.name != "_service"]
 
         def get_obj_field(obj, f):
             value = getattr(obj, f.name)
             if isinstance(value, (InstanceType, EngineStatus)):
-                return str(value)
-            if isinstance(value, WarmupMethod):
-                return " ".join(
-                    map(lambda s: s.capitalize(), str(value).lower().split("_"))
-                )
-            if isinstance(value, EngineType):
-                return {
-                    EngineType.GENERAL_PURPOSE: "General Purpose",
-                    EngineType.DATA_ANALYTICS: "Analytics",
-                }[value]
+                return value.value
             return value
 
         query_response = {
@@ -306,12 +213,7 @@ def updated_engine_scale() -> int:
 
 
 @fixture
-def updated_engine_type() -> EngineType:
-    return EngineType.DATA_ANALYTICS
-
-
-@fixture
-def updated_auto_stop() -> EngineType:
+def updated_auto_stop() -> int:
     return 0
 
 
@@ -320,7 +222,6 @@ def update_engine_callback(
     system_engine_no_db_query_url: str,
     mock_engine: Engine,
     updated_engine_scale: int,
-    updated_engine_type: EngineType,
     updated_auto_stop: int,
 ) -> Callable:
     def do_mock(
@@ -329,7 +230,6 @@ def update_engine_callback(
     ) -> Response:
         assert request.url == system_engine_no_db_query_url
         mock_engine.scale = updated_engine_scale
-        mock_engine.type = updated_engine_type
         mock_engine.auto_stop = updated_auto_stop
         return Response(
             status_code=httpx.codes.OK,

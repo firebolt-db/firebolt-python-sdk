@@ -28,12 +28,14 @@ def test_database_create(
 
     database = resource_manager.databases.create(
         name=mock_database.name,
-        region=mock_database.region,
-        attached_engines=[mock_engine],
         description=mock_database.description,
     )
 
     assert database == mock_database
+
+    for key in ("region", "attached_engines"):
+        with raises(ValueError):
+            resource_manager.databases.create(name="failed", **{key: "test"})
 
 
 def test_database_get_by_name(
@@ -84,14 +86,19 @@ def test_database_get_many(
 
     databases = resource_manager.databases.get_many(
         name_contains=mock_database.name,
-        attached_engine_name_eq="mockengine",
-        attached_engine_name_contains="mockengine",
-        region_eq="us-east-1",
     )
 
     assert len(databases) == 2
     assert databases[0] == mock_database
     assert databases[1] == mock_database_2
+
+    for key in (
+        "attached_engine_name_eq",
+        "attached_engine_name_contains",
+        "region_eq",
+    ):
+        with raises(ValueError):
+            resource_manager.databases.get_many(**{key: "value"})
 
 
 def test_database_update(
@@ -115,12 +122,9 @@ def test_database_delete_busy_engine(
     httpx_mock: HTTPXMock,
     resource_manager: ResourceManager,
     system_engine_no_db_query_url: str,
-    get_engine_callback_stopping: Engine,
+    get_engine_callback_stopping: Callable,
     mock_database: Database,
-    instance_type_callback: Callable,
-    instance_type_url: str,
 ):
-    httpx_mock.add_callback(instance_type_callback, url=instance_type_url)
     httpx_mock.add_callback(
         get_engine_callback_stopping, url=system_engine_no_db_query_url
     )
