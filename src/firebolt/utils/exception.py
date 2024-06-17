@@ -292,7 +292,9 @@ class FireboltStructuredError(Error):
             description = (
                 f"- {error['description']}" if error.get("description") else ""
             )
-            helpLink = f", see {error['helpLink']}" if error.get("helpLink") else ""
+            helpLink = (  # NOSONAR: python:S608 compliant with the message template
+                f", see {error['helpLink']}" if error.get("helpLink") else ""
+            )
             at = f" at {error['location']}" if error.get("location") else ""
             message = self.message_template.format(
                 severity=severity,
