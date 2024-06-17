@@ -211,11 +211,6 @@ async def connect_v2(
         headers={"User-Agent": user_agent_header},
     )
 
-    # TODO: we get account id here to make sure that account name is valid.
-    # We actually have no need to fetch account id anymore, so we need to move
-    # the logic of reporting invalid account name to the system engine resolution
-    await client.account_id
-
     # Don't use context manager since this will be stored
     # and used in a resulting connection
     system_engine_connection = Connection(

@@ -1,6 +1,7 @@
 from typing import Callable, List
 from unittest.mock import patch
 
+from httpx import codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
@@ -19,6 +20,7 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
+from tests.unit.response import Response
 
 
 @mark.skip("__slots__ is broken on Connection class")
@@ -141,6 +143,9 @@ async def test_connect_database_failed(
         ):
             pass
 
+    # Account id endpoint was not used since we didn't get to that point
+    httpx_mock.reset(False)
+
 
 async def test_connect_engine_failed(
         db_name: str,
@@ -181,31 +186,67 @@ async def test_connect_engine_failed(
         ):
             pass
 
+    # Account id endpoint was not used since we didn't get to that point
+    httpx_mock.reset(False)
+
 
 async def test_connect_invalid_account(
     db_name: str,
+    engine_name: str,
+    engine_url: str,
     auth_url: str,
     api_endpoint: str,
     auth: Auth,
     account_name: str,
     httpx_mock: HTTPXMock,
     check_credentials_callback: Callable,
+    system_engine_no_db_query_url: str,
+    system_engine_query_url: str,
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
+    use_database_callback: Callable,
     account_id_url: str,
     account_id_invalid_callback: Callable,
 ):
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
     httpx_mock.add_callback(account_id_invalid_callback, url=account_id_url)
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+    )
+
+    def use_engine_callback(*args, **kwargs):
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": {},
+        }
+
+        return Response(
+            status_code=codes.OK,
+            json=query_response,
+            headers={
+                "Firebolt-Update-Endpoint": engine_url + "?account_id=2",
+            },
+        )
+
+    httpx_mock.add_callback(
+        use_engine_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+    )
     with raises(AccountNotFoundOrNoAccessError):
         async with await connect(
+            engine_name=engine_name,
             database=db_name,
             auth=auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
-            await connection.cursor().execute("select*")
+            await connection.cursor().execute("select *")
 
 
 @mark.parametrize("cache_enabled", [True, False])
