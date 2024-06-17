@@ -50,7 +50,7 @@ FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
 def parse_response_for_account_info(response: Response) -> _AccountInfo:
     """Construct account info object from the API response."""
     account_id = response.json()["id"]
-    account_version = int(response.json().get("infraVersion", 1))
+    account_version = int(response.json().get("infraVersion", 2))
     return _AccountInfo(id=account_id, version=account_version)
 
 
