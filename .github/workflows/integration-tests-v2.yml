@@ -44,4 +44,22 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1" --runslow
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1" --runslow  --alluredir=allure-results
+
+      # Need to pull the pages branch in order to fetch the previous runs
+      - name: Get Allure history
+        uses: actions/checkout@v2
+        if: always()
+        continue-on-error: true
+        with:
+            ref: gh-pages
+            path: gh-pages
+
+      - name: Allure Report
+        uses: firebolt-db/action-allure-report@v1
+        if: always()
+        with:
+          github-key: ${{ secrets.GITHUB_TOKEN }}
+          test-type: integration
+          allure-dir: allure-results
+          pages-branch: gh-pages
