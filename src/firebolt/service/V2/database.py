@@ -26,13 +26,7 @@ class DatabaseService(BaseService):
     GET_WHERE_SQL = " WHERE "
 
     CREATE_PREFIX_SQL = 'CREATE DATABASE {}"{}"'
-    CREATE_WITH_SQL = " WITH "
     IF_NOT_EXISTS_SQL = "IF NOT EXISTS "
-    CREATE_PARAMETER_NAMES = (
-        "REGION",
-        "ATTACHED_ENGINES",
-        "DESCRIPTION",
-    )
 
     DISALLOWED_ACCOUNT_V2_PARAMETERS = [
         "attached_engine_name_eq",
@@ -54,21 +48,6 @@ class DatabaseService(BaseService):
 
     def get_by_name(self, name: str) -> Database:
         return self.get(name)
-
-    def _validate_create_parameters(
-        self,
-        **create_parameters: Optional[str],
-    ) -> None:
-        if self.account_version == 2:
-            bad_parameters = [
-                name
-                for name in self.DISALLOWED_ACCOUNT_V2_PARAMETERS
-                if create_parameters.get(name) is not None
-            ]
-            if bad_parameters:
-                raise ValueError(
-                    f"Parameters {bad_parameters} are not supported for this account"
-                )
 
     def get_many(
         self,
@@ -92,40 +71,23 @@ class DatabaseService(BaseService):
         """
         sql = self.GET_SQL
         parameters = []
-        self._validate_create_parameters(
-            name_contains=name_contains,
-            attached_engine_name_eq=attached_engine_name_eq,
-            attached_engine_name_contains=attached_engine_name_contains,
-            region_eq=region_eq,
-        )
-        if any(
-            (
-                name_contains,
-                attached_engine_name_eq,
-                attached_engine_name_contains,
-                region_eq,
+        disallowed_parameters = [
+            name
+            for name, value in (
+                ("attached_engine_name_eq", attached_engine_name_eq),
+                ("attached_engine_name_contains", attached_engine_name_contains),
+                ("region_eq", region_eq),
             )
-        ):
-            condition = []
-            if name_contains:
-                condition.append("database_name like ?")
-                parameters.append(f"%{name_contains}%")
-            if attached_engine_name_eq:
-                condition.append(
-                    "any_match(eng -> split_part(eng, ' ', 1) = ?,"
-                    " string_to_array(attached_engines, ','))"
-                )
-                parameters.append(attached_engine_name_eq)
-            if attached_engine_name_contains:
-                condition.append(
-                    "any_match(eng -> split_part(eng, ' ', 1) like ?,"
-                    " string_to_array(attached_engines, ','))"
-                )
-                parameters.append(f"%{attached_engine_name_contains}%")
-            if region_eq:
-                condition.append("region = ?")
-                parameters.append(str(region_eq))
-            sql += self.GET_WHERE_SQL + " AND ".join(condition)
+            if value
+        ]
+        if disallowed_parameters:
+            raise ValueError(
+                f"Parameters {disallowed_parameters} are not supported for this account"
+            )
+
+        if name_contains:
+            sql += " WHERE database_name like ?"
+            parameters.append(f"%{name_contains}%")
 
         with self._connection.cursor() as c:
             c.execute(sql, parameters)
@@ -148,8 +110,9 @@ class DatabaseService(BaseService):
 
         Args:
             name: Name of the database
-            attached_engines: List of engines to attach to the database
             region: Region name in which to create the database
+            attached_engines: List of engines to attach to the database
+            description: Description of the database
             fail_if_exists: Fail is a database with provided name already exists
 
         Returns:
@@ -158,26 +121,27 @@ class DatabaseService(BaseService):
 
         logger.info(f"Creating database {name}")
 
+        disallowed_parameters = [
+            name
+            for name, value in (
+                ("region", region),
+                (attached_engines, attached_engines),
+            )
+            if value is not None
+        ]
+        if disallowed_parameters:
+            raise ValueError(
+                f"Parameters {disallowed_parameters} are not supported for this account"
+            )
+
         sql = self.CREATE_PREFIX_SQL.format(
             ("" if fail_if_exists else self.IF_NOT_EXISTS_SQL), name
         )
         parameters = []
-        if any((region, attached_engines, description)):
-            sql += self.CREATE_WITH_SQL
-            for param, value in zip(
-                self.CREATE_PARAMETER_NAMES,
-                (region, attached_engines, description),
-            ):
-                if value:
-                    sql += f"{param} = ? "
-                    # Convert list of engines to a list of their names
-                    if (
-                        isinstance(value, list)
-                        and len(value) > 0
-                        and isinstance(value[0], Engine)
-                    ):
-                        value = [eng.name for eng in value]  # type: ignore
-                    parameters.append(value)
+        if description:
+            sql += " WITH DESCRIPTION = ? "
+            parameters.append(description)
+
         with self._connection.cursor() as c:
             c.execute(sql, parameters)
         return self.get(name)

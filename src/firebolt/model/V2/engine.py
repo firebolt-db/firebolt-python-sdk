@@ -9,7 +9,7 @@ from firebolt.db import Connection, connect
 from firebolt.model.V2 import FireboltBaseModel
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.instance_type import InstanceType
-from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.service.V2.types import EngineStatus
 from firebolt.utils.exception import DatabaseNotFoundError
 
 if TYPE_CHECKING:
@@ -45,9 +45,9 @@ class Engine(FireboltBaseModel):
     _database_name: str = field(repr=False, metadata={"db_name": "attached_to"})
     version: str = field()
     endpoint: str = field(metadata={"db_name": "url"})
-    warmup: WarmupMethod = field()
+    warmup: str = field()
     auto_stop: int = field()
-    type: EngineType = field(metadata={"db_name": "engine_type"})
+    type: str = field(metadata={"db_name": "engine_type"})
 
     def __post_init__(self) -> None:
         # Specs are just strings for accounts v2
@@ -57,12 +57,6 @@ class Engine(FireboltBaseModel):
         if isinstance(self.current_status, str) and self.current_status:
             # Resolve engine status
             self.current_status = EngineStatus(self.current_status)
-        if isinstance(self.warmup, str) and self.warmup:
-            # Resolve warmup method
-            self.warmup = WarmupMethod.from_display_name(self.warmup)
-        if isinstance(self.type, str) and self.type:
-            # Resolve engine type
-            self.type = EngineType.from_display_name(self.type)
 
     @property
     def database(self) -> Optional[Database]:
@@ -100,7 +94,7 @@ class Engine(FireboltBaseModel):
         return connect(
             database=self._database_name,  # type: ignore # already checked by decorator
             # we always have firebolt Auth as a client auth
-            auth=self._service.client.auth,  # type: ignore
+            auth=self._service._connection._client.auth,  # type: ignore
             engine_name=self.name,
             account_name=self._service.resource_manager.account_name,
             api_endpoint=self._service.resource_manager.api_endpoint,
@@ -174,11 +168,11 @@ class Engine(FireboltBaseModel):
     def update(
         self,
         name: Optional[str] = None,
-        engine_type: Union[EngineType, str, None] = None,
+        engine_type: Optional[str] = None,
         scale: Optional[int] = None,
         spec: Union[InstanceType, str, None] = None,
         auto_stop: Optional[int] = None,
-        warmup: Optional[WarmupMethod] = None,
+        warmup: Optional[str] = None,
     ) -> Engine:
         """
         Updates the engine and returns an updated version of the engine. If all
