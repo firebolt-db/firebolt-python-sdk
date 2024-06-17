@@ -53,7 +53,7 @@ def get_engine_url_by_id_url(api_endpoint: str, account_id: str, engine_id: str)
 
 @fixture
 def get_engine_url_by_id_callback(
-    get_engine_url_by_id_url: str, engine_id: str, api_endpoint: str
+    get_engine_url_by_id_url: str, engine_id: str, engine_url: str
 ) -> Callable:
     def do_mock(
         request: Request = None,
@@ -76,7 +76,7 @@ def get_engine_url_by_id_callback(
                         "is_read_only": False,
                         "warm_up": "",
                     },
-                    "endpoint": f"https://{api_endpoint}",
+                    "endpoint": f"https://{engine_url}",
                 }
             },
         )

@@ -52,6 +52,7 @@ def test_cursors_closed_on_close(connection: Connection) -> None:
 
 
 def test_cursor_initialized(
+    engine_url: str,
     api_endpoint: str,
     db_name: str,
     httpx_mock: HTTPXMock,
@@ -65,20 +66,19 @@ def test_cursor_initialized(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
-    for url in (api_endpoint, f"https://{api_endpoint}"):
+    for url in (engine_url, f"https://{engine_url}"):
         with connect(
             engine_url=url,
             database=db_name,
             auth=UsernamePassword("u", "p"),
             api_endpoint=api_endpoint,
         ) as connection:
-
             cursor = connection.cursor()
             assert (
                 cursor.connection == connection
             ), "Invalid cursor connection attribute"
             assert (
-                cursor._client == connection._client
+                cursor._client.base_url == connection._client.base_url
             ), "Invalid cursor _client attribute"
 
             assert cursor.execute("select*") == len(python_query_data)
@@ -96,6 +96,7 @@ def test_connect_empty_parameters():
 
 
 def test_connect_engine_name(
+    engine_name: str,
     api_endpoint: str,
     account_name: str,
     db_name: str,
@@ -126,8 +127,6 @@ def test_connect_engine_name(
     httpx_mock.add_callback(query_callback, url=query_url)
     httpx_mock.add_callback(account_id_callback, url=account_id_url)
     httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
-
-    engine_name = api_endpoint.split(".")[0]
 
     # Mock engine id lookup error
     httpx_mock.add_response(
@@ -166,6 +165,7 @@ def test_connect_engine_name(
 
 
 def test_connect_default_engine(
+    engine_url: str,
     api_endpoint: str,
     account_name: str,
     db_name: str,
@@ -190,7 +190,7 @@ def test_connect_default_engine(
         url=engine_by_db_url,
         status_code=codes.OK,
         json={
-            "engine_url": api_endpoint,
+            "engine_url": engine_url,
         },
     )
     with connect(
@@ -233,6 +233,7 @@ def test_connection_commit(connection: Connection):
 
 @mark.nofakefs
 def test_connection_token_caching(
+    engine_url: str,
     api_endpoint: str,
     account_name: str,
     user: str,
@@ -256,7 +257,7 @@ def test_connection_token_caching(
         with connect(
             database=db_name,
             auth=UsernamePassword(user, password, use_token_cache=True),
-            engine_url=api_endpoint,
+            engine_url=engine_url,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -269,7 +270,7 @@ def test_connection_token_caching(
         with connect(
             database=db_name,
             auth=UsernamePassword(user, password, use_token_cache=False),
-            engine_url=api_endpoint,
+            engine_url=engine_url,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -285,6 +286,7 @@ def test_connect_with_auth(
     user: str,
     password: str,
     account_name: str,
+    engine_url: str,
     api_endpoint: str,
     db_name: str,
     check_credentials_callback: Callable,
@@ -310,7 +312,7 @@ def test_connect_with_auth(
         with connect(
             auth=auth,
             database=db_name,
-            engine_url=api_endpoint,
+            engine_url=engine_url,
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
@@ -321,6 +323,7 @@ def test_connect_account_name(
     httpx_mock: HTTPXMock,
     auth: Auth,
     account_name: str,
+    engine_url: str,
     api_endpoint: str,
     db_name: str,
     auth_url: str,
@@ -335,7 +338,7 @@ def test_connect_account_name(
         with connect(
             auth=auth,
             database=db_name,
-            engine_url=api_endpoint,
+            engine_url=engine_url,
             account_name="invalid",
             api_endpoint=api_endpoint,
         ):
@@ -344,7 +347,7 @@ def test_connect_account_name(
     with connect(
         auth=auth,
         database=db_name,
-        engine_url=api_endpoint,
+        engine_url=engine_url,
         account_name=account_name,
         api_endpoint=api_endpoint,
     ):
