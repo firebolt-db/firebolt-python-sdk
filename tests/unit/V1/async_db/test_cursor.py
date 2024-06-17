@@ -208,6 +208,7 @@ async def test_cursor_execute_error(
     auth_callback: Callable,
     auth_url: str,
     query_url: str,
+    engine_name: str,
     get_engines_url: str,
     get_databases_url: str,
     cursor: Cursor,
@@ -296,7 +297,7 @@ async def test_cursor_execute_error(
         httpx_mock.add_response(
             json={"edges": []},
             url=(
-                get_engines_url + "?filter.name_contains=api_dev"
+                get_engines_url + f"?filter.name_contains={engine_name}"
                 "&filter.current_status_eq=ENGINE_STATUS_RUNNING_REVISION_SERVING"
             ),
         )

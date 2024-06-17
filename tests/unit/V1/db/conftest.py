@@ -12,10 +12,10 @@ def auth(username_password_auth) -> Auth:
 
 @fixture
 def connection(
-    api_endpoint: str, db_name: str, username_password_auth: Auth
+    engine_url: str, api_endpoint: str, db_name: str, username_password_auth: Auth
 ) -> Connection:
     with connect(
-        engine_url=api_endpoint,
+        engine_url=engine_url,
         database=db_name,
         auth=username_password_auth,
         api_endpoint=api_endpoint,
