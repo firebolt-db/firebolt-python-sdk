@@ -254,60 +254,6 @@ def set_query_url(engine_url: str, db_name: str) -> URL:
     return URL(f"https://{engine_url}/?database={db_name}")
 
 
-def _get_engine_url_callback(
-    engine_url: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
-) -> Callable:
-    def do_query(request: Request, **kwargs) -> Response:
-        set_parameters = request.url.params
-        assert (
-            len(set_parameters) == 2
-            and "output_format" in set_parameters
-            and "database" in set_parameters
-        )
-        data = [[engine_url, db_name, status]]
-        query_response = {
-            "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
-            "data": data,
-            "rows": len(data),
-            "statistics": query_statistics,
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def get_engine_url_callback(
-    engine_url: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
-) -> Callable:
-    return _get_engine_url_callback(engine_url, db_name, query_statistics)
-
-
-@fixture
-def get_engine_url_not_running_callback(
-    engine_url, db_name, query_statistics: Dict[str, Any]
-) -> Callable:
-    return _get_engine_url_callback(engine_url, db_name, query_statistics, "Stopped")
-
-
-@fixture(params=["Running", "RUNNING", "ENGINE_STATE_RUNNING"])
-def get_engine_url_callback_test_status(
-    engine_url: str, db_name: str, query_statistics: Dict[str, Any], request: Any
-) -> Callable:
-    return _get_engine_url_callback(
-        engine_url, db_name, query_statistics, request.param
-    )
-
-
-@fixture
-def get_engine_url_invalid_db_callback(
-    engine_url,
-    db_name,
-    query_statistics: Dict[str, Any],
-) -> Callable:
-    return _get_engine_url_callback(engine_url, "not_" + db_name, query_statistics)
-
-
 @fixture
 def system_engine_url() -> str:
     return "https://bravo.a.eu-west-1.aws.mock.firebolt.io"
@@ -392,6 +338,25 @@ def use_database_callback(db_name: str, query_statistics: Dict[str, Any]) -> Cal
 
 
 @fixture
+def use_database_failed_callback(
+    db_name: str, query_statistics: Dict[str, Any]
+) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        return Response(
+            status_code=codes.INTERNAL_SERVER_ERROR,
+            content="use database failed",
+        )
+
+    return inner
+
+
+@fixture
 def use_engine_callback(engine_url: str, query_statistics: Dict[str, Any]) -> Callable:
     def inner(
         request: Request = None,
@@ -411,6 +376,25 @@ def use_engine_callback(engine_url: str, query_statistics: Dict[str, Any]) -> Ca
             status_code=codes.OK,
             json=query_response,
             headers={"Firebolt-Update-Endpoint": engine_url},
+        )
+
+    return inner
+
+
+@fixture
+def use_engine_failed_callback(
+    engine_url, db_name, query_statistics: Dict[str, Any]
+) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        return Response(
+            status_code=codes.INTERNAL_SERVER_ERROR,
+            content="Use engine failed",
         )
 
     return inner

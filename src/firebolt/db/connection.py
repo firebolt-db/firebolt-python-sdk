@@ -122,6 +122,12 @@ def connect_v2(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
+
+    # TODO: we get account id here to make sure that account name is valid.
+    # We actually have no need to fetch account id anymore, so we need to move
+    # the logic of reporting invalid account name to the system engine resolution
+    client.account_id
+
     # Don't use context manager since this will be stored
     # and used in a resulting connection
     system_engine_connection = Connection(
@@ -141,9 +147,11 @@ def connect_v2(
     # Ensure cursors created from this connection are using the same starting
     # database and engine
     return Connection(
-        cursor.engine_url,
+        # TODO: we duplicate the base_url here, but it's already stored in the client
+        # rework the whole logic to make engine url stored in a single place
+        str(cursor._client.base_url),
         cursor.database,
-        client.clone(),
+        cursor._client.clone(),
         CursorV2,
         api_endpoint,
         cursor.parameters,
@@ -172,7 +180,6 @@ class Connection(BaseConnection):
     __slots__ = (
         "_client",
         "_cursors",
-        "database",
         "engine_url",
         "api_endpoint",
         "_is_closed",

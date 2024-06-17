@@ -20,8 +20,7 @@ from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     ConfigurationError,
     ConnectionClosedError,
-    EngineNotRunningError,
-    InterfaceError,
+    FireboltError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
 
@@ -73,13 +72,15 @@ def test_cursor_initialized(
 
     cursor = connection.cursor()
     assert cursor.connection == connection, "Invalid cursor connection attribute"
-    assert cursor._client == connection._client, "Invalid cursor _client attribute"
+    assert (
+            cursor._client.base_url == connection._client.base_url
+    ), "Invalid cursor client base_url"
 
-    assert cursor.execute("select*") == len(python_query_data)
+    assert cursor.execute("select *") == len(python_query_data)
 
     cursor.close()
     assert (
-        cursor not in connection._cursors
+            cursor not in connection._cursors
     ), "Cursor wasn't removed from connection after close"
 
 
@@ -89,135 +90,100 @@ def test_connect_empty_parameters():
             pass
 
 
-def test_connect_engine_name(
-    db_name: str,
-    account_name: str,
-    engine_name: str,
-    auth: Auth,
-    api_endpoint: str,
-    python_query_data: List[List[ColType]],
-    mock_query: Callable,
-    httpx_mock: HTTPXMock,
-    system_engine_query_url: str,
-    get_engine_url_not_running_callback: Callable,
-    get_engine_url_invalid_db_callback: Callable,
-    auth_url: str,
-    check_credentials_callback: Callable,
-    get_system_engine_url: str,
-    get_system_engine_callback: Callable,
-    get_engine_url_callback: Callable,
-    account_id_url: str,
-    account_id_callback: Callable,
+def test_connect(
+        db_name: str,
+        account_name: str,
+        engine_name: str,
+        auth: Auth,
+        api_endpoint: str,
+        python_query_data: List[List[ColType]],
+        mock_connection_flow: Callable,
+        mock_query: Callable,
 ):
     """connect properly handles engine_name"""
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-
+    mock_connection_flow()
     mock_query()
 
-    for callback, err_cls in (
-        (get_engine_url_invalid_db_callback, InterfaceError),
-        (get_engine_url_not_running_callback, EngineNotRunningError),
-    ):
-        httpx_mock.add_callback(callback, url=system_engine_query_url)
-        with raises(err_cls):
-            c = connect(
+    with connect(
+        engine_name=engine_name,
+        database=db_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        assert connection.cursor().execute("select *") == len(python_query_data)
+
+
+def test_connect_database_failed(
+        db_name: str,
+        account_name: str,
+        engine_name: str,
+        auth: Auth,
+        api_endpoint: str,
+        python_query_data: List[List[ColType]],
+        httpx_mock: HTTPXMock,
+        system_engine_no_db_query_url: str,
+        use_database_failed_callback: Callable,
+        mock_system_engine_connection_flow: Callable,
+        mock_query: Callable,
+):
+    """connect properly handles use database errors"""
+    mock_system_engine_connection_flow()
+
+    httpx_mock.add_callback(
+        use_database_failed_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+    )
+    with raises(FireboltError):
+        with connect(
                 database=db_name,
                 auth=auth,
                 engine_name=engine_name,
                 account_name=account_name,
                 api_endpoint=api_endpoint,
-            )
-            print(type(c))
-            with c:
-                pass
-
-    httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
-
-    with connect(
-        engine_name=engine_name,
-        database=db_name,
-        auth=auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        assert connection.cursor().execute("select*") == len(python_query_data)
+        ):
+            pass
 
 
-def test_connect_engine_running(
-    httpx_mock: HTTPXMock,
-    db_name: str,
-    auth_url: str,
-    api_endpoint: str,
-    auth: Auth,
-    account_name: str,
-    get_system_engine_url: str,
-    get_system_engine_callback: Callable,
-    account_id_url: str,
-    account_id_callback: Callable,
-    check_credentials_callback: Callable,
-    engine_name: str,
-    system_engine_query_url: str,
-    get_engine_url_callback_test_status: Callable,
-) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+def test_connect_engine_failed(
+        db_name: str,
+        account_name: str,
+        engine_name: str,
+        auth: Auth,
+        api_endpoint: str,
+        python_query_data: List[List[ColType]],
+        httpx_mock: HTTPXMock,
+        system_engine_no_db_query_url: str,
+        use_database_callback: Callable,
+        system_engine_query_url: str,
+        use_engine_failed_callback: Callable,
+        mock_system_engine_connection_flow: Callable,
+        mock_query: Callable,
+):
+    """connect properly handles use engine errors"""
+    mock_system_engine_connection_flow()
+
     httpx_mock.add_callback(
-        get_engine_url_callback_test_status, url=system_engine_query_url
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
     )
 
-    with connect(
-        engine_name=engine_name,
-        database=db_name,
-        auth=auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    ):
-        # Engine is running, no exception should be raised
-        pass
-
-
-def test_connect_database(
-    db_name: str,
-    auth_url: str,
-    api_endpoint: str,
-    auth: Auth,
-    account_name: str,
-    python_query_data: List[List[ColType]],
-    httpx_mock: HTTPXMock,
-    query_callback: str,
-    check_credentials_callback: Callable,
-    system_engine_query_url: str,
-    system_engine_no_db_query_url: str,
-    get_system_engine_url: str,
-    get_system_engine_callback: Callable,
-    account_id_url: str,
-    account_id_callback: Callable,
-):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-    httpx_mock.add_callback(query_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    with connect(
-        database=None,
-        auth=auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        connection.cursor().execute("select*")
-
-    httpx_mock.reset(True)
-    httpx_mock.add_callback(query_callback, url=system_engine_query_url)
-
-    with connect(
-        database=db_name,
-        auth=auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-    ) as connection:
-        assert connection.cursor().execute("select*") == len(python_query_data)
+    httpx_mock.add_callback(
+        use_engine_failed_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+    )
+    with raises(FireboltError):
+        with connect(
+                database=db_name,
+                auth=auth,
+                engine_name=engine_name,
+                account_name=account_name,
+                api_endpoint=api_endpoint,
+        ):
+            pass
 
 
 def test_connect_invalid_account(
@@ -243,7 +209,7 @@ def test_connect_invalid_account(
             account_name=account_name,
             api_endpoint=api_endpoint,
         ) as connection:
-            connection.cursor().execute("select*")
+            connection.cursor().execute("select *")
 
 
 @mark.parametrize("cache_enabled", [True, False])
