@@ -59,8 +59,7 @@ jobs:
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
-          ACCOUNT_NAME_V1: ${{ vars.FIREBOLT_ACCOUNT_V1 }}
-          ACCOUNT_NAME_V2: ${{ vars.FIREBOLT_ACCOUNT_V2 }}
+          ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT }}
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V1"

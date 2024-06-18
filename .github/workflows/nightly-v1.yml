@@ -62,7 +62,7 @@ jobs:
           ENGINE_URL: ${{ steps.setup.outputs.engine_url }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
           STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
-          ACCOUNT_NAME_V1: "firebolt"
+          ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V2"
