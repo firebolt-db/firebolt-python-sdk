@@ -16,7 +16,10 @@ from urllib.parse import parse_qs, urljoin, urlparse
 
 from httpx import URL, Response, codes
 
-from firebolt.utils.exception import ConfigurationError
+from firebolt.utils.exception import (
+    ConfigurationError,
+    FireboltStructuredError,
+)
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
@@ -167,6 +170,31 @@ def _print_error_body(resp: Response) -> None:
             logger.error(f"Something went wrong: {resp.read().decode('utf-8')}")
     except Exception:
         pass
+
+
+def raise_errors_from_body(resp: Response) -> None:
+    """
+    Process error in response body. Only raise errors if the json body
+    can be parsed and contains errors. Otherwise, let the rest of the code
+    handle the error.
+
+    Args:
+        resp (Response): HTTP response
+    """
+    to_raise = None
+    try:
+        decoded = resp.json()
+        if "errors" in decoded and len(decoded["errors"]) > 0:
+            # Raise later to avoid catching it in the except block
+            to_raise = FireboltStructuredError(decoded)
+
+    except Exception:
+        # If we can't parse the body, let the rest of the code handle it
+        # we can't raise an exception here because it would mask the original error
+        pass
+
+    if to_raise:
+        raise to_raise
 
 
 class Timer:

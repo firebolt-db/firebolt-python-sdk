@@ -1,3 +1,6 @@
+from typing import Any, Dict
+
+
 class FireboltError(Exception):
     """Base class for all Firebolt errors."""
 
@@ -267,3 +270,39 @@ class NotSupportedError(DatabaseError):
 
 class ConfigurationError(InterfaceError):
     """Invalid configuration error."""
+
+
+class FireboltStructuredError(Error):
+    """Base class for structured errors received in JSON body."""
+
+    # Output will look like this after formatting:
+    # "{severity}: {name} ({code}) - {description}, see {helpLink}"
+    message_template = "{severity}{name}{code}{description}{at}{helpLink}"
+
+    def __init__(self, json: Dict[str, Any]):
+        self.json = json
+        self.errors = json.get("errors", [])
+
+    def __str__(self) -> str:
+        error_messages = []
+        for error in self.errors:
+            severity = f"{error['severity']}: " if error.get("severity") else ""
+            name = f"{error['name']} " if error.get("name") else ""
+            code = f"({error['code']}) " if error.get("code") else ""
+            description = (
+                f"- {error['description']}" if error.get("description") else ""
+            )
+            helpLink = (  # NOSONAR: python:S608 compliant with the message template
+                f", see {error['helpLink']}" if error.get("helpLink") else ""
+            )
+            at = f" at {error['location']}" if error.get("location") else ""
+            message = self.message_template.format(
+                severity=severity,
+                name=name,
+                code=code,
+                description=description,
+                helpLink=helpLink,
+                at=at,
+            )
+            error_messages.append(message)
+        return ",\n".join(error_messages)
