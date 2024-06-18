@@ -173,7 +173,10 @@ def _print_error_body(resp: Response) -> None:
 
 
 def raise_errors_from_body(resp: Response) -> None:
-    """Process error in response body.
+    """
+    Process error in response body. Only raise errors if the json body
+    can be parsed and contains errors. Otherwise, let the rest of the code
+    handle the error.
 
     Args:
         resp (Response): HTTP response
