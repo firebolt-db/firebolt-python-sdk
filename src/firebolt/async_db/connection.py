@@ -81,7 +81,7 @@ class Connection(BaseConnection):
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = self.cursor_type(client=self._client.clone(), connection=self, **kwargs)
+        c = self.cursor_type(client=self._client, connection=self, **kwargs)
         self._cursors.append(c)
         return c
 
