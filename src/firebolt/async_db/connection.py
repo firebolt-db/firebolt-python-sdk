@@ -210,8 +210,8 @@ async def connect_v2(
         headers={"User-Agent": user_agent_header},
     )
 
-    # Don't use context manager since this will be stored
-    # and used in a resulting connection
+    # Don't use context manager since closing it will close a client
+    # and will make it unusable for the actual connection returned
     system_engine_connection = Connection(
         system_engine_url,
         None,
