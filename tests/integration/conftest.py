@@ -160,9 +160,3 @@ def minimal_time():
         assert (
             end - start >= limit
         ), f"Test took {end - start} seconds, less than {limit} seconds"
-
-
-@fixture(scope="session")
-def account_version():
-    global account_version_value
-    return account_version_value

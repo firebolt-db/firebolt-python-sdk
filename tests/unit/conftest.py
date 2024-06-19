@@ -7,11 +7,9 @@ from httpx import Request
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.client.client import _firebolt_account_info_cache
-from firebolt.common.cache import _firebolt_system_engine_cache
-
 from firebolt.client.auth import Auth, ClientCredentials
-from firebolt.client.client import ClientV2
+from firebolt.client.client import ClientV2, _firebolt_account_info_cache
+from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
     AccountNotFoundError,
@@ -160,9 +158,8 @@ def account_id_url(api_endpoint: str, account_name: str) -> Pattern:
 
 @fixture
 def account_id_callback(
-        account_id: str,
-        account_version: int,
-        account_name: str,
+    account_id: str,
+    account_name: str,
 ) -> Callable:
     def do_mock(
         request: Request,
@@ -172,7 +169,7 @@ def account_id_callback(
             raise AccountNotFoundError(request.url.path.split("/")[-2])
         return Response(
             status_code=httpx.codes.OK,
-            json={"id": account_id, "infraVersion": account_version},
+            json={"id": account_id, "infraVersion": 2},
         )
 
     return do_mock
