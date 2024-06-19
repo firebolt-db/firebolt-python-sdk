@@ -1,7 +1,6 @@
 from typing import Callable, List
 from unittest.mock import patch
 
-from httpx import codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
@@ -20,7 +19,6 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
-from tests.unit.response import Response
 
 
 @mark.skip("__slots__ is broken on Connection class")
@@ -71,14 +69,14 @@ async def test_cursor_initialized(
     cursor = connection.cursor()
     assert cursor.connection == connection, "Invalid cursor connection attribute."
     assert (
-            cursor._client.base_url == connection._client.base_url
+        cursor._client.base_url == connection._client.base_url
     ), "Invalid cursor _client attribute"
 
     assert await cursor.execute("select*") == len(python_query_data)
 
     cursor.close()
     assert (
-            cursor not in connection._cursors
+        cursor not in connection._cursors
     ), "Cursor wasn't removed from connection after close."
 
 
@@ -89,14 +87,14 @@ async def test_connect_empty_parameters():
 
 
 async def test_connect(
-        db_name: str,
-        account_name: str,
-        engine_name: str,
-        auth: Auth,
-        api_endpoint: str,
-        python_query_data: List[List[ColType]],
-        mock_connection_flow: Callable,
-        mock_query: Callable,
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    python_query_data: List[List[ColType]],
+    mock_connection_flow: Callable,
+    mock_query: Callable,
 ):
     """connect properly handles engine_name"""
     mock_connection_flow()
@@ -113,17 +111,17 @@ async def test_connect(
 
 
 async def test_connect_database_failed(
-        db_name: str,
-        account_name: str,
-        engine_name: str,
-        auth: Auth,
-        api_endpoint: str,
-        python_query_data: List[List[ColType]],
-        httpx_mock: HTTPXMock,
-        system_engine_no_db_query_url: str,
-        use_database_failed_callback: Callable,
-        mock_system_engine_connection_flow: Callable,
-        mock_query: Callable,
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    python_query_data: List[List[ColType]],
+    httpx_mock: HTTPXMock,
+    system_engine_no_db_query_url: str,
+    use_database_failed_callback: Callable,
+    mock_system_engine_connection_flow: Callable,
+    mock_query: Callable,
 ):
     """connect properly handles use database errors"""
     mock_system_engine_connection_flow()
@@ -135,11 +133,11 @@ async def test_connect_database_failed(
     )
     with raises(FireboltError):
         async with await connect(
-                database=db_name,
-                auth=auth,
-                engine_name=engine_name,
-                account_name=account_name,
-                api_endpoint=api_endpoint,
+            database=db_name,
+            auth=auth,
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
         ):
             pass
 
@@ -148,19 +146,19 @@ async def test_connect_database_failed(
 
 
 async def test_connect_engine_failed(
-        db_name: str,
-        account_name: str,
-        engine_name: str,
-        auth: Auth,
-        api_endpoint: str,
-        python_query_data: List[List[ColType]],
-        httpx_mock: HTTPXMock,
-        system_engine_no_db_query_url: str,
-        use_database_callback: Callable,
-        system_engine_query_url: str,
-        use_engine_failed_callback: Callable,
-        mock_system_engine_connection_flow: Callable,
-        mock_query: Callable,
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    python_query_data: List[List[ColType]],
+    httpx_mock: HTTPXMock,
+    system_engine_no_db_query_url: str,
+    use_database_callback: Callable,
+    system_engine_query_url: str,
+    use_engine_failed_callback: Callable,
+    mock_system_engine_connection_flow: Callable,
+    mock_query: Callable,
 ):
     """connect properly handles use engine errors"""
     mock_system_engine_connection_flow()
@@ -178,11 +176,11 @@ async def test_connect_engine_failed(
     )
     with raises(FireboltError):
         async with await connect(
-                database=db_name,
-                auth=auth,
-                engine_name=engine_name,
-                account_name=account_name,
-                api_endpoint=api_endpoint,
+            database=db_name,
+            auth=auth,
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
         ):
             pass
 
@@ -205,6 +203,7 @@ async def test_connect_invalid_account(
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
     use_database_callback: Callable,
+    use_engine_with_account_id_callback: Callable,
     account_id_url: str,
     account_id_invalid_callback: Callable,
 ):
@@ -217,24 +216,8 @@ async def test_connect_invalid_account(
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
     )
 
-    def use_engine_callback(*args, **kwargs):
-        query_response = {
-            "meta": [],
-            "data": [],
-            "rows": 0,
-            "statistics": {},
-        }
-
-        return Response(
-            status_code=codes.OK,
-            json=query_response,
-            headers={
-                "Firebolt-Update-Endpoint": engine_url + "?account_id=2",
-            },
-        )
-
     httpx_mock.add_callback(
-        use_engine_callback,
+        use_engine_with_account_id_callback,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
     )
@@ -252,8 +235,9 @@ async def test_connect_invalid_account(
 @mark.parametrize("cache_enabled", [True, False])
 async def test_connect_caching(
     db_name: str,
+    engine_name: str,
     auth_url: str,
-    server: str,
+    api_endpoint: str,
     auth: Auth,
     account_name: str,
     httpx_mock: HTTPXMock,
@@ -263,6 +247,10 @@ async def test_connect_caching(
     account_id_url: str,
     account_id_callback: Callable,
     system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    query_url: str,
+    use_database_callback: Callable,
+    use_engine_with_account_id_callback: Callable,
     query_callback: Callable,
     cache_enabled: bool,
 ):
@@ -282,14 +270,26 @@ async def test_connect_caching(
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
     httpx_mock.add_callback(account_id_callback_counter, url=account_id_url)
-    httpx_mock.add_callback(query_callback, url=system_engine_query_url)
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+    )
+
+    httpx_mock.add_callback(
+        use_engine_with_account_id_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+    )
+    httpx_mock.add_callback(query_callback, url=query_url)
 
     for _ in range(3):
         async with await connect(
             database=db_name,
+            engine_name=engine_name,
             auth=auth,
             account_name=account_name,
-            api_endpoint=server,
+            api_endpoint=api_endpoint,
             disable_cache=not cache_enabled,
         ) as connection:
             await connection.cursor().execute("select*")

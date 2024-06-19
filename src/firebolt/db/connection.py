@@ -10,7 +10,6 @@ from httpx import Timeout
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
 from firebolt.common.base_connection import BaseConnection
-
 from firebolt.common.cache import (
     _firebolt_account_info_cache,
     _firebolt_system_engine_cache,
@@ -122,32 +121,30 @@ def connect_v2(
         headers={"User-Agent": user_agent_header},
     )
 
-    # Don't use context manager since closing it will close a client
-    # and will make it unusable for the actual connection returned
-    system_engine_connection = Connection(
+    with Connection(
         system_engine_url,
         None,
         client,
         CursorV2,
         api_endpoint,
         system_engine_params,
-    )
+    ) as system_engine_connection:
 
-    cursor = system_engine_connection.cursor()
-    if database:
-        cursor.execute(f'USE DATABASE "{database}"')
-    if engine_name:
-        cursor.execute(f'USE ENGINE "{engine_name}"')
-    # Ensure cursors created from this connection are using the same starting
-    # database and engine
-    return Connection(
-        cursor.engine_url,
-        cursor.database,
-        client,
-        CursorV2,
-        api_endpoint,
-        cursor.parameters,
-    )
+        cursor = system_engine_connection.cursor()
+        if database:
+            cursor.execute(f'USE DATABASE "{database}"')
+        if engine_name:
+            cursor.execute(f'USE ENGINE "{engine_name}"')
+        # Ensure cursors created from this connection are using the same starting
+        # database and engine
+        return Connection(
+            cursor.engine_url,
+            cursor.database,
+            client.clone(),
+            CursorV2,
+            api_endpoint,
+            cursor.parameters,
+        )
 
 
 class Connection(BaseConnection):
