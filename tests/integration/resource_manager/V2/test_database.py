@@ -10,7 +10,6 @@ def test_databases_get_many(
     api_endpoint: str,
     database_name: str,
     engine_name: str,
-    account_version: str,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
@@ -26,22 +25,11 @@ def test_databases_get_many(
     assert len(databases) > 0
     assert database_name in {db.name for db in databases}
 
-    if account_version == 1:
-        # get all databases, with attached engine name equals
-        databases = rm.databases.get_many(attached_engine_name_eq=engine_name)
-        assert len(databases) > 0
-        assert database_name in {db.name for db in databases}
+    with raises(ValueError):
+        rm.databases.get_many(attached_engine_name_eq=engine_name)
 
-        # get all databases, with attached engine name contains
-        databases = rm.databases.get_many(attached_engine_name_contains=engine_name)
-        assert len(databases) > 0
-        assert database_name in {db.name for db in databases}
-    else:
-        with raises(ValueError):
-            rm.databases.get_many(attached_engine_name_eq=engine_name)
-
-        with raises(ValueError):
-            rm.databases.get_many(attached_engine_name_contains=engine_name)
+    with raises(ValueError):
+        rm.databases.get_many(attached_engine_name_contains=engine_name)
 
     region = [db for db in databases if db.name == database_name][0].region
 

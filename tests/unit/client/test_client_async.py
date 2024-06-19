@@ -101,7 +101,6 @@ async def test_client_account_id(
     account_id: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
-    account_version: int,
     auth_url: str,
     auth_callback: Callable,
     api_endpoint: str,
@@ -116,9 +115,7 @@ async def test_client_account_id(
         api_endpoint=api_endpoint,
     ) as c:
         assert await c.account_id == account_id, "Invalid account id returned."
-        assert (
-            await c._account_version == account_version
-        ), "Invalid account version returned"
+        assert await c._account_version == 2, "Invalid account version returned"
 
 
 async def test_concurent_auth_lock(

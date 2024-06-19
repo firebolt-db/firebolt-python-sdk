@@ -95,7 +95,6 @@ def test_client_account_id(
     account_id: str,
     account_id_url: Pattern,
     account_id_callback: Callable,
-    account_version: int,
     auth_url: str,
     auth_callback: Callable,
     api_endpoint: str,
@@ -110,9 +109,7 @@ def test_client_account_id(
         api_endpoint=api_endpoint,
     ) as cursor:
         assert cursor.account_id == account_id, "Invalid account id returned"
-        assert (
-            cursor._account_version == account_version
-        ), "Invalid account version returned"
+        assert cursor._account_version == 2, "Invalid account version returned"
 
 
 # FIR-14945
