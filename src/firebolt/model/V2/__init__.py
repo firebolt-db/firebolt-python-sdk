@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass, field, fields
-from typing import ClassVar, Dict, Optional, Type, TypeVar
+from typing import ClassVar, Dict, Iterable, Optional, Type, TypeVar
 
 from firebolt.service.V2.base import BaseService
 
@@ -15,9 +15,14 @@ class FireboltBaseModel:
     def _get_field_overrides(cls) -> Dict[str, str]:
         """Create a mapping of db field name to class name where they are different."""
         return {
-            f.metadata["db_name"]: f.name
+            override: f.name
             for f in fields(cls)
             if "db_name" in f.metadata
+            for override in (
+                [f.metadata["db_name"]]
+                if isinstance(f.metadata["db_name"], str)
+                else f.metadata["db_name"]
+            )
         }
 
     @classmethod

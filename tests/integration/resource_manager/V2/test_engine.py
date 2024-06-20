@@ -54,10 +54,11 @@ def test_create_start_stop_engine(
 
 ParamValue = namedtuple("ParamValue", "set expected")
 
+# we don't include auto_stop since it cannot be
+# simultaneously updated with spec and scale
 ENGINE_UPDATE_PARAMS = {
     "scale": ParamValue(3, 3),
     "spec": ParamValue("S", "S"),
-    "auto_stop": ParamValue(123, 123),
 }
 
 
@@ -117,8 +118,7 @@ def test_engine_update_multiple_parameters(
         engine.attach_to_database(rm.databases.get(database_name))
         assert engine.database.name == database_name
 
-        # auto_stop cannot be simultaneously updated with spec and scale
-        params = {k: v.set for k, v in ENGINE_UPDATE_PARAMS.items() if k != "auto_stop"}
+        params = {k: v.set for k, v in ENGINE_UPDATE_PARAMS.items()}
         engine.update(**params)
 
         engine_new = rm.engines.get(name)

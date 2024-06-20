@@ -42,7 +42,9 @@ class Engine(FireboltBaseModel):
     spec: InstanceType = field(metadata={"db_name": "type"})
     scale: int = field(metadata={"db_name": "nodes"})
     current_status: EngineStatus = field(metadata={"db_name": "status"})
-    _database_name: str = field(repr=False, metadata={"db_name": "attached_to"})
+    _database_name: str = field(
+        repr=False, metadata={"db_name": ("attached_to", "default_database")}
+    )
     version: str = field()
     endpoint: str = field(metadata={"db_name": "url"})
     warmup: str = field()

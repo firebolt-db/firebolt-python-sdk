@@ -48,7 +48,7 @@ def test_system_engine(
             "Invalid data returned by fetchmany",
         )
 
-        if connection_system_engine.database:
+        if connection_system_engine.init_parameters.get("database"):
             c.execute("show tables")
             with raises(OperationalError) as e:
                 # Either one or another query fails if we're not on a user engine

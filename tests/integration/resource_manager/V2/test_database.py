@@ -43,9 +43,6 @@ def test_databases_get_many(
         "name_contains": database_name,
         "region_eq": region,
     }
-    if account_version == 1:
-        kwargs["attached_engine_name_eq"] = engine_name
-        kwargs["attached_engine_name_contains"] = engine_name
 
     databases = rm.databases.get_many(**kwargs)
     assert len(databases) > 0
