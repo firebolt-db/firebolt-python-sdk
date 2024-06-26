@@ -111,7 +111,10 @@ def get_objects_from_db_callback(objs: List[dataclass]) -> Callable:
         request: httpx.Request = None,
         **kwargs,
     ) -> Response:
-        fieldname = lambda f: (f.metadata or {}).get("db_name", f.name)
+        def fieldname(f):
+            db_name = (f.metadata or {}).get("db_name", f.name)
+            return db_name[-1] if isinstance(db_name, (list, tuple)) else db_name
+
         types = {
             "int": _InternalType.Long.value,
             "str": _InternalType.Text.value,
