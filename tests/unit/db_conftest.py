@@ -173,7 +173,9 @@ def query_callback_with_headers(
 
 @fixture
 def select_one_query_callback(
-    query_description: List[Column], query_data: List[List[ColType]]
+    query_description: List[Column],
+    query_data: List[List[ColType]],
+    query_statistics: Dict[str, Any],
 ) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         query_response = {
@@ -181,15 +183,7 @@ def select_one_query_callback(
             "data": [{"select 1": 1}],
             "rows": 1,
             # Real example of statistics field value, not used by our code
-            "statistics": {
-                "elapsed": 0.002983335,
-                "time_before_execution": 0.002729331,
-                "time_to_execute": 0.000215215,
-                "rows_read": 1,
-                "bytes_read": 1,
-                "scanned_bytes_cache": 0,
-                "scanned_bytes_storage": 0,
-            },
+            "statistics": query_statistics,
         }
         return Response(status_code=codes.OK, json=query_response)
 
@@ -240,112 +234,24 @@ def set_params() -> Dict:
 
 
 @fixture
-def query_url(server: str, db_name: str) -> str:
+def query_url(engine_url: str, db_name: str) -> URL:
     return URL(
-        f"https://{server}/",
+        f"https://{engine_url}/",
         params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name},
     )
 
 
 @fixture
-def query_url_updated(server: str, db_name_updated: str) -> str:
+def query_url_updated(engine_url: str, db_name_updated: str) -> URL:
     return URL(
-        f"https://{server}/",
+        f"https://{engine_url}/",
         params={"output_format": JSON_OUTPUT_FORMAT, "database": db_name_updated},
     )
 
 
 @fixture
-def set_query_url(server: str, db_name: str) -> str:
-    return URL(f"https://{server}/?database={db_name}")
-
-
-@fixture
-def query_with_params_url(query_url: str, set_params: str) -> str:
-    params_encoded = "&".join([f"{k}={encode_param(v)}" for k, v in set_params.items()])
-    query_url = f"{query_url}&{params_encoded}"
-
-
-def _get_engine_url_callback(
-    server: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
-) -> Callable:
-    def do_query(request: Request, **kwargs) -> Response:
-        set_parameters = request.url.params
-        assert (
-            len(set_parameters) == 3
-            and "output_format" in set_parameters
-            and "database" in set_parameters
-            and "account_id" in set_parameters
-        )
-        data = [[server, db_name, status]]
-        query_response = {
-            "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
-            "data": data,
-            "rows": len(data),
-            "statistics": query_statistics,
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def get_engine_url_callback(
-    server: str, db_name: str, query_statistics: Dict[str, Any], status="Running"
-) -> Callable:
-    return _get_engine_url_callback(server, db_name, query_statistics)
-
-
-@fixture
-def get_engine_url_not_running_callback(
-    engine_name, db_name, query_statistics: Dict[str, Any]
-) -> Callable:
-    return _get_engine_url_callback(engine_name, db_name, query_statistics, "Stopped")
-
-
-@fixture(params=["Running", "RUNNING", "ENGINE_STATE_RUNNING"])
-def get_engine_url_callback_test_status(
-    server: str, db_name: str, query_statistics: Dict[str, Any], request: Any
-) -> Callable:
-    return _get_engine_url_callback(server, db_name, query_statistics, request.param)
-
-
-@fixture
-def get_engine_url_invalid_db_callback(
-    engine_name,
-    db_name,
-    query_statistics: Dict[str, Any],
-) -> Callable:
-    return _get_engine_url_callback(engine_name, "not_" + db_name, query_statistics)
-
-
-def _get_default_db_engine_callback(
-    server: str, query_statistics: Dict[str, Any], status="Running"
-) -> Callable:
-    def do_query(request: Request, **kwargs) -> Response:
-        set_parameters = request.url.params
-        assert len(set_parameters) == 1 and "output_format" in set_parameters
-        data = [[server, status]]
-        query_response = {
-            "meta": [{"name": "name", "type": "Text"} for _ in range(len(data[0]))],
-            "data": data,
-            "rows": len(data),
-            # Real example of statistics field value, not used by our code
-            "statistics": query_statistics,
-        }
-        return Response(status_code=codes.OK, json=query_response)
-
-    return do_query
-
-
-@fixture
-def get_default_db_engine_callback(server: str) -> Callable:
-    return _get_default_db_engine_callback(server)
-
-
-@fixture
-def get_default_db_engine_not_running_callback(server: str) -> Callable:
-    return _get_default_db_engine_callback(server, "Failed")
+def set_query_url(engine_url: str, db_name: str) -> URL:
+    return URL(f"https://{engine_url}/?database={db_name}")
 
 
 @fixture
@@ -357,18 +263,18 @@ def system_engine_url() -> str:
 def system_engine_query_url(
     system_engine_url: str, db_name: str, account_id: str
 ) -> str:
-    return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}&account_id={account_id}"
+    return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}"
 
 
 @fixture
 def system_engine_no_db_query_url(system_engine_url: str, account_id: str) -> str:
-    return f"{system_engine_url}/?output_format=JSON_Compact&account_id={account_id}"
+    return f"{system_engine_url}/?output_format=JSON_Compact"
 
 
 @fixture
-def get_system_engine_url(server: str, account_name: str) -> str:
+def get_system_engine_url(api_endpoint: str, account_name: str) -> URL:
     return URL(
-        f"https://{server}"
+        f"https://{api_endpoint}"
         f"{GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)}"
     )
 
@@ -407,22 +313,118 @@ def get_system_engine_404_callback() -> Callable:
 
 
 @fixture
-def mock_connection_flow(
-    httpx_mock: HTTPXMock,
-    auth_url: str,
-    check_credentials_callback: Callable,
-    get_system_engine_url: str,
-    get_system_engine_callback: Callable,
-    system_engine_query_url: str,
-    get_engine_url_callback: Callable,
-    account_id_url: str,
-    account_id_callback: Callable,
+def use_database_callback(db_name: str, query_statistics: Dict[str, Any]) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        return Response(
+            status_code=codes.OK,
+            json=query_response,
+            headers={"Firebolt-Update-Parameters": f"database={db_name}"},
+        )
+
+    return inner
+
+
+@fixture
+def use_database_failed_callback(
+    db_name: str, query_statistics: Dict[str, Any]
 ) -> Callable:
-    def inner() -> None:
-        httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-        httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-        httpx_mock.add_callback(get_engine_url_callback, url=system_engine_query_url)
-        httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        return Response(
+            status_code=codes.INTERNAL_SERVER_ERROR,
+            content="use database failed",
+        )
+
+    return inner
+
+
+@fixture
+def use_engine_callback(engine_url: str, query_statistics: Dict[str, Any]) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        return Response(
+            status_code=codes.OK,
+            json=query_response,
+            headers={"Firebolt-Update-Endpoint": engine_url},
+        )
+
+    return inner
+
+
+@fixture
+def use_engine_with_account_id_callback(
+    engine_url: str, query_statistics: Dict[str, Any], account_id: int
+) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        return Response(
+            status_code=codes.OK,
+            json=query_response,
+            headers={
+                "Firebolt-Update-Endpoint": engine_url + f"?account_id={account_id}"
+            },
+        )
+
+    return inner
+
+
+@fixture
+def use_engine_failed_callback(
+    engine_url, db_name, query_statistics: Dict[str, Any]
+) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        return Response(
+            status_code=codes.INTERNAL_SERVER_ERROR,
+            content="Use engine failed",
+        )
 
     return inner
 
@@ -441,6 +443,34 @@ def mock_system_engine_connection_flow(
         httpx_mock.add_callback(check_credentials_callback, url=auth_url)
         httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
         httpx_mock.add_callback(account_id_callback, url=account_id_url)
+
+    return inner
+
+
+@fixture
+def mock_connection_flow(
+    httpx_mock: HTTPXMock,
+    mock_system_engine_connection_flow: Callable,
+    engine_name: str,
+    db_name: str,
+    use_database_callback: Callable,
+    use_engine_callback: Callable,
+    system_engine_no_db_query_url: str,
+    system_engine_query_url: str,
+) -> Callable:
+    def inner() -> None:
+        mock_system_engine_connection_flow()
+
+        httpx_mock.add_callback(
+            use_database_callback,
+            url=system_engine_no_db_query_url,
+            match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        )
+        httpx_mock.add_callback(
+            use_engine_callback,
+            url=system_engine_query_url,
+            match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        )
 
     return inner
 

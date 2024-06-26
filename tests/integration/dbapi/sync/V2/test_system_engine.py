@@ -1,7 +1,7 @@
 import re
 from typing import List
 
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.common._types import ColType, Column
 from firebolt.db import Connection
@@ -19,12 +19,8 @@ def test_system_engine(
     all_types_query_description: List[Column],
     all_types_query_system_engine_response: List[ColType],
     timezone_name: str,
-    account_version: int,
 ) -> None:
     """Connecting with engine name is handled properly."""
-    assert (
-        connection_system_engine._client._account_version == account_version
-    ), "Invalid account version"
     with connection_system_engine.cursor() as c:
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
@@ -52,7 +48,7 @@ def test_system_engine(
             "Invalid data returned by fetchmany",
         )
 
-        if connection_system_engine.database:
+        if connection_system_engine.init_parameters.get("database"):
             c.execute("show tables")
             with raises(OperationalError) as e:
                 # Either one or another query fails if we're not on a user engine
@@ -71,7 +67,6 @@ def test_system_engine_no_db(
     all_types_query_description: List[Column],
     all_types_query_system_engine_response: List[ColType],
     timezone_name: str,
-    account_version: int,
 ) -> None:
     """Connecting with engine name is handled properly."""
     test_system_engine(
@@ -80,22 +75,18 @@ def test_system_engine_no_db(
         all_types_query_description,
         all_types_query_system_engine_response,
         timezone_name,
-        account_version,
     )
 
 
-def test_system_engine_account(
-    connection_system_engine: Connection, account_version: int
-):
+def test_system_engine_account(connection_system_engine: Connection):
     assert (
         connection_system_engine._client.account_id
     ), "Can't get account id explicitly"
     assert (
-        connection_system_engine._client._account_version == account_version
+        connection_system_engine._client._account_version == 2
     ), "Invalid account version"
 
 
-@mark.account_v2
 def test_system_engine_use_engine(
     connection_system_engine: Connection, database_name: str, engine_name: str
 ):

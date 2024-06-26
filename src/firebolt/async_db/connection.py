@@ -15,22 +15,10 @@ from firebolt.common.cache import (
     _firebolt_account_info_cache,
     _firebolt_system_engine_cache,
 )
-from firebolt.common.constants import (
-    DEFAULT_TIMEOUT_SECONDS,
-    ENGINE_STATUS_RUNNING_LIST,
-)
-from firebolt.utils.exception import (
-    ConfigurationError,
-    ConnectionClosedError,
-    EngineNotRunningError,
-    InterfaceError,
-)
+from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.utils.exception import ConfigurationError, ConnectionClosedError
 from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import (
-    Timer,
-    fix_url_schema,
-    validate_engine_name_and_url_v1,
-)
+from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
 
 class Connection(BaseConnection):
@@ -65,7 +53,6 @@ class Connection(BaseConnection):
         "engine_url",
         "api_endpoint",
         "_is_closed",
-        "_system_engine_connection",
         "client_class",
         "cursor_type",
     )
@@ -76,19 +63,18 @@ class Connection(BaseConnection):
         database: Optional[str],
         client: AsyncClient,
         cursor_type: Type[Cursor],
-        system_engine_connection: Optional["Connection"],
         api_endpoint: str,
         init_parameters: Optional[Dict[str, Any]] = None,
     ):
         super().__init__()
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
-        self.database = database
         self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
-        self._system_engine_connection = system_engine_connection
         self._client = client
-        self.init_parameters = init_parameters
+        self.init_parameters = init_parameters or {}
+        if database:
+            self.init_parameters["database"] = database
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
@@ -119,9 +105,6 @@ class Connection(BaseConnection):
             c.close()
         await self._client.aclose()
         self._is_closed = True
-
-        if self._system_engine_connection:
-            await self._system_engine_connection.aclose()
 
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
@@ -221,89 +204,35 @@ async def connect_v2(
     client = AsyncClientV2(
         auth=auth,
         account_name=account_name,
-        base_url=system_engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
-    # Don't use context manager since this will be stored
-    # and used in a resulting connection
-    system_engine_connection = Connection(
+
+    async with Connection(
         system_engine_url,
-        database,
+        None,
         client,
         CursorV2,
-        None,
         api_endpoint,
         system_engine_params,
-    )
+    ) as system_engine_connection:
 
-    account_version = await system_engine_connection._client._account_version
-    if account_version == 2:
         cursor = system_engine_connection.cursor()
         if database:
             await cursor.execute(f'USE DATABASE "{database}"')
         if engine_name:
             await cursor.execute(f'USE ENGINE "{engine_name}"')
-        # Ensure cursors created from this conection are using the same starting
+        # Ensure cursors created from this connection are using the same starting
         # database and engine
         return Connection(
             cursor.engine_url,
             cursor.database,
-            client,
+            client.clone(),
             CursorV2,
-            system_engine_connection,
             api_endpoint,
             cursor.parameters,
         )
-
-    if not engine_name:
-        return system_engine_connection
-
-    else:
-        try:
-            cursor = system_engine_connection.cursor()
-            assert isinstance(cursor, CursorV2)  # Mypy check
-            with Timer("[PERFORMANCE] Resolving engine name "):
-                (
-                    engine_url,
-                    status,
-                    attached_db,
-                ) = await cursor._get_engine_url_status_db(engine_name)
-
-            if status not in ENGINE_STATUS_RUNNING_LIST:
-                raise EngineNotRunningError(engine_name)
-
-            if database is not None and database != attached_db:
-                raise InterfaceError(
-                    f"Engine {engine_name} is attached to {attached_db} "
-                    f"instead of {database}"
-                )
-            elif database is None:
-                database = attached_db
-
-            assert engine_url is not None
-
-            engine_url = fix_url_schema(engine_url)
-            client = AsyncClientV2(
-                auth=auth,
-                account_name=account_name,
-                base_url=engine_url,
-                api_endpoint=api_endpoint,
-                timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
-                headers={"User-Agent": user_agent_header},
-            )
-            return Connection(
-                engine_url,
-                database,
-                client,
-                CursorV2,
-                system_engine_connection,
-                api_endpoint,
-            )
-        except:  # noqa
-            await system_engine_connection.aclose()
-            raise
 
 
 async def connect_v1(
@@ -357,9 +286,8 @@ async def connect_v1(
     client = AsyncClientV1(
         auth=auth,
         account_name=account_name,
-        base_url=engine_url,
         api_endpoint=api_endpoint,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
-    return Connection(engine_url, database, client, CursorV1, None, api_endpoint)
+    return Connection(engine_url, database, client, CursorV1, api_endpoint)

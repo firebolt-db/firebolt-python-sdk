@@ -1,46 +1,21 @@
 from __future__ import annotations
 
-import functools
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    ClassVar,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import TYPE_CHECKING, ClassVar, Optional, Tuple, Union
 
 from firebolt.db import Connection, connect
 from firebolt.model.V2 import FireboltBaseModel
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.instance_type import InstanceType
-from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
-from firebolt.utils.exception import (
-    DatabaseNotFoundError,
-    NoAttachedDatabaseError,
-)
+from firebolt.service.V2.types import EngineStatus
+from firebolt.utils.exception import DatabaseNotFoundError
 
 if TYPE_CHECKING:
     from firebolt.service.V2.engine import EngineService
 
 logger = logging.getLogger(__name__)
-
-
-def check_attached_to_database(func: Callable) -> Callable:
-    """(Decorator) Ensure the engine is attached to a database."""
-
-    @functools.wraps(func)
-    def inner(self: Engine, *args: Any, **kwargs: Any) -> Any:
-        # this check is only relevant for account version 1
-        if self._service.client._account_version != 2 and self.database is None:
-            raise NoAttachedDatabaseError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
 
 
 @dataclass
@@ -53,21 +28,10 @@ class Engine(FireboltBaseModel):
     STOP_SQL: ClassVar[str] = 'STOP ENGINE "{}"'
     ALTER_PREFIX_SQL: ClassVar[str] = 'ALTER ENGINE "{}" SET '
     ALTER_PARAMETER_NAMES: ClassVar[Tuple] = (
-        "SCALE",
-        "SPEC",
-        "AUTO_STOP",
-        "RENAME_TO",
-        "WARMUP",
-        "ENGINE_TYPE",
-    )
-    ALTER_PARAMETER_NAMES_V2: ClassVar[Tuple] = (
         "NODES",
         "TYPE",
         "AUTO_STOP",
         "RENAME_TO",
-        # Empty strings for WARMUP and ENGINE_TYPE, since they are not supported in V2
-        "",
-        "",
     )
     DROP_SQL: ClassVar[str] = 'DROP ENGINE "{}"'
 
@@ -75,34 +39,26 @@ class Engine(FireboltBaseModel):
 
     name: str = field(metadata={"db_name": "engine_name"})
     region: str = field()
-    spec: Union[str, InstanceType] = field(metadata={"db_name": "type"})
+    spec: InstanceType = field(metadata={"db_name": "type"})
     scale: int = field(metadata={"db_name": "nodes"})
     current_status: EngineStatus = field(metadata={"db_name": "status"})
-    _database_name: str = field(repr=False, metadata={"db_name": "attached_to"})
+    _database_name: str = field(
+        repr=False, metadata={"db_name": ("attached_to", "default_database")}
+    )
     version: str = field()
     endpoint: str = field(metadata={"db_name": "url"})
-    warmup: WarmupMethod = field()
+    warmup: str = field()
     auto_stop: int = field()
-    type: EngineType = field(metadata={"db_name": "engine_type"})
+    type: str = field(metadata={"db_name": "engine_type"})
 
     def __post_init__(self) -> None:
         # Specs are just strings for accounts v2
-        if (
-            isinstance(self.spec, str)
-            and self.spec
-            and self._service.account_version == 1
-        ):
+        if isinstance(self.spec, str) and self.spec:
             # Resolve engine specification
-            self.spec = self._service.resource_manager.instance_types.get(self.spec)
+            self.spec = InstanceType(self.spec)
         if isinstance(self.current_status, str) and self.current_status:
             # Resolve engine status
             self.current_status = EngineStatus(self.current_status)
-        if isinstance(self.warmup, str) and self.warmup:
-            # Resolve warmup method
-            self.warmup = WarmupMethod.from_display_name(self.warmup)
-        if isinstance(self.type, str) and self.type:
-            # Resolve engine type
-            self.type = EngineType.from_display_name(self.type)
 
     @property
     def database(self) -> Optional[Database]:
@@ -130,7 +86,6 @@ class Engine(FireboltBaseModel):
         """
         self._service.attach_to_database(self, database)
 
-    @check_attached_to_database
     def get_connection(self) -> Connection:
         """Get a connection to the attached database for running queries.
 
@@ -141,7 +96,7 @@ class Engine(FireboltBaseModel):
         return connect(
             database=self._database_name,  # type: ignore # already checked by decorator
             # we always have firebolt Auth as a client auth
-            auth=self._service.client.auth,  # type: ignore
+            auth=self._service._connection._client.auth,  # type: ignore
             engine_name=self.name,
             account_name=self._service.resource_manager.account_name,
             api_endpoint=self._service.resource_manager.api_endpoint,
@@ -165,7 +120,6 @@ class Engine(FireboltBaseModel):
             logger.info(".[!n]")
             self.refresh()
 
-    @check_attached_to_database
     def start(self) -> Engine:
         """
         Start an engine. If it's already started, do nothing.
@@ -191,7 +145,6 @@ class Engine(FireboltBaseModel):
         self.refresh()
         return self
 
-    @check_attached_to_database
     def stop(self) -> Engine:
         """Stop an engine. If it's already stopped, do nothing.
 
@@ -217,23 +170,27 @@ class Engine(FireboltBaseModel):
     def update(
         self,
         name: Optional[str] = None,
-        engine_type: Union[EngineType, str, None] = None,
+        engine_type: Optional[str] = None,
         scale: Optional[int] = None,
         spec: Union[InstanceType, str, None] = None,
         auto_stop: Optional[int] = None,
-        warmup: Optional[WarmupMethod] = None,
+        warmup: Optional[str] = None,
     ) -> Engine:
         """
         Updates the engine and returns an updated version of the engine. If all
         parameters are set to None, old engine parameter values remain.
         """
-        self._service._validate_create_parameters(
-            name=name, scale=scale, spec=spec, auto_stop=auto_stop, warmup=warmup
-        )
+        disallowed = [
+            name
+            for name, value in (("engine_type", engine_type), ("warmup", warmup))
+            if value
+        ]
+        if disallowed:
+            raise ValueError(
+                f"Parameters {disallowed} are not supported for this account"
+            )
 
-        if not any(
-            x is not None for x in (name, scale, spec, auto_stop, warmup, engine_type)
-        ):
+        if not any(x is not None for x in (name, scale, spec, auto_stop)):
             # Nothing to be updated
             return self
 
@@ -247,14 +204,9 @@ class Engine(FireboltBaseModel):
 
         sql = self.ALTER_PREFIX_SQL.format(self.name)
         parameters = []
-        parameter_names = (
-            self.ALTER_PARAMETER_NAMES_V2
-            if self._service.client._account_version == 2
-            else self.ALTER_PARAMETER_NAMES
-        )
         for param, value in zip(
-            parameter_names,
-            (scale, spec, auto_stop, name, warmup, engine_type),
+            self.ALTER_PARAMETER_NAMES,
+            (scale, spec, auto_stop, name),
         ):
             if value is not None:
                 sql_part, new_params = self._service._format_engine_attribute_sql(

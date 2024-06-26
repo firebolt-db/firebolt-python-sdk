@@ -7,7 +7,7 @@ from httpx import Request
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
-from firebolt.client.auth import Auth, ClientCredentials, UsernamePassword
+from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2, _firebolt_account_info_cache
 from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.settings import Settings
@@ -24,14 +24,7 @@ from firebolt.utils.exception import (
     ProgrammingError,
     Warning,
 )
-from firebolt.utils.urls import (
-    ACCOUNT_BY_NAME_URL,
-    ACCOUNT_DATABASE_BY_NAME_URL,
-    ACCOUNT_ENGINE_URL,
-    AUTH_SERVICE_ACCOUNT_URL,
-    DATABASES_URL,
-    ENGINES_URL,
-)
+from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, AUTH_SERVICE_ACCOUNT_URL
 from tests.unit.db_conftest import *  # noqa
 from tests.unit.response import Response
 
@@ -67,17 +60,17 @@ def client_secret() -> str:
 
 
 @fixture
-def server_name() -> str:
+def env_name() -> str:
     return "api_dev"
 
 
 @fixture
-def server() -> str:
+def api_endpoint() -> str:
     return "api-dev.mock.firebolt.io"
 
 
 @fixture
-def auth_server() -> str:
+def auth_endpoint() -> str:
     return "id.mock.firebolt.io"
 
 
@@ -87,12 +80,7 @@ def account_id() -> str:
 
 
 @fixture
-def account_version_1() -> int:
-    return 1
-
-
-@fixture
-def account_version_2() -> int:
+def account_version() -> int:
     return 2
 
 
@@ -112,35 +100,20 @@ def access_token_2() -> str:
 
 
 @fixture
-def user() -> str:
-    return "mock_user"
-
-
-@fixture
-def password() -> str:
-    return "mock_password"
-
-
-@fixture
 def auth(client_id: str, client_secret: str) -> Auth:
     return ClientCredentials(client_id, client_secret)
 
 
 @fixture
-def username_password_auth(user: str, password: str) -> Auth:
-    return UsernamePassword(user, password)
-
-
-@fixture
 def client(
-    server: str,
+    api_endpoint: str,
     account_name: str,
     auth: Auth,
 ) -> ClientV2:
     return ClientV2(
         account_name=account_name,
         auth=auth,
-        api_endpoint=server,
+        api_endpoint=api_endpoint,
     )
 
 
@@ -160,8 +133,8 @@ def auth_callback(auth_url: str) -> Callable:
 
 
 @fixture
-def auth_url(auth_server: str) -> str:
-    return f"https://{auth_server}{AUTH_SERVICE_ACCOUNT_URL}"
+def auth_url(auth_endpoint) -> str:
+    return f"https://{auth_endpoint}{AUTH_SERVICE_ACCOUNT_URL}"
 
 
 @fixture
@@ -175,9 +148,9 @@ def db_name_updated() -> str:
 
 
 @fixture
-def account_id_url(server: str, account_name: str) -> Pattern:
+def account_id_url(api_endpoint: str, account_name: str) -> Pattern:
     account_name_re = r"[^\\\\]*"
-    base = f"https://{server}{ACCOUNT_BY_NAME_URL}"
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     base = base.format(account_name=account_name_re)
     return compile(base)
@@ -186,7 +159,6 @@ def account_id_url(server: str, account_name: str) -> Pattern:
 @fixture
 def account_id_callback(
     account_id: str,
-    account_version_1: int,
     account_name: str,
 ) -> Callable:
     def do_mock(
@@ -197,27 +169,7 @@ def account_id_callback(
             raise AccountNotFoundError(request.url.path.split("/")[-2])
         return Response(
             status_code=httpx.codes.OK,
-            json={"id": account_id, "infraVersion": account_version_1},
-        )
-
-    return do_mock
-
-
-@fixture
-def account_id_v2_callback(
-    account_id: str,
-    account_version_2: int,
-    account_name: str,
-) -> Callable:
-    def do_mock(
-        request: Request,
-        **kwargs,
-    ) -> Response:
-        if request.url.path.split("/")[-2] != account_name:
-            raise AccountNotFoundError(request.url.path.split("/")[-2])
-        return Response(
-            status_code=httpx.codes.OK,
-            json={"id": account_id, "infraVersion": account_version_2},
+            json={"id": account_id, "infraVersion": 2},
         )
 
     return do_mock
@@ -235,16 +187,6 @@ def account_id_invalid_callback() -> Callable:
 
 
 @fixture
-def engine_id() -> str:
-    return "mock_engine_id"
-
-
-@fixture
-def engine_endpoint() -> str:
-    return "mock_engine_endpoint"
-
-
-@fixture
 def engine_name() -> str:
     return "mock_engine_name"
 
@@ -252,56 +194,6 @@ def engine_name() -> str:
 @fixture
 def engine_url(engine_name: str) -> str:
     return f"{engine_name}.mock.firebolt.io"
-
-
-@fixture
-def get_engine_name_by_id_url(server: str, account_id: str, engine_id: str) -> str:
-    return f"https://{server}" + ACCOUNT_ENGINE_URL.format(
-        account_id=account_id, engine_id=engine_id
-    )
-
-
-@fixture
-def get_engines_url(server: str) -> str:
-    return f"https://{server}{ENGINES_URL}"
-
-
-@fixture
-def get_databases_url(server: str) -> str:
-    return f"https://{server}{DATABASES_URL}"
-
-
-@fixture
-def database_id() -> str:
-    return "database_id"
-
-
-@fixture
-def database_by_name_url(server: str, account_id: str, db_name: str) -> str:
-    return (
-        f"https://{server}"
-        f"{ACCOUNT_DATABASE_BY_NAME_URL.format(account_id=account_id)}"
-        f"?database_name={db_name}"
-    )
-
-
-@fixture
-def database_by_name_callback(account_id: str, database_id: str) -> str:
-    def do_mock(
-        request: Request = None,
-        **kwargs,
-    ) -> Response:
-        return Response(
-            status_code=httpx.codes.OK,
-            json={
-                "database_id": {
-                    "database_id": database_id,
-                    "account_id": account_id,
-                }
-            },
-        )
-
-    return do_mock
 
 
 @fixture
@@ -372,10 +264,13 @@ def region_string() -> str:
 
 @fixture
 def settings(
-    server: str, region_string: str, username_password_auth: Auth, account_name: str
+    api_endpoint: str,
+    region_string: str,
+    username_password_auth: Auth,
+    account_name: str,
 ) -> Settings:
     seett = Settings(
-        server=server,
+        server=api_endpoint,
         auth=username_password_auth,
         default_region=region_string,
         account_name=account_name,

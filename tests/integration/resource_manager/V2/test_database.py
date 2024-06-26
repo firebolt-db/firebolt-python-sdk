@@ -1,39 +1,7 @@
-from pytest import mark, raises
+from pytest import raises
 
 from firebolt.client.auth import Auth
 from firebolt.service.manager import ResourceManager
-
-
-@mark.account_v1
-def test_database_get_default_engine(
-    auth: Auth,
-    account_name: str,
-    api_endpoint: str,
-    database_name: str,
-    stopped_engine_name: str,
-    engine_name: str,
-    single_param_engine_name: str,
-    start_stop_engine_name: str,
-    multi_param_engine_name: str,
-):
-    """
-    Checks that the default engine is either running or stopped engine
-    """
-    rm = ResourceManager(
-        auth=auth, account_name=account_name, api_endpoint=api_endpoint
-    )
-
-    db = rm.databases.get(database_name)
-
-    engine = db.get_attached_engines()[0]
-    assert engine is not None, "engine is None, but shouldn't be"
-    assert engine.name in [
-        stopped_engine_name,
-        engine_name,
-        single_param_engine_name,
-        start_stop_engine_name,
-        multi_param_engine_name,
-    ], "Returned default engine name is neither of known engines"
 
 
 def test_databases_get_many(
@@ -42,7 +10,6 @@ def test_databases_get_many(
     api_endpoint: str,
     database_name: str,
     engine_name: str,
-    account_version: str,
 ):
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
@@ -58,22 +25,11 @@ def test_databases_get_many(
     assert len(databases) > 0
     assert database_name in {db.name for db in databases}
 
-    if account_version == 1:
-        # get all databases, with attached engine name equals
-        databases = rm.databases.get_many(attached_engine_name_eq=engine_name)
-        assert len(databases) > 0
-        assert database_name in {db.name for db in databases}
+    with raises(ValueError):
+        rm.databases.get_many(attached_engine_name_eq=engine_name)
 
-        # get all databases, with attached engine name contains
-        databases = rm.databases.get_many(attached_engine_name_contains=engine_name)
-        assert len(databases) > 0
-        assert database_name in {db.name for db in databases}
-    else:
-        with raises(ValueError):
-            rm.databases.get_many(attached_engine_name_eq=engine_name)
-
-        with raises(ValueError):
-            rm.databases.get_many(attached_engine_name_contains=engine_name)
+    with raises(ValueError):
+        rm.databases.get_many(attached_engine_name_contains=engine_name)
 
     region = [db for db in databases if db.name == database_name][0].region
 
@@ -87,9 +43,6 @@ def test_databases_get_many(
         "name_contains": database_name,
         "region_eq": region,
     }
-    if account_version == 1:
-        kwargs["attached_engine_name_eq"] = engine_name
-        kwargs["attached_engine_name_contains"] = engine_name
 
     databases = rm.databases.get_many(**kwargs)
     assert len(databases) > 0

@@ -4,9 +4,7 @@ from firebolt.client.auth import ClientCredentials
 from firebolt.db import Connection, connect
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
-    EngineNotRunningError,
     FireboltDatabaseError,
-    FireboltEngineError,
     FireboltStructuredError,
     OperationalError,
 )
@@ -63,34 +61,12 @@ def test_engine_name_not_exists(
     auth: ClientCredentials,
     account_name: str,
     api_endpoint: str,
-    account_version: int,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
-    error_cls = OperationalError if account_version == 2 else FireboltEngineError
-    with raises(error_cls):
+    with raises(OperationalError):
         with connect(
             account_name=account_name,
             engine_name=engine_name + "_________",
-            database=database_name,
-            auth=auth,
-            api_endpoint=api_endpoint,
-        ) as connection:
-            connection.cursor().execute("show tables")
-
-
-@mark.account_v1
-def test_engine_stopped(
-    stopped_engine_name: str,
-    database_name: str,
-    auth: ClientCredentials,
-    account_name: str,
-    api_endpoint: str,
-) -> None:
-    """Connection properly reacts to engine not running error."""
-    with raises(EngineNotRunningError):
-        with connect(
-            account_name=account_name,
-            engine_name=stopped_engine_name,
             database=database_name,
             auth=auth,
             api_endpoint=api_endpoint,

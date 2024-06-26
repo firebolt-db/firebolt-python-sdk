@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple, Union
 from firebolt.model.V2.engine import Database, Engine
 from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.V2.base import BaseService
-from firebolt.service.V2.types import EngineStatus, EngineType, WarmupMethod
+from firebolt.service.V2.types import EngineStatus
 from firebolt.utils.exception import EngineNotFoundError
 
 logger = getLogger(__name__)
@@ -14,24 +14,10 @@ class EngineService(BaseService):
     DB_FIELDS = (
         "engine_name",
         "region",
-        "spec",
-        "scale",
-        "status",
-        "attached_to",
-        "version",
-        "url",
-        "warmup",
-        "auto_stop",
-        "engine_type",
-    )
-
-    DB_FIELDS_V2 = (
-        "engine_name",
-        "region",
         "type",
         "nodes",
         "status",
-        "attached_to",
+        "default_database",
         "version",
         "url",
         "warmup",
@@ -46,16 +32,8 @@ class EngineService(BaseService):
     CREATE_PREFIX_SQL = 'CREATE ENGINE {}"{}"'
     IF_NOT_EXISTS_SQL = "IF NOT EXISTS "
     CREATE_WITH_SQL = " WITH "
-    CREATE_PARAMETER_NAMES = (
-        "REGION",
-        "ENGINE_TYPE",
-        "SPEC",
-        "SCALE",
-        "AUTO_STOP",
-        "WARMUP",
-    )
 
-    CREATE_PARAMETER_NAMES_V2 = (
+    CREATE_PARAMETER_NAMES = (
         "",
         "",
         "TYPE",
@@ -64,21 +42,16 @@ class EngineService(BaseService):
         "",
     )
 
-    ATTACH_TO_DB_SQL = 'ATTACH ENGINE "{}" TO "{}"'
-    ATTACH_TO_DB_SQL_V2 = 'ALTER ENGINE "{}" SET DEFAULT_DATABASE="{}"'
+    ATTACH_TO_DB_SQL = 'ALTER ENGINE "{}" SET DEFAULT_DATABASE="{}"'
     DISALLOWED_ACCOUNT_V2_PARAMETERS = [
         "region",
         "engine_type",
         "warmup",
     ]
 
-    @property
-    def _db_fields(self) -> List[str]:
-        return list(self.DB_FIELDS_V2 if self.account_version == 2 else self.DB_FIELDS)
-
     def _get_dict(self, name: str) -> dict:
         with self._connection.cursor() as c:
-            sql = self.GET_BY_NAME_SQL.format(", ".join(self._db_fields))
+            sql = self.GET_BY_NAME_SQL.format(", ".join(self.DB_FIELDS))
             count = c.execute(sql, (name,))
             if count == 0:
                 raise EngineNotFoundError(name)
@@ -113,14 +86,19 @@ class EngineService(BaseService):
         Returns:
             A list of engines matching the filters
         """
-        sql = self.GET_SQL.format(", ".join(self._db_fields))
+
+        if region_eq:
+            raise ValueError(
+                "Parameter 'region_eq' is not supported in this version of Firebolt."
+            )
+
+        sql = self.GET_SQL.format(", ".join(self.DB_FIELDS))
         parameters = []
         if any(
             (
                 name_contains,
                 current_status_eq,
                 current_status_not_eq,
-                region_eq,
                 database_name,
             )
         ):
@@ -134,11 +112,8 @@ class EngineService(BaseService):
             if current_status_not_eq:
                 condition.append("status != ?")
                 parameters.append(str(current_status_eq))
-            if region_eq:
-                condition.append("region = ?")
-                parameters.append(region_eq)
             if database_name:
-                condition.append("attached_to = ?")
+                condition.append("default_database = ?")
                 parameters.append(database_name)
             sql += self.GET_WHERE_SQL + " AND ".join(condition)
 
@@ -152,37 +127,16 @@ class EngineService(BaseService):
 
     @staticmethod
     def _format_engine_parameter(
-        value: Union[str, int, EngineType, InstanceType, WarmupMethod]
+        value: Union[str, int, InstanceType]
     ) -> Union[str, int]:
-        if not isinstance(
-            value, (str, int, EngineType, InstanceType, WarmupMethod)
-        ) or isinstance(value, bool):
+        if not isinstance(value, (str, int, InstanceType)) or isinstance(value, bool):
             raise TypeError(f"Unsupported type {type(value)} for engine parameter. ")
         if isinstance(value, InstanceType):
             return value.name
-        if isinstance(value, (EngineType, WarmupMethod)):
-            return str(value.value)
         return value
 
-    def _validate_create_parameters(
-        self,
-        **create_parameters: Union[
-            str, int, EngineType, InstanceType, WarmupMethod, None
-        ],
-    ) -> None:
-        if self.client._account_version == 2:
-            bad_parameters = [
-                name
-                for name in self.DISALLOWED_ACCOUNT_V2_PARAMETERS
-                if create_parameters.get(name) is not None
-            ]
-            if bad_parameters:
-                raise ValueError(
-                    f"Parameters {bad_parameters} are not supported for this account"
-                )
-
     def _format_engine_attribute_sql(
-        self, param: str, value: Union[str, int, EngineType, InstanceType, WarmupMethod]
+        self, param: str, value: Union[str, int, InstanceType]
     ) -> Tuple[str, List]:
         """Format an engine attribute for use in a SQL query.
 
@@ -202,11 +156,11 @@ class EngineService(BaseService):
         self,
         name: str,
         region: Optional[str] = None,
-        engine_type: Union[str, EngineType, None] = None,
+        engine_type: Optional[str] = None,
         spec: Union[InstanceType, str, None] = None,
         scale: Optional[int] = None,
         auto_stop: Optional[int] = None,
-        warmup: Union[str, WarmupMethod, None] = None,
+        warmup: Optional[str] = None,
         fail_if_exists: bool = True,
     ) -> Engine:
         """
@@ -238,30 +192,28 @@ class EngineService(BaseService):
 
         logger.info(f"Creating engine {name}")
 
-        self._validate_create_parameters(
-            region=region,
-            engine_type=engine_type,
-            spec=spec,
-            scale=scale,
-            auto_stop=auto_stop,
-            warmup=warmup,
-        )
+        disallowed_parameters = [
+            name
+            for name, value in (
+                ("region", region),
+                ("engine_type", engine_type),
+                ("warmup", warmup),
+            )
+            if value
+        ]
+        if disallowed_parameters:
+            raise ValueError(
+                f"Parameters {disallowed_parameters} are not supported for this account"
+            )
 
         sql = self.CREATE_PREFIX_SQL.format(
             ("" if fail_if_exists else self.IF_NOT_EXISTS_SQL), name
         )
         parameters = []
-        parameter_names = (
-            self.CREATE_PARAMETER_NAMES_V2
-            if self.client._account_version == 2
-            else self.CREATE_PARAMETER_NAMES
-        )
-        if any(
-            x is not None for x in (region, engine_type, spec, scale, auto_stop, warmup)
-        ):
+        if any(x is not None for x in (spec, scale, auto_stop)):
             sql += self.CREATE_WITH_SQL
             for param, value in zip(
-                parameter_names,
+                self.CREATE_PARAMETER_NAMES,
                 (region, engine_type, spec, scale, auto_stop, warmup),
             ):
                 if value is not None:
@@ -279,13 +231,8 @@ class EngineService(BaseService):
     ) -> None:
         engine_name = engine.name if isinstance(engine, Engine) else engine
         database_name = database.name if isinstance(database, Database) else database
-        sql_template = (
-            self.ATTACH_TO_DB_SQL_V2
-            if self.client._account_version == 2
-            else self.ATTACH_TO_DB_SQL
-        )
         with self._connection.cursor() as c:
-            c.execute(sql_template.format(engine_name, database_name))
+            c.execute(self.ATTACH_TO_DB_SQL.format(engine_name, database_name))
         if isinstance(engine, Engine):
             engine._database_name = (
                 database.name if isinstance(database, Database) else database

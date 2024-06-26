@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from abc import ABCMeta, abstractmethod
 from typing import (
@@ -39,11 +40,9 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.common.constants import ENGINE_STATUS_RUNNING_LIST
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
-    FireboltEngineError,
     OperationalError,
     ProgrammingError,
 )
@@ -81,8 +80,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
-        if connection.database:
-            self.database = connection.database
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
@@ -148,7 +145,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 )
             self._update_set_parameters(params)
             self.engine_url = endpoint
-            self._client.base_url = URL(endpoint)
 
         if headers.get(RESET_SESSION_HEADER):
             self.flush_parameters()
@@ -334,12 +330,8 @@ class CursorV2(Cursor):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        # Engines v2 will have account context in the URL
-        if self.connection._is_system and self._client._account_version == 1:
-            assert isinstance(self._client, ClientV2)  # Type check
-            parameters["account_id"] = self._client.account_id
         return self._client.request(
-            url=f"/{path}" if path else "",
+            url=os.path.join(self.engine_url, path or ""),
             method="POST",
             params=parameters,
             content=query,
@@ -353,17 +345,9 @@ class CursorV2(Cursor):
             connection (firebolt.db.connection.Connection)
             database_name (str): Name of a database
         """
-        system_engine = self.connection._system_engine_connection or self.connection
-        with system_engine.cursor() as cursor:
-            return (
-                cursor.execute(
-                    """
-                    SELECT 1 FROM information_schema.databases WHERE database_name=?
-                    """,
-                    [database_name],
-                )
-                > 0
-            )
+        # For v2 accounts if we're connected it automatically
+        # means the database is available
+        return True
 
     def is_engine_running(self, engine_url: str) -> bool:
         """
@@ -374,34 +358,9 @@ class CursorV2(Cursor):
             engine_url (str): URL of the engine
         """
 
-        if self.connection._is_system:
-            # System engine is always running
-            return True
-
-        assert self.connection._system_engine_connection is not None  # Type check
-        _, status, _ = self._get_engine_url_status_db(
-            self.connection._system_engine_connection, self.engine_name
-        )
-        return status in ENGINE_STATUS_RUNNING_LIST
-
-    def _get_engine_url_status_db(
-        self, system_engine_connection: Connection, engine_name: str
-    ) -> Tuple[str, str, str]:
-        with system_engine_connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT url, attached_to, status FROM information_schema.engines
-                WHERE engine_name=?
-                """,
-                [engine_name],
-            )
-            row = cursor.fetchone()
-            if row is None:
-                raise FireboltEngineError(
-                    f"Engine with name {engine_name} doesn't exist"
-                )
-            engine_url, database, status = row
-            return str(engine_url), str(status), str(database)  # Mypy check
+        # For v2 accounts we don't have the engine context,
+        # so we can't check if it's running
+        return True
 
 
 class CursorV1(Cursor):
@@ -439,7 +398,7 @@ class CursorV1(Cursor):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         return self._client.request(
-            url=f"/{path}",
+            url=os.path.join(self.engine_url, path or ""),
             method="POST",
             params={
                 **(parameters or dict()),
