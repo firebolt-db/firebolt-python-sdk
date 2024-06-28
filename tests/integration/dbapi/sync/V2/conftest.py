@@ -81,7 +81,7 @@ def service_account_no_user(
 ) -> Tuple[str, Secret]:
     # function-level fixture so we need to make sa name is unique
     randomness = "".join(random.choices(string.ascii_letters + string.digits, k=2))
-    sa_account_name = f"{database_name}_sa_no_user_{randomness}"
+    sa_account_name = f"{database_name}_no_user_{randomness}"
     with connection_system_engine_no_db.cursor() as cursor:
         cursor.execute(
             f'CREATE SERVICE ACCOUNT "{sa_account_name}" '
