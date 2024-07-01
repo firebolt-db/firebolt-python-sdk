@@ -33,7 +33,7 @@ class Database(FireboltBaseModel):
     _service: DatabaseService = field(repr=False, compare=False)
 
     # required
-    name: str = field(metadata={"db_name": "database_name"})
+    name: str = field(metadata={"db_name": ("database_name", "catalog_name")})
     description: str = field()
     region: str = field()
     data_size_full: int = field(metadata={"db_name": "uncompressed_size"})

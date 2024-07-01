@@ -7,7 +7,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine
 from firebolt.service.manager import ResourceManager
-from firebolt.utils.exception import AttachedEngineInUseError
+from firebolt.utils.exception import AttachedEngineInUseError, OperationalError
 
 
 def test_database_create(
@@ -179,3 +179,30 @@ def test_database_update_with_attached_engine_in_use(
 
     with raises(AttachedEngineInUseError):
         mock_database.update(description="new description")
+
+
+def test_database_catalog_name(
+    httpx_mock: HTTPXMock,
+    select_one_query_callback: Callable,
+    system_engine_no_db_query_url: str,
+    resource_manager: ResourceManager,
+):
+    httpx_mock.add_callback(
+        select_one_query_callback, url=system_engine_no_db_query_url
+    )
+
+    assert resource_manager.databases.catalog_name == "catalog"
+
+
+def test_database_catalog_name_backup(
+    httpx_mock: HTTPXMock,
+    select_one_query_callback: Callable,
+    system_engine_no_db_query_url: str,
+    resource_manager: ResourceManager,
+):
+    def failure_callback(*args, **kwargs) -> Response:
+        raise OperationalError("Catalogs don't exist")
+
+    httpx_mock.add_callback(failure_callback, url=system_engine_no_db_query_url)
+
+    assert resource_manager.databases.catalog_name == "database"
