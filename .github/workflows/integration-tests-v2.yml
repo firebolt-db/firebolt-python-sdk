@@ -44,7 +44,7 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT }}
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1" --runslow  --alluredir=allure-results
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1" --junit-xml=report/junit.xml
 
       # Need to pull the pages branch in order to fetch the previous runs
       - name: Get Allure history
