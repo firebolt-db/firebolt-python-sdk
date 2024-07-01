@@ -1,28 +1,16 @@
 import logging
-from typing import List, Optional, Union
+from functools import cached_property
+from typing import List, Optional, Tuple, Union
 
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine
 from firebolt.service.V2.base import BaseService
-from firebolt.utils.exception import DatabaseNotFoundError
+from firebolt.utils.exception import DatabaseNotFoundError, OperationalError
 
 logger = logging.getLogger(__name__)
 
 
 class DatabaseService(BaseService):
-    DB_FIELDS = (
-        "database_name",
-        "description",
-        "region",
-        "uncompressed_size",
-        "compressed_size",
-        "attached_engines",
-        "created_on",
-        "created_by",
-        "errors",
-    )
-    GET_SQL = f"SELECT {', '.join(DB_FIELDS)} FROM information_schema.databases"
-    GET_BY_NAME_SQL = GET_SQL + " WHERE database_name=?"
     GET_WHERE_SQL = " WHERE "
 
     CREATE_PREFIX_SQL = 'CREATE DATABASE {}"{}"'
@@ -33,9 +21,44 @@ class DatabaseService(BaseService):
         "attached_engine_name_contains",
     ]
 
+    @cached_property
+    def catalog_name(self) -> str:
+        query = "SELECT count(*) FROM information_schema.catalogs"
+        with self._connection.cursor() as c:
+            try:
+                c.execute(query)
+            except OperationalError:
+                return "database"
+            return "catalog"
+
+    @cached_property
+    def db_fields(self) -> Tuple[str, ...]:
+        return (
+            f"{self.catalog_name}_name",
+            "description",
+            "region",
+            "uncompressed_size",
+            "compressed_size",
+            "attached_engines",
+            "created_on",
+            "created_by",
+            "errors",
+        )
+
+    @cached_property
+    def get_sql(self) -> str:
+        return (
+            f"SELECT {', '.join(self.db_fields)} "
+            f"FROM information_schema.{self.catalog_name}s"
+        )
+
+    @cached_property
+    def get_by_name_sql(self) -> str:
+        return self.get_sql + " WHERE database_name=?"
+
     def _get_dict(self, name: str) -> dict:
         with self._connection.cursor() as c:
-            count = c.execute(self.GET_BY_NAME_SQL, (name,))
+            count = c.execute(self.get_by_name_sql, (name,))
             if count == 0:
                 raise DatabaseNotFoundError(name)
             return {
@@ -69,7 +92,7 @@ class DatabaseService(BaseService):
         Returns:
             A list of databases matching the filters
         """
-        sql = self.GET_SQL
+        sql = self.get_sql
         parameters = []
         disallowed_parameters = [
             name
