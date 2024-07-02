@@ -31,19 +31,5 @@ def test_databases_get_many(
     with raises(ValueError):
         rm.databases.get_many(attached_engine_name_contains=engine_name)
 
-    region = [db for db in databases if db.name == database_name][0].region
-
-    # get all databases, with region_eq
-    databases = rm.databases.get_many(region_eq=region)
-    assert len(databases) > 0
-    assert database_name in {db.name for db in databases}
-
-    # get all databases, with all filters
-    kwargs = {
-        "name_contains": database_name,
-        "region_eq": region,
-    }
-
-    databases = rm.databases.get_many(**kwargs)
-    assert len(databases) > 0
-    assert database_name in {db.name for db in databases}
+    with raises(ValueError):
+        rm.databases.get_many(region_eq="us-west-2")
