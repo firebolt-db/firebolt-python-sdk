@@ -94,7 +94,6 @@ def test_attach_to_database(
     database_get_callback: Callable,
     attach_engine_to_db_callback: Callable,
     system_engine_no_db_query_url: str,
-    select_one_query_callback: Callable,
 ):
     httpx_mock.add_callback(database_get_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
