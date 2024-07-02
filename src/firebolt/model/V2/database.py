@@ -33,17 +33,10 @@ class Database(FireboltBaseModel):
     _service: DatabaseService = field(repr=False, compare=False)
 
     # required
-    name: str = field(metadata={"db_name": "database_name"})
+    name: str = field(metadata={"db_name": "catalog_name"})
     description: str = field()
-    region: str = field()
-    data_size_full: int = field(metadata={"db_name": "uncompressed_size"})
-    data_size_compressed: int = field(metadata={"db_name": "compressed_size"})
-    _attached_engine_names: str = field(
-        repr=False, metadata={"db_name": "attached_engines"}, compare=False
-    )
-    create_time: datetime = field(metadata={"db_name": "created_on"})
-    create_actor: str = field(metadata={"db_name": "created_by"})
-    _errors: str = field(repr=False, metadata={"db_name": "errors"})
+    create_time: datetime = field(metadata={"db_name": "created"})
+    create_actor: str = field(metadata={"db_name": "catalog_owner"})
 
     def get_attached_engines(self) -> List[Engine]:
         """Get a list of engines that are attached to this database."""

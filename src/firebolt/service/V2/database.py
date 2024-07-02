@@ -11,18 +11,13 @@ logger = logging.getLogger(__name__)
 
 class DatabaseService(BaseService):
     DB_FIELDS = (
-        "database_name",
+        "catalog_name",
         "description",
-        "region",
-        "uncompressed_size",
-        "compressed_size",
-        "attached_engines",
-        "created_on",
-        "created_by",
-        "errors",
+        "created",
+        "catalog_owner",
     )
-    GET_SQL = f"SELECT {', '.join(DB_FIELDS)} FROM information_schema.databases"
-    GET_BY_NAME_SQL = GET_SQL + " WHERE database_name=?"
+    GET_SQL = f"SELECT {', '.join(DB_FIELDS)} FROM information_schema.catalogs"
+    GET_BY_NAME_SQL = GET_SQL + " WHERE catalog_name=?"
     GET_WHERE_SQL = " WHERE "
 
     CREATE_PREFIX_SQL = 'CREATE DATABASE {}"{}"'
@@ -86,7 +81,7 @@ class DatabaseService(BaseService):
             )
 
         if name_contains:
-            sql += " WHERE database_name like ?"
+            sql += " WHERE catalog_name like ?"
             parameters.append(f"%{name_contains}%")
 
         with self._connection.cursor() as c:

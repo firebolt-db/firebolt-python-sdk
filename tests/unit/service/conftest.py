@@ -65,13 +65,8 @@ def mock_database(db_name: str) -> Database:
     return Database(
         name=db_name,
         description="mock_db_description",
-        region="",
-        data_size_full=0,
-        data_size_compressed=0,
         create_time=datetime.now().isoformat(),
         create_actor="",
-        _attached_engine_names="-",
-        _errors="",
         _service=None,
     )
 
@@ -81,13 +76,8 @@ def mock_database_2() -> Database:
     return Database(
         name="database2",
         description="completely different db",
-        region="",
-        data_size_full=0,
-        data_size_compressed=0,
         create_time=datetime.now().isoformat(),
         create_actor="",
-        _attached_engine_names="-",
-        _errors="",
         _service=None,
     )
 
