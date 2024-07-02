@@ -36,7 +36,6 @@ class DatabaseService(BaseService):
         return (
             f"{self.catalog_name}_name",
             "description",
-            "region",
             "uncompressed_size",
             "compressed_size",
             "attached_engines",
