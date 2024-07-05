@@ -99,9 +99,11 @@ def test_token_storage_json_broken(fs: FakeFilesystem):
     """
     settings = {"username": "username", "password": "password"}
 
-    data_dir = os.path.join(user_config_dir(), "firebolt")
+    data_dir = os.path.join(user_config_dir(), os.sep, "firebolt")
     fs.create_dir(data_dir)
-    fs.create_file(os.path.join(data_dir, "token.json"), contents="{Not a valid json")
+    fs.create_file(
+        os.path.join(data_dir, os.sep, "token.json"), contents="{Not a valid json"
+    )
 
     assert TokenSecureStorage(**settings).get_cached_token() is None
 

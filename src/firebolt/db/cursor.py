@@ -331,7 +331,7 @@ class CursorV2(Cursor):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         return self._client.request(
-            url=os.path.join(self.engine_url, path or ""),
+            url=os.path.join(self.engine_url, os.sep, path or ""),
             method="POST",
             params=parameters,
             content=query,
@@ -398,7 +398,7 @@ class CursorV1(Cursor):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         return self._client.request(
-            url=os.path.join(self.engine_url, path or ""),
+            url=os.path.join(self.engine_url, os.sep, path or ""),
             method="POST",
             params={
                 **(parameters or dict()),
