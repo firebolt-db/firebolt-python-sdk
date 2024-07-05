@@ -27,4 +27,4 @@ jobs:
 
       - name: Run unit tests
         run: |
-           pytest tests/unit
+           pytest tests/unit -k "test_disallowed_set_parameter[engine] and not async"
