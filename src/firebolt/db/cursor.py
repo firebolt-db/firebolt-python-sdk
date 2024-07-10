@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import os
 import time
 from abc import ABCMeta, abstractmethod
 from typing import (
@@ -14,6 +13,7 @@ from typing import (
     Tuple,
     Union,
 )
+from urllib.parse import urljoin
 
 from httpx import URL, Headers, Response, codes
 
@@ -331,7 +331,7 @@ class CursorV2(Cursor):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         return self._client.request(
-            url=os.path.join(self.engine_url, path or ""),
+            url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
             method="POST",
             params=parameters,
             content=query,
@@ -398,7 +398,7 @@ class CursorV1(Cursor):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         return self._client.request(
-            url=os.path.join(self.engine_url, path or ""),
+            url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
             method="POST",
             params={
                 **(parameters or dict()),
