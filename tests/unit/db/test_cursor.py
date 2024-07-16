@@ -724,3 +724,31 @@ def test_cursor_reset_session(
     assert len(cursor._set_parameters) == 0
     assert bool(cursor.engine_url) is True, "engine url is not set"
     assert bool(cursor.database) is True, "database is not set"
+
+
+@mark.xfail(reason="FIR-34595: sqlparse does not handle escape sequences correctly")
+def test_cursor_parse_escape_sequence_correctly(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_callback: Callable,
+    cursor: Cursor,
+):
+    """
+    Verify that the query is parsed correctly when it contains escape sequences.
+    \ should be propagated as is, not as an escape, '' becomes a single '.
+    """
+    query = r"SELECT ')\'');a';"
+    num_called = 0
+
+    def counter_callback(request: Request, **kwargs) -> Response:
+        nonlocal num_called
+        num_called += 1
+        assert request.read() == bytes(
+            query, "utf-8"
+        ), "Query was modified by the parser"
+        return query_callback(request, **kwargs)
+
+    httpx_mock.add_callback(counter_callback, url=query_url)
+
+    cursor.execute(query)
+    assert num_called == 1, "Query was not parsed correctly"
