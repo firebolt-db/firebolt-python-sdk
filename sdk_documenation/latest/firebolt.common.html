@@ -106,6 +106,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltDatabaseError"><code class="docutils literal notranslate"><span class="pre">FireboltDatabaseError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltEngineError"><code class="docutils literal notranslate"><span class="pre">FireboltEngineError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltError"><code class="docutils literal notranslate"><span class="pre">FireboltError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltStructuredError"><code class="docutils literal notranslate"><span class="pre">FireboltStructuredError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.FireboltStructuredError.message_template"><code class="docutils literal notranslate"><span class="pre">FireboltStructuredError.message_template</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.InstanceTypeNotFoundError"><code class="docutils literal notranslate"><span class="pre">InstanceTypeNotFoundError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.IntegrityError"><code class="docutils literal notranslate"><span class="pre">IntegrityError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.InterfaceError"><code class="docutils literal notranslate"><span class="pre">InterfaceError</span></code></a></li>
@@ -502,6 +506,18 @@ like division by zero, numeric value out of range, etc.</p>
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">FireboltError</span></span><a class="headerlink" href="#firebolt.utils.exception.FireboltError" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
 <p>Base class for all Firebolt errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.FireboltStructuredError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">FireboltStructuredError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.FireboltStructuredError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Base class for structured errors received in JSON body.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.FireboltStructuredError.message_template">
+<span class="sig-name descname"><span class="pre">message_template</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'{severity}{name}{code}{description}{at}{helpLink}'</span></em><a class="headerlink" href="#firebolt.utils.exception.FireboltStructuredError.message_template" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py exception">
