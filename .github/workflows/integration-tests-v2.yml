@@ -7,16 +7,28 @@ on:
         required: true
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
+    inputs:
+      engine-version:
+        description: 'Engine version to use for integration tests'
+        required: false
+        type: string
+        default: ''
+      token:
+        description: 'GitHub token if called from another workflow'
+        required: false
+        type: string
 
 jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          repository: 'firebolt-db/firebolt-python-sdk'
 
       - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: 3.8
 
@@ -33,6 +45,7 @@ jobs:
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           account: ${{ vars.FIREBOLT_ACCOUNT }}
           api-endpoint: "api.staging.firebolt.io"
+          engine-version: ${{ inputs.engine-version }}
 
       - name: Run integration tests
         env:
@@ -48,7 +61,7 @@ jobs:
 
       # Need to pull the pages branch in order to fetch the previous runs
       - name: Get Allure history
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         if: always()
         continue-on-error: true
         with:
@@ -59,7 +72,8 @@ jobs:
         uses: firebolt-db/action-allure-report@v1
         if: always()
         with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
+          github-key: ${{ inputs.token || secrets.GITHUB_TOKEN }}
           test-type: integration
           allure-dir: allure-results
           pages-branch: gh-pages
+          repository-name: python-sdk
