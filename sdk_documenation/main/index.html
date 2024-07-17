@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebolt-python-sdk &mdash; firebolt-python-sdk  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Connecting and running queries" href="Connecting_and_queries.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            firebolt-python-sdk
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="Connecting_and_queries.html">Connecting and querying</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Managing_resources.html">Managing resources</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.async_db.html">Async DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.common.html">Common</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.db.html">DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.service.html">Service</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">firebolt-python-sdk</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><strong>Firebolt-python-sdk</strong></li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="firebolt-python-sdk">
+<h1><strong>Firebolt-python-sdk</strong><a class="headerlink" href="#firebolt-python-sdk" title="Link to this heading"></a></h1>
+<p>The Firebolt Python SDK enables connecting to Firebolt, managing Firebolt resources and
+executing queries using a library of Python classes and functions.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Python version 3.8 or later along with the pip package installer. For more information,
+see the <a class="reference external" href="https://www.python.org/downloads/">Python</a> web page.</p></li>
+<li><p>A Firebolt account and login credentials.</p></li>
+</ul>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>Use pip to install the Firebolt Python SDK from the command line as shown in the example below:</p>
+<p><code class="docutils literal notranslate"><span class="pre">$</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">firebolt-sdk</span></code></p>
+<section id="optional-features">
+<h3>Optional features<a class="headerlink" href="#optional-features" title="Link to this heading"></a></h3>
+<p>By default, the Firebolt Python SDK uses the <code class="docutils literal notranslate"><span class="pre">datetime</span></code> module to parse date and datetime
+values. For large operations involving date and datetime values, the Python SDK can achieve
+faster results by using the <a class="reference external" href="https://pypi.org/project/ciso8601/">ciso8601</a> package,
+however this can cause installation issues in some cases.</p>
+<p>To install firebolt-python-sdk with <code class="docutils literal notranslate"><span class="pre">ciso8601</span></code> support, run <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;firebolt-sdk[ciso8601]&quot;</span></code>.</p>
+</section>
+<section id="release-notes">
+<h3>Release notes<a class="headerlink" href="#release-notes" title="Link to this heading"></a></h3>
+<p>For information about changes in the latest version of the Firebolt Python SDK, see the
+<a class="reference external" href="https://github.com/firebolt-db/firebolt-python-sdk/releases">release notes</a></p>
+</section>
+<section id="contributing">
+<h3>Contributing<a class="headerlink" href="#contributing" title="Link to this heading"></a></h3>
+<p>For procedures and requirements for contributing to this SDK, see the
+<a class="reference external" href="https://github.com/firebolt-db/firebolt-sdk/tree/main/CONTRIBUTING.MD">contributing</a>
+page on Github.</p>
+</section>
+<section id="license">
+<h3>License<a class="headerlink" href="#license" title="Link to this heading"></a></h3>
+<p>The Firebolt DB API is licensed under the
+<a class="reference external" href="https://github.com/firebolt-db/firebolt-sdk/tree/main/LICENSE">Apache License Version 2.0</a>
+software license.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This project is under active development.</p>
+</div>
+<hr class="docutils" />
+<section id="walkthroughs-and-examples">
+<h4>Walkthroughs and examples<a class="headerlink" href="#walkthroughs-and-examples" title="Link to this heading"></a></h4>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Connecting_and_queries.html">Connecting and querying</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Managing_resources.html">Managing resources</a></li>
+</ul>
+</div>
+</section>
+<section id="reference-documentation">
+<h4>Reference documentation<a class="headerlink" href="#reference-documentation" title="Link to this heading"></a></h4>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.async_db.html">Async DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.common.html">Common</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.db.html">DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.service.html">Service</a></li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h4>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+</ul>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Connecting_and_queries.html" class="btn btn-neutral float-right" title="Connecting and running queries" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Firebolt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
