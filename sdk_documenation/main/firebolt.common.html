@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Common &mdash; firebolt-python-sdk  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="db" href="firebolt.db.html" />
+    <link rel="prev" title="Client" href="firebolt.client.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            firebolt-python-sdk
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="Connecting_and_queries.html">Connecting and querying</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Managing_resources.html">Managing resources</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="firebolt.async_db.html">Async DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.client.html">Client</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Common</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.common.settings">Settings</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.common.settings.Settings"><code class="docutils literal notranslate"><span class="pre">Settings</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.common.settings.Settings.user"><code class="docutils literal notranslate"><span class="pre">Settings.user</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.common.settings.Settings.password"><code class="docutils literal notranslate"><span class="pre">Settings.password</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.common.settings.Settings.access_token"><code class="docutils literal notranslate"><span class="pre">Settings.access_token</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.common.settings.Settings.account_name"><code class="docutils literal notranslate"><span class="pre">Settings.account_name</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.common.settings.Settings.server"><code class="docutils literal notranslate"><span class="pre">Settings.server</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.common.settings.Settings.default_region"><code class="docutils literal notranslate"><span class="pre">Settings.default_region</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.common.settings.auth_from_env"><code class="docutils literal notranslate"><span class="pre">auth_from_env()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.common.settings.from_env"><code class="docutils literal notranslate"><span class="pre">from_env()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.utils.exception">Exception</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.AccountNotFoundError"><code class="docutils literal notranslate"><span class="pre">AccountNotFoundError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.AccountNotFoundError.account_name"><code class="docutils literal notranslate"><span class="pre">AccountNotFoundError.account_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.AccountNotFoundOrNoAccessError"><code class="docutils literal notranslate"><span class="pre">AccountNotFoundOrNoAccessError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.AccountNotFoundOrNoAccessError.account_name"><code class="docutils literal notranslate"><span class="pre">AccountNotFoundOrNoAccessError.account_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.AlreadyBoundError"><code class="docutils literal notranslate"><span class="pre">AlreadyBoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.AttachedEngineInUseError"><code class="docutils literal notranslate"><span class="pre">AttachedEngineInUseError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.AttachedEngineInUseError.method_name"><code class="docutils literal notranslate"><span class="pre">AttachedEngineInUseError.method_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.AuthenticationError"><code class="docutils literal notranslate"><span class="pre">AuthenticationError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.AuthenticationError.api_endpoint"><code class="docutils literal notranslate"><span class="pre">AuthenticationError.api_endpoint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.AuthenticationError.cause"><code class="docutils literal notranslate"><span class="pre">AuthenticationError.cause</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.AuthorizationError"><code class="docutils literal notranslate"><span class="pre">AuthorizationError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.AuthorizationError.cause"><code class="docutils literal notranslate"><span class="pre">AuthorizationError.cause</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.ConnectionClosedError"><code class="docutils literal notranslate"><span class="pre">ConnectionClosedError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.ConnectionError"><code class="docutils literal notranslate"><span class="pre">ConnectionError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.CursorClosedError"><code class="docutils literal notranslate"><span class="pre">CursorClosedError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.CursorClosedError.method_name"><code class="docutils literal notranslate"><span class="pre">CursorClosedError.method_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.CursorError"><code class="docutils literal notranslate"><span class="pre">CursorError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.DataError"><code class="docutils literal notranslate"><span class="pre">DataError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.DatabaseError"><code class="docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.DatabaseNotFoundError"><code class="docutils literal notranslate"><span class="pre">DatabaseNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.EngineNotFoundError"><code class="docutils literal notranslate"><span class="pre">EngineNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.EngineNotRunningError"><code class="docutils literal notranslate"><span class="pre">EngineNotRunningError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.Error"><code class="docutils literal notranslate"><span class="pre">Error</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltDatabaseError"><code class="docutils literal notranslate"><span class="pre">FireboltDatabaseError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltEngineError"><code class="docutils literal notranslate"><span class="pre">FireboltEngineError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltError"><code class="docutils literal notranslate"><span class="pre">FireboltError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.FireboltStructuredError"><code class="docutils literal notranslate"><span class="pre">FireboltStructuredError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.FireboltStructuredError.message_template"><code class="docutils literal notranslate"><span class="pre">FireboltStructuredError.message_template</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.InstanceTypeNotFoundError"><code class="docutils literal notranslate"><span class="pre">InstanceTypeNotFoundError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.IntegrityError"><code class="docutils literal notranslate"><span class="pre">IntegrityError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.InterfaceError"><code class="docutils literal notranslate"><span class="pre">InterfaceError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.InternalError"><code class="docutils literal notranslate"><span class="pre">InternalError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.NoAttachedDatabaseError"><code class="docutils literal notranslate"><span class="pre">NoAttachedDatabaseError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.NoAttachedDatabaseError.method_name"><code class="docutils literal notranslate"><span class="pre">NoAttachedDatabaseError.method_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.NotSupportedError"><code class="docutils literal notranslate"><span class="pre">NotSupportedError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.OperationalError"><code class="docutils literal notranslate"><span class="pre">OperationalError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.ProgrammingError"><code class="docutils literal notranslate"><span class="pre">ProgrammingError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.QueryNotRunError"><code class="docutils literal notranslate"><span class="pre">QueryNotRunError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.QueryNotRunError.method_name"><code class="docutils literal notranslate"><span class="pre">QueryNotRunError.method_name</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.Warning"><code class="docutils literal notranslate"><span class="pre">Warning</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.common.urls">URLs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.common.token_storage">Storage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#module-firebolt.common.util">Util</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.db.html">DB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.model.html">Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="firebolt.service.html">Service</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">firebolt-python-sdk</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Common</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/firebolt.common.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="common">
+<h1>Common<a class="headerlink" href="#common" title="Link to this heading"></a></h1>
+<p>The common package contains settings parameters and error exceptions.</p>
+<section id="module-firebolt.common.settings">
+<span id="settings"></span><h2>Settings<a class="headerlink" href="#module-firebolt.common.settings" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="firebolt.common.settings.Settings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.common.settings.</span></span><span class="sig-name descname"><span class="pre">Settings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">auth:</span> <span class="pre">~firebolt.client.auth.base.Auth</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">account_name:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">server:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_region:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.common.settings.Settings" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Settings for Firebolt SDK.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.common.settings.Settings.user">
+<span class="sig-name descname"><span class="pre">user</span></span><a class="headerlink" href="#firebolt.common.settings.Settings.user" title="Link to this definition"></a></dt>
+<dd><p>User name</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.common.settings.Settings.password">
+<span class="sig-name descname"><span class="pre">password</span></span><a class="headerlink" href="#firebolt.common.settings.Settings.password" title="Link to this definition"></a></dt>
+<dd><p>User password</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.common.settings.Settings.access_token">
+<span class="sig-name descname"><span class="pre">access_token</span></span><a class="headerlink" href="#firebolt.common.settings.Settings.access_token" title="Link to this definition"></a></dt>
+<dd><p>Access token to use for authentication
+Mutually exclusive with user and password</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.common.settings.Settings.account_name">
+<span class="sig-name descname"><span class="pre">account_name</span></span><a class="headerlink" href="#firebolt.common.settings.Settings.account_name" title="Link to this definition"></a></dt>
+<dd><p>Account name
+Default user account is used if none provided</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.common.settings.Settings.server">
+<span class="sig-name descname"><span class="pre">server</span></span><a class="headerlink" href="#firebolt.common.settings.Settings.server" title="Link to this definition"></a></dt>
+<dd><p>Environment api endpoint (Advanced)
+Default api endpoint is used if none provided</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.common.settings.Settings.default_region">
+<span class="sig-name descname"><span class="pre">default_region</span></span><a class="headerlink" href="#firebolt.common.settings.Settings.default_region" title="Link to this definition"></a></dt>
+<dd><p>Default region for provisioning</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="firebolt.common.settings.auth_from_env">
+<span class="sig-prename descclassname"><span class="pre">firebolt.common.settings.</span></span><span class="sig-name descname"><span class="pre">auth_from_env</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Auth</span></span></span><a class="headerlink" href="#firebolt.common.settings.auth_from_env" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="firebolt.common.settings.from_env">
+<span class="sig-prename descclassname"><span class="pre">firebolt.common.settings.</span></span><span class="sig-name descname"><span class="pre">from_env</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">var_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Callable</span></span></span><a class="headerlink" href="#firebolt.common.settings.from_env" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-firebolt.utils.exception">
+<span id="exception"></span><h2>Exception<a class="headerlink" href="#module-firebolt.utils.exception" title="Link to this heading"></a></h2>
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AccountNotFoundError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">AccountNotFoundError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">account_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.AccountNotFoundError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Account with provided name doesn’t exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>account_name</strong> (<em>str</em>) – Name of account that wasn’t found</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AccountNotFoundError.account_name">
+<span class="sig-name descname"><span class="pre">account_name</span></span><a class="headerlink" href="#firebolt.utils.exception.AccountNotFoundError.account_name" title="Link to this definition"></a></dt>
+<dd><p>Name of account that wasn’t found</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AccountNotFoundOrNoAccessError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">AccountNotFoundOrNoAccessError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">account_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.AccountNotFoundOrNoAccessError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Account with provided name doesn’t exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>account_name</strong> (<em>str</em>) – Name of account that wasn’t found</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AccountNotFoundOrNoAccessError.account_name">
+<span class="sig-name descname"><span class="pre">account_name</span></span><a class="headerlink" href="#firebolt.utils.exception.AccountNotFoundOrNoAccessError.account_name" title="Link to this definition"></a></dt>
+<dd><p>Name of account that wasn’t found</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AlreadyBoundError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">AlreadyBoundError</span></span><a class="headerlink" href="#firebolt.utils.exception.AlreadyBoundError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltEngineError" title="firebolt.utils.exception.FireboltEngineError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltEngineError</span></code></a></p>
+<p>Engine is already bound to a database.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AttachedEngineInUseError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">AttachedEngineInUseError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.AttachedEngineInUseError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltDatabaseError" title="firebolt.utils.exception.FireboltDatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltDatabaseError</span></code></a></p>
+<p>Engine unavailable because it’s starting/stopping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method_name</strong> (<em>str</em>) – Method that caused the error</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AttachedEngineInUseError.method_name">
+<span class="sig-name descname"><span class="pre">method_name</span></span><a class="headerlink" href="#firebolt.utils.exception.AttachedEngineInUseError.method_name" title="Link to this definition"></a></dt>
+<dd><p>Method that caused the error</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AuthenticationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">AuthenticationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cause</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.AuthenticationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Firebolt authentication error.</p>
+<p>Stores error cause and authentication endpoint.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>api_endpoint</strong> (<em>str</em>) – Environment api endpoint used for authentication</p></li>
+<li><p><strong>cause</strong> (<em>str</em>) – Reason for authentication failure</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AuthenticationError.api_endpoint">
+<span class="sig-name descname"><span class="pre">api_endpoint</span></span><a class="headerlink" href="#firebolt.utils.exception.AuthenticationError.api_endpoint" title="Link to this definition"></a></dt>
+<dd><p>Environment api endpoint used for authentication</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AuthenticationError.cause">
+<span class="sig-name descname"><span class="pre">cause</span></span><a class="headerlink" href="#firebolt.utils.exception.AuthenticationError.cause" title="Link to this definition"></a></dt>
+<dd><p>Reason for authentication failure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AuthorizationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">AuthorizationError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cause</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.AuthorizationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Firebolt authentication error.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>cause</strong> (<em>str</em>) – Reason for authorization failure</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.AuthorizationError.cause">
+<span class="sig-name descname"><span class="pre">cause</span></span><a class="headerlink" href="#firebolt.utils.exception.AuthorizationError.cause" title="Link to this definition"></a></dt>
+<dd><p>Reason for authorization failure</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.ConfigurationError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">ConfigurationError</span></span><a class="headerlink" href="#firebolt.utils.exception.ConfigurationError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.InterfaceError" title="firebolt.utils.exception.InterfaceError"><code class="xref py py-class docutils literal notranslate"><span class="pre">InterfaceError</span></code></a></p>
+<p>Invalid configuration error.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.ConnectionClosedError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">ConnectionClosedError</span></span><a class="headerlink" href="#firebolt.utils.exception.ConnectionClosedError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.ConnectionError" title="firebolt.utils.exception.ConnectionError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConnectionError</span></code></a></p>
+<p>Connection operations are unavailable since it’s closed.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.ConnectionError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">ConnectionError</span></span><a class="headerlink" href="#firebolt.utils.exception.ConnectionError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Base class for connection related errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.CursorClosedError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">CursorClosedError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.CursorClosedError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.CursorError" title="firebolt.utils.exception.CursorError"><code class="xref py py-class docutils literal notranslate"><span class="pre">CursorError</span></code></a></p>
+<p>Cursor operations are unavailable since it’s closed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method_name</strong> (<em>str</em>) – Method that caused the error</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.CursorClosedError.method_name">
+<span class="sig-name descname"><span class="pre">method_name</span></span><a class="headerlink" href="#firebolt.utils.exception.CursorClosedError.method_name" title="Link to this definition"></a></dt>
+<dd><p>Method that caused the error</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.CursorError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">CursorError</span></span><a class="headerlink" href="#firebolt.utils.exception.CursorError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Base class for cursor related errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.DataError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">DataError</span></span><a class="headerlink" href="#firebolt.utils.exception.DataError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.DatabaseError" title="firebolt.utils.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></p>
+<p>Data processing error.</p>
+<p>Exception raised for errors that are due to problems with the processed data,
+like division by zero, numeric value out of range, etc.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.DatabaseError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">DatabaseError</span></span><a class="headerlink" href="#firebolt.utils.exception.DatabaseError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Exception raised for errors that are related to the database.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.DatabaseNotFoundError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">DatabaseNotFoundError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">database_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.DatabaseNotFoundError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Database with provided name was not found.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.EngineNotFoundError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">EngineNotFoundError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.EngineNotFoundError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltEngineError" title="firebolt.utils.exception.FireboltEngineError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltEngineError</span></code></a></p>
+<p>Engine with provided name was not found.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.EngineNotRunningError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">EngineNotRunningError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">engine_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.EngineNotRunningError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltEngineError" title="firebolt.utils.exception.FireboltEngineError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltEngineError</span></code></a></p>
+<p>Engine that’s being queried is not running.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.Error">
+<span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">Error</span></span><a class="headerlink" href="#firebolt.utils.exception.Error" title="Link to this definition"></a></dt>
+<dd><p>alias of <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.FireboltDatabaseError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">FireboltDatabaseError</span></span><a class="headerlink" href="#firebolt.utils.exception.FireboltDatabaseError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Base class for database related errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.FireboltEngineError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">FireboltEngineError</span></span><a class="headerlink" href="#firebolt.utils.exception.FireboltEngineError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Base class for engine related errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.FireboltError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">FireboltError</span></span><a class="headerlink" href="#firebolt.utils.exception.FireboltError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Base class for all Firebolt errors.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.FireboltStructuredError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">FireboltStructuredError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.FireboltStructuredError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Base class for structured errors received in JSON body.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.FireboltStructuredError.message_template">
+<span class="sig-name descname"><span class="pre">message_template</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'{severity}{name}{code}{description}{at}{helpLink}'</span></em><a class="headerlink" href="#firebolt.utils.exception.FireboltStructuredError.message_template" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.InstanceTypeNotFoundError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">InstanceTypeNotFoundError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">instance_type_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.InstanceTypeNotFoundError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Instance type with provided name was not found.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.IntegrityError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">IntegrityError</span></span><a class="headerlink" href="#firebolt.utils.exception.IntegrityError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.DatabaseError" title="firebolt.utils.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></p>
+<p>Database data integrity error.</p>
+<p>Exception raised when the relational integrity of the database is affected,
+e.g., a foreign key check fails.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.InterfaceError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">InterfaceError</span></span><a class="headerlink" href="#firebolt.utils.exception.InterfaceError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Database interface related error.</p>
+<p>Exception raised for errors that are related to the database interface
+rather than the database itself.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.InternalError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">InternalError</span></span><a class="headerlink" href="#firebolt.utils.exception.InternalError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.DatabaseError" title="firebolt.utils.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></p>
+<p>Database internal error.</p>
+<p>Exception raised when the database encounters an internal error,
+e.g., the cursor is not valid anymore, the transaction is out of sync, etc.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.NoAttachedDatabaseError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">NoAttachedDatabaseError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.NoAttachedDatabaseError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltEngineError" title="firebolt.utils.exception.FireboltEngineError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltEngineError</span></code></a></p>
+<p>Engine that’s being accessed is not running.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method_name</strong> (<em>str</em>) – Method that caused the error</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.NoAttachedDatabaseError.method_name">
+<span class="sig-name descname"><span class="pre">method_name</span></span><a class="headerlink" href="#firebolt.utils.exception.NoAttachedDatabaseError.method_name" title="Link to this definition"></a></dt>
+<dd><p>Method that caused the error</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.NotSupportedError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">NotSupportedError</span></span><a class="headerlink" href="#firebolt.utils.exception.NotSupportedError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.DatabaseError" title="firebolt.utils.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></p>
+<p>Operation not supported.</p>
+<p>Exception raised in case a method or database API was used which is not supported
+by the database, e.g., requesting a .rollback() on a connection that
+does not support transaction or has transactions turned off.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.OperationalError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">OperationalError</span></span><a class="headerlink" href="#firebolt.utils.exception.OperationalError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.DatabaseError" title="firebolt.utils.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></p>
+<p>Database operating error.</p>
+<p>Exception raised for errors that are related to the database’s operation
+and not necessarily under the control of the programmer, e.g., an unexpected
+disconnect occurs, the data source name is not found, a transaction could not
+be processed, a memory allocation error occurred during processing, etc.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.ProgrammingError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">ProgrammingError</span></span><a class="headerlink" href="#firebolt.utils.exception.ProgrammingError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.DatabaseError" title="firebolt.utils.exception.DatabaseError"><code class="xref py py-class docutils literal notranslate"><span class="pre">DatabaseError</span></code></a></p>
+<p>Database programming error.</p>
+<p>Exception raised for programming errors, e.g., table not found or already exists,
+syntax error in the SQL statement, wrong number of parameters specified, etc.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.QueryNotRunError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">QueryNotRunError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.QueryNotRunError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.CursorError" title="firebolt.utils.exception.CursorError"><code class="xref py py-class docutils literal notranslate"><span class="pre">CursorError</span></code></a></p>
+<p>Some cursor methods are unavailable before a query is run.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>method_name</strong> (<em>str</em>) – Method that caused the error</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.QueryNotRunError.method_name">
+<span class="sig-name descname"><span class="pre">method_name</span></span><a class="headerlink" href="#firebolt.utils.exception.QueryNotRunError.method_name" title="Link to this definition"></a></dt>
+<dd><p>Method that caused the error</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.Warning">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">Warning</span></span><a class="headerlink" href="#firebolt.utils.exception.Warning" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></p>
+<p>Base class for warning exceptions.</p>
+<p>Exception raised for important warnings, like data truncations while inserting, etc.</p>
+</dd></dl>
+
+</section>
+<section id="module-firebolt.common.urls">
+<span id="urls"></span><h2>URLs<a class="headerlink" href="#module-firebolt.common.urls" title="Link to this heading"></a></h2>
+</section>
+<section id="module-firebolt.common.token_storage">
+<span id="storage"></span><h2>Storage<a class="headerlink" href="#module-firebolt.common.token_storage" title="Link to this heading"></a></h2>
+</section>
+<section id="module-firebolt.common.util">
+<span id="util"></span><h2>Util<a class="headerlink" href="#module-firebolt.common.util" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="firebolt.client.html" class="btn btn-neutral float-left" title="Client" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="firebolt.db.html" class="btn btn-neutral float-right" title="db" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, Firebolt.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
