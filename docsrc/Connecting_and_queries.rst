@@ -410,7 +410,7 @@ SQL statements in the Firebolt UI.
 Asynchronous query execution
 ==========================================
 
-Not to be confused with :ref:`Server-side async`. Asynchronous Python SDK
+Asynchronous Python SDK
 functionality is used to write concurrent code. Unlike in a synchronous approach, when executing
 a query is a blocking operation, this approach allows doing other processing or queries while the
 original query is waiting on the network or the server to respond. This is especially useful when
