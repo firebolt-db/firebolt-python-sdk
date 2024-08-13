@@ -1,6 +1,6 @@
 from collections import namedtuple
 
-from pytest import mark
+from pytest import mark, raises
 
 from firebolt.client.auth import Auth
 from firebolt.service.manager import ResourceManager
@@ -156,6 +156,9 @@ def test_engine_rename(
     engine = rm.engines.create(name=name)
 
     try:
+        with raises(ValueError):
+            engine.update(name="name; drop database users")
+
         engine.update(name=new_name)
         assert engine.name == new_name
 

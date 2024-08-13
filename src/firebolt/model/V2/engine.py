@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, ClassVar, Optional, Tuple, Union
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Tuple, Union
 
 from firebolt.db import Connection, connect
 from firebolt.model.V2 import FireboltBaseModel
@@ -26,14 +27,15 @@ class Engine(FireboltBaseModel):
 
     START_SQL: ClassVar[str] = 'START ENGINE "{}"'
     STOP_SQL: ClassVar[str] = 'STOP ENGINE "{}"'
-    ALTER_PREFIX_SQL: ClassVar[str] = 'ALTER ENGINE "{}" SET '
+    ALTER_PREFIX_SQL: ClassVar[str] = 'ALTER ENGINE "{}" '
     ALTER_PARAMETER_NAMES: ClassVar[Tuple] = (
         "NODES",
         "TYPE",
         "AUTO_STOP",
-        "RENAME_TO",
     )
     DROP_SQL: ClassVar[str] = 'DROP ENGINE "{}"'
+
+    _engine_name_re = re.compile(r"^[a-zA-Z0-9_]+$")
 
     _service: EngineService = field(repr=False, compare=False)
 
@@ -69,11 +71,11 @@ class Engine(FireboltBaseModel):
                 pass
         return None
 
-    def refresh(self) -> None:
+    def refresh(self, name: Optional[str] = None) -> None:
         """Update attributes of the instance from Firebolt."""
         field_name_overrides = self._get_field_overrides()
-        for name, value in self._service._get_dict(self.name).items():
-            setattr(self, field_name_overrides.get(name, name), value)
+        for field_name, value in self._service._get_dict(name or self.name).items():
+            setattr(self, field_name_overrides.get(field_name, field_name), value)
 
         self.__post_init__()
 
@@ -194,6 +196,9 @@ class Engine(FireboltBaseModel):
             # Nothing to be updated
             return self
 
+        if name is not None and any(x is not None for x in (scale, spec, auto_stop)):
+            raise ValueError("Cannot update name and other parameters at the same time")
+
         self.refresh()
         self._wait_for_start_stop()
         if self.current_status in (EngineStatus.DROPPING, EngineStatus.REPAIRING):
@@ -203,21 +208,31 @@ class Engine(FireboltBaseModel):
             )
 
         sql = self.ALTER_PREFIX_SQL.format(self.name)
-        parameters = []
-        for param, value in zip(
-            self.ALTER_PARAMETER_NAMES,
-            (scale, spec, auto_stop, name),
-        ):
-            if value is not None:
-                sql_part, new_params = self._service._format_engine_attribute_sql(
-                    param, value
+        parameters: List[Union[str, int]] = []
+        if name is not None:
+            if not self._engine_name_re.match(name):
+                raise ValueError(
+                    f"Engine name {name} is invalid, "
+                    "it must only contain alphanumeric characters and underscores."
                 )
-                sql += sql_part
-                parameters.extend(new_params)
+            sql += f" RENAME TO {name}"
+        else:
+            sql += " SET "
+            parameters = []
+            for param, value in zip(
+                self.ALTER_PARAMETER_NAMES,
+                (scale, spec, auto_stop),
+            ):
+                if value is not None:
+                    sql_part, new_params = self._service._format_engine_attribute_sql(
+                        param, value
+                    )
+                    sql += sql_part
+                    parameters.extend(new_params)
 
         with self._service._connection.cursor() as c:
             c.execute(sql, parameters)
-        self.refresh()
+        self.refresh(name)
         return self
 
     def delete(self) -> None:
