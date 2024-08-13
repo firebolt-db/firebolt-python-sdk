@@ -35,6 +35,7 @@ class Engine(FireboltBaseModel):
     )
     DROP_SQL: ClassVar[str] = 'DROP ENGINE "{}"'
 
+    # Engine names can only contain alphanumeric characters and underscores
     _engine_name_re = re.compile(r"^[a-zA-Z0-9_]+$")
 
     _service: EngineService = field(repr=False, compare=False)
