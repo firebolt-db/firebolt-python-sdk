@@ -139,3 +139,28 @@ def test_engine_update_multiple_parameters(
     finally:
         engine.stop()
         engine.delete()
+
+
+def test_engine_rename(
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    database_name: str,
+    engine_name: str,
+):
+    rm = ResourceManager(
+        auth=auth, account_name=account_name, api_endpoint=api_endpoint
+    )
+    name = f"{engine_name}_to_rename"
+    new_name = f"{engine_name}_renamed"
+    engine = rm.engines.create(name=name)
+
+    try:
+        engine.update(name=new_name)
+        assert engine.name == new_name
+
+        new_engine = rm.engines.get(new_name)
+        assert new_engine.name == new_name
+    finally:
+        engine.stop()
+        engine.delete()
