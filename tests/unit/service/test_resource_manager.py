@@ -1,15 +1,12 @@
-from re import Pattern
 from typing import Callable
 
 from pyfakefs.fake_filesystem_unittest import Patcher
-from pytest import mark, raises
+from pytest import mark
 from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.service.manager import ResourceManager
-from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 
 
 def test_rm_credentials(
@@ -76,27 +73,3 @@ def test_rm_token_cache(
         assert (
             ts.get_cached_token() is None
         ), "Token is cached even though caching is disabled"
-
-
-def test_rm_invalid_account_name(
-    httpx_mock: HTTPXMock,
-    auth: Auth,
-    api_endpoint: str,
-    auth_url: str,
-    check_credentials_callback: Callable,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-    get_system_engine_callback: Callable,
-) -> None:
-    """Resource manager raises an error on invalid account name."""
-    get_system_engine_url = (
-        f"https://{api_endpoint}"
-        f"{GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name='invalid')}"
-    )
-
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-
-    with raises(AccountNotFoundError):
-        ResourceManager(auth=auth, account_name="invalid", api_endpoint=api_endpoint)

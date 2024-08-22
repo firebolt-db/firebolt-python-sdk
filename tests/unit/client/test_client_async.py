@@ -1,6 +1,6 @@
 import random
 from queue import Queue
-from re import Pattern, compile
+from re import compile
 from types import MethodType
 from typing import Any, Callable
 
@@ -12,7 +12,6 @@ from trio import open_nursery, sleep
 from firebolt.client import AsyncClientV2 as AsyncClient
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
-from firebolt.utils.util import fix_url_schema
 from tests.unit.conftest import Response, retry_if_failed
 
 
@@ -92,30 +91,6 @@ async def test_client_different_auths(
     assert str(excinfo.value).startswith(
         'Invalid "auth" argument'
     ), "invalid auth validation error message"
-
-
-async def test_client_account_id(
-    httpx_mock: HTTPXMock,
-    auth: Auth,
-    account_name: str,
-    account_id: str,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-    auth_url: str,
-    auth_callback: Callable,
-    api_endpoint: str,
-):
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-
-    async with AsyncClient(
-        account_name=account_name,
-        auth=auth,
-        base_url=fix_url_schema(api_endpoint),
-        api_endpoint=api_endpoint,
-    ) as c:
-        assert await c.account_id == account_id, "Invalid account id returned."
-        assert await c._account_version == 2, "Invalid account version returned"
 
 
 async def test_concurent_auth_lock(

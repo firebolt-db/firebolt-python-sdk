@@ -8,7 +8,7 @@ from pytest import fixture
 from firebolt.client.auth import Auth, UsernamePassword
 from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.urls import (
-    ACCOUNT_BY_NAME_URL,
+    ACCOUNT_BY_NAME_URL_V1,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_ENGINE_URL,
     ACCOUNT_ENGINE_URL_BY_DATABASE_NAME_V1,
@@ -148,7 +148,7 @@ def get_engine_url_by_id_callback(
 
 @fixture
 def account_id_url(api_endpoint: str) -> Pattern:
-    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}?account_name="
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL_V1}?account_name="
     default_base = f"https://{api_endpoint}{ACCOUNT_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     default_base = default_base.replace("/", "\\/").replace("?", "\\?")

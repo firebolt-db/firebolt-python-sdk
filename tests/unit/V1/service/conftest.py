@@ -16,7 +16,7 @@ from firebolt.model.V1.region import Region, RegionKey
 from firebolt.utils.exception import AccountNotFoundError
 from firebolt.utils.urls import (
     ACCOUNT_BINDINGS_URL,
-    ACCOUNT_BY_NAME_URL,
+    ACCOUNT_BY_NAME_URL_V1,
     ACCOUNT_DATABASE_BINDING_URL,
     ACCOUNT_DATABASE_BY_NAME_URL,
     ACCOUNT_DATABASE_URL,
@@ -599,7 +599,7 @@ def check_credentials_callback(user: str, password: str, access_token: str) -> C
 
 @fixture
 def account_id_url(api_endpoint: str) -> Pattern:
-    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}?account_name="
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL_V1}?account_name="
     default_base = f"https://{api_endpoint}{ACCOUNT_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     default_base = default_base.replace("/", "\\/").replace("?", "\\?")

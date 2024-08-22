@@ -7,7 +7,7 @@ from httpx import Request
 from pytest import fixture
 
 from firebolt.utils.exception import AccountNotFoundError
-from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, ACCOUNT_URL, AUTH_URL
+from firebolt.utils.urls import ACCOUNT_BY_NAME_URL_V1, ACCOUNT_URL, AUTH_URL
 from tests.unit.response import Response
 
 
@@ -91,7 +91,7 @@ def check_service_credentials_callback(
 
 @fixture
 def account_id_url(api_endpoint: str) -> Pattern:
-    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}?account_name="
+    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL_V1}?account_name="
     default_base = f"https://{api_endpoint}{ACCOUNT_URL}"
     base = base.replace("/", "\\/").replace("?", "\\?")
     default_base = default_base.replace("/", "\\/").replace("?", "\\?")
