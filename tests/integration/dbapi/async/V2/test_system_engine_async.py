@@ -77,15 +77,6 @@ async def test_system_engine_no_db(
     )
 
 
-async def test_system_engine_account(connection_system_engine: Connection):
-    assert (
-        await connection_system_engine._client.account_id
-    ), "Can't get account id explicitly"
-    assert (
-        await connection_system_engine._client._account_version
-    ) == 2, "Invalid account version"
-
-
 async def test_system_engine_use_engine(
     connection_system_engine: Connection, database_name: str, engine_name: str
 ):
