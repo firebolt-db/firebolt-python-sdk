@@ -5,8 +5,6 @@ DATABASES_URL = "/core/v1/account/databases"
 ENGINES_URL = "/core/v1/account/engines"
 ENGINES_BY_IDS_URL = "/core/v1/engines:getByIds"
 
-ACCOUNT_BY_NAME_URL = "/web/v3/account/{account_name}/resolve"
-
 ACCOUNT_DATABASES_URL = "/core/v1/accounts/{account_id}/databases"
 ACCOUNT_DATABASE_URL = "/core/v1/accounts/{account_id}/databases/{database_id}"
 ACCOUNT_DATABASE_BINDING_URL = ACCOUNT_DATABASE_URL + "/bindings/{engine_id}"
