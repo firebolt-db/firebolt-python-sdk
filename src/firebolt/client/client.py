@@ -20,7 +20,6 @@ from firebolt.client.http_backend import (
     AsyncKeepaliveTransport,
     KeepaliveTransport,
 )
-from firebolt.common._types import _AccountInfo
 from firebolt.utils.exception import (
     AccountNotFoundError,
     FireboltEngineError,
@@ -42,13 +41,6 @@ from firebolt.utils.util import (
 )
 
 FireboltClientMixinBase = mixin_for(HttpxClient)  # type: Any
-
-
-def parse_response_for_account_info(response: Response) -> _AccountInfo:
-    """Construct account info object from the API response."""
-    account_id = response.json()["id"]
-    account_version = int(response.json().get("infraVersion", 2))
-    return _AccountInfo(id=account_id, version=account_version)
 
 
 class FireboltClientMixin(FireboltClientMixinBase):

@@ -136,14 +136,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             endpoint, params = _parse_update_endpoint(
                 headers.get(UPDATE_ENDPOINT_HEADER)
             )
-            if (
-                params.get("account_id", await self._client.account_id)
-                != await self._client.account_id
-            ):
-                raise OperationalError(
-                    "USE ENGINE command failed. Account parameter mismatch. "
-                    "Contact support"
-                )
             self._update_set_parameters(params)
             self.engine_url = endpoint
 
