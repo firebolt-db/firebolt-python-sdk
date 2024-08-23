@@ -10,8 +10,6 @@ from typing import (
     TypeVar,
 )
 
-from firebolt.common._types import _AccountInfo
-
 T = TypeVar("T")
 
 
@@ -85,4 +83,3 @@ class UtilCache(Generic[T]):
 _firebolt_system_engine_cache = UtilCache[Tuple[str, Dict[str, str]]](
     cache_name="system_engine"
 )
-_firebolt_account_info_cache = UtilCache[_AccountInfo](cache_name="account_info")

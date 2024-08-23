@@ -3,7 +3,6 @@ import warnings
 from typing import Callable, List
 from unittest.mock import patch
 
-from httpx import codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
@@ -11,10 +10,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
 from firebolt.common._types import ColType
-from firebolt.common.cache import (
-    _firebolt_account_info_cache,
-    _firebolt_system_engine_cache,
-)
+from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.db import Connection, connect
 from firebolt.db.cursor import CursorV2
 from firebolt.utils.exception import (
@@ -24,7 +20,6 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
-from tests.unit.response import Response
 
 
 def test_connection_attributes(connection: Connection) -> None:
@@ -194,65 +189,6 @@ def test_connect_engine_failed(
     httpx_mock.reset(False)
 
 
-def test_connect_invalid_account(
-    db_name: str,
-    engine_name: str,
-    engine_url: str,
-    auth_url: str,
-    api_endpoint: str,
-    auth: Auth,
-    account_name: str,
-    httpx_mock: HTTPXMock,
-    check_credentials_callback: Callable,
-    system_engine_no_db_query_url: str,
-    system_engine_query_url: str,
-    get_system_engine_url: str,
-    get_system_engine_callback: Callable,
-    use_database_callback: Callable,
-    account_id_url: str,
-    account_id_invalid_callback: Callable,
-):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-    httpx_mock.add_callback(account_id_invalid_callback, url=account_id_url)
-    httpx_mock.add_callback(
-        use_database_callback,
-        url=system_engine_no_db_query_url,
-        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
-    )
-
-    def use_engine_callback(*args, **kwargs):
-        query_response = {
-            "meta": [],
-            "data": [],
-            "rows": 0,
-            "statistics": {},
-        }
-
-        return Response(
-            status_code=codes.OK,
-            json=query_response,
-            headers={
-                "Firebolt-Update-Endpoint": engine_url + "?account_id=2",
-            },
-        )
-
-    httpx_mock.add_callback(
-        use_engine_callback,
-        url=system_engine_query_url,
-        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
-    )
-    with raises(AccountNotFoundOrNoAccessError):
-        with connect(
-            engine_name=engine_name,
-            database=db_name,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-        ) as connection:
-            connection.cursor().execute("select *")
-
-
 @mark.parametrize("cache_enabled", [True, False])
 def test_connect_caching(
     db_name: str,
@@ -265,32 +201,23 @@ def test_connect_caching(
     check_credentials_callback: Callable,
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
-    account_id_url: str,
-    account_id_callback: Callable,
     system_engine_query_url: str,
     system_engine_no_db_query_url: str,
     query_url: str,
     use_database_callback: Callable,
-    use_engine_with_account_id_callback: Callable,
+    use_engine_callback: Callable,
     query_callback: Callable,
     cache_enabled: bool,
 ):
     system_engine_call_counter = 0
-    account_id_call_counter = 0
 
     def system_engine_callback_counter(request, **kwargs):
         nonlocal system_engine_call_counter
         system_engine_call_counter += 1
         return get_system_engine_callback(request, **kwargs)
 
-    def account_id_callback_counter(request, **kwargs):
-        nonlocal account_id_call_counter
-        account_id_call_counter += 1
-        return account_id_callback(request, **kwargs)
-
     httpx_mock.add_callback(check_credentials_callback, url=auth_url)
     httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
-    httpx_mock.add_callback(account_id_callback_counter, url=account_id_url)
     httpx_mock.add_callback(
         use_database_callback,
         url=system_engine_no_db_query_url,
@@ -298,7 +225,7 @@ def test_connect_caching(
     )
 
     httpx_mock.add_callback(
-        use_engine_with_account_id_callback,
+        use_engine_callback,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
     )
@@ -317,14 +244,11 @@ def test_connect_caching(
 
     if cache_enabled:
         assert system_engine_call_counter == 1, "System engine URL was not cached"
-        assert account_id_call_counter == 1, "Account ID was not cached"
     else:
         assert system_engine_call_counter != 1, "System engine URL was cached"
-        assert account_id_call_counter != 1, "Account ID was cached"
 
     # Reset caches for the next test iteration
     _firebolt_system_engine_cache.enable()
-    _firebolt_account_info_cache.enable()
 
 
 def test_connect_system_engine_404(

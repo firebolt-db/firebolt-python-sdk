@@ -260,14 +260,12 @@ def system_engine_url() -> str:
 
 
 @fixture
-def system_engine_query_url(
-    system_engine_url: str, db_name: str, account_id: str
-) -> str:
+def system_engine_query_url(system_engine_url: str, db_name: str) -> str:
     return f"{system_engine_url}/?output_format=JSON_Compact&database={db_name}"
 
 
 @fixture
-def system_engine_no_db_query_url(system_engine_url: str, account_id: str) -> str:
+def system_engine_no_db_query_url(system_engine_url: str) -> str:
     return f"{system_engine_url}/?output_format=JSON_Compact"
 
 
@@ -382,35 +380,6 @@ def use_engine_callback(engine_url: str, query_statistics: Dict[str, Any]) -> Ca
 
 
 @fixture
-def use_engine_with_account_id_callback(
-    engine_url: str, query_statistics: Dict[str, Any], account_id: int
-) -> Callable:
-    def inner(
-        request: Request = None,
-        **kwargs,
-    ) -> Response:
-        assert request, "empty request"
-        assert request.method == "POST", "invalid request method"
-
-        query_response = {
-            "meta": [],
-            "data": [],
-            "rows": 0,
-            "statistics": query_statistics,
-        }
-
-        return Response(
-            status_code=codes.OK,
-            json=query_response,
-            headers={
-                "Firebolt-Update-Endpoint": engine_url + f"?account_id={account_id}"
-            },
-        )
-
-    return inner
-
-
-@fixture
 def use_engine_failed_callback(
     engine_url, db_name, query_statistics: Dict[str, Any]
 ) -> Callable:
@@ -436,13 +405,10 @@ def mock_system_engine_connection_flow(
     check_credentials_callback: Callable,
     get_system_engine_url: str,
     get_system_engine_callback: Callable,
-    account_id_url: str,
-    account_id_callback: Callable,
 ) -> Callable:
     def inner() -> None:
         httpx_mock.add_callback(check_credentials_callback, url=auth_url)
         httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
-        httpx_mock.add_callback(account_id_callback, url=account_id_url)
 
     return inner
 

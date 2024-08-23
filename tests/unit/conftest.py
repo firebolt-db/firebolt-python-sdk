@@ -1,5 +1,4 @@
 import functools
-from re import Pattern, compile
 from typing import Callable
 
 import httpx
@@ -8,11 +7,10 @@ from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials
-from firebolt.client.client import ClientV2, _firebolt_account_info_cache
+from firebolt.client.client import ClientV2
 from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
-    AccountNotFoundError,
     DatabaseError,
     DataError,
     Error,
@@ -24,7 +22,7 @@ from firebolt.utils.exception import (
     ProgrammingError,
     Warning,
 )
-from firebolt.utils.urls import ACCOUNT_BY_NAME_URL, AUTH_SERVICE_ACCOUNT_URL
+from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from tests.unit.db_conftest import *  # noqa
 from tests.unit.response import Response
 
@@ -46,7 +44,6 @@ def global_fake_fs(request) -> None:
 @fixture(autouse=True)
 def clear_cache() -> None:
     _firebolt_system_engine_cache.clear()
-    _firebolt_account_info_cache.clear()
 
 
 @fixture
@@ -145,45 +142,6 @@ def db_name() -> str:
 @fixture
 def db_name_updated() -> str:
     return "database_new"
-
-
-@fixture
-def account_id_url(api_endpoint: str, account_name: str) -> Pattern:
-    account_name_re = r"[^\\\\]*"
-    base = f"https://{api_endpoint}{ACCOUNT_BY_NAME_URL}"
-    base = base.replace("/", "\\/").replace("?", "\\?")
-    base = base.format(account_name=account_name_re)
-    return compile(base)
-
-
-@fixture
-def account_id_callback(
-    account_id: str,
-    account_name: str,
-) -> Callable:
-    def do_mock(
-        request: Request,
-        **kwargs,
-    ) -> Response:
-        if request.url.path.split("/")[-2] != account_name:
-            raise AccountNotFoundError(request.url.path.split("/")[-2])
-        return Response(
-            status_code=httpx.codes.OK,
-            json={"id": account_id, "infraVersion": 2},
-        )
-
-    return do_mock
-
-
-@fixture
-def account_id_invalid_callback() -> Callable:
-    def do_mock(
-        request: Request,
-        **kwargs,
-    ) -> Response:
-        return Response(status_code=httpx.codes.NOT_FOUND, json={"error": "not found"})
-
-    return do_mock
 
 
 @fixture

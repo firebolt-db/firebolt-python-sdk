@@ -1,4 +1,3 @@
-from re import Pattern
 from typing import Callable
 
 from httpx import Request, Timeout, codes
@@ -11,7 +10,6 @@ from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
-from firebolt.utils.util import fix_url_schema
 from tests.unit.conftest import Response
 
 
@@ -86,30 +84,6 @@ def test_client_different_auths(
     assert str(excinfo.value).startswith(
         'Invalid "auth" argument'
     ), "invalid auth validation error message"
-
-
-def test_client_account_id(
-    httpx_mock: HTTPXMock,
-    auth: Auth,
-    account_name: str,
-    account_id: str,
-    account_id_url: Pattern,
-    account_id_callback: Callable,
-    auth_url: str,
-    auth_callback: Callable,
-    api_endpoint: str,
-):
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-
-    with Client(
-        account_name=account_name,
-        auth=auth,
-        base_url=fix_url_schema(api_endpoint),
-        api_endpoint=api_endpoint,
-    ) as cursor:
-        assert cursor.account_id == account_id, "Invalid account id returned"
-        assert cursor._account_version == 2, "Invalid account version returned"
 
 
 # FIR-14945
