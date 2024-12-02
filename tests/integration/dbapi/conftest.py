@@ -141,7 +141,7 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
             Decimal("1231232.123459999990457054844258706536"),
             None,
             b"abc123",
-            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F"
+            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F",
         ]
     ]
 
@@ -173,7 +173,7 @@ def all_types_query_system_engine_response(
             Decimal("1231232.123459999990457054844258706536"),
             None,
             b"abc123",
-            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F"
+            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F",
         ]
     ]
 

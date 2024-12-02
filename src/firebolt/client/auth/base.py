@@ -171,5 +171,9 @@ class Auth(HttpxAuth):
             finally:
                 # token gets updated only after flow.send is called
                 # so unlock only after that
-                if self._lock.locked() and self._lock._owner_task == get_current_task():
+                # TODO: FIR-38687 Fix support for anyio 4.5.0+
+                if (
+                    self._lock.locked()
+                    and self._lock._owner_task == get_current_task()  # type: ignore
+                ):
                     self._lock.release()
