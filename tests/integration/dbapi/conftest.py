@@ -74,7 +74,8 @@ def all_types_query() -> str:
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
         'null as "nullable", '
-        "'abc123'::bytea as \"bytea\""
+        "'abc123'::bytea as \"bytea\","
+        "'POINT(1 1)'::geography as \"geography\""
     )
 
 
@@ -102,6 +103,7 @@ def all_types_query_description() -> List[Column]:
         Column("decimal", DECIMAL(38, 30), None, None, None, None, None),
         Column("nullable", str, None, None, None, None, None),
         Column("bytea", bytes, None, None, None, None, None),
+        Column("geography", str, None, None, None, None, None),
     ]
 
 
@@ -139,6 +141,7 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
             Decimal("1231232.123459999990457054844258706536"),
             None,
             b"abc123",
+            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F"
         ]
     ]
 
@@ -170,6 +173,7 @@ def all_types_query_system_engine_response(
             Decimal("1231232.123459999990457054844258706536"),
             None,
             b"abc123",
+            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F"
         ]
     ]
 

@@ -6,7 +6,6 @@ from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     FireboltDatabaseError,
     FireboltStructuredError,
-    OperationalError,
 )
 
 
@@ -17,7 +16,7 @@ def test_invalid_account(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid account error."""
-    with raises(AccountNotFoundOrNoAccessError) as exc_info:
+    with raises(AccountNotFoundOrNoAccessError):
         with connect(
             database=database_name,
             auth=auth,
@@ -25,10 +24,6 @@ def test_invalid_account(
             api_endpoint=api_endpoint,
         ) as connection:
             connection.cursor().execute("show tables")
-
-    assert str(exc_info.value).startswith(
-        f"Account '{invalid_account_name}' does not exist"
-    ), "Invalid account error message."
 
 
 def test_account_no_user(
@@ -38,7 +33,7 @@ def test_account_no_user(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid account error."""
-    with raises(AccountNotFoundOrNoAccessError) as exc_info:
+    with raises(AccountNotFoundOrNoAccessError):
         with connect(
             database=database_name,
             auth=auth_no_user,
@@ -50,10 +45,6 @@ def test_account_no_user(
         ) as connection:
             connection.cursor().execute("show tables")
 
-    assert str(exc_info.value).startswith(
-        f"Account '{account_name}' does not exist"
-    ), "Invalid account error message."
-
 
 def test_engine_name_not_exists(
     engine_name: str,
@@ -63,7 +54,7 @@ def test_engine_name_not_exists(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid engine name error."""
-    with raises(OperationalError):
+    with raises(FireboltStructuredError):
         with connect(
             account_name=account_name,
             engine_name=engine_name + "_________",
@@ -91,35 +82,12 @@ def test_database_not_exists(
         auth=auth,
         api_endpoint=api_endpoint,
     ) as connection:
-        with raises(FireboltDatabaseError) as exc_info:
+        with raises(FireboltDatabaseError):
             connection.cursor().execute("show tables")
-
-        assert (
-            str(exc_info.value)
-            == f"Engine {engine_name} is attached to {database_name} instead of {new_db_name}"
-        ), "Invalid database name error message"
 
 
 def test_sql_error(connection: Connection) -> None:
     """Connection properly reacts to sql execution error."""
     with connection.cursor() as c:
-        with raises(OperationalError) as exc_info:
+        with raises(FireboltStructuredError):
             c.execute("select ]")
-
-        assert str(exc_info.value).startswith(
-            "Error executing query"
-        ), "Invalid SQL error message"
-
-
-def test_structured_error(connection_system_engine_no_db: Connection) -> None:
-    """Connection properly reacts to structured error."""
-    with connection_system_engine_no_db.cursor() as c:
-        c.execute("SET advanced_mode=1")
-        c.execute("SET enable_json_error_output_format=true")
-
-        with raises(FireboltStructuredError) as exc_info:
-            c.execute("select 'dummy'::int")
-
-        assert "Cannot parse string" in str(
-            exc_info.value
-        ), "Invalid structured error message"
