@@ -48,6 +48,7 @@ async def test_select(
         assert (
             await c.execute(f"SET time_zone={timezone_name}") == -1
         ), "Invalid set statment row count"
+        await c.execute("SET enable_geography=true")
 
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
