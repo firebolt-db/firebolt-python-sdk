@@ -111,7 +111,7 @@ def python_query_data() -> List[List[ColType]]:
             [1, 2, 3, 4],
             Decimal("123456789.123456789123456789123456789"),
             b"abc",
-            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F"
+            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F",
         ]
         for i in range(QUERY_ROW_COUNT)
     ]

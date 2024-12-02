@@ -5,7 +5,6 @@ from firebolt.client.auth import ClientCredentials
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     FireboltStructuredError,
-    OperationalError,
 )
 
 
