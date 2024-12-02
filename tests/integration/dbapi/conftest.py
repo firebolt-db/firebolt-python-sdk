@@ -74,8 +74,7 @@ def all_types_query() -> str:
         "[1,2,3,4] as \"array\", cast('1231232.123459999990457054844258706536' as "
         'decimal(38,30)) as "decimal", '
         'null as "nullable", '
-        "'abc123'::bytea as \"bytea\","
-        "'POINT(1 1)'::geography as \"geography\""
+        "'abc123'::bytea as \"bytea\""
     )
 
 
@@ -103,7 +102,6 @@ def all_types_query_description() -> List[Column]:
         Column("decimal", DECIMAL(38, 30), None, None, None, None, None),
         Column("nullable", str, None, None, None, None, None),
         Column("bytea", bytes, None, None, None, None, None),
-        Column("geography", str, None, None, None, None, None),
     ]
 
 
@@ -141,7 +139,6 @@ def all_types_query_response(timezone_offset_seconds: int) -> List[ColType]:
             Decimal("1231232.123459999990457054844258706536"),
             None,
             b"abc123",
-            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F",
         ]
     ]
 
@@ -173,7 +170,6 @@ def all_types_query_system_engine_response(
             Decimal("1231232.123459999990457054844258706536"),
             None,
             b"abc123",
-            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F",
         ]
     ]
 
@@ -198,3 +194,18 @@ def create_drop_description() -> List[Column]:
         Column("num_hosts_remaining", int, None, None, None, None, None),
         Column("num_hosts_active", int, None, None, None, None, None),
     ]
+
+
+@fixture
+def select_geography_query() -> str:
+    return "SELECT 'POINT(1 1)'::geography as \"geography\""
+
+
+@fixture
+def select_geography_description() -> List[Column]:
+    return [Column("geography", str, None, None, None, None, None)]
+
+
+@fixture
+def select_geography_response() -> List[ColType]:
+    return [["0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F"]]

@@ -48,7 +48,6 @@ async def test_select(
         assert (
             await c.execute(f"SET time_zone={timezone_name}") == -1
         ), "Invalid set statment row count"
-        await c.execute("SET enable_geography=true")
 
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
@@ -410,3 +409,23 @@ async def test_connection_with_mixed_case_db_and_engine(
         await cursor.execute('CREATE TABLE "test_table" (id int)')
         # This fails if we're not running on a user engine
         await cursor.execute('INSERT INTO "test_table" VALUES (1)')
+
+
+async def test_select_geography(
+    connection: Connection,
+    select_geography_query: str,
+    select_geography_description: List[Column],
+    select_geography_response: List[ColType],
+) -> None:
+    with connection.cursor() as c:
+        await c.execute(select_geography_query)
+        assert (
+            c.description == select_geography_description
+        ), "Invalid description value"
+        res = await c.fetchall()
+        assert len(res) == 1, "Invalid data length"
+        assert_deep_eq(
+            res,
+            select_geography_response,
+            "Invalid data returned by fetchall",
+        )
