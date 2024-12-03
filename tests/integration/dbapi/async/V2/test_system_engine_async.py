@@ -5,7 +5,7 @@ from pytest import raises
 
 from firebolt.async_db import Connection
 from firebolt.common._types import ColType, Column
-from firebolt.utils.exception import OperationalError
+from firebolt.utils.exception import FireboltStructuredError
 from tests.integration.dbapi.utils import assert_deep_eq
 
 system_error_pattern = re.compile(
@@ -49,14 +49,14 @@ async def test_system_engine(
 
         if connection_system_engine.init_parameters.get("database"):
             await c.execute("show tables")
-            with raises(OperationalError) as e:
+            with raises(FireboltStructuredError) as e:
                 # Either one or another query fails if we're not on a user engine
                 await c.execute('create table if not exists "test_async"(id int)')
                 await c.execute('insert into "test_async" values (1)')
             assert system_error_pattern.search(str(e.value)), "Invalid error message"
         else:
             await c.execute("show databases")
-            with raises(OperationalError):
+            with raises(FireboltStructuredError):
                 await c.execute("show tables")
 
 
@@ -89,6 +89,6 @@ async def test_system_engine_use_engine(
         await cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
         await cursor.execute('USE ENGINE "system"')
         # Werify we've switched to system by making previous query fail
-        with raises(OperationalError):
+        with raises(FireboltStructuredError):
             await cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
         await cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')

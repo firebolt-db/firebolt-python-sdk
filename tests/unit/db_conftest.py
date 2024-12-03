@@ -35,6 +35,7 @@ def query_description() -> List[Column]:
         Column("array", "array(int)", None, None, None, None, None),
         Column("decimal", "Decimal(12, 34)", None, None, None, None, None),
         Column("bytea", "bytea", None, None, None, None, None),
+        Column("geography", "geography", None, None, None, None, None),
     ]
 
 
@@ -58,6 +59,7 @@ def python_query_description() -> List[Column]:
         Column("array", ARRAY(int), None, None, None, None, None),
         Column("decimal", DECIMAL(12, 34), None, None, None, None, None),
         Column("bytea", bytes, None, None, None, None, None),
+        Column("geography", str, None, None, None, None, None),
     ]
 
 
@@ -82,6 +84,7 @@ def query_data() -> List[List[ColType]]:
             [1, 2, 3, 4],
             "123456789.123456789123456789123456789",
             "\\x616263",
+            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F",
         ]
         for i in range(QUERY_ROW_COUNT)
     ]
@@ -108,6 +111,7 @@ def python_query_data() -> List[List[ColType]]:
             [1, 2, 3, 4],
             Decimal("123456789.123456789123456789123456789"),
             b"abc",
+            "0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F",
         ]
         for i in range(QUERY_ROW_COUNT)
     ]

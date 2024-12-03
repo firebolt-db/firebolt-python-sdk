@@ -5,7 +5,7 @@ from pytest import raises
 
 from firebolt.common._types import ColType, Column
 from firebolt.db import Connection
-from firebolt.utils.exception import OperationalError
+from firebolt.utils.exception import FireboltStructuredError
 from tests.integration.dbapi.utils import assert_deep_eq
 
 system_error_pattern = re.compile(
@@ -50,14 +50,14 @@ def test_system_engine(
 
         if connection_system_engine.init_parameters.get("database"):
             c.execute("show tables")
-            with raises(OperationalError) as e:
+            with raises(FireboltStructuredError) as e:
                 # Either one or another query fails if we're not on a user engine
                 c.execute('create table if not exists "test_sync"(id int)')
                 c.execute('insert into "test_sync" values (1)')
             assert system_error_pattern.search(str(e.value)), "Invalid error message"
         else:
             c.execute("show databases")
-            with raises(OperationalError):
+            with raises(FireboltStructuredError):
                 c.execute("show tables")
 
 
@@ -90,6 +90,6 @@ def test_system_engine_use_engine(
         cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
         cursor.execute('USE ENGINE "system"')
         # Verify we've switched to system by making previous query fail
-        with raises(OperationalError):
+        with raises(FireboltStructuredError):
             cursor.execute(f'INSERT INTO "{table_name}" VALUES (1)')
         cursor.execute(f'DROP TABLE IF EXISTS "{table_name}"')

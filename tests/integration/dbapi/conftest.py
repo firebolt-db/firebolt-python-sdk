@@ -194,3 +194,18 @@ def create_drop_description() -> List[Column]:
         Column("num_hosts_remaining", int, None, None, None, None, None),
         Column("num_hosts_active", int, None, None, None, None, None),
     ]
+
+
+@fixture
+def select_geography_query() -> str:
+    return "SELECT 'POINT(1 1)'::geography as \"geography\""
+
+
+@fixture
+def select_geography_description() -> List[Column]:
+    return [Column("geography", str, None, None, None, None, None)]
+
+
+@fixture
+def select_geography_response() -> List[ColType]:
+    return [["0101000020E6100000FEFFFFFFFFFFEF3F000000000000F03F"]]

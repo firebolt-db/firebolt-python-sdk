@@ -177,6 +177,7 @@ class _InternalType(Enum):
     Boolean = "boolean"
 
     Bytea = "bytea"
+    Geography = "geography"
 
     Nothing = "Nothing"
 
@@ -198,6 +199,7 @@ class _InternalType(Enum):
             _InternalType.TimestampTz: datetime,
             _InternalType.Boolean: bool,
             _InternalType.Bytea: bytes,
+            _InternalType.Geography: str,
             # For simplicity, this could happen only during 'select null' query
             _InternalType.Nothing: str,
         }
