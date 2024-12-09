@@ -329,6 +329,12 @@ def parse_value(
     if isinstance(ctype, ARRAY):
         assert isinstance(value, list)
         return [parse_value(it, ctype.subtype) for it in value]
+    if isinstance(ctype, STRUCT):
+        assert isinstance(value, dict)
+        return {
+            name: parse_value(value.get(name), type_)
+            for name, type_ in ctype.fields.items()
+        }
     raise DataError(f"Unsupported data type returned: {ctype.__name__}")
 
 
