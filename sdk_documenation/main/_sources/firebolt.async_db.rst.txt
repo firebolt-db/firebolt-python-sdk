@@ -3,9 +3,7 @@ Async db
 ==========================
 
 The async_db package enables asynchronous API calls to a Firebolt database, allowing
-client-side processes to continue to run while waiting for API responses. For executing
-queries asynchronously `server-side` see
-:ref:`connecting_and_queries:server-side asynchronous query execution`.
+client-side processes to continue to run while waiting for API responses.
 
 connect
 ------------------------------------
