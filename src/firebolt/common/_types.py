@@ -159,7 +159,7 @@ class DECIMAL(ExtendedType):
 
 class STRUCT(ExtendedType):
     __name__ = "Struct"
-    _prefix = "Struct("
+    _prefix = "struct("
 
     def __init__(self, fields: Dict[str, Union[type, ARRAY, DECIMAL, STRUCT]]):
         for name, type_ in fields.items():

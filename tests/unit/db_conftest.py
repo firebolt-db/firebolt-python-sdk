@@ -507,11 +507,11 @@ def types_map() -> Dict[str, type]:
     trans = str.maketrans({ch: "_" for ch in " (),"})
 
     struct_items = [f"{key.translate(trans)}_col {key}" for key in struct_keys]
-    struct_type = f"Struct({', '.join(struct_items)})"
+    struct_type = f"struct({', '.join(struct_items)})"
     struct_field_names = [f"{key.translate(trans)}_col" for key in struct_keys]
     struct = {struct_type: STRUCT(dict(zip(struct_field_names, struct_fields)))}
     nested_struct = {
-        f"Struct(s {struct_type} null)": STRUCT({"s": list(struct.values())[0]})
+        f"struct(s {struct_type} null)": STRUCT({"s": list(struct.values())[0]})
     }
 
     return {
