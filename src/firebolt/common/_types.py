@@ -111,6 +111,8 @@ Column = namedtuple(
 class ExtendedType:
     """Base type for all extended types in Firebolt (array, decimal, struct, etc.)."""
 
+    __name__ = "ExtendedType"
+
     @staticmethod
     def is_valid_type(type_: Any) -> bool:
         return type_ in _col_types or isinstance(type_, ExtendedType)
@@ -125,7 +127,7 @@ class ARRAY(ExtendedType):
     __name__ = "Array"
     _prefix = "array("
 
-    def __init__(self, subtype: Union[type, ARRAY, DECIMAL, STRUCT]):
+    def __init__(self, subtype: Union[type, ExtendedType]):
         assert self.is_valid_type(subtype), f"Invalid array subtype: {str(subtype)}"
         self.subtype = subtype
 
@@ -161,7 +163,7 @@ class STRUCT(ExtendedType):
     __name__ = "Struct"
     _prefix = "struct("
 
-    def __init__(self, fields: Dict[str, Union[type, ARRAY, DECIMAL, STRUCT]]):
+    def __init__(self, fields: Dict[str, Union[type, ExtendedType]]):
         for name, type_ in fields.items():
             assert self.is_valid_type(type_), f"Invalid struct field type: {str(type_)}"
         self.fields = fields
@@ -247,7 +249,7 @@ def split_struct_fields(raw_struct: str) -> List[str]:
     return res
 
 
-def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL, STRUCT]:  # noqa: C901
+def parse_type(raw_type: str) -> Union[type, ExtendedType]:  # noqa: C901
     """Parse typename provided by query metadata into Python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
@@ -298,7 +300,7 @@ def _parse_bytea(str_value: str) -> bytes:
 
 def parse_value(
     value: RawColType,
-    ctype: Union[type, ARRAY, DECIMAL, STRUCT],
+    ctype: Union[type, ExtendedType],
 ) -> ColType:
     """Provided raw value, and Python type; parses first into Python value."""
     if value is None:
