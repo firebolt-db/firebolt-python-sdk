@@ -6,6 +6,7 @@ from firebolt.common._types import (
     NUMBER,
     ROWID,
     STRING,
+    STRUCT,
     Binary,
     Date,
     DateFromTicks,

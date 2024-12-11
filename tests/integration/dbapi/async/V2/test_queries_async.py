@@ -429,3 +429,29 @@ async def test_select_geography(
             select_geography_response,
             "Invalid data returned by fetchall",
         )
+
+
+async def test_select_struct(
+    connection: Connection,
+    setup_struct_query: str,
+    cleanup_struct_query: str,
+    select_struct_query: str,
+    select_struct_description: List[Column],
+    select_struct_response: List[ColType],
+):
+    with connection.cursor() as c:
+        try:
+            await c.execute(setup_struct_query)
+            await c.execute(select_struct_query)
+            assert (
+                c.description == select_struct_description
+            ), "Invalid description value"
+            res = await c.fetchall()
+            assert len(res) == 1, "Invalid data length"
+            assert_deep_eq(
+                res,
+                select_struct_response,
+                "Invalid data returned by fetchall",
+            )
+        finally:
+            await c.execute(cleanup_struct_query)

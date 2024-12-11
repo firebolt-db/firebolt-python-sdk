@@ -8,6 +8,7 @@ from pytest import fixture
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
+from firebolt.common._types import STRUCT
 from firebolt.db import ARRAY, DECIMAL
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from tests.unit.response import Response
@@ -482,7 +483,7 @@ def types_map() -> Dict[str, type]:
         "timestamp": datetime,
         "timestampntz": datetime,
         "timestamptz": datetime,
-        "Nothing null": str,
+        "Nothing": str,
         "Decimal(123, 4)": DECIMAL(123, 4),
         "Decimal(38,0)": DECIMAL(38, 0),
         # Invalid decimal format
@@ -491,7 +492,34 @@ def types_map() -> Dict[str, type]:
         "SomeRandomNotExistingType": str,
         "bytea": bytes,
     }
-    array_types = {f"array({k})": ARRAY(v) for k, v in base_types.items()}
+    nullable_types = {f"{k} null": v for k, v in base_types.items()}
+    array_types = {
+        f"array({k})": ARRAY(v)
+        for k, v in (*base_types.items(), *nullable_types.items())
+    }
     nullable_arrays = {f"{k} null": v for k, v in array_types.items()}
     nested_arrays = {f"array({k})": ARRAY(v) for k, v in array_types.items()}
-    return {**base_types, **array_types, **nullable_arrays, **nested_arrays}
+
+    struct_keys, struct_fields = list(
+        zip(*base_types.items(), *nullable_types.items(), *array_types.items())
+    )
+    # Create column names by replacing invalid characters with underscores
+    trans = str.maketrans({ch: "_" for ch in " (),"})
+
+    struct_items = [f"{key.translate(trans)}_col {key}" for key in struct_keys]
+    struct_type = f"struct({', '.join(struct_items)})"
+    struct_field_names = [f"{key.translate(trans)}_col" for key in struct_keys]
+    struct = {struct_type: STRUCT(dict(zip(struct_field_names, struct_fields)))}
+    nested_struct = {
+        f"struct(s {struct_type} null)": STRUCT({"s": list(struct.values())[0]})
+    }
+
+    return {
+        **base_types,
+        **nullable_types,
+        **array_types,
+        **nullable_arrays,
+        **nested_arrays,
+        **struct,
+        **nested_struct,
+    }
