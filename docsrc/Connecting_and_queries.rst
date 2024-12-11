@@ -113,7 +113,7 @@ To get started, follow the steps below:
                     auth=ClientCredentials(
                         os.getenv("FIREBOLT_CLIENT_ID"),
                         os.getenv("FIREBOLT_CLIENT_SECRET")
-                    )
+                    ),
                     engine_name=os.getenv('FIREBOLT_ENGINE'),
                     database=os.getenv('FIREBOLT_DB'),
                     account_name=os.getenv('FIREBOLT_ACCOUNT'),
