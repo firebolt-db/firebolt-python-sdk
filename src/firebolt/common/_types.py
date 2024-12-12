@@ -128,7 +128,8 @@ class ARRAY(ExtendedType):
     _prefix = "array("
 
     def __init__(self, subtype: Union[type, ExtendedType]):
-        assert self.is_valid_type(subtype), f"Invalid array subtype: {str(subtype)}"
+        if not self.is_valid_type(subtype):
+            raise ValueError(f"Invalid array subtype: {str(subtype)}")
         self.subtype = subtype
 
     def __str__(self) -> str:
@@ -165,7 +166,8 @@ class STRUCT(ExtendedType):
 
     def __init__(self, fields: Dict[str, Union[type, ExtendedType]]):
         for name, type_ in fields.items():
-            assert self.is_valid_type(type_), f"Invalid struct field type: {str(type_)}"
+            if not self.is_valid_type(type_):
+                raise ValueError(f"Invalid struct field type: {str(type_)}")
         self.fields = fields
 
     def __str__(self) -> str:
@@ -230,7 +232,11 @@ class _InternalType(Enum):
 
 
 def split_struct_fields(raw_struct: str) -> List[str]:
-    balance = 0
+    """Split raw struct inner fields string into a list of field definitions.
+    >>> split_struct_fields("field1 int, field2 struct(field1 int, field2 text)")
+    ["field1 int", "field2 struct(field1 int, field2 text)"]
+    """
+    balance = 0  # keep track of the level of nesting, and only split on level 0
     separator = ","
     res = []
     current = StringIO()
@@ -306,7 +312,7 @@ def parse_value(
     if value is None:
         return None
     if ctype in (int, str, float):
-        assert isinstance(ctype, type)
+        assert isinstance(ctype, type)  # assertion for mypy
         return ctype(value)
     if ctype is date:
         if not isinstance(value, str):
@@ -326,13 +332,16 @@ def parse_value(
             raise DataError(f"Invalid bytea value {value}: str expected")
         return _parse_bytea(value)
     if isinstance(ctype, DECIMAL):
-        assert isinstance(value, (str, int))
+        if not isinstance(value, (str, int)):
+            raise DataError(f"Invalid decimal value {value}: str or int expected")
         return Decimal(value)
     if isinstance(ctype, ARRAY):
-        assert isinstance(value, list)
+        if not isinstance(value, list):
+            raise DataError(f"Invalid array value {value}: list expected")
         return [parse_value(it, ctype.subtype) for it in value]
     if isinstance(ctype, STRUCT):
-        assert isinstance(value, dict)
+        if not isinstance(value, dict):
+            raise DataError(f"Invalid struct value {value}: dict expected")
         return {
             name: parse_value(value.get(name), type_)
             for name, type_ in ctype.fields.items()

@@ -14,6 +14,7 @@ from firebolt.common._types import (
     TimestampFromTicks,
     parse_type,
     parse_value,
+    split_struct_fields,
 )
 from firebolt.utils.exception import DataError, NotSupportedError
 
@@ -338,6 +339,12 @@ def test_parse_value_bytes(value, expected, error) -> None:
             STRUCT({"a": int, "s": STRUCT({"b": date})}),
             None,
         ),
+        (
+            {"a": None, "b": None},
+            {"a": None, "b": None},
+            STRUCT({"a": int, "b": bool}),
+            None,
+        ),
         (None, None, STRUCT({"a": int, "b": bool}), None),
         ({"a": [1, 2, 3]}, {"a": [1, 2, 3]}, STRUCT({"a": ARRAY(int)}), None),
     ],
@@ -351,3 +358,17 @@ def test_parse_value_struct(value, expected, type_, error) -> None:
         assert (
             parse_value(value, type_) == expected
         ), f"Error parsing struct: provided {value}"
+
+
+@mark.parametrize(
+    "value,expected",
+    [
+        ("a int, b text", ["a int", " b text"]),
+        ("a int, s struct(a int, b text)", ["a int", " s struct(a int, b text)"]),
+        ("a int, b array(struct(a int))", ["a int", " b array(struct(a int))"]),
+    ],
+)
+def test_split_struct_fields(value, expected) -> None:
+    assert (
+        split_struct_fields(value) == expected
+    ), f"Error splitting struct fields: provided {value}, expected {expected}"
