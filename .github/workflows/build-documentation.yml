@@ -67,5 +67,5 @@ jobs:
     - name: Add URL to the Job Summary
       shell: bash
       run: |
-        url="https://docs.firebolt.io/firebolt-python-sdk/sdk_documenation/${{ steps.resolve_url_path.outputs.path }}"
+        url="https://old.docs.firebolt.io/firebolt-python-sdk/sdk_documenation/${{ steps.resolve_url_path.outputs.path }}"
         echo "[Documentation]($url)" >> $GITHUB_STEP_SUMMARY
