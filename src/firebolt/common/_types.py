@@ -5,7 +5,8 @@ from collections import namedtuple
 from datetime import date, datetime, timezone
 from decimal import Decimal
 from enum import Enum
-from typing import List, Optional, Sequence, Union
+from io import StringIO
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
 from sqlparse.sql import (  # type: ignore
@@ -62,8 +63,6 @@ ParameterType = Union[int, float, str, datetime, date, bool, Decimal, Sequence, 
 # These definitions are required by PEP-249
 Date = date
 
-_AccountInfo = namedtuple("_AccountInfo", ["id", "version"])
-
 
 def DateFromTicks(t: int) -> date:  # NOSONAR
     """Convert `ticks` to `date` for Firebolt DB."""
@@ -109,16 +108,28 @@ Column = namedtuple(
 )
 
 
-class ARRAY:
+class ExtendedType:
+    """Base type for all extended types in Firebolt (array, decimal, struct, etc.)."""
+
+    __name__ = "ExtendedType"
+
+    @staticmethod
+    def is_valid_type(type_: Any) -> bool:
+        return type_ in _col_types or isinstance(type_, ExtendedType)
+
+    def __hash__(self) -> int:
+        return hash(str(self))
+
+
+class ARRAY(ExtendedType):
     """Class for holding `array` column type information in Firebolt DB."""
 
     __name__ = "Array"
     _prefix = "array("
 
-    def __init__(self, subtype: Union[type, ARRAY, DECIMAL]):
-        assert (subtype in _col_types and subtype is not list) or isinstance(
-            subtype, (ARRAY, DECIMAL)
-        ), f"Invalid array subtype: {str(subtype)}"
+    def __init__(self, subtype: Union[type, ExtendedType]):
+        if not self.is_valid_type(subtype):
+            raise ValueError(f"Invalid array subtype: {str(subtype)}")
         self.subtype = subtype
 
     def __str__(self) -> str:
@@ -130,7 +141,7 @@ class ARRAY:
         return other.subtype == self.subtype
 
 
-class DECIMAL:
+class DECIMAL(ExtendedType):
     """Class for holding `decimal` value information in Firebolt DB."""
 
     __name__ = "Decimal"
@@ -143,13 +154,27 @@ class DECIMAL:
     def __str__(self) -> str:
         return f"Decimal({self.precision}, {self.scale})"
 
-    def __hash__(self) -> int:
-        return hash(str(self))
-
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, DECIMAL):
             return NotImplemented
         return other.precision == self.precision and other.scale == self.scale
+
+
+class STRUCT(ExtendedType):
+    __name__ = "Struct"
+    _prefix = "struct("
+
+    def __init__(self, fields: Dict[str, Union[type, ExtendedType]]):
+        for name, type_ in fields.items():
+            if not self.is_valid_type(type_):
+                raise ValueError(f"Invalid struct field type: {str(type_)}")
+        self.fields = fields
+
+    def __str__(self) -> str:
+        return f"Struct({', '.join(f'{k}: {v}' for k, v in self.fields.items())})"
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, STRUCT) and other.fields == self.fields
 
 
 NULLABLE_SUFFIX = "null"
@@ -206,7 +231,31 @@ class _InternalType(Enum):
         return types[self]
 
 
-def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:  # noqa: C901
+def split_struct_fields(raw_struct: str) -> List[str]:
+    """Split raw struct inner fields string into a list of field definitions.
+    >>> split_struct_fields("field1 int, field2 struct(field1 int, field2 text)")
+    ["field1 int", "field2 struct(field1 int, field2 text)"]
+    """
+    balance = 0  # keep track of the level of nesting, and only split on level 0
+    separator = ","
+    res = []
+    current = StringIO()
+    for i, ch in enumerate(raw_struct):
+        if ch == "(":
+            balance += 1
+        elif ch == ")":
+            balance -= 1
+        elif ch == separator and balance == 0:
+            res.append(current.getvalue())
+            current = StringIO()
+            continue
+        current.write(ch)
+
+    res.append(current.getvalue())
+    return res
+
+
+def parse_type(raw_type: str) -> Union[type, ExtendedType]:  # noqa: C901
     """Parse typename provided by query metadata into Python type."""
     if not isinstance(raw_type, str):
         raise DataError(f"Invalid typename {str(raw_type)}: str expected")
@@ -218,10 +267,20 @@ def parse_type(raw_type: str) -> Union[type, ARRAY, DECIMAL]:  # noqa: C901
         try:
             prec_scale = raw_type[len(DECIMAL._prefix) : -1].split(",")
             precision, scale = int(prec_scale[0]), int(prec_scale[1])
+            return DECIMAL(precision, scale)
         except (ValueError, IndexError):
             pass
-        else:
-            return DECIMAL(precision, scale)
+    # Handle structs
+    if raw_type.startswith(STRUCT._prefix) and raw_type.endswith(")"):
+        try:
+            fields_raw = split_struct_fields(raw_type[len(STRUCT._prefix) : -1])
+            fields = {}
+            for f in fields_raw:
+                name, type_ = f.strip().split(" ", 1)
+                fields[name.strip()] = parse_type(type_.strip())
+            return STRUCT(fields)
+        except ValueError:
+            pass
     # Handle nullable
     if raw_type.endswith(NULLABLE_SUFFIX):
         return parse_type(raw_type[: -len(NULLABLE_SUFFIX)].strip(" "))
@@ -247,13 +306,13 @@ def _parse_bytea(str_value: str) -> bytes:
 
 def parse_value(
     value: RawColType,
-    ctype: Union[type, ARRAY, DECIMAL],
+    ctype: Union[type, ExtendedType],
 ) -> ColType:
     """Provided raw value, and Python type; parses first into Python value."""
     if value is None:
         return None
     if ctype in (int, str, float):
-        assert isinstance(ctype, type)
+        assert isinstance(ctype, type)  # assertion for mypy
         return ctype(value)
     if ctype is date:
         if not isinstance(value, str):
@@ -273,11 +332,20 @@ def parse_value(
             raise DataError(f"Invalid bytea value {value}: str expected")
         return _parse_bytea(value)
     if isinstance(ctype, DECIMAL):
-        assert isinstance(value, (str, int))
+        if not isinstance(value, (str, int)):
+            raise DataError(f"Invalid decimal value {value}: str or int expected")
         return Decimal(value)
     if isinstance(ctype, ARRAY):
-        assert isinstance(value, list)
+        if not isinstance(value, list):
+            raise DataError(f"Invalid array value {value}: list expected")
         return [parse_value(it, ctype.subtype) for it in value]
+    if isinstance(ctype, STRUCT):
+        if not isinstance(value, dict):
+            raise DataError(f"Invalid struct value {value}: dict expected")
+        return {
+            name: parse_value(value.get(name), type_)
+            for name, type_ in ctype.fields.items()
+        }
     raise DataError(f"Unsupported data type returned: {ctype.__name__}")
 
 

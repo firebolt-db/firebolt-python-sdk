@@ -5,14 +5,17 @@ from typing import Dict, Optional
 
 from pytest import mark, raises
 
-from firebolt.async_db import (
+from firebolt.common._types import (
     ARRAY,
     DECIMAL,
+    STRUCT,
     DateFromTicks,
     TimeFromTicks,
     TimestampFromTicks,
+    parse_type,
+    parse_value,
+    split_struct_fields,
 )
-from firebolt.common._types import parse_type, parse_value
 from firebolt.utils.exception import DataError, NotSupportedError
 
 
@@ -242,6 +245,7 @@ def test_parse_decimal(value, expected) -> None:
         (None, None, datetime),
         (None, None, date),
         (None, None, ARRAY(int)),
+        ([{"a": 1}, {"a": 2}], [{"a": 1}, {"a": 2}], STRUCT({"a": int})),
     ],
 )
 def test_parse_arrays(value, expected, type) -> None:
@@ -306,3 +310,65 @@ def test_parse_value_bytes(value, expected, error) -> None:
         assert (
             parse_value(value, bytes) == expected
         ), f"Error parsing bytes: provided {value}"
+
+
+@mark.parametrize(
+    "value,expected,type_,error",
+    [
+        (
+            {"a": 1, "b": False},
+            {"a": 1, "b": False},
+            STRUCT({"a": int, "b": bool}),
+            None,
+        ),
+        (
+            {"a": 1, "b": "a"},
+            {"a": 1, "b": "1"},
+            STRUCT({"a": int, "b": bool}),
+            DataError,
+        ),
+        (
+            {"dt": "2021-12-31 23:59:59", "d": "2021-12-31"},
+            {"dt": datetime(2021, 12, 31, 23, 59, 59), "d": date(2021, 12, 31)},
+            STRUCT({"dt": datetime, "d": date}),
+            None,
+        ),
+        (
+            {"a": 1, "s": {"b": "2021-12-31"}},
+            {"a": 1, "s": {"b": date(2021, 12, 31)}},
+            STRUCT({"a": int, "s": STRUCT({"b": date})}),
+            None,
+        ),
+        (
+            {"a": None, "b": None},
+            {"a": None, "b": None},
+            STRUCT({"a": int, "b": bool}),
+            None,
+        ),
+        (None, None, STRUCT({"a": int, "b": bool}), None),
+        ({"a": [1, 2, 3]}, {"a": [1, 2, 3]}, STRUCT({"a": ARRAY(int)}), None),
+    ],
+)
+def test_parse_value_struct(value, expected, type_, error) -> None:
+    """parse_value parses all int values correctly."""
+    if error:
+        with raises(error):
+            parse_value(value, type_)
+    else:
+        assert (
+            parse_value(value, type_) == expected
+        ), f"Error parsing struct: provided {value}"
+
+
+@mark.parametrize(
+    "value,expected",
+    [
+        ("a int, b text", ["a int", " b text"]),
+        ("a int, s struct(a int, b text)", ["a int", " s struct(a int, b text)"]),
+        ("a int, b array(struct(a int))", ["a int", " b array(struct(a int))"]),
+    ],
+)
+def test_split_struct_fields(value, expected) -> None:
+    assert (
+        split_struct_fields(value) == expected
+    ), f"Error splitting struct fields: provided {value}, expected {expected}"
