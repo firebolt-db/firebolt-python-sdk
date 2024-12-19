@@ -370,9 +370,9 @@ def test_parse_value_struct(value, expected, type_, error) -> None:
 @mark.parametrize(
     "value,expected",
     [
-        ("a int, b text", ["a int", " b text"]),
-        ("a int, s struct(a int, b text)", ["a int", " s struct(a int, b text)"]),
-        ("a int, b array(struct(a int))", ["a int", " b array(struct(a int))"]),
+        ("a int, b text", ["a int", "b text"]),
+        ("a int, s struct(a int, b text)", ["a int", "s struct(a int, b text)"]),
+        ("a int, b array(struct(a int))", ["a int", "b array(struct(a int))"]),
     ],
 )
 def test_split_struct_fields(value, expected) -> None:
