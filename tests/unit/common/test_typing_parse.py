@@ -35,6 +35,13 @@ def test_parse_type(types_map: Dict[str, type]) -> None:
     ), "Invalid type parsing error message"
 
 
+def test_parse_struct_type_with_spaces() -> None:
+    parsed = parse_type("struct(`a b` int, s struct(`c d` text))")
+    assert parsed == STRUCT(
+        {"a b": int, "s": STRUCT({"c d": str})}
+    ), f"Error parsing struct type with spaces"
+
+
 @mark.parametrize(
     "value,expected,error",
     [
