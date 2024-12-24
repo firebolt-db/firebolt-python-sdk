@@ -49,7 +49,9 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, client_id: str, client_secre
         with pytest.raises(AuthorizationError) as excinfo:
             execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
         errmsg = str(excinfo.value)
-        assert "Please verify the provided credentials" in errmsg, "Invalid authorization error message"
+        assert (
+            "Please verify the provided credentials" in errmsg
+        ), "Invalid authorization error message"
         httpx_mock.reset(True)
 
         # HTTP error
