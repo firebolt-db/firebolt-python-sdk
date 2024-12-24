@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 class FireboltError(Exception):
@@ -179,17 +179,22 @@ class AuthenticationError(FireboltError):
 
 
 class AuthorizationError(FireboltError):
-    """Firebolt authentication error.
+    """Firebolt authorisation error.
 
     Args:
         cause (str): Reason for authorization failure
 
-    Attributes:
-        cause (str): Reason for authorization failure
     """
 
-    def __init__(self, cause: str):
-        super().__init__(f"Authorization failed: {cause}.")
+    _default_error_message = (
+        "Failed to connect to Firebolt. Could not authenticate with the given "
+        "credentials. Please verify the provided credentials are up to date and "
+        "correct and that you have the correct user permissions"
+    )
+
+    def __init__(self, cause: Optional[str] = None):
+        error_cause = cause if cause else self._default_error_message
+        super().__init__(f"Authorization failed: {error_cause}.")
 
 
 # PEP-249
