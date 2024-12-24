@@ -189,7 +189,7 @@ class AuthorizationError(FireboltError):
     _default_error_message = (
         "Failed to connect to Firebolt. Could not authenticate with the given "
         "credentials. Please verify the provided credentials are up to date and "
-        "correct and that you have the correct user permissions."
+        "correct and that you have the correct user permissions"
     )
 
     def __init__(self, cause: Optional[str] = None):
