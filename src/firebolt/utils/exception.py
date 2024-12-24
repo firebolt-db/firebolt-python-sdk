@@ -186,14 +186,14 @@ class AuthorizationError(FireboltError):
 
     """
 
-    ERROR_MESSAGE = (
-        "Failed to connect to Firebolt. Could not authenticate with the given credentials."
-        " Please verify the provided credentials are up to date and correct"
-        " and that you have the correct user permissions."
+    _default_error_message = (
+        "Failed to connect to Firebolt. Could not authenticate with the given "
+        "credentials. Please verify the provided credentials are up to date and "
+        "correct and that you have the correct user permissions."
     )
 
     def __init__(self, cause: Optional[str] = None):
-        error_cause = cause if cause else self.ERROR_MESSAGE
+        error_cause = cause if cause else self._default_error_message
         super().__init__(f"Authorization failed: {error_cause}.")
 
 

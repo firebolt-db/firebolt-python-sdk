@@ -6,7 +6,7 @@ from pytest_httpx import HTTPXMock
 from pytest_mock import MockerFixture
 
 from firebolt.client.auth import ClientCredentials
-from firebolt.utils.exception import AuthenticationError
+from firebolt.utils.exception import AuthenticationError, AuthorizationError
 from tests.unit.util import execute_generator_requests
 
 
@@ -42,6 +42,14 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, client_id: str, client_secre
             execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
 
         assert str(excinfo.value) == "httpx", "Invalid authentication error message"
+        httpx_mock.reset(True)
+
+        # HTTP error
+        httpx_mock.add_response(status_code=codes.UNAUTHORIZED)
+        with pytest.raises(AuthorizationError) as excinfo:
+            execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
+        errmsg = str(excinfo.value)
+        assert "Please verify the provided credentials" in errmsg, "Invalid authorization error message"
         httpx_mock.reset(True)
 
         # HTTP error
