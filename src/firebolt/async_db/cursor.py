@@ -238,7 +238,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
-        timeout: Optional[float] = None,
+        timeout_seconds: Optional[float] = None,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -262,13 +262,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized, multi-statement and SET queries,
                 while improving performance
-            timeout (Optional[float]): Query execution timeout in seconds
+            timeout_seconds (Optional[float]): Query execution timeout in seconds
 
         Returns:
             int: Query row count.
         """
         params_list = [parameters] if parameters else []
-        await self._do_execute(query, params_list, skip_parsing, timeout=timeout)
+        await self._do_execute(
+            query, params_list, skip_parsing, timeout=timeout_seconds
+        )
         return self.rowcount
 
     @check_not_closed
@@ -276,7 +278,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self,
         query: str,
         parameters_seq: Sequence[Sequence[ParameterType]],
-        timeout: Optional[float] = None,
+        timeout_seconds: Optional[float] = None,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -301,12 +303,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
-            timeout (Optional[float]): Query execution timeout in seconds.
+            timeout_seconds (Optional[float]): Query execution timeout in seconds.
 
         Returns:
             int: Query row count.
         """
-        await self._do_execute(query, parameters_seq, timeout=timeout)
+        await self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
 
     @abstractmethod

@@ -751,7 +751,7 @@ def test_cursor_timeout(
     httpx_mock.add_callback(fast_query_callback)
 
     with raises(QueryTimeoutError):
-        cursor.execute("SELECT 1; SELECT 2", timeout=1)
+        cursor.execute("SELECT 1; SELECT 2", timeout_seconds=1)
 
     assert long_executed is True, "long query was executed"
     assert fast_executed is False, "fast query was not executed"

@@ -8,4 +8,4 @@ from firebolt.utils.exception import QueryTimeoutError
 def test_query_timeout(connection: Connection):
     with connection.cursor() as cursor:
         with raises(QueryTimeoutError):
-            cursor.execute(LONG_SELECT, timeout=1)
+            cursor.execute(LONG_SELECT, timeout_seconds=1)
