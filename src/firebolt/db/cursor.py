@@ -10,7 +10,6 @@ from typing import (
     List,
     Optional,
     Sequence,
-    Tuple,
     Union,
 )
 from urllib.parse import urljoin
@@ -20,9 +19,7 @@ from httpx import URL, Headers, Response, codes
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import (
     ColType,
-    Column,
     ParameterType,
-    RawColType,
     SetParameter,
     split_format_sql,
 )
@@ -33,7 +30,7 @@ from firebolt.common.base_cursor import (
     UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
-    Statistics,
+    RowSet,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
@@ -150,6 +147,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
+        timeout: Optional[float] = None,
     ) -> None:
         self._reset()
         # Allow users to manually skip parsing for performance improvement.
@@ -159,17 +157,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         try:
             for query in queries:
                 start_time = time.time()
-
                 Cursor._log_query(query)
 
-                # Define type for mypy
-                row_set: Tuple[
-                    int,
-                    Optional[List[Column]],
-                    Optional[Statistics],
-                    Optional[List[List[RawColType]]],
-                ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
+                    row_set: RowSet = (-1, None, None, None)
                     self._validate_set_parameter(query)
                 else:
                     resp = self._api_request(
@@ -198,6 +189,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
+        timeout: Optional[float] = None,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -221,17 +213,21 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized, multi-statement and SET queries,
                 while improving performance
+            timeout (Optional[float]): Query execution timeout in seconds
 
         Returns:
             int: Query row count.
         """
         params_list = [parameters] if parameters else []
-        self._do_execute(query, params_list, skip_parsing)
+        self._do_execute(query, params_list, skip_parsing, timeout=timeout)
         return self.rowcount
 
     @check_not_closed
     def executemany(
-        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
+        self,
+        query: str,
+        parameters_seq: Sequence[Sequence[ParameterType]],
+        timeout: Optional[float] = None,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -256,11 +252,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
+            timeout (Optional[float]): Query execution timeout in seconds.
 
         Returns:
             int: Query row count.
         """
-        self._do_execute(query, parameters_seq)
+        self._do_execute(query, parameters_seq, timeout=timeout)
         return self.rowcount
 
     @abstractmethod

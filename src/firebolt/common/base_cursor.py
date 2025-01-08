@@ -112,6 +112,14 @@ class Statistics:
                 setattr(self, field.name, _type(value))
 
 
+RowSet = Tuple[
+    int,
+    Optional[List[Column]],
+    Optional[Statistics],
+    Optional[List[List[RawColType]]],
+]
+
+
 def check_not_closed(func: Callable) -> Callable:
     """(Decorator) ensure cursor is not closed before calling method."""
 
@@ -166,14 +174,7 @@ class BaseCursor:
         self._rows: Optional[List[List[RawColType]]] = None
         self._descriptions: Optional[List[Column]] = None
         self._statistics: Optional[Statistics] = None
-        self._row_sets: List[
-            Tuple[
-                int,
-                Optional[List[Column]],
-                Optional[Statistics],
-                Optional[List[List[RawColType]]],
-            ]
-        ] = []
+        self._row_sets: List[RowSet] = []
         # User-defined set parameters
         self._set_parameters: Dict[str, Any] = dict()
         # Server-side parameters (user can't change them)
@@ -333,19 +334,12 @@ class BaseCursor:
             return self.parameters["engine"]
         return URL(self.engine_url).host.split(".")[0].replace("-", "_")
 
-    def _row_set_from_response(
-        self, response: Response
-    ) -> Tuple[
-        int,
-        Optional[List[Column]],
-        Optional[Statistics],
-        Optional[List[List[RawColType]]],
-    ]:
+    def _row_set_from_response(self, response: Response) -> RowSet:
         """Fetch information about executed query from http response."""
 
         # Empty response is returned for insert query
         if response.headers.get("content-length", "") == "0":
-            return (-1, None, None, None)
+            return -1, None, None, None
         try:
             # Skip parsing floats to properly parse them later
             query_data = response.json(parse_float=str)
@@ -359,18 +353,13 @@ class BaseCursor:
             statistics = Statistics(**query_data["statistics"])
             # Parse data during fetch
             rows = query_data["data"]
-            return (rowcount, descriptions, statistics, rows)
+            return rowcount, descriptions, statistics, rows
         except (KeyError, ValueError) as err:
             raise DataError(f"Invalid query data format: {str(err)}")
 
     def _append_row_set(
         self,
-        row_set: Tuple[
-            int,
-            Optional[List[Column]],
-            Optional[Statistics],
-            Optional[List[List[RawColType]]],
-        ],
+        row_set: RowSet,
     ) -> None:
         """Store information about executed query."""
         self._row_sets.append(row_set)
