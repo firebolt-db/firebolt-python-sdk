@@ -7,8 +7,8 @@ from httpx import URL, Request, codes
 from pytest import fixture
 from pytest_httpx import HTTPXMock
 
-from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType, Column
-from firebolt.common._types import STRUCT
+from firebolt.async_db.cursor import JSON_OUTPUT_FORMAT, ColType
+from firebolt.common._types import STRUCT, Column
 from firebolt.db import ARRAY, DECIMAL
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from tests.unit.response import Response
