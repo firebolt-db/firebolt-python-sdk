@@ -5,7 +5,7 @@
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Connecting and running queries &mdash; firebolt-python-sdk  documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
 
   
@@ -116,8 +116,8 @@ credentials through a connection request.</p>
 any command or query requests to your Firebolt database.</p>
 </div></blockquote>
 <blockquote id="required-connection-imports">
-<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">firebolt.db</span> <span class="kn">import</span> <span class="n">connect</span>
-<span class="kn">from</span> <span class="nn">firebolt.client.auth</span> <span class="kn">import</span> <span class="n">ClientCredentials</span>
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.client.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientCredentials</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -191,8 +191,8 @@ following key-value pairs, and replace the values with your information.</p>
 file by using the <a class="reference external" href="https://pypi.org/project/python-dotenv/">python-dotenv</a>
 package. Note that the example below imports the <code class="docutils literal notranslate"><span class="pre">os</span></code> and <code class="docutils literal notranslate"><span class="pre">dotenv</span></code> modules
 in order to load the environmental variables.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">os</span>
-<span class="kn">from</span> <span class="nn">dotenv</span> <span class="kn">import</span> <span class="n">load_dotenv</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 
 <span class="n">load_dotenv</span><span class="p">()</span>
 
@@ -463,12 +463,12 @@ before using asynchronous Python SDK, as it requires special async/await syntax.
 <p>This example illustrates a simple query execution via the async Python SDK. It does not have any
 performance benefits, but rather shows the difference in syntax from the synchronous version.
 It can be extended to run alongside of other operations.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">asyncio</span> <span class="kn">import</span> <span class="n">run</span>
-<span class="kn">from</span> <span class="nn">firebolt.async_db</span> <span class="kn">import</span> <span class="n">connect</span> <span class="k">as</span> <span class="n">async_connect</span>
-<span class="kn">from</span> <span class="nn">firebolt.client.auth</span> <span class="kn">import</span> <span class="n">ClientCredentials</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">run</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.async_db</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span> <span class="k">as</span> <span class="n">async_connect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.client.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientCredentials</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run_query</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_query</span><span class="p">():</span>
     <span class="nb">id</span> <span class="o">=</span> <span class="s2">&quot;your_service_account_id&quot;</span>
     <span class="n">secret</span> <span class="o">=</span> <span class="s2">&quot;your_service_account_secret&quot;</span>
     <span class="n">engine_name</span> <span class="o">=</span> <span class="s2">&quot;your_engine&quot;</span>
@@ -503,12 +503,12 @@ It can be extended to run alongside of other operations.</p>
 <p>Building up on the previous example, we can execute several queries concurently.
 This is especially useful when queries do not depend on each other and can be run
 at the same time.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">asyncio</span> <span class="kn">import</span> <span class="n">gather</span><span class="p">,</span> <span class="n">run</span>
-<span class="kn">from</span> <span class="nn">firebolt.async_db</span> <span class="kn">import</span> <span class="n">connect</span> <span class="k">as</span> <span class="n">async_connect</span>
-<span class="kn">from</span> <span class="nn">firebolt.client.auth</span> <span class="kn">import</span> <span class="n">ClientCredentials</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">gather</span><span class="p">,</span> <span class="n">run</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.async_db</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span> <span class="k">as</span> <span class="n">async_connect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.client.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientCredentials</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">execute_sql</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_sql</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
     <span class="c1"># Create a new cursor for every query</span>
     <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
     <span class="c1"># Wait for cursor to execute a query</span>
@@ -517,7 +517,7 @@ at the same time.</p>
     <span class="k">return</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run_multiple_queries</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_multiple_queries</span><span class="p">():</span>
     <span class="nb">id</span> <span class="o">=</span> <span class="s2">&quot;your_service_account_id&quot;</span>
     <span class="n">secret</span> <span class="o">=</span> <span class="s2">&quot;your_service_account_secret&quot;</span>
     <span class="n">engine_name</span> <span class="o">=</span> <span class="s2">&quot;your_engine&quot;</span>
@@ -562,25 +562,25 @@ the results you’re fetching.</p>
 <p>It’s generally a good practice to limit a number of queries running at the same time. It ensures a
 load on both server and client machines can be controlled. A suggested way is to use the
 <a class="reference external" href="https://docs.python.org/3/library/asyncio-sync.html#semaphore">Semaphore</a>.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">asyncio</span> <span class="kn">import</span> <span class="n">gather</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">Semaphore</span>
-<span class="kn">from</span> <span class="nn">firebolt.async_db</span> <span class="kn">import</span> <span class="n">connect</span> <span class="k">as</span> <span class="n">async_connect</span>
-<span class="kn">from</span> <span class="nn">firebolt.client.auth</span> <span class="kn">import</span> <span class="n">ClientCredentials</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">gather</span><span class="p">,</span> <span class="n">run</span><span class="p">,</span> <span class="n">Semaphore</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.async_db</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span> <span class="k">as</span> <span class="n">async_connect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.client.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientCredentials</span>
 
 
 <span class="n">MAX_PARALLEL</span> <span class="o">=</span> <span class="mi">2</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">gather_limited</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">max_parallel</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">gather_limited</span><span class="p">(</span><span class="n">tasks</span><span class="p">,</span> <span class="n">max_parallel</span><span class="p">):</span>
     <span class="n">sem</span> <span class="o">=</span> <span class="n">Semaphore</span><span class="p">(</span><span class="n">max_parallel</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">limited_task</span><span class="p">(</span><span class="n">task</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">limited_task</span><span class="p">(</span><span class="n">task</span><span class="p">):</span>
         <span class="k">async</span> <span class="k">with</span> <span class="n">sem</span><span class="p">:</span>
             <span class="k">await</span> <span class="n">task</span>
 
     <span class="k">await</span> <span class="n">gather</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="n">limited_task</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tasks</span><span class="p">])</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">execute_sql</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute_sql</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">query</span><span class="p">):</span>
     <span class="c1"># Create a new cursor for every query</span>
     <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
     <span class="c1"># Wait for cursor to execute a query</span>
@@ -589,7 +589,7 @@ load on both server and client machines can be controlled. A suggested way is to
     <span class="k">return</span> <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run_multiple_queries</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_multiple_queries</span><span class="p">():</span>
     <span class="nb">id</span> <span class="o">=</span> <span class="s2">&quot;your_service_account_id&quot;</span>
     <span class="n">secret</span> <span class="o">=</span> <span class="s2">&quot;your_service_account_secret&quot;</span>
     <span class="n">engine_name</span> <span class="o">=</span> <span class="s2">&quot;your_engine&quot;</span>
@@ -644,7 +644,7 @@ a specific format; otherwise they could be read incorrectly.</p>
 standard library contains various classes and methods to format DATE, TIMESTAMP and
 DATETIME data types.</p>
 <p>You can import this module as follows:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 </pre></div>
 </div>
 </section>
