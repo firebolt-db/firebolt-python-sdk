@@ -1,3 +1,4 @@
+import time
 from typing import Any, Callable, Dict, List
 from unittest.mock import patch
 
@@ -5,8 +6,9 @@ from httpx import URL, HTTPStatusError, Request, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
+from firebolt.common._types import Column
 from firebolt.db import Cursor
-from firebolt.db.cursor import ColType, Column, CursorState
+from firebolt.db.cursor import ColType, CursorState
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
@@ -14,6 +16,7 @@ from firebolt.utils.exception import (
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
+    QueryTimeoutError,
 )
 from tests.unit.db_conftest import encode_param
 from tests.unit.response import Response
@@ -724,3 +727,33 @@ def test_cursor_reset_session(
     assert len(cursor._set_parameters) == 0
     assert bool(cursor.engine_url) is True, "engine url is not set"
     assert bool(cursor.database) is True, "database is not set"
+
+
+def test_cursor_timeout(
+    httpx_mock: HTTPXMock,
+    select_one_query_callback: Callable,
+    cursor: Cursor,
+):
+    fast_executed, long_executed = False, False
+
+    def fast_query_callback(request: Request, **kwargs) -> Response:
+        nonlocal fast_executed
+        fast_executed = True
+        return select_one_query_callback(request, **kwargs)
+
+    def long_query_callback(request: Request, **kwargs) -> Response:
+        nonlocal long_executed
+        time.sleep(2)
+        long_executed = True
+        return select_one_query_callback(request, **kwargs)
+
+    httpx_mock.add_callback(long_query_callback)
+    httpx_mock.add_callback(fast_query_callback)
+
+    with raises(QueryTimeoutError):
+        cursor.execute("SELECT 1; SELECT 2", timeout=1)
+
+    assert long_executed is True, "long query was executed"
+    assert fast_executed is False, "fast query was not executed"
+
+    httpx_mock.reset(False)

@@ -16,7 +16,14 @@ from typing import (
 )
 from urllib.parse import urljoin
 
-from httpx import URL, USE_CLIENT_DEFAULT, Headers, Response, codes
+from httpx import (
+    URL,
+    USE_CLIENT_DEFAULT,
+    Headers,
+    Response,
+    TimeoutException,
+    codes,
+)
 
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import (
@@ -44,6 +51,7 @@ from firebolt.utils.exception import (
     FireboltDatabaseError,
     OperationalError,
     ProgrammingError,
+    QueryTimeoutError,
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
@@ -112,13 +120,16 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        return await self._client.request(
-            url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
-            method="POST",
-            params=parameters,
-            content=query,
-            timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
-        )
+        try:
+            return await self._client.request(
+                url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
+                method="POST",
+                params=parameters,
+                content=query,
+                timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
+            )
+        except TimeoutException:
+            raise QueryTimeoutError()
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""

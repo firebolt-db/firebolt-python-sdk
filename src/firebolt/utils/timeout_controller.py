@@ -18,7 +18,7 @@ class TimeoutController:
     def check_timeout(self) -> None:
         """Raise a TimeoutError if the timeout has been reached."""
         if self.timeout is not None and time() > (self.start_time + self.timeout):
-            raise self.timeout_error_cls(self.timeout)
+            raise self.timeout_error_cls()
 
     def remaining(self) -> Optional[float]:
         """Return the remaining time before the timeout is reached."""

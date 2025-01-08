@@ -319,6 +319,5 @@ class QueryTimeoutError(FireboltError, TimeoutError):
     Exception raised when the query execution exceeds the specified timeout.
     """
 
-    def __init__(self, timeout: float):
-        super().__init__(f"Query execution timed out after {timeout} seconds.")
-        self.timeout = timeout
+    def __init__(self, message="Query execution timed out."):  # type: ignore
+        super().__init__(message)

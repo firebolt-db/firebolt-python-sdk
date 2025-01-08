@@ -14,7 +14,14 @@ from typing import (
 )
 from urllib.parse import urljoin
 
-from httpx import URL, USE_CLIENT_DEFAULT, Headers, Response, codes
+from httpx import (
+    URL,
+    USE_CLIENT_DEFAULT,
+    Headers,
+    Response,
+    TimeoutException,
+    codes,
+)
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import (
@@ -42,6 +49,7 @@ from firebolt.utils.exception import (
     FireboltDatabaseError,
     OperationalError,
     ProgrammingError,
+    QueryTimeoutError,
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
@@ -134,12 +142,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             parameters = {**(self._set_parameters or {}), **parameters}
         if self.parameters:
             parameters = {**self.parameters, **parameters}
-        return self._client.post(
-            url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
-            params=parameters,
-            content=query,
-            timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
-        )
+        try:
+            return self._client.post(
+                url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
+                params=parameters,
+                content=query,
+                timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
+            )
+        except TimeoutException:
+            raise QueryTimeoutError()
 
     def _validate_set_parameter(
         self, parameter: SetParameter, timeout: Optional[float]
