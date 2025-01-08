@@ -2,6 +2,7 @@ import time
 
 from pytest import raises
 
+from firebolt.utils.exception import QueryTimeoutError
 from firebolt.utils.timeout_controller import TimeoutController
 
 
@@ -14,7 +15,7 @@ def test_timeout_controller():
     controller.check_timeout()
     time.sleep(1)
     assert controller.remaining() == 0
-    with raises(TimeoutError):
+    with raises(QueryTimeoutError):
         controller.check_timeout()
 
 
