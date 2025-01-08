@@ -16,6 +16,9 @@ VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
 LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT_2}'
+LONG_SELECT = (
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)"  # approx 6m runtime
+)
 
 
 async def test_connect_no_db(
@@ -103,9 +106,7 @@ async def test_long_query(
     minimal_time(350)
 
     with connection.cursor() as c:
-        await c.execute(
-            "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)",  # approx 6m runtime
-        )
+        await c.execute(LONG_SELECT)
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 
