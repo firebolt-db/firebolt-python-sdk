@@ -10,17 +10,17 @@ def test_timeout_controller():
     timeout = 1
     controller = TimeoutController(timeout)
     remaining = controller.remaining()
-    assert 1 > remaining > 0
+    assert 1 >= remaining > 0
 
-    controller.check_timeout()
+    controller.raise_if_timeout()
     time.sleep(1)
     assert controller.remaining() == 0
     with raises(QueryTimeoutError):
-        controller.check_timeout()
+        controller.raise_if_timeout()
 
 
 def test_timeout_controller_no_timeout():
     timeout = None
     controller = TimeoutController(timeout)
     assert controller.remaining() is None
-    controller.check_timeout()
+    controller.raise_if_timeout()

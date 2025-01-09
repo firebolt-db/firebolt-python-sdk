@@ -202,7 +202,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             for query in queries:
                 start_time = time.time()
                 Cursor._log_query(query)
-                timeout_controller.check_timeout()
+                timeout_controller.raise_if_timeout()
 
                 if isinstance(query, SetParameter):
                     row_set: RowSet = (-1, None, None, None)
