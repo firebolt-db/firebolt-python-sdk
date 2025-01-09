@@ -136,6 +136,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             use_set_parameters: Optional[bool]: Some queries will fail if additional
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
+            timeout (Optional[float]): Request execution timeout in seconds
         """
         parameters = parameters or {}
         if use_set_parameters:
