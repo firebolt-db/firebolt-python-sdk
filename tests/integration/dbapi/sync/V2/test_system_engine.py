@@ -48,17 +48,13 @@ def test_system_engine(
             "Invalid data returned by fetchmany",
         )
 
-        if connection_system_engine.init_parameters.get("database"):
-            c.execute("show tables")
-            with raises(FireboltStructuredError) as e:
-                # Either one or another query fails if we're not on a user engine
-                c.execute('create table if not exists "test_sync"(id int)')
-                c.execute('insert into "test_sync" values (1)')
-            assert system_error_pattern.search(str(e.value)), "Invalid error message"
-        else:
-            c.execute("show databases")
-            with raises(FireboltStructuredError):
-                c.execute("show tables")
+        c.execute("show databases")
+        c.execute("show tables")
+        with raises(FireboltStructuredError) as e:
+            # Either one or another query fails if we're not on a user engine
+            c.execute('create table if not exists "test_sync"(id int)')
+            c.execute('insert into "test_sync" values (1)')
+        assert system_error_pattern.search(str(e.value)), "Invalid error message"
 
 
 def test_system_engine_no_db(

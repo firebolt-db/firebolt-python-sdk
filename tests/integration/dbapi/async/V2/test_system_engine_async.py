@@ -47,17 +47,13 @@ async def test_system_engine(
             "Invalid data returned by fetchmany",
         )
 
-        if connection_system_engine.init_parameters.get("database"):
-            await c.execute("show tables")
-            with raises(FireboltStructuredError) as e:
-                # Either one or another query fails if we're not on a user engine
-                await c.execute('create table if not exists "test_async"(id int)')
-                await c.execute('insert into "test_async" values (1)')
-            assert system_error_pattern.search(str(e.value)), "Invalid error message"
-        else:
-            await c.execute("show databases")
-            with raises(FireboltStructuredError):
-                await c.execute("show tables")
+        await c.execute("show databases")
+        await c.execute("show tables")
+        with raises(FireboltStructuredError) as e:
+            # Either one or another query fails if we're not on a user engine
+            await c.execute('create table if not exists "test_async"(id int)')
+            await c.execute('insert into "test_async" values (1)')
+        assert system_error_pattern.search(str(e.value)), "Invalid error message"
 
 
 async def test_system_engine_no_db(
