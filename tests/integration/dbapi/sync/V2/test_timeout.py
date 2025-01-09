@@ -1,8 +1,9 @@
-from integration.dbapi.sync.V2.test_queries import LONG_SELECT
 from pytest import raises
 
 from firebolt.db import Connection
 from firebolt.utils.exception import QueryTimeoutError
+
+from .test_queries import LONG_SELECT
 
 
 def test_query_timeout(connection: Connection):
