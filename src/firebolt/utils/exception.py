@@ -311,3 +311,13 @@ class FireboltStructuredError(Error):
             )
             error_messages.append(message)
         return ",\n".join(error_messages)
+
+
+class QueryTimeoutError(FireboltError, TimeoutError):
+    """Query execution timed out.
+
+    Exception raised when the query execution exceeds the specified timeout.
+    """
+
+    def __init__(self, message="Query execution timed out."):  # type: ignore
+        super().__init__(message)

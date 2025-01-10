@@ -12,6 +12,9 @@ from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT}'
+LONG_SELECT = (
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, 250000000000)"  # approx 6m runtime
+)
 
 
 def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
@@ -126,9 +129,7 @@ def test_long_query(
     minimal_time(350)
 
     with connection.cursor() as c:
-        c.execute(
-            "SELECT checksum(*) FROM GENERATE_SERIES(1, 250000000000)",  # approx 6m runtime
-        )
+        c.execute(LONG_SELECT)
         data = c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 

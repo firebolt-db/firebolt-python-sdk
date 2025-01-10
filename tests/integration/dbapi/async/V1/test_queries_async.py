@@ -13,6 +13,9 @@ VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
 LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT_2}'
+LONG_SELECT = (
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, 250000000000)"  # approx 6m runtime
+)
 
 CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS "ex_lineitem" (
   l_orderkey              LONG,
@@ -177,9 +180,7 @@ async def test_long_query(
     minimal_time(350)
 
     with connection.cursor() as c:
-        await c.execute(
-            "SELECT checksum(*) FROM GENERATE_SERIES(1, 250000000000)",  # approx 6m runtime
-        )
+        await c.execute(LONG_SELECT)
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 

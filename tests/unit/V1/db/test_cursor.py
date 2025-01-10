@@ -5,8 +5,9 @@ from httpx import HTTPStatusError, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
+from firebolt.common._types import Column
 from firebolt.db import Cursor
-from firebolt.db.cursor import ColType, Column, CursorState
+from firebolt.db.cursor import ColType, CursorState
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,

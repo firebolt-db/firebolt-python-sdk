@@ -12,19 +12,23 @@ from typing import (
     List,
     Optional,
     Sequence,
-    Tuple,
     Union,
 )
 from urllib.parse import urljoin
 
-from httpx import URL, Headers, Response, codes
+from httpx import (
+    URL,
+    USE_CLIENT_DEFAULT,
+    Headers,
+    Response,
+    TimeoutException,
+    codes,
+)
 
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import (
     ColType,
-    Column,
     ParameterType,
-    RawColType,
     SetParameter,
     split_format_sql,
 )
@@ -35,7 +39,7 @@ from firebolt.common.base_cursor import (
     UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
-    Statistics,
+    RowSet,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
@@ -47,7 +51,9 @@ from firebolt.utils.exception import (
     FireboltDatabaseError,
     OperationalError,
     ProgrammingError,
+    QueryTimeoutError,
 )
+from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 
 if TYPE_CHECKING:
@@ -86,15 +92,45 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
-    @abstractmethod
     async def _api_request(
         self,
         query: str = "",
         parameters: Optional[dict[str, Any]] = None,
         path: str = "",
         use_set_parameters: bool = True,
+        timeout: Optional[float] = None,
     ) -> Response:
-        ...
+        """
+        Query API, return Response object.
+
+        Args:
+            query (str): SQL query
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values. Note: In order to "output_format" dict value, it
+                    must be an empty string. If no value not specified,
+                    JSON_OUTPUT_FORMAT will be used.
+            path (str): endpoint suffix, for example "cancel" or "status"
+            use_set_parameters: Optional[bool]: Some queries will fail if additional
+                set parameters are sent. Setting this to False will allow
+                self._set_parameters to be ignored.
+            timeout (Optional[float]): Request execution timeout in seconds
+        """
+        parameters = parameters or {}
+        if use_set_parameters:
+            parameters = {**(self._set_parameters or {}), **parameters}
+        if self.parameters:
+            parameters = {**self.parameters, **parameters}
+        try:
+            return await self._client.request(
+                url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
+                method="POST",
+                params=parameters,
+                content=query,
+                timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
+            )
+        except TimeoutException:
+            raise QueryTimeoutError()
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
@@ -119,10 +155,14 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         _print_error_body(resp)
         resp.raise_for_status()
 
-    async def _validate_set_parameter(self, parameter: SetParameter) -> None:
+    async def _validate_set_parameter(
+        self, parameter: SetParameter, timeout: Optional[float]
+    ) -> None:
         """Validate parameter by executing simple query with it."""
         _raise_if_internal_set_parameter(parameter)
-        resp = await self._api_request("select 1", {parameter.name: parameter.value})
+        resp = await self._api_request(
+            "select 1", {parameter.name: parameter.value}, timeout=timeout
+        )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
             raise OperationalError(resp.text)
@@ -151,29 +191,30 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
+        timeout: Optional[float] = None,
     ) -> None:
         self._reset()
         # Allow users to manually skip parsing for performance improvement.
         queries: List[Union[SetParameter, str]] = (
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
+        timeout_controller = TimeoutController(timeout)
         try:
             for query in queries:
                 start_time = time.time()
                 Cursor._log_query(query)
+                timeout_controller.raise_if_timeout()
 
-                # Define type for mypy
-                row_set: Tuple[
-                    int,
-                    Optional[List[Column]],
-                    Optional[Statistics],
-                    Optional[List[List[RawColType]]],
-                ] = (-1, None, None, None)
                 if isinstance(query, SetParameter):
-                    await self._validate_set_parameter(query)
+                    row_set: RowSet = (-1, None, None, None)
+                    await self._validate_set_parameter(
+                        query, timeout_controller.remaining()
+                    )
                 else:
                     resp = await self._api_request(
-                        query, {"output_format": JSON_OUTPUT_FORMAT}
+                        query,
+                        {"output_format": JSON_OUTPUT_FORMAT},
+                        timeout=timeout_controller.remaining(),
                     )
                     await self._raise_if_error(resp)
                     await self._parse_response_headers(resp.headers)
@@ -198,6 +239,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
+        timeout_seconds: Optional[float] = None,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -221,12 +263,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized, multi-statement and SET queries,
                 while improving performance
+            timeout_seconds (Optional[float]): Query execution timeout in seconds
 
         Returns:
             int: Query row count.
         """
         params_list = [parameters] if parameters else []
-        await self._do_execute(query, params_list, skip_parsing)
+        await self._do_execute(
+            query, params_list, skip_parsing, timeout=timeout_seconds
+        )
         return self.rowcount
 
     @check_not_closed
@@ -234,6 +279,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self,
         query: str,
         parameters_seq: Sequence[Sequence[ParameterType]],
+        timeout_seconds: Optional[float] = None,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -258,11 +304,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                substitution parameter sets. Used to replace '?' placeholders inside a
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
+            timeout_seconds (Optional[float]): Query execution timeout in seconds.
 
         Returns:
             int: Query row count.
         """
-        await self._do_execute(query, parameters_seq)
+        await self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
 
     @abstractmethod
@@ -345,40 +392,6 @@ class CursorV2(Cursor):
         assert isinstance(client, AsyncClientV2)
         super().__init__(*args, client=client, connection=connection, **kwargs)
 
-    async def _api_request(
-        self,
-        query: str = "",
-        parameters: Optional[dict[str, Any]] = None,
-        path: str = "",
-        use_set_parameters: bool = True,
-    ) -> Response:
-        """
-        Query API, return Response object.
-
-        Args:
-            query (str): SQL query
-            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
-                parameters. Used to replace '?' placeholders inside a query with
-                actual values. Note: In order to "output_format" dict value, it
-                    must be an empty string. If no value not specified,
-                    JSON_OUTPUT_FORMAT will be used.
-            path (str): endpoint suffix, for example "cancel" or "status"
-            use_set_parameters: Optional[bool]: Some queries will fail if additional
-                set parameters are sent. Setting this to False will allow
-                self._set_parameters to be ignored.
-        """
-        parameters = parameters or {}
-        if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **parameters}
-        if self.parameters:
-            parameters = {**self.parameters, **parameters}
-        return await self._client.request(
-            url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
-            method="POST",
-            params=parameters,
-            content=query,
-        )
-
     async def is_db_available(self, database_name: str) -> bool:
         """
         Verify that the database exists.
@@ -414,42 +427,6 @@ class CursorV1(Cursor):
     ) -> None:
         assert isinstance(client, AsyncClientV1)
         super().__init__(*args, client=client, connection=connection, **kwargs)
-
-    async def _api_request(
-        self,
-        query: Optional[str] = "",
-        parameters: Optional[dict[str, Any]] = None,
-        path: Optional[str] = "",
-        use_set_parameters: Optional[bool] = True,
-    ) -> Response:
-        """
-        Query API, return Response object.
-
-        Args:
-            query (str): SQL query
-            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
-                parameters. Used to replace '?' placeholders inside a query with
-                actual values. Note: In order to "output_format" dict value, it
-                    must be an empty string. If no value not specified,
-                    JSON_OUTPUT_FORMAT will be used.
-            path (str): endpoint suffix, for example "cancel" or "status"
-            use_set_parameters: Optional[bool]: Some queries will fail if additional
-                set parameters are sent. Setting this to False will allow
-                self._set_parameters to be ignored.
-        """
-        parameters = parameters or {}
-        if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **(parameters or {})}
-        if self.parameters:
-            parameters = {**self.parameters, **parameters}
-        return await self._client.request(
-            url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
-            method="POST",
-            params={
-                **(parameters or dict()),
-            },
-            content=query,
-        )
 
     async def is_db_available(self, database_name: str) -> bool:
         """
