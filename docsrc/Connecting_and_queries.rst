@@ -626,3 +626,12 @@ You can import this module as follows:
 
     from datetime import datetime
 
+Execution timeout
+==============================
+
+The Firebolt Python SDK allows you to set a timeout for query execution.
+In order to do this, you can call the :meth:`Cursor.execute` or :meth:`Cursor.executemany` function with the
+``timeout_seconds`` parameter provided. In case the timeout will be reached before the query execution finishes, the
+function will raise a ``QueryTimeoutError`` exception.
+Warning: If running multiple queries, and one of queries times out, all the previous queries will not be rolled back and their result will persist. All the remaining queries will be cancelled.
+
