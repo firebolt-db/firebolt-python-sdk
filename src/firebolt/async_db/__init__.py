@@ -12,6 +12,7 @@ from firebolt.common._types import (
     Binary,
     Date,
     DateFromTicks,
+    ExtendedType,
     Time,
     TimeFromTicks,
     Timestamp,
