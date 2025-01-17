@@ -3,6 +3,7 @@ name: Pull request
 on:
   pull_request:
     branches: [ main, 0.x ]
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
   check-formatting:
@@ -14,8 +15,10 @@ jobs:
           github-key: ${{ secrets.GITHUB_TOKEN }}
     
   code-checkers:
+    if: github.event.action != 'edited'
     uses: ./.github/workflows/code-check.yml
   unit-tests:
+    if: github.event.action != 'edited'
     uses: ./.github/workflows/unit-tests.yml
     secrets:
       GIST_PAT: ${{ secrets.GIST_PAT }}
