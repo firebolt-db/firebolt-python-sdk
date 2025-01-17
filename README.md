@@ -14,7 +14,7 @@
 
 ## Documentation
 
-For reference and tutorials, see the [Firebolt Python SDK reference](https://old.docs.firebolt.io/firebolt-python-sdk/sdk_documenation/latest/).
+For reference and tutorials, see the [Firebolt Python SDK reference](https://python.docs.firebolt.io/sdk_documenation/latest/).
 
 ## Connection parameters
 These parameters are used to connect to a Firebolt database:
