@@ -6,7 +6,7 @@ on:
 
 jobs:
   code-checkers:
-    if: endsWith(github.event.pull_request.user.email, 'firebolt.io')
+    if: github.event.pull_request.author_association == 'MEMBER' || github.event.pull_request.author_association == 'OWNER'
     uses: ./.github/workflows/code-check.yml
   unit-tests:
     uses: ./.github/workflows/unit-tests.yml
