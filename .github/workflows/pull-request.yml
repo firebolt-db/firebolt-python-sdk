@@ -1,19 +1,10 @@
-name: Pull request
+name: Pull request code checks
 
 on:
   pull_request:
     branches: [ main, 0.x ]
-    types: [opened, synchronize, reopened, edited]
 
 jobs:
-  check-formatting:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Formatting conventions
-        uses: firebolt-db/action-pr-checks@test-methods
-        with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
-    
   code-checkers:
     uses: ./.github/workflows/code-check.yml
   unit-tests:
