@@ -5,13 +5,14 @@ on:
     branches: [ main, 0.x ]
 
 jobs:
-  check-title:
+  check-formatting:
     runs-on: ubuntu-latest
     steps:
-      - name: Check title name convention
-        uses: jef/conventional-commits-pr-action@v1.0.0
+      - name: Formatting conventions
+        uses: firebolt-db/action-pr-checks@main
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          github-key: ${{ secrets.GITHUB_TOKEN }}
+    
   code-checkers:
     uses: ./.github/workflows/code-check.yml
   unit-tests:
