@@ -8,7 +8,15 @@ jobs:
   print-association:
     runs-on: ubuntu-latest
     steps:
+      - name: Check if internal user
+        id: check
+        uses: scherermichael-oss/action-has-permission@master
+        with:
+            required-permission: write
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Print association
+        if: steps.check.outputs.has-permission
         run: |
           echo "Author association: ${{ github.event.pull_request.author_association }}"
   code-checkers:
