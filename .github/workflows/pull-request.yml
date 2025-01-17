@@ -8,17 +8,32 @@ jobs:
   print-association:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if internal user
-        id: check
-        uses: scherermichael-oss/action-has-permission@master
-        with:
-            required-permission: write
+      - name: Check PR author write access
+        id: check-permissions
         env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Print association
-        if: steps.check.outputs.has-permission
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Author association: ${{ github.event.pull_request.author_association }}"
+          PR_AUTHOR=${{ github.event.pull_request.user.login }}
+          REPO_OWNER=${{ github.repository_owner }}
+          REPO_NAME=$(basename ${{ github.repository }})
+          
+          # Call GitHub API to get permissions
+          RESPONSE=$(curl -s \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/collaborators/$PR_AUTHOR/permission")
+
+          PERMISSION=$(echo $RESPONSE | jq -r '.permission')
+
+          echo "Permission: $PERMISSION"
+          
+          # Fail if the author doesn't have write access
+          if [[ "$PERMISSION" != "write" && "$PERMISSION" != "admin" ]]; then
+            echo "PR author does not have write access."
+            exit 1
+          fi
+          
+          echo "PR author has write access."
   code-checkers:
     if: github.event.pull_request.author_association == 'MEMBER' || github.event.pull_request.author_association == 'OWNER'
     uses: ./.github/workflows/code-check.yml
