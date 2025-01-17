@@ -5,6 +5,12 @@ on:
     branches: [ main, 0.x ]
 
 jobs:
+  print-association:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print association
+        run: |
+          echo "Author association: ${{ github.event.pull_request.author_association }}"
   code-checkers:
     if: github.event.pull_request.author_association == 'MEMBER' || github.event.pull_request.author_association == 'OWNER'
     uses: ./.github/workflows/code-check.yml
