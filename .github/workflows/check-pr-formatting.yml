@@ -1,0 +1,15 @@
+name: Pull request formatting
+
+on:
+  pull_request:
+    branches: [ main, 0.x ]
+    types: [opened, synchronize, edited]
+
+jobs:
+  pr-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Formatting conventions
+        uses: firebolt-db/action-pr-checks@main
+        with:
+          github-key: ${{ secrets.GITHUB_TOKEN }}
