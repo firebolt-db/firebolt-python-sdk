@@ -2,6 +2,10 @@ from typing import Any, List
 
 from firebolt.utils.exception import ConnectionClosedError
 
+ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
+ASYNC_QUERY_STATUS_SUCCESSFUL = "ENDED_SUCCESSFULLY"
+ASYNC_QUERY_STATUS_REQUEST = "CALL fb_GetAsyncStatus('{token}')"
+
 
 class BaseConnection:
     def __init__(self) -> None:

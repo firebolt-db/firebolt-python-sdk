@@ -339,6 +339,34 @@ class CursorV2(Cursor):
         assert isinstance(client, ClientV2)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
 
+    @check_not_closed
+    def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        self._reset()
+        # Allow users to manually skip parsing for performance improvement.
+        queries: List[Union[SetParameter, str]] = (
+            [query] if skip_parsing else split_format_sql(query, parameters)
+        )
+        try:
+            for query in queries:
+                resp = self._api_request(
+                    query,
+                    {"output_format": JSON_OUTPUT_FORMAT, "async": True},
+                )
+                self._raise_if_error(resp)
+                self._parse_async_response(resp)
+
+            self._state = CursorState.DONE
+        except Exception:
+            self._state = CursorState.ERROR
+            raise
+
+        return -1
+
     def is_db_available(self, database_name: str) -> bool:
         """
         Verify that the database exists.

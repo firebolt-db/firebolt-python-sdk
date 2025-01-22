@@ -9,12 +9,21 @@ from httpx import Timeout
 
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
-from firebolt.common.base_connection import BaseConnection
+from firebolt.common.base_connection import (
+    ASYNC_QUERY_STATUS_REQUEST,
+    ASYNC_QUERY_STATUS_RUNNING,
+    ASYNC_QUERY_STATUS_SUCCESSFUL,
+    BaseConnection,
+)
 from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url_and_params
-from firebolt.utils.exception import ConfigurationError, ConnectionClosedError
+from firebolt.utils.exception import (
+    ConfigurationError,
+    ConnectionClosedError,
+    FireboltError,
+)
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
@@ -143,6 +152,15 @@ def connect_v2(
         )
 
 
+def ensure_v2(func):
+    def wrapper(self, *args, **kwargs):
+        if self.cursor_type != CursorV2:
+            raise FireboltError("This method is only supported for CursorV2.")
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
+
 class Connection(BaseConnection):
     """
     Firebolt database connection class. Implements PEP-249.
@@ -217,6 +235,24 @@ class Connection(BaseConnection):
             c.close()
         self._client.close()
         self._is_closed = True
+
+    # Server-side async methods
+    @ensure_v2
+    def _get_async_query_status(self, token: str) -> str:
+        cursor = self.cursor()
+        cursor.execute(ASYNC_QUERY_STATUS_REQUEST.format(token=token))
+        if cursor.rowcount != 1:
+            raise FireboltError("Unexpected result from async query status request.")
+        result = cursor.fetchone()
+        columns = cursor.description
+        result_dict = dict(zip([column.name for column in columns], result))
+        return result_dict["status"]
+
+    def is_async_query_running(self, token: str) -> bool:
+        return self._get_async_query_status(token) == ASYNC_QUERY_STATUS_RUNNING
+
+    def is_async_query_successful(self, token: str) -> bool:
+        return self._get_async_query_status(token) == ASYNC_QUERY_STATUS_SUCCESSFUL
 
     # Context manager support
     def __enter__(self) -> Connection:
