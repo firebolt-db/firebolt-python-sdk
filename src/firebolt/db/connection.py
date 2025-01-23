@@ -25,7 +25,11 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
+from firebolt.utils.util import (
+    ensure_v2,
+    fix_url_schema,
+    validate_engine_name_and_url_v1,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -152,15 +156,6 @@ def connect_v2(
         )
 
 
-def ensure_v2(func):
-    def wrapper(self, *args, **kwargs):
-        if self.cursor_type != CursorV2:
-            raise FireboltError("This method is only supported for CursorV2.")
-        return func(self, *args, **kwargs)
-
-    return wrapper
-
-
 class Connection(BaseConnection):
     """
     Firebolt database connection class. Implements PEP-249.
@@ -199,10 +194,9 @@ class Connection(BaseConnection):
         api_endpoint: str = DEFAULT_API_URL,
         init_parameters: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__()
+        super().__init__(cursor_type)
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
-        self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
         self._client = client
         self.init_parameters = init_parameters or {}

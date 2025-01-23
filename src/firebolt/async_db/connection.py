@@ -24,7 +24,11 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
+from firebolt.utils.util import (
+    ensure_v2,
+    fix_url_schema,
+    validate_engine_name_and_url_v1,
+)
 
 
 class Connection(BaseConnection):
@@ -72,10 +76,9 @@ class Connection(BaseConnection):
         api_endpoint: str,
         init_parameters: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__()
+        super().__init__(cursor_type)
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
-        self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
         self._client = client
         self.init_parameters = init_parameters or {}
@@ -91,15 +94,16 @@ class Connection(BaseConnection):
         return c
 
     # Server-side async methods
+    @ensure_v2
     async def _get_async_query_status(self, token: str) -> str:
         cursor = self.cursor()
         await cursor.execute(ASYNC_QUERY_STATUS_REQUEST.format(token=token))
-        if cursor.rowcount != 1:
-            raise FireboltError("Unexpected result from async query status request.")
         result = await cursor.fetchone()
+        if cursor.rowcount != 1 or not result:
+            raise FireboltError("Unexpected result from async query status request.")
         columns = cursor.description
         result_dict = dict(zip([column.name for column in columns], result))
-        return result_dict["status"]
+        return str(result_dict.get("status"))
 
     async def is_async_query_running(self, token: str) -> bool:
         status = await self._get_async_query_status(token)

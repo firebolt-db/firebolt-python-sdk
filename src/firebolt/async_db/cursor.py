@@ -401,16 +401,20 @@ class CursorV2(Cursor):
     ) -> int:
         self._reset()
         # Allow users to manually skip parsing for performance improvement.
+        params_list = [parameters] if parameters else []
         queries: List[Union[SetParameter, str]] = (
-            [query] if skip_parsing else split_format_sql(query, parameters)
+            [query] if skip_parsing else split_format_sql(query, params_list)
         )
-        for query in queries:
-            resp = await self._api_request(
-                query,
-                {"output_format": JSON_OUTPUT_FORMAT, "async": True},
-            )
-            await self._raise_if_error(resp)
-            self._parse_async_response(resp)
+        for a_query in queries:
+            if isinstance(a_query, SetParameter):
+                await self._validate_set_parameter(a_query, None)
+            else:
+                resp = await self._api_request(
+                    a_query,
+                    {"output_format": JSON_OUTPUT_FORMAT, "async": True},
+                )
+                await self._raise_if_error(resp)
+                self._parse_async_response(resp)
         return -1
 
     async def is_db_available(self, database_name: str) -> bool:

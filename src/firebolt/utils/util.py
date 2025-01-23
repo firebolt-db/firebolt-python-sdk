@@ -5,6 +5,7 @@ from time import time
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     Dict,
     Optional,
@@ -16,8 +17,11 @@ from urllib.parse import parse_qs, urljoin, urlparse
 
 from httpx import URL, Response, codes
 
+from firebolt.async_db.cursor import CursorV2
+from firebolt.common.base_connection import BaseConnection
 from firebolt.utils.exception import (
     ConfigurationError,
+    FireboltError,
     FireboltStructuredError,
 )
 
@@ -237,3 +241,14 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
             raise ValueError(f"Multiple values found for key '{key}'")
         query_params_dict[key] = values[0]
     return result_url, query_params_dict
+
+
+def ensure_v2(func: Callable) -> Callable:
+    """Decorator to ensure that the method is only called for CursorV2."""
+
+    def wrapper(self: BaseConnection, *args: Any, **kwargs: Any) -> Any:
+        if self.cursor_type != CursorV2:
+            raise FireboltError("This method is only supported for CursorV2.")
+        return func(self, *args, **kwargs)
+
+    return wrapper
