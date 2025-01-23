@@ -15,7 +15,6 @@ from firebolt.common.base_connection import (
     ASYNC_QUERY_STATUS_RUNNING,
     ASYNC_QUERY_STATUS_SUCCESSFUL,
     BaseConnection,
-    ensure_v2,
 )
 from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
@@ -91,8 +90,11 @@ class Connection(BaseConnection):
         return c
 
     # Server-side async methods
-    @ensure_v2
     async def _get_async_query_status(self, token: str) -> str:
+        if self.cursor_type != CursorV2:
+            raise FireboltError(
+                "This method is only supported for connection with service account."
+            )
         cursor = self.cursor()
         await cursor.execute(ASYNC_QUERY_STATUS_REQUEST.format(token=token))
         result = await cursor.fetchone()
