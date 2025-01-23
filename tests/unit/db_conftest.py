@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 from json import dumps as jdumps
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Tuple
 
 from httpx import URL, Request, codes
 from pytest import fixture
@@ -523,3 +523,88 @@ def types_map() -> Dict[str, type]:
         **struct,
         **nested_struct,
     }
+
+
+@fixture
+def async_query_data() -> List[List[ColType]]:
+    query_data = [
+        [
+            "developer",
+            "ecosystem_ci",
+            "2025-01-23 14:08:06.087953+00",
+            "2025-01-23 14:08:06.134208+00",
+            "2025-01-23 14:08:06.410542+00",
+            "ENDED_SUCCESSFULLY",
+            "db4c7542-3058-4e2a-9d49-ae5ea2da3cbe",
+            "f9520387-224c-48e9-9858-b2d05518ce94",
+            "",
+            "2",
+            "2",
+            "0",
+        ]
+    ]
+    return query_data
+
+
+@fixture
+def async_query_meta() -> List[Tuple[str, str]]:
+    query_meta = [
+        ("account_name", "text null"),
+        ("user_name", "text null"),
+        ("submitted_time", "timestamptz null"),
+        ("start_time", "timestamptz null"),
+        ("end_time", "timestamptz null"),
+        ("status", "text null"),
+        ("request_id", "text null"),
+        ("query_id", "text null"),
+        ("error_message", "text null"),
+        ("scanned_bytes", "long null"),
+        ("scanned_rows", "long null"),
+        ("retries", "long null"),
+    ]
+    return query_meta
+
+
+@fixture
+def async_query_callback_factory(
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    def create_callback(
+        data: List[List[ColType]], meta: List[Tuple[str, str]]
+    ) -> Callable:
+        def do_query(request: Request, **kwargs) -> Response:
+            assert request.read() != b""
+            assert request.method == "POST"
+            assert f"output_format={JSON_OUTPUT_FORMAT}" in str(request.url)
+            query_response = {
+                "meta": [{"name": c[0], "type": c[1]} for c in meta],
+                "data": data,
+                "rows": len(data),
+                "statistics": query_statistics,
+            }
+            return Response(status_code=codes.OK, json=query_response)
+
+        return do_query
+
+    return create_callback
+
+
+@fixture
+def async_query_status_running_callback(
+    query_statistics: Dict[str, Any],
+    query_data: List[List[ColType]],
+    query_meta: List[Tuple[str, str]],
+) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        assert f"output_format={JSON_OUTPUT_FORMAT}" in str(request.url)
+        query_response = {
+            "meta": [{"name": c[0], "type": c[1]} for c in query_meta],
+            "data": query_data,
+            "rows": len(query_data),
+            "statistics": query_statistics,
+        }
+        return Response(status_code=codes.OK, json=query_response)
+
+    return do_query

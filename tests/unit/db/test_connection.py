@@ -1,6 +1,6 @@
 import gc
 import warnings
-from typing import Callable, List
+from typing import Callable, List, Tuple
 from unittest.mock import patch
 
 from pyfakefs.fake_filesystem_unittest import Patcher
@@ -424,3 +424,89 @@ def test_connect_no_user_agent(
         ) as connection:
             connection.cursor().execute("select*")
         ut.assert_called_with([], [])
+
+
+@mark.parametrize(
+    "server_status,expected_running,expected_success",
+    [
+        ("RUNNING", True, False),
+        ("ENDED_SUCCESSFULLY", False, True),
+        ("FAILED", False, False),
+        ("CANCELLED", False, False),
+    ],
+)
+def test_is_async_query_running_success(
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    async_query_callback_factory: Callable,
+    async_query_data: List[List[ColType]],
+    async_query_meta: List[Tuple[str, str]],
+    mock_connection_flow: Callable,
+    server_status: str,
+    expected_running: bool,
+    expected_success: bool,
+):
+    """Test is_async_query_running method"""
+    mock_connection_flow()
+    async_query_data[0][5] = server_status
+    async_query_status_running_callback = async_query_callback_factory(
+        async_query_data, async_query_meta
+    )
+
+    httpx_mock.add_callback(
+        async_query_status_running_callback,
+        url=query_url,
+        match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+    )
+
+    with connect(
+        database=db_name,
+        auth=auth,
+        engine_name=engine_name,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        assert connection.is_async_query_running("token") is expected_running
+        assert connection.is_async_query_successful("token") is expected_success
+
+
+def test_async_query_status_unexpected_result(
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    async_query_callback_factory: Callable,
+    async_query_meta: List[Tuple[str, str]],
+    mock_connection_flow: Callable,
+):
+    """Test is_async_query_running method"""
+    mock_connection_flow()
+    async_query_status_running_callback = async_query_callback_factory(
+        [], async_query_meta
+    )
+
+    httpx_mock.add_callback(
+        async_query_status_running_callback,
+        url=query_url,
+        match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+    )
+
+    with connect(
+        database=db_name,
+        auth=auth,
+        engine_name=engine_name,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with raises(FireboltError):
+            connection.is_async_query_running("token")
+        with raises(FireboltError):
+            connection.is_async_query_successful("token")

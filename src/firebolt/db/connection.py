@@ -234,9 +234,9 @@ class Connection(BaseConnection):
             )
         cursor = self.cursor()
         cursor.execute(ASYNC_QUERY_STATUS_REQUEST.format(token=token))
-        if cursor.rowcount != 1:
-            raise FireboltError("Unexpected result from async query status request.")
         result = cursor.fetchone()
+        if cursor.rowcount != 1 or not result:
+            raise FireboltError("Unexpected result from async query status request.")
         columns = cursor.description
         result_dict = dict(zip([column.name for column in columns], result))
         return result_dict["status"]
