@@ -247,6 +247,18 @@ def query_url(engine_url: str, db_name: str) -> URL:
 
 
 @fixture
+def async_query_url(engine_url: str, db_name: str) -> URL:
+    return URL(
+        f"https://{engine_url}/",
+        params={
+            "output_format": JSON_OUTPUT_FORMAT,
+            "database": db_name,
+            "async": "true",
+        },
+    )
+
+
+@fixture
 def query_url_updated(engine_url: str, db_name_updated: str) -> URL:
     return URL(
         f"https://{engine_url}/",
@@ -606,5 +618,27 @@ def async_query_status_running_callback(
             "statistics": query_statistics,
         }
         return Response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
+def async_token() -> str:
+    return "async_token"
+
+
+@fixture
+def async_query_callback(async_token: str) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        assert f"output_format={JSON_OUTPUT_FORMAT}" in str(request.url)
+        assert "async=true" in str(request.url)
+        query_response = {
+            "message": "the query was accepted for async processing",
+            "monitorSql": "CALL fb_GetAsyncStatus('token');",
+            "token": async_token,
+        }
+        return Response(status_code=codes.ACCEPTED, json=query_response)
 
     return do_query

@@ -47,6 +47,7 @@ from firebolt.common.base_cursor import (
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
+    FireboltError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
@@ -352,17 +353,24 @@ class CursorV2(Cursor):
         queries: List[Union[SetParameter, str]] = (
             [query] if skip_parsing else split_format_sql(query, params_list)
         )
+        if len(queries) > 1:
+            raise FireboltError(
+                "execute_async does not support multi-statement queries"
+            )
+        a_query = queries[0]
         try:
-            for a_query in queries:
-                if isinstance(a_query, SetParameter):
-                    self._validate_set_parameter(a_query, None)
-                else:
-                    resp = self._api_request(
-                        a_query,
-                        {"output_format": JSON_OUTPUT_FORMAT, "async": True},
-                    )
-                    self._raise_if_error(resp)
-                    self._parse_async_response(resp)
+            if isinstance(a_query, SetParameter):
+                raise FireboltError(
+                    "execute_async does not support set statements, "
+                    "please use execute to set this parameter"
+                )
+            else:
+                resp = self._api_request(
+                    a_query,
+                    {"output_format": JSON_OUTPUT_FORMAT, "async": True},
+                )
+                self._raise_if_error(resp)
+                self._parse_async_response(resp)
 
             self._state = CursorState.DONE
         except Exception:

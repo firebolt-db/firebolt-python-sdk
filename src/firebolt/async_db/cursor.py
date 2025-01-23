@@ -49,6 +49,7 @@ from firebolt.common.base_cursor import (
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
+    FireboltError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
@@ -405,9 +406,17 @@ class CursorV2(Cursor):
         queries: List[Union[SetParameter, str]] = (
             [query] if skip_parsing else split_format_sql(query, params_list)
         )
-        for a_query in queries:
+        if len(queries) > 1:
+            raise FireboltError(
+                "execute_async does not support multi-statement queries"
+            )
+        a_query = queries[0]
+        try:
             if isinstance(a_query, SetParameter):
-                await self._validate_set_parameter(a_query, None)
+                raise FireboltError(
+                    "execute_async does not support set statements, "
+                    "please use execute to set this parameter"
+                )
             else:
                 resp = await self._api_request(
                     a_query,
@@ -415,6 +424,11 @@ class CursorV2(Cursor):
                 )
                 await self._raise_if_error(resp)
                 self._parse_async_response(resp)
+            self._state = CursorState.DONE
+        except Exception:
+            self._state = CursorState.ERROR
+            raise
+
         return -1
 
     async def is_db_available(self, database_name: str) -> bool:

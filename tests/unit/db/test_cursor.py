@@ -13,6 +13,8 @@ from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
     DataError,
+    FireboltError,
+    MethodNotAllowedInAsyncError,
     OperationalError,
     ProgrammingError,
     QueryNotRunError,
@@ -757,3 +759,83 @@ def test_cursor_timeout(
     assert fast_executed is False, "fast query was not executed"
 
     httpx_mock.reset(False)
+
+
+def verify_async_fetch_not_allowed(cursor: Cursor):
+    with raises(MethodNotAllowedInAsyncError):
+        cursor.fetchall()
+    with raises(MethodNotAllowedInAsyncError):
+        cursor.fetchone()
+    with raises(MethodNotAllowedInAsyncError):
+        cursor.fetchmany()
+
+
+def test_cursor_execute_async(
+    httpx_mock: HTTPXMock,
+    async_query_callback: Callable,
+    async_query_url: str,
+    cursor: Cursor,
+    async_token: str,
+):
+    httpx_mock.add_callback(async_query_callback, url=async_query_url)
+    cursor.execute_async("SELECT 2")
+    verify_async_fetch_not_allowed(cursor)
+    assert cursor.async_query_token == async_token
+    assert cursor._state == CursorState.DONE
+
+
+def test_cursor_execute_async_multiple_queries(
+    cursor: Cursor,
+):
+    with raises(FireboltError) as e:
+        cursor.execute_async("SELECT 2; SELECT 3")
+    assert "does not support multi-statement" in str(e.value)
+
+
+def test_cursor_execute_async_parametrised_query(
+    httpx_mock: HTTPXMock,
+    async_query_callback: Callable,
+    async_query_url: str,
+    cursor: Cursor,
+    async_token: str,
+):
+    httpx_mock.add_callback(async_query_callback, url=async_query_url)
+    cursor.execute_async("SELECT 2 WHERE x = ?", [1])
+    verify_async_fetch_not_allowed(cursor)
+    assert cursor.async_query_token == async_token
+    assert cursor._state == CursorState.DONE
+
+
+def test_cursor_execute_async_skip_parsing(
+    httpx_mock: HTTPXMock,
+    async_query_callback: Callable,
+    async_query_url: str,
+    cursor: Cursor,
+    async_token: str,
+):
+    httpx_mock.add_callback(async_query_callback, url=async_query_url)
+    cursor.execute_async("SELECT 2; SELECT 3", skip_parsing=True)
+    verify_async_fetch_not_allowed(cursor)
+    assert cursor.async_query_token == async_token
+    assert cursor._state == CursorState.DONE
+
+
+def test_cursor_execute_async_validate_set_parameters(
+    cursor: Cursor,
+):
+    with raises(FireboltError) as e:
+        cursor.execute_async("SET a = b")
+    assert "does not support set" in str(e.value)
+
+
+def test_cursor_execute_async_respects_api_errors(
+    httpx_mock: HTTPXMock,
+    async_query_url: str,
+    cursor: Cursor,
+):
+    httpx_mock.add_callback(
+        lambda *args, **kwargs: Response(status_code=codes.BAD_REQUEST),
+        url=async_query_url,
+    )
+    with raises(HTTPStatusError):
+        cursor.execute_async("SELECT 2")
