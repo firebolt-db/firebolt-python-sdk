@@ -14,6 +14,7 @@ from firebolt.common.base_connection import (
     ASYNC_QUERY_STATUS_RUNNING,
     ASYNC_QUERY_STATUS_SUCCESSFUL,
     BaseConnection,
+    ensure_v2,
 )
 from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
@@ -25,11 +26,7 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import (
-    ensure_v2,
-    fix_url_schema,
-    validate_engine_name_and_url_v1,
-)
+from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
 logger = logging.getLogger(__name__)
 
