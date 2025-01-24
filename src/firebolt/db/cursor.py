@@ -216,7 +216,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         if len(queries) > 1 and async_execution:
             raise FireboltError(
-                "execute_async does not support multi-statement queries"
+                "Server side async does not support multi-statement queries"
             )
         try:
             for query in queries:
@@ -239,7 +239,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if isinstance(query, SetParameter):
             if async_execution:
                 raise FireboltError(
-                    "execute_async does not support set statements, "
+                    "Server side async does not support set statements, "
                     "please use execute to set this parameter"
                 )
             self._validate_set_parameter(query, timeout_controller.remaining())
@@ -379,45 +379,6 @@ class CursorV2(Cursor):
     ) -> None:
         assert isinstance(client, ClientV2)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
-
-    # @check_not_closed
-    # def execute_async(
-    #     self,
-    #     query: str,
-    #     parameters: Optional[Sequence[ParameterType]] = None,
-    #     skip_parsing: bool = False,
-    # ) -> int:
-    #     self._reset()
-    #     # Allow users to manually skip parsing for performance improvement.
-    #     params_list = [parameters] if parameters else []
-    #     queries: List[Union[SetParameter, str]] = (
-    #         [query] if skip_parsing else split_format_sql(query, params_list)
-    #     )
-    #     if len(queries) > 1:
-    #         raise FireboltError(
-    #             "execute_async does not support multi-statement queries"
-    #         )
-    #     a_query = queries[0]
-    #     try:
-    #         if isinstance(a_query, SetParameter):
-    #             raise FireboltError(
-    #                 "execute_async does not support set statements, "
-    #                 "please use execute to set this parameter"
-    #             )
-    #         else:
-    #             resp = self._api_request(
-    #                 a_query,
-    #                 {"output_format": JSON_OUTPUT_FORMAT, "async": True},
-    #             )
-    #             self._raise_if_error(resp)
-    #             self._parse_async_response(resp)
-
-    #         self._state = CursorState.DONE
-    #     except Exception:
-    #         self._state = CursorState.ERROR
-    #         raise
-
-    #     return -1
 
     def is_db_available(self, database_name: str) -> bool:
         """
