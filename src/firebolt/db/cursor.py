@@ -192,6 +192,32 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
     ) -> int:
+        """
+        Execute a database query without maintating a connection.
+
+        Supported features:
+            Parameterized queries: placeholder characters ('?') are substituted
+                with values provided in `parameters`. Values are formatted to
+                be properly recognized by database and to exclude SQL injection.
+
+        Not supported:
+            Multi-statement queries: multiple statements, provided in a single query
+                and separated by semicolon.
+            SET statements: to provide additional query execution parameters, execute
+                `SET param=value` statement before it. Use `execute` method to set
+                parameters.
+
+        Args:
+            query (str): SQL query to execute
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values
+            skip_parsing (bool): Flag to disable query parsing. This will
+                disable parameterized queries while potentially improving performance
+
+        Returns:
+            int: Always returns -1, as async execution does not return row count.
+        """
         self._do_execute(
             query,
             [parameters] if parameters else [],

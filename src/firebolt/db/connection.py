@@ -242,9 +242,28 @@ class Connection(BaseConnection):
         return result_dict["status"]
 
     def is_async_query_running(self, token: str) -> bool:
+        """
+        Check if an async query is still running.
+
+        Args:
+            token: Async query token. Can be obtained from Cursor.async_query_token.
+
+        Returns:
+            bool: True if async query is still running, False otherwise
+        """
         return self._get_async_query_status(token) == ASYNC_QUERY_STATUS_RUNNING
 
     def is_async_query_successful(self, token: str) -> Optional[bool]:
+        """
+        Check if an async query has finished and was successful.
+
+        Args:
+            token: Async query token. Can be obtained from Cursor.async_query_token.
+
+        Returns:
+            bool: None if the query is still running, True if successful,
+                  False otherwise
+        """
         status = self._get_async_query_status(token)
         if status == ASYNC_QUERY_STATUS_RUNNING:
             return None
