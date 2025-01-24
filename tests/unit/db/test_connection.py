@@ -1,6 +1,6 @@
 import gc
 import warnings
-from typing import Callable, List, Tuple
+from typing import Callable, List, Optional, Tuple
 from unittest.mock import patch
 
 from pyfakefs.fake_filesystem_unittest import Patcher
@@ -429,7 +429,7 @@ def test_connect_no_user_agent(
 @mark.parametrize(
     "server_status,expected_running,expected_success",
     [
-        ("RUNNING", True, False),
+        ("RUNNING", True, None),
         ("ENDED_SUCCESSFULLY", False, True),
         ("FAILED", False, False),
         ("CANCELLED", False, False),
@@ -449,7 +449,7 @@ def test_is_async_query_running_success(
     mock_connection_flow: Callable,
     server_status: str,
     expected_running: bool,
-    expected_success: bool,
+    expected_success: Optional[bool],
 ):
     """Test is_async_query_running method"""
     mock_connection_flow()
