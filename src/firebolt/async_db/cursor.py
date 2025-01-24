@@ -8,6 +8,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    Dict,
     Iterator,
     List,
     Optional,
@@ -39,7 +40,6 @@ from firebolt.common.base_cursor import (
     UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
-    RowSet,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
@@ -193,46 +193,74 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
         timeout: Optional[float] = None,
+        async_execution: bool = False,
     ) -> None:
         self._reset()
-        # Allow users to manually skip parsing for performance improvement.
         queries: List[Union[SetParameter, str]] = (
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
         timeout_controller = TimeoutController(timeout)
+
+        if len(queries) > 1 and async_execution:
+            raise FireboltError(
+                "execute_async does not support multi-statement queries"
+            )
         try:
             for query in queries:
-                start_time = time.time()
-                Cursor._log_query(query)
-                timeout_controller.raise_if_timeout()
-
-                if isinstance(query, SetParameter):
-                    row_set: RowSet = (-1, None, None, None)
-                    await self._validate_set_parameter(
-                        query, timeout_controller.remaining()
-                    )
-                else:
-                    resp = await self._api_request(
-                        query,
-                        {"output_format": JSON_OUTPUT_FORMAT},
-                        timeout=timeout_controller.remaining(),
-                    )
-                    await self._raise_if_error(resp)
-                    await self._parse_response_headers(resp.headers)
-                    row_set = self._row_set_from_response(resp)
-
-                self._append_row_set(row_set)
-
-                logger.info(
-                    f"Query fetched {self.rowcount} rows in"
-                    f" {time.time() - start_time} seconds."
+                await self._execute_single_query(
+                    query, timeout_controller, async_execution
                 )
-
             self._state = CursorState.DONE
-
         except Exception:
             self._state = CursorState.ERROR
             raise
+
+    async def _execute_single_query(
+        self,
+        query: Union[SetParameter, str],
+        timeout_controller: TimeoutController,
+        async_execution: bool,
+    ) -> None:
+        start_time = time.time()
+        Cursor._log_query(query)
+        timeout_controller.raise_if_timeout()
+
+        if isinstance(query, SetParameter):
+            if async_execution:
+                raise FireboltError(
+                    "execute_async does not support set statements, "
+                    "please use execute to set this parameter"
+                )
+            await self._validate_set_parameter(query, timeout_controller.remaining())
+        else:
+            await self._handle_query_execution(
+                query, timeout_controller, async_execution
+            )
+
+        if not async_execution:
+            logger.info(
+                f"Query fetched {self.rowcount} rows in"
+                f" {time.time() - start_time} seconds."
+            )
+
+    async def _handle_query_execution(
+        self, query: str, timeout_controller: TimeoutController, async_execution: bool
+    ) -> None:
+        query_params: Dict[str, Any] = {"output_format": JSON_OUTPUT_FORMAT}
+        if async_execution:
+            query_params["async"] = True
+        resp = await self._api_request(
+            query,
+            query_params,
+            timeout=timeout_controller.remaining(),
+        )
+        await self._raise_if_error(resp)
+        if async_execution:
+            self._parse_async_response(resp)
+        else:
+            await self._parse_response_headers(resp.headers)
+            row_set = self._row_set_from_response(resp)
+            self._append_row_set(row_set)
 
     @check_not_closed
     async def execute(

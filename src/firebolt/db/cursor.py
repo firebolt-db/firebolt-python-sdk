@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
+    Dict,
     Generator,
     List,
     Optional,
@@ -37,7 +38,6 @@ from firebolt.common.base_cursor import (
     UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
-    RowSet,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
@@ -185,51 +185,91 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
 
+    @check_not_closed
+    def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        self._do_execute(
+            query,
+            [parameters] if parameters else [],
+            skip_parsing,
+            async_execution=True,
+        )
+        return -1
+
     def _do_execute(
         self,
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
         timeout: Optional[float] = None,
+        async_execution: bool = False,
     ) -> None:
         self._reset()
-        # Allow users to manually skip parsing for performance improvement.
         queries: List[Union[SetParameter, str]] = (
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
         timeout_controller = TimeoutController(timeout)
 
+        if len(queries) > 1 and async_execution:
+            raise FireboltError(
+                "execute_async does not support multi-statement queries"
+            )
         try:
             for query in queries:
-                start_time = time.time()
-                Cursor._log_query(query)
-                timeout_controller.raise_if_timeout()
-
-                if isinstance(query, SetParameter):
-                    row_set: RowSet = (-1, None, None, None)
-                    self._validate_set_parameter(query, timeout_controller.remaining())
-                else:
-                    resp = self._api_request(
-                        query,
-                        {"output_format": JSON_OUTPUT_FORMAT},
-                        timeout=timeout_controller.remaining(),
-                    )
-                    self._raise_if_error(resp)
-                    self._parse_response_headers(resp.headers)
-                    row_set = self._row_set_from_response(resp)
-
-                self._append_row_set(row_set)
-
-                logger.info(
-                    f"Query fetched {self.rowcount} rows in"
-                    f" {time.time() - start_time} seconds."
-                )
-
+                self._execute_single_query(query, timeout_controller, async_execution)
             self._state = CursorState.DONE
-
         except Exception:
             self._state = CursorState.ERROR
             raise
+
+    def _execute_single_query(
+        self,
+        query: Union[SetParameter, str],
+        timeout_controller: TimeoutController,
+        async_execution: bool,
+    ) -> None:
+        start_time = time.time()
+        Cursor._log_query(query)
+        timeout_controller.raise_if_timeout()
+
+        if isinstance(query, SetParameter):
+            if async_execution:
+                raise FireboltError(
+                    "execute_async does not support set statements, "
+                    "please use execute to set this parameter"
+                )
+            self._validate_set_parameter(query, timeout_controller.remaining())
+        else:
+            self._handle_query_execution(query, timeout_controller, async_execution)
+
+        if not async_execution:
+            logger.info(
+                f"Query fetched {self.rowcount} rows in"
+                f" {time.time() - start_time} seconds."
+            )
+
+    def _handle_query_execution(
+        self, query: str, timeout_controller: TimeoutController, async_execution: bool
+    ) -> None:
+        query_params: Dict[str, Any] = {"output_format": JSON_OUTPUT_FORMAT}
+        if async_execution:
+            query_params["async"] = True
+        resp = self._api_request(
+            query,
+            query_params,
+            timeout=timeout_controller.remaining(),
+        )
+        self._raise_if_error(resp)
+        if async_execution:
+            self._parse_async_response(resp)
+        else:
+            self._parse_response_headers(resp.headers)
+            row_set = self._row_set_from_response(resp)
+            self._append_row_set(row_set)
 
     @check_not_closed
     def execute(
@@ -340,44 +380,44 @@ class CursorV2(Cursor):
         assert isinstance(client, ClientV2)  # Type check
         super().__init__(*args, client=client, connection=connection, **kwargs)
 
-    @check_not_closed
-    def execute_async(
-        self,
-        query: str,
-        parameters: Optional[Sequence[ParameterType]] = None,
-        skip_parsing: bool = False,
-    ) -> int:
-        self._reset()
-        # Allow users to manually skip parsing for performance improvement.
-        params_list = [parameters] if parameters else []
-        queries: List[Union[SetParameter, str]] = (
-            [query] if skip_parsing else split_format_sql(query, params_list)
-        )
-        if len(queries) > 1:
-            raise FireboltError(
-                "execute_async does not support multi-statement queries"
-            )
-        a_query = queries[0]
-        try:
-            if isinstance(a_query, SetParameter):
-                raise FireboltError(
-                    "execute_async does not support set statements, "
-                    "please use execute to set this parameter"
-                )
-            else:
-                resp = self._api_request(
-                    a_query,
-                    {"output_format": JSON_OUTPUT_FORMAT, "async": True},
-                )
-                self._raise_if_error(resp)
-                self._parse_async_response(resp)
+    # @check_not_closed
+    # def execute_async(
+    #     self,
+    #     query: str,
+    #     parameters: Optional[Sequence[ParameterType]] = None,
+    #     skip_parsing: bool = False,
+    # ) -> int:
+    #     self._reset()
+    #     # Allow users to manually skip parsing for performance improvement.
+    #     params_list = [parameters] if parameters else []
+    #     queries: List[Union[SetParameter, str]] = (
+    #         [query] if skip_parsing else split_format_sql(query, params_list)
+    #     )
+    #     if len(queries) > 1:
+    #         raise FireboltError(
+    #             "execute_async does not support multi-statement queries"
+    #         )
+    #     a_query = queries[0]
+    #     try:
+    #         if isinstance(a_query, SetParameter):
+    #             raise FireboltError(
+    #                 "execute_async does not support set statements, "
+    #                 "please use execute to set this parameter"
+    #             )
+    #         else:
+    #             resp = self._api_request(
+    #                 a_query,
+    #                 {"output_format": JSON_OUTPUT_FORMAT, "async": True},
+    #             )
+    #             self._raise_if_error(resp)
+    #             self._parse_async_response(resp)
 
-            self._state = CursorState.DONE
-        except Exception:
-            self._state = CursorState.ERROR
-            raise
+    #         self._state = CursorState.DONE
+    #     except Exception:
+    #         self._state = CursorState.ERROR
+    #         raise
 
-        return -1
+    #     return -1
 
     def is_db_available(self, database_name: str) -> bool:
         """
