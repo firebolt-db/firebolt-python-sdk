@@ -108,8 +108,10 @@ class Connection(BaseConnection):
         status = await self._get_async_query_status(token)
         return status == ASYNC_QUERY_STATUS_RUNNING
 
-    async def is_async_query_successful(self, token: str) -> bool:
+    async def is_async_query_successful(self, token: str) -> Optional[bool]:
         status = await self._get_async_query_status(token)
+        if status == ASYNC_QUERY_STATUS_RUNNING:
+            return None
         return status == ASYNC_QUERY_STATUS_SUCCESSFUL
 
     # Context manager support
