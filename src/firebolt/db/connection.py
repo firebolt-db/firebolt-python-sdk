@@ -244,8 +244,11 @@ class Connection(BaseConnection):
     def is_async_query_running(self, token: str) -> bool:
         return self._get_async_query_status(token) == ASYNC_QUERY_STATUS_RUNNING
 
-    def is_async_query_successful(self, token: str) -> bool:
-        return self._get_async_query_status(token) == ASYNC_QUERY_STATUS_SUCCESSFUL
+    def is_async_query_successful(self, token: str) -> Optional[bool]:
+        status = self._get_async_query_status(token)
+        if status == ASYNC_QUERY_STATUS_RUNNING:
+            return None
+        return status == ASYNC_QUERY_STATUS_SUCCESSFUL
 
     # Context manager support
     def __enter__(self) -> Connection:

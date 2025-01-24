@@ -4,6 +4,8 @@ from typing import Callable
 
 from firebolt.db import Connection
 
+LONG_SELECT = "SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)"  # approx 3 sec
+
 
 def test_insert_async(connection: Connection) -> None:
     cursor = connection.cursor()
@@ -23,6 +25,21 @@ def test_insert_async(connection: Connection) -> None:
         cursor.execute(f"SELECT * FROM {table_name}")
         result = cursor.fetchall()
         assert result == [[1, "test"]]
+    finally:
+        cursor.execute(f"DROP TABLE {table_name}")
+
+
+def test_insert_async_running(connection: Connection) -> None:
+    cursor = connection.cursor()
+    rnd_suffix = str(randint(0, 1000))
+    table_name = f"test_insert_async_{rnd_suffix}"
+    try:
+        cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
+        cursor.execute_async(f"INSERT INTO {table_name} {LONG_SELECT}")
+        token = cursor.async_query_token
+        assert token is not None, "Asyc token was not returned"
+        assert connection.is_async_query_running(token) == True
+        assert connection.is_async_query_successful(token) is None
     finally:
         cursor.execute(f"DROP TABLE {table_name}")
 
