@@ -650,6 +650,11 @@ has finished successfully, None if query is still running and False if the query
     print("Query has finished")
 
     success = connection.is_async_query_successful(token)
+    # success is None if the query is still running
+    if success is None:
+        # we should not reach this point since we've waited for is_async_query_running
+        raise Exception("The query is still running, use is_async_query_running to check the status")
+
     if success:
         print("Query was successful")
     else:
