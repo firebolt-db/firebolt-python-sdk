@@ -50,6 +50,7 @@ from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltError,
+    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
@@ -186,6 +187,16 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if headers.get(UPDATE_PARAMETERS_HEADER):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
+
+    @abstractmethod
+    async def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        """Execute a database query without maintaining a connection."""
+        ...
 
     async def _do_execute(
         self,
@@ -540,3 +551,13 @@ class CursorV1(Cursor):
         )
         resp.raise_for_status()
         return resp
+
+    async def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        raise NotSupportedError(
+            "Async execution is not supported in this version " " of Firebolt."
+        )

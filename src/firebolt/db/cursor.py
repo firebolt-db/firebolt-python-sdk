@@ -48,6 +48,7 @@ from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltError,
+    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
@@ -185,46 +186,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
 
-    @check_not_closed
+    @abstractmethod
     def execute_async(
         self,
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
     ) -> int:
-        """
-        Execute a database query without maintating a connection.
-
-        Supported features:
-            Parameterized queries: placeholder characters ('?') are substituted
-                with values provided in `parameters`. Values are formatted to
-                be properly recognized by database and to exclude SQL injection.
-
-        Not supported:
-            Multi-statement queries: multiple statements, provided in a single query
-                and separated by semicolon.
-            SET statements: to provide additional query execution parameters, execute
-                `SET param=value` statement before it. Use `execute` method to set
-                parameters.
-
-        Args:
-            query (str): SQL query to execute
-            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
-                parameters. Used to replace '?' placeholders inside a query with
-                actual values
-            skip_parsing (bool): Flag to disable query parsing. This will
-                disable parameterized queries while potentially improving performance
-
-        Returns:
-            int: Always returns -1, as async execution does not return row count.
-        """
-        self._do_execute(
-            query,
-            [parameters] if parameters else [],
-            skip_parsing,
-            async_execution=True,
-        )
-        return -1
+        """Execute a database query without maintaining a connection."""
+        ...
 
     def _do_execute(
         self,
@@ -433,6 +403,47 @@ class CursorV2(Cursor):
         # so we can't check if it's running
         return True
 
+    @check_not_closed
+    def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        """
+        Execute a database query without maintating a connection.
+
+        Supported features:
+            Parameterized queries: placeholder characters ('?') are substituted
+                with values provided in `parameters`. Values are formatted to
+                be properly recognized by database and to exclude SQL injection.
+
+        Not supported:
+            Multi-statement queries: multiple statements, provided in a single query
+                and separated by semicolon.
+            SET statements: to provide additional query execution parameters, execute
+                `SET param=value` statement before it. Use `execute` method to set
+                parameters.
+
+        Args:
+            query (str): SQL query to execute
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values
+            skip_parsing (bool): Flag to disable query parsing. This will
+                disable parameterized queries while potentially improving performance
+
+        Returns:
+            int: Always returns -1, as async execution does not return row count.
+        """
+        self._do_execute(
+            query,
+            [parameters] if parameters else [],
+            skip_parsing,
+            async_execution=True,
+        )
+        return -1
+
 
 class CursorV1(Cursor):
     def __init__(
@@ -481,3 +492,13 @@ class CursorV1(Cursor):
         )
         resp.raise_for_status()
         return resp
+
+    def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        raise NotSupportedError(
+            "Async execution is not supported in this version " " of Firebolt."
+        )
