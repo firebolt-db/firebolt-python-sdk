@@ -17,7 +17,7 @@ async def test_insert_async(connection: Connection) -> None:
             f"INSERT INTO {table_name} (id, name) VALUES (1, 'test')"
         )
         token = cursor.async_query_token
-        assert token is not None, "Asyc token was not returned"
+        assert token is not None, "Async token was not returned"
         # sleep for 2 sec to make sure the async query is completed
         time.sleep(2)
         assert await connection.is_async_query_running(token) == False
@@ -39,7 +39,7 @@ async def test_insert_async_running(connection: Connection) -> None:
         await cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
         await cursor.execute_async(f"INSERT INTO {table_name} {LONG_SELECT}")
         token = cursor.async_query_token
-        assert token is not None, "Asyc token was not returned"
+        assert token is not None, "Async token was not returned"
         assert await connection.is_async_query_running(token) == True
         assert await connection.is_async_query_successful(token) is None
     finally:
@@ -60,7 +60,7 @@ async def test_check_async_execution_from_another_connection(
             f"INSERT INTO {table_name} (id, name) VALUES (1, 'test')"
         )
         token = cursor.async_query_token
-        assert token is not None, "Asyc token was not returned"
+        assert token is not None, "Async token was not returned"
         # sleep for 2 sec to make sure the async query is completed
         time.sleep(2)
         assert await connection_2.is_async_query_running(token) == False
