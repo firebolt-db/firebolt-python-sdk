@@ -277,6 +277,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 f"Query fetched {self.rowcount} rows in"
                 f" {time.time() - start_time} seconds."
             )
+        else:
+            logger.info("Query submitted for async execution.")
 
     def _handle_query_execution(
         self, query: str, timeout_controller: TimeoutController, async_execution: bool
