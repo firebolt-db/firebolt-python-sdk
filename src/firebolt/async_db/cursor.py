@@ -43,6 +43,7 @@ from firebolt.common.base_cursor import (
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
+    async_not_allowed,
     check_not_closed,
     check_query_executed,
 )
@@ -388,6 +389,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     # Iteration support
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def __aiter__(self) -> Cursor:
         return self
@@ -415,6 +417,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self.close()
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     async def __anext__(self) -> List[ColType]:
         row = await self.fetchone()

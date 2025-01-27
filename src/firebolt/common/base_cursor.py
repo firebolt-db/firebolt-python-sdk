@@ -159,6 +159,21 @@ def check_query_executed(func: Callable) -> Callable:
     return inner
 
 
+def async_not_allowed(func: Callable) -> Callable:
+    """
+    (Decorator) ensure that fetch methods are not called on async queries.
+    """
+
+    @wraps(func)
+    def inner(self: BaseCursor, *args: Any, **kwargs: Any) -> Any:
+        if self._query_token:
+            # query_token is set only for async queries
+            raise MethodNotAllowedInAsyncError(method_name=func.__name__)
+        return func(self, *args, **kwargs)
+
+    return inner
+
+
 class BaseCursor:
     __slots__ = (
         "connection",
@@ -272,6 +287,7 @@ class BaseCursor:
         return self._state == CursorState.CLOSED
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def nextset(self) -> Optional[bool]:
         """
@@ -423,6 +439,7 @@ class BaseCursor:
     )
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set."""
@@ -436,6 +453,7 @@ class BaseCursor:
         return result
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         """
@@ -451,6 +469,7 @@ class BaseCursor:
         return result
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result."""
