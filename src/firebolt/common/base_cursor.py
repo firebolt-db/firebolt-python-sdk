@@ -22,6 +22,8 @@ from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
     DataError,
+    FireboltError,
+    MethodNotAllowedInAsyncError,
     QueryNotRunError,
 )
 from firebolt.utils.util import Timer, fix_url_schema
@@ -86,6 +88,13 @@ def _raise_if_internal_set_parameter(parameter: SetParameter) -> None:
 
 
 @dataclass
+class AsyncResponse:
+    token: str
+    message: str
+    monitorSql: str
+
+
+@dataclass
 class Statistics:
     """
     Class for query execution statistics.
@@ -142,6 +151,24 @@ def check_query_executed(func: Callable) -> Callable:
     def inner(self: BaseCursor, *args: Any, **kwargs: Any) -> Any:
         if self._state == CursorState.NONE:
             raise QueryNotRunError(method_name=func.__name__)
+        if self._query_token:
+            # query_token is set only for async queries
+            raise MethodNotAllowedInAsyncError(method_name=func.__name__)
+        return func(self, *args, **kwargs)
+
+    return inner
+
+
+def async_not_allowed(func: Callable) -> Callable:
+    """
+    (Decorator) ensure that fetch methods are not called on async queries.
+    """
+
+    @wraps(func)
+    def inner(self: BaseCursor, *args: Any, **kwargs: Any) -> Any:
+        if self._query_token:
+            # query_token is set only for async queries
+            raise MethodNotAllowedInAsyncError(method_name=func.__name__)
         return func(self, *args, **kwargs)
 
     return inner
@@ -163,6 +190,7 @@ class BaseCursor:
         "_next_set_idx",
         "_set_parameters",
         "_query_id",
+        "_query_token",
         "engine_url",
     )
 
@@ -184,6 +212,7 @@ class BaseCursor:
         self._idx = 0
         self._next_set_idx = 0
         self._query_id = ""
+        self._query_token = ""
         self._reset()
 
     @property
@@ -230,6 +259,15 @@ class BaseCursor:
         return self._query_id
 
     @property
+    def async_query_token(self) -> str:
+        """The query token of a query executed asynchronously."""
+        if not self._query_token:
+            raise FireboltError(
+                "No async query was executed or query was not an async."
+            )
+        return self._query_token
+
+    @property
     def arraysize(self) -> int:
         """Default number of rows returned by fetchmany."""
         return self._arraysize
@@ -249,6 +287,7 @@ class BaseCursor:
         return self._state == CursorState.CLOSED
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def nextset(self) -> Optional[bool]:
         """
@@ -290,6 +329,7 @@ class BaseCursor:
         self._row_sets = []
         self._next_set_idx = 0
         self._query_id = ""
+        self._query_token = ""
 
     def _update_set_parameters(self, parameters: Dict[str, Any]) -> None:
         # Split parameters into immutable and user parameters
@@ -333,6 +373,11 @@ class BaseCursor:
         if self.parameters.get("engine"):
             return self.parameters["engine"]
         return URL(self.engine_url).host.split(".")[0].replace("-", "_")
+
+    def _parse_async_response(self, response: Response) -> None:
+        """Handle async response from the server."""
+        async_response = AsyncResponse(**response.json())
+        self._query_token = async_response.token
 
     def _row_set_from_response(self, response: Response) -> RowSet:
         """Fetch information about executed query from http response."""
@@ -394,6 +439,7 @@ class BaseCursor:
     )
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def fetchone(self) -> Optional[List[ColType]]:
         """Fetch the next row of a query result set."""
@@ -407,6 +453,7 @@ class BaseCursor:
         return result
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
         """
@@ -422,6 +469,7 @@ class BaseCursor:
         return result
 
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def fetchall(self) -> List[List[ColType]]:
         """Fetch all remaining rows of a query result."""

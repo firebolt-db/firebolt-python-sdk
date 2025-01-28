@@ -321,3 +321,17 @@ class QueryTimeoutError(FireboltError, TimeoutError):
 
     def __init__(self, message="Query execution timed out."):  # type: ignore
         super().__init__(message)
+
+
+class MethodNotAllowedInAsyncError(FireboltError):
+    """Method not allowed.
+
+    Exception raised when the method is not allowed.
+    """
+
+    def __init__(self, method_name: str):
+        super().__init__(
+            f"Method {method_name} not allowed for an async query."
+            " Please get the token and use the async query API to get the status."
+        )
+        self.method_name = method_name

@@ -1,10 +1,15 @@
-from typing import Any, List
+from typing import Any, List, Type
 
 from firebolt.utils.exception import ConnectionClosedError
 
+ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
+ASYNC_QUERY_STATUS_SUCCESSFUL = "ENDED_SUCCESSFULLY"
+ASYNC_QUERY_STATUS_REQUEST = "CALL fb_GetAsyncStatus('{token}')"
+
 
 class BaseConnection:
-    def __init__(self) -> None:
+    def __init__(self, cursor_type: Type) -> None:
+        self.cursor_type = cursor_type
         self._cursors: List[Any] = []
         self._is_closed = False
 

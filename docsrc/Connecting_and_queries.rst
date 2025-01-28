@@ -594,6 +594,73 @@ load on both server and client machines can be controlled. A suggested way is to
     run(run_multiple_queries())
 
 
+Server-side asynchronous query execution
+==========================================
+Firebolt supports server-side asynchronous query execution. This feature allows you to run
+queries in the background and fetch the results later. This is especially useful for long-running
+queries that you don't want to wait for or maintain a persistent connection to the server.
+
+This feature is not to be confused with the Python SDK's asynchronous functionality, which is
+described in the :ref:`Asynchronous query execution <connecting_and_queries:Asynchronous query execution>` section,
+used to write concurrent code. Server-side asynchronous query execution is a feature of the
+Firebolt engine itself.
+
+Submitting an asynchronous query
+--------------------------------
+
+Use :py:meth:`firebolt.db.cursor.Cursor.execute_async` method to run query without maintaing a persistent connection.
+This method will return immediately, and the query will be executed in the background. Return value
+of execute_async is -1, which is the rowcount for queries where it's not applicable.
+`cursor.async_query_token` attribute will contain a token that can be used to monitor the query status.
+
+::
+
+    # Synchronous execution
+    cursor.execute("CREATE TABLE my_table (id INT, name TEXT, date_value DATE)")
+
+    # Asynchronous execution
+    cursor.execute_async("INSERT INTO my_table VALUES (5, 'egg', '2022-01-01')")
+    token = cursor.async_query_token
+
+Trying to access `async_query_token` before calling `execute_async` will raise an exception. 
+
+.. note::
+    Multiple-statement queries are not supported for asynchronous queries. However, you can run each statement
+    separately using multiple `execute_async` calls.
+
+.. note::
+    Fetching data via SELECT is not supported and will raise an exception. execute_async is best suited for DML queries.
+
+Monitoring the query status
+----------------------------
+
+To check the async query status you need to retrieve the token of the query. The token is a unique
+identifier for the query and can be used to fetch the query status. You can store this token
+outside of the current process and use it later to check the query status. :ref:`Connection <firebolt.db:Connection>` object
+has two methods to check the query status: :py:meth:`firebolt.db.connection.Connection.is_async_query_running` and 
+:py:meth:`firebolt.db.connection.Connection.is_async_query_successful`.`is_async_query_running` will return True 
+if the query is still running, and False otherwise. `is_async_query_successful` will return True if the query 
+has finished successfully, None if query is still running and False if the query has failed.
+
+::
+
+    while(connection.is_async_query_running(token)):
+        print("Query is still running")
+        time.sleep(1)
+    print("Query has finished")
+
+    success = connection.is_async_query_successful(token)
+    # success is None if the query is still running
+    if success is None:
+        # we should not reach this point since we've waited for is_async_query_running
+        raise Exception("The query is still running, use is_async_query_running to check the status")
+
+    if success:
+        print("Query was successful")
+    else:
+        print("Query failed")
+
+
 Thread safety
 ==============================
 

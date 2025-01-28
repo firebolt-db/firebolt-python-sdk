@@ -1,6 +1,6 @@
 import random
 import string
-from typing import Tuple
+from typing import Any, Callable, Tuple
 
 from pytest import fixture
 
@@ -26,6 +26,27 @@ async def connection(
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection
+
+
+@fixture
+async def connection_factory(
+    engine_name: str,
+    database_name: str,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+) -> Callable[..., Connection]:
+    async def factory(**kwargs: Any) -> Connection:
+        return await connect(
+            engine_name=engine_name,
+            database=database_name,
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+            **kwargs,
+        )
+
+    return factory
 
 
 @fixture

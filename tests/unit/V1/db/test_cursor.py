@@ -12,6 +12,7 @@ from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
     DataError,
+    NotSupportedError,
     OperationalError,
     QueryNotRunError,
 )
@@ -623,3 +624,10 @@ def test_disallowed_set_parameter(cursor: Cursor, parameter: str) -> None:
         e.value
     ), "invalid error"
     assert cursor._set_parameters == {}, "set parameters should not be updated"
+
+
+def test_cursor_execute_async_raises(cursor: Cursor) -> None:
+    """Test that calling execute_async raises an error."""
+    with raises(NotSupportedError) as e:
+        cursor.execute_async("select 1")
+    assert "Async execution is not supported" in str(e.value), "invalid error"

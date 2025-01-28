@@ -10,10 +10,19 @@ from firebolt.async_db.util import _get_system_engine_url_and_params
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
-from firebolt.common.base_connection import BaseConnection
+from firebolt.common.base_connection import (
+    ASYNC_QUERY_STATUS_REQUEST,
+    ASYNC_QUERY_STATUS_RUNNING,
+    ASYNC_QUERY_STATUS_SUCCESSFUL,
+    BaseConnection,
+)
 from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
-from firebolt.utils.exception import ConfigurationError, ConnectionClosedError
+from firebolt.utils.exception import (
+    ConfigurationError,
+    ConnectionClosedError,
+    FireboltError,
+)
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
@@ -63,10 +72,9 @@ class Connection(BaseConnection):
         api_endpoint: str,
         init_parameters: Optional[Dict[str, Any]] = None,
     ):
-        super().__init__()
+        super().__init__(cursor_type)
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
-        self.cursor_type = cursor_type
         self._cursors: List[Cursor] = []
         self._client = client
         self.init_parameters = init_parameters or {}
@@ -80,6 +88,50 @@ class Connection(BaseConnection):
         c = self.cursor_type(client=self._client, connection=self, **kwargs)
         self._cursors.append(c)
         return c
+
+    # Server-side async methods
+    async def _get_async_query_status(self, token: str) -> str:
+        if self.cursor_type != CursorV2:
+            raise FireboltError(
+                "This method is only supported for connection with service account."
+            )
+        cursor = self.cursor()
+        await cursor.execute(ASYNC_QUERY_STATUS_REQUEST.format(token=token))
+        result = await cursor.fetchone()
+        if cursor.rowcount != 1 or not result:
+            raise FireboltError("Unexpected result from async query status request.")
+        columns = cursor.description
+        result_dict = dict(zip([column.name for column in columns], result))
+        return str(result_dict.get("status"))
+
+    async def is_async_query_running(self, token: str) -> bool:
+        """
+        Check if an async query is still running.
+
+        Args:
+            token: Async query token. Can be obtained from Cursor.async_query_token.
+
+        Returns:
+            bool: True if async query is still running, False otherwise
+        """
+        status = await self._get_async_query_status(token)
+        return status == ASYNC_QUERY_STATUS_RUNNING
+
+    async def is_async_query_successful(self, token: str) -> Optional[bool]:
+        """
+        Check if an async query has finished and was successful.
+
+        Args:
+            token: Async query token. Can be obtained from Cursor.async_query_token.
+
+        Returns:
+            bool: None if the query is still running, True if successful,
+                  False otherwise
+        """
+        status = await self._get_async_query_status(token)
+        if status == ASYNC_QUERY_STATUS_RUNNING:
+            return None
+        return status == ASYNC_QUERY_STATUS_SUCCESSFUL
 
     # Context manager support
     async def __aenter__(self) -> Connection:

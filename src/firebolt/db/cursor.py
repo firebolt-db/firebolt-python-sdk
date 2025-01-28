@@ -6,6 +6,7 @@ from abc import ABCMeta, abstractmethod
 from typing import (
     TYPE_CHECKING,
     Any,
+    Dict,
     Generator,
     List,
     Optional,
@@ -37,16 +38,18 @@ from firebolt.common.base_cursor import (
     UPDATE_PARAMETERS_HEADER,
     BaseCursor,
     CursorState,
-    RowSet,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
+    async_not_allowed,
     check_not_closed,
     check_query_executed,
 )
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
+    FireboltError,
+    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
@@ -184,51 +187,88 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
 
+    @abstractmethod
+    def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        """Execute a database query without maintaining a connection."""
+        ...
+
     def _do_execute(
         self,
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         skip_parsing: bool = False,
         timeout: Optional[float] = None,
+        async_execution: bool = False,
     ) -> None:
         self._reset()
-        # Allow users to manually skip parsing for performance improvement.
         queries: List[Union[SetParameter, str]] = (
             [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
         )
         timeout_controller = TimeoutController(timeout)
 
+        if len(queries) > 1 and async_execution:
+            raise FireboltError(
+                "Server side async does not support multi-statement queries"
+            )
         try:
             for query in queries:
-                start_time = time.time()
-                Cursor._log_query(query)
-                timeout_controller.raise_if_timeout()
-
-                if isinstance(query, SetParameter):
-                    row_set: RowSet = (-1, None, None, None)
-                    self._validate_set_parameter(query, timeout_controller.remaining())
-                else:
-                    resp = self._api_request(
-                        query,
-                        {"output_format": JSON_OUTPUT_FORMAT},
-                        timeout=timeout_controller.remaining(),
-                    )
-                    self._raise_if_error(resp)
-                    self._parse_response_headers(resp.headers)
-                    row_set = self._row_set_from_response(resp)
-
-                self._append_row_set(row_set)
-
-                logger.info(
-                    f"Query fetched {self.rowcount} rows in"
-                    f" {time.time() - start_time} seconds."
-                )
-
+                self._execute_single_query(query, timeout_controller, async_execution)
             self._state = CursorState.DONE
-
         except Exception:
             self._state = CursorState.ERROR
             raise
+
+    def _execute_single_query(
+        self,
+        query: Union[SetParameter, str],
+        timeout_controller: TimeoutController,
+        async_execution: bool,
+    ) -> None:
+        start_time = time.time()
+        Cursor._log_query(query)
+        timeout_controller.raise_if_timeout()
+
+        if isinstance(query, SetParameter):
+            if async_execution:
+                raise FireboltError(
+                    "Server side async does not support set statements, "
+                    "please use execute to set this parameter"
+                )
+            self._validate_set_parameter(query, timeout_controller.remaining())
+        else:
+            self._handle_query_execution(query, timeout_controller, async_execution)
+
+        if not async_execution:
+            logger.info(
+                f"Query fetched {self.rowcount} rows in"
+                f" {time.time() - start_time} seconds."
+            )
+        else:
+            logger.info("Query submitted for async execution.")
+
+    def _handle_query_execution(
+        self, query: str, timeout_controller: TimeoutController, async_execution: bool
+    ) -> None:
+        query_params: Dict[str, Any] = {"output_format": JSON_OUTPUT_FORMAT}
+        if async_execution:
+            query_params["async"] = True
+        resp = self._api_request(
+            query,
+            query_params,
+            timeout=timeout_controller.remaining(),
+        )
+        self._raise_if_error(resp)
+        if async_execution:
+            self._parse_async_response(resp)
+        else:
+            self._parse_response_headers(resp.headers)
+            row_set = self._row_set_from_response(resp)
+            self._append_row_set(row_set)
 
     @check_not_closed
     def execute(
@@ -319,6 +359,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     # Iteration support
     @check_not_closed
+    @async_not_allowed
     @check_query_executed
     def __iter__(self) -> Generator[List[ColType], None, None]:
         while True:
@@ -363,6 +404,47 @@ class CursorV2(Cursor):
         # For v2 accounts we don't have the engine context,
         # so we can't check if it's running
         return True
+
+    @check_not_closed
+    def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        """
+        Execute a database query without maintating a connection.
+
+        Supported features:
+            Parameterized queries: placeholder characters ('?') are substituted
+                with values provided in `parameters`. Values are formatted to
+                be properly recognized by database and to exclude SQL injection.
+
+        Not supported:
+            Multi-statement queries: multiple statements, provided in a single query
+                and separated by semicolon.
+            SET statements: to provide additional query execution parameters, execute
+                `SET param=value` statement before it. Use `execute` method to set
+                parameters.
+
+        Args:
+            query (str): SQL query to execute
+            parameters (Optional[Sequence[ParameterType]]): A sequence of substitution
+                parameters. Used to replace '?' placeholders inside a query with
+                actual values
+            skip_parsing (bool): Flag to disable query parsing. This will
+                disable parameterized queries while potentially improving performance
+
+        Returns:
+            int: Always returns -1, as async execution does not return row count.
+        """
+        self._do_execute(
+            query,
+            [parameters] if parameters else [],
+            skip_parsing,
+            async_execution=True,
+        )
+        return -1
 
 
 class CursorV1(Cursor):
@@ -412,3 +494,13 @@ class CursorV1(Cursor):
         )
         resp.raise_for_status()
         return resp
+
+    def execute_async(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> int:
+        raise NotSupportedError(
+            "Async execution is not supported in this version " " of Firebolt."
+        )
