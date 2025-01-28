@@ -111,6 +111,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.IntegrityError"><code class="docutils literal notranslate"><span class="pre">IntegrityError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.InterfaceError"><code class="docutils literal notranslate"><span class="pre">InterfaceError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.InternalError"><code class="docutils literal notranslate"><span class="pre">InternalError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.MethodNotAllowedInAsyncError"><code class="docutils literal notranslate"><span class="pre">MethodNotAllowedInAsyncError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.NoAttachedDatabaseError"><code class="docutils literal notranslate"><span class="pre">NoAttachedDatabaseError</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.NoAttachedDatabaseError.method_name"><code class="docutils literal notranslate"><span class="pre">NoAttachedDatabaseError.method_name</span></code></a></li>
 </ul>
@@ -122,6 +123,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.QueryNotRunError.method_name"><code class="docutils literal notranslate"><span class="pre">QueryNotRunError.method_name</span></code></a></li>
 </ul>
 </li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.QueryTimeoutError"><code class="docutils literal notranslate"><span class="pre">QueryTimeoutError</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.Warning"><code class="docutils literal notranslate"><span class="pre">Warning</span></code></a></li>
 </ul>
 </li>
@@ -541,6 +543,14 @@ e.g., the cursor is not valid anymore, the transaction is out of sync, etc.</p>
 </dd></dl>
 
 <dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.MethodNotAllowedInAsyncError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">MethodNotAllowedInAsyncError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.MethodNotAllowedInAsyncError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<p>Method not allowed.</p>
+<p>Exception raised when the method is not allowed.</p>
+</dd></dl>
+
+<dl class="py exception">
 <dt class="sig sig-object py" id="firebolt.utils.exception.NoAttachedDatabaseError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">NoAttachedDatabaseError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.NoAttachedDatabaseError" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltEngineError" title="firebolt.utils.exception.FireboltEngineError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltEngineError</span></code></a></p>
@@ -614,6 +624,14 @@ syntax error in the SQL statement, wrong number of parameters specified, etc.</p
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.QueryTimeoutError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">QueryTimeoutError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Query</span> <span class="pre">execution</span> <span class="pre">timed</span> <span class="pre">out.'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.QueryTimeoutError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">TimeoutError</span></code></p>
+<p>Query execution timed out.</p>
+<p>Exception raised when the query execution exceeds the specified timeout.</p>
 </dd></dl>
 
 <dl class="py exception">
