@@ -31,7 +31,8 @@ from firebolt.common._types import (
     ColType,
     ParameterType,
     SetParameter,
-    split_format_sql,
+    escape_chars_v1,
+    escape_chars_v2,
 )
 from firebolt.common.base_cursor import (
     JSON_OUTPUT_FORMAT,
@@ -209,7 +210,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         self._reset()
         queries: List[Union[SetParameter, str]] = (
-            [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
+            [raw_query]
+            if skip_parsing
+            else self._formatter.split_format_sql(raw_query, parameters)
         )
         timeout_controller = TimeoutController(timeout)
 
@@ -435,7 +438,13 @@ class CursorV2(Cursor):
         **kwargs: Any,
     ) -> None:
         assert isinstance(client, AsyncClientV2)
-        super().__init__(*args, client=client, connection=connection, **kwargs)
+        super().__init__(
+            *args,
+            client=client,
+            connection=connection,
+            escape_chars=escape_chars_v2,
+            **kwargs,
+        )
 
     @check_not_closed
     async def execute_async(
@@ -512,7 +521,13 @@ class CursorV1(Cursor):
         **kwargs: Any,
     ) -> None:
         assert isinstance(client, AsyncClientV1)
-        super().__init__(*args, client=client, connection=connection, **kwargs)
+        super().__init__(
+            *args,
+            client=client,
+            connection=connection,
+            escape_chars=escape_chars_v1,
+            **kwargs,
+        )
 
     async def is_db_available(self, database_name: str) -> bool:
         """

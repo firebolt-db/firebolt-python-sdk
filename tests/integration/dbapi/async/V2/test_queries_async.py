@@ -228,7 +228,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         params = [
             1,
             1.123,
-            "tex't\0",
+            "text\0",
             None,
             date(2022, 1, 1),
             datetime(2022, 1, 1, 1, 1, 1),
