@@ -26,7 +26,7 @@ from firebolt.common._types import (
     [  # Strings
         ("", "''"),
         ("abcd", "'abcd'"),
-        ("test' OR '1' == '1", "'test\\' OR \\'1\\' == \\'1'"),
+        ("test' OR '1' == '1", "'test'' OR ''1'' == ''1'"),
         ("test\\", "'test\\\\'"),
         ("some\0value", "'some\\0value'"),
         # Numbers
@@ -95,7 +95,7 @@ def to_statement(sql: str) -> Statement:
         (
             to_statement("select * from t where id == ?"),
             ("' or '' == '",),
-            r"select * from t where id == '\' or \'\' == \''",
+            r"select * from t where id == ''' or '''' == '''",
         ),
     ],
 )
