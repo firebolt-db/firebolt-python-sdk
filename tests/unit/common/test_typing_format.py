@@ -95,7 +95,7 @@ def to_statement(sql: str) -> Statement:
         (
             to_statement("select * from t where id == ?"),
             ("' or '' == '",),
-            r"select * from t where id == ''' or '''' == '''",
+            "select * from t where id == ''' or '''' == '''",
         ),
     ],
 )
