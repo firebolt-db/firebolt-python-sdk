@@ -257,6 +257,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query_params: Dict[str, Any] = {"output_format": JSON_OUTPUT_FORMAT}
         if async_execution:
             query_params["async"] = True
+        # timeout cancels the query by aborting the connection
+        if timeout_controller.timeout is not None:
+            query_params["cancel_query_on_connection_drop"] = "all"
         resp = self._api_request(
             query,
             query_params,
