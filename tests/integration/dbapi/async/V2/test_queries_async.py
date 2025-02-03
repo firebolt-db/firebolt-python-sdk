@@ -228,7 +228,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         params = [
             1,
             1.123,
-            "text\0",
+            "tex't\0",
             None,
             date(2022, 1, 1),
             datetime(2022, 1, 1, 1, 1, 1),
@@ -245,7 +245,8 @@ async def test_parameterized_query(connection: Connection) -> None:
         )
 
         # \0 is converted to 0
-        params[2] = "text\\0"
+        # ' is escaped correctly
+        params[2] = "tex't\\0"
 
         assert (
             await c.execute('SELECT * FROM "test_tb_async_parameterized"') == 1
@@ -256,6 +257,22 @@ async def test_parameterized_query(connection: Connection) -> None:
             [params + ["\\?"]],
             "Invalid data in table after parameterized insert",
         )
+
+
+async def test_parameterized_query_with_special_chars(connection: Connection) -> None:
+    """Query parameters are handled properly."""
+    with connection.cursor() as c:
+        params = ["text with 'quote'", "text with \\slashes"]
+
+        await c.execute(
+            "SELECT ? as one, ? as two",
+            params,
+        )
+
+        result = await c.fetchall()
+        assert result == [
+            [params[0], params[1]]
+        ], "Invalid data in table after parameterized insert"
 
 
 async def test_multi_statement_query(connection: Connection) -> None:

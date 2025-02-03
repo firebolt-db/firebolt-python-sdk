@@ -27,7 +27,8 @@ from firebolt.common._types import (
         ("", "''"),
         ("abcd", "'abcd'"),
         ("test' OR '1' == '1", "'test'' OR ''1'' == ''1'"),
-        ("test\\", "'test\\\\'"),
+        ("test\\", "'test\\'"),
+        ("don't", "'don''t'"),
         ("some\0value", "'some\\0value'"),
         # Numbers
         (1, "1"),
