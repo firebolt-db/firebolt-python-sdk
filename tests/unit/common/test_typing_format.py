@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import List, Optional
 
-from pytest import mark, raises
+from pytest import fixture, mark, raises
 from sqlparse import parse
 from sqlparse.sql import Statement
 
@@ -14,11 +14,20 @@ from firebolt.async_db import (
 )
 from firebolt.common._types import (
     SetParameter,
-    format_statement,
-    format_value,
-    split_format_sql,
-    statement_to_set,
+    StatementFormatter,
+    escape_chars_v1,
+    escape_chars_v2,
 )
+
+
+@fixture
+def formatter() -> StatementFormatter:
+    return StatementFormatter(escape_chars_v2)
+
+
+@fixture
+def formatter_v1() -> StatementFormatter:
+    return StatementFormatter(escape_chars_v1)
 
 
 @mark.parametrize(
@@ -54,13 +63,52 @@ from firebolt.common._types import (
         (b"abc", "E'\\x61\\x62\\x63'"),
     ],
 )
-def test_format_value(value: str, result: str) -> None:
-    assert format_value(value) == result, "Invalid format_value result"
+def test_format_value(formatter: StatementFormatter, value: str, result: str) -> None:
+    assert formatter.format_value(value) == result, "Invalid format_value result"
 
 
-def test_format_value_errors() -> None:
+@mark.parametrize(
+    "value,result",
+    [  # Strings
+        ("", "''"),
+        ("abcd", "'abcd'"),
+        ("test' OR '1' == '1", "'test'' OR ''1'' == ''1'"),
+        ("test\\", "'test\\\\'"),
+        ("don't", "'don''t'"),
+        ("some\0value", "'some\\0value'"),
+        # Numbers
+        (1, "1"),
+        (1.123, "1.123"),
+        (Decimal("1.123"), "1.123"),
+        (Decimal(1.123), "1.1229999999999999982236431605997495353221893310546875"),
+        (True, "true"),
+        (False, "false"),
+        # Date, datetime
+        (date(2022, 1, 10), "'2022-01-10'"),
+        (datetime(2022, 1, 10, 1, 1, 1), "'2022-01-10 01:01:01'"),
+        (
+            datetime(2022, 1, 10, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))),
+            "'2022-01-10 00:01:01'",
+        ),
+        # List, tuple
+        ([], "[]"),
+        ([1, 2, 3], "[1, 2, 3]"),
+        (("a", "b", "c"), "['a', 'b', 'c']"),
+        # None
+        (None, "NULL"),
+        # Bytea
+        (b"abc", "E'\\x61\\x62\\x63'"),
+    ],
+)
+def test_format_value_v1(
+    formatter_v1: StatementFormatter, value: str, result: str
+) -> None:
+    assert formatter_v1.format_value(value) == result, "Invalid format_value result"
+
+
+def test_format_value_errors(formatter: StatementFormatter) -> None:
     with raises(DataError) as exc_info:
-        format_value(Exception())
+        formatter.format_value(Exception())
 
     assert str(exc_info.value) == "unsupported parameter type <class 'Exception'>"
 
@@ -100,20 +148,24 @@ def to_statement(sql: str) -> Statement:
         ),
     ],
 )
-def test_format_statement(statement: Statement, params: tuple, result: str) -> None:
-    assert format_statement(statement, params) == result, "Invalid format sql result"
+def test_format_statement(
+    formatter: StatementFormatter, statement: Statement, params: tuple, result: str
+) -> None:
+    assert (
+        formatter.format_statement(statement, params) == result
+    ), "Invalid format sql result"
 
 
-def test_format_statement_errors() -> None:
+def test_format_statement_errors(formatter: StatementFormatter) -> None:
     with raises(DataError) as exc_info:
-        format_statement(to_statement("?"), [])
+        formatter.format_statement(to_statement("?"), [])
     assert (
         str(exc_info.value)
         == "not enough parameters provided for substitution: given 0, found one more"
     ), "Invalid not enought parameters error"
 
     with raises(DataError) as exc_info:
-        format_statement(to_statement("?"), (1, 2))
+        formatter.format_statement(to_statement("?"), (1, 2))
     assert (
         str(exc_info.value)
         == "too many parameters provided for substitution: given 2, used only 1"
@@ -155,20 +207,22 @@ def test_format_statement_errors() -> None:
         ),
     ],
 )
-def test_split_format_sql(query: str, params: tuple, result: List[str]) -> None:
+def test_split_format_sql(
+    formatter: StatementFormatter, query: str, params: tuple, result: List[str]
+) -> None:
     assert (
-        split_format_sql(query, params) == result
+        formatter.split_format_sql(query, params) == result
     ), "Invalid split and format sql result"
 
 
-def test_split_format_error() -> None:
+def test_split_format_error(formatter: StatementFormatter) -> None:
     with raises(NotSupportedError):
-        split_format_sql(
+        formatter.split_format_sql(
             "select * from t where id == ?; insert into t values (?, ?)", ((1, 2, 3),)
         )
 
     with raises(NotSupportedError):
-        split_format_sql("set a = ?", ((1,),))
+        formatter.split_format_sql("set a = ?", ((1,),))
 
 
 @mark.parametrize(
@@ -191,8 +245,12 @@ def test_split_format_error() -> None:
         (to_statement("UPDATE t SET a=50 WHERE a>b"), None),
     ],
 )
-def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) -> None:
-    assert statement_to_set(statement) == result, "Invalid statement_to_set output"
+def test_statement_to_set(
+    formatter: StatementFormatter, statement: Statement, result: Optional[SetParameter]
+) -> None:
+    assert (
+        formatter.statement_to_set(statement) == result
+    ), "Invalid statement_to_set output"
 
 
 @mark.parametrize(
@@ -203,9 +261,11 @@ def test_statement_to_set(statement: Statement, result: Optional[SetParameter]) 
         (to_statement("set a ="), InterfaceError),
     ],
 )
-def test_statement_to_set_errors(statement: Statement, error: Exception) -> None:
+def test_statement_to_set_errors(
+    formatter: StatementFormatter, statement: Statement, error: Exception
+) -> None:
     with raises(error):
-        statement_to_set(statement)
+        formatter.statement_to_set(statement)
 
 
 def test_binary() -> None:
