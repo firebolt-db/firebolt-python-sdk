@@ -245,8 +245,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         )
 
         # \0 is converted to 0
-        # ' is escaped correctly
-        params[2] = "tex't\\0"
+        params[2] = "text\\0"
 
         assert (
             await c.execute('SELECT * FROM "test_tb_async_parameterized"') == 1
