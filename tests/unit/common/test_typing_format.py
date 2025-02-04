@@ -12,22 +12,21 @@ from firebolt.async_db import (
     InterfaceError,
     NotSupportedError,
 )
-from firebolt.common._types import (
-    SetParameter,
+from firebolt.common._types import SetParameter
+from firebolt.common.statement_formatter import (
     StatementFormatter,
-    escape_chars_v1,
-    escape_chars_v2,
+    create_statement_formatter,
 )
 
 
 @fixture
 def formatter() -> StatementFormatter:
-    return StatementFormatter(escape_chars_v2)
+    return create_statement_formatter(version=2)
 
 
 @fixture
 def formatter_v1() -> StatementFormatter:
-    return StatementFormatter(escape_chars_v1)
+    return create_statement_formatter(version=1)
 
 
 @mark.parametrize(
