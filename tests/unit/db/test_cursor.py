@@ -523,11 +523,15 @@ def test_cursor_skip_parse(
     """Cursor doesn't process a query if skip_parsing is provided."""
     mock_query()
 
-    with patch("firebolt.db.cursor.split_format_sql") as split_format_sql_mock:
+    with patch(
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
+    ) as split_format_sql_mock:
         cursor.execute("non-an-actual-sql")
         split_format_sql_mock.assert_called_once()
 
-    with patch("firebolt.db.cursor.split_format_sql") as split_format_sql_mock:
+    with patch(
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
+    ) as split_format_sql_mock:
         cursor.execute("non-an-actual-sql", skip_parsing=True)
         split_format_sql_mock.assert_not_called()
 

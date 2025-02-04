@@ -553,11 +553,15 @@ def test_cursor_skip_parse(
     httpx_mock.add_callback(auth_callback, url=auth_url)
     httpx_mock.add_callback(query_callback, url=query_url)
 
-    with patch("firebolt.db.cursor.split_format_sql") as split_format_sql_mock:
+    with patch(
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
+    ) as split_format_sql_mock:
         cursor.execute("non-an-actual-sql")
         split_format_sql_mock.assert_called_once()
 
-    with patch("firebolt.db.cursor.split_format_sql") as split_format_sql_mock:
+    with patch(
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
+    ) as split_format_sql_mock:
         cursor.execute("non-an-actual-sql", skip_parsing=True)
         split_format_sql_mock.assert_not_called()
 

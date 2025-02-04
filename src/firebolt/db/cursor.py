@@ -25,12 +25,7 @@ from httpx import (
 )
 
 from firebolt.client import Client, ClientV1, ClientV2
-from firebolt.common._types import (
-    ColType,
-    ParameterType,
-    SetParameter,
-    split_format_sql,
-)
+from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.base_cursor import (
     JSON_OUTPUT_FORMAT,
     RESET_SESSION_HEADER,
@@ -45,6 +40,7 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
+from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -207,7 +203,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         self._reset()
         queries: List[Union[SetParameter, str]] = (
-            [raw_query] if skip_parsing else split_format_sql(raw_query, parameters)
+            [raw_query]
+            if skip_parsing
+            else self._formatter.split_format_sql(raw_query, parameters)
         )
         timeout_controller = TimeoutController(timeout)
 
@@ -378,7 +376,13 @@ class CursorV2(Cursor):
         self, *args: Any, client: Client, connection: Connection, **kwargs: Any
     ) -> None:
         assert isinstance(client, ClientV2)  # Type check
-        super().__init__(*args, client=client, connection=connection, **kwargs)
+        super().__init__(
+            *args,
+            client=client,
+            connection=connection,
+            formatter=create_statement_formatter(version=2),
+            **kwargs,
+        )
 
     def is_db_available(self, database_name: str) -> bool:
         """
@@ -452,7 +456,13 @@ class CursorV1(Cursor):
         self, *args: Any, client: ClientV1, connection: Connection, **kwargs: Any
     ) -> None:
         assert isinstance(client, ClientV1)  # Type check
-        super().__init__(*args, client=client, connection=connection, **kwargs)
+        super().__init__(
+            *args,
+            client=client,
+            connection=connection,
+            formatter=create_statement_formatter(version=1),
+            **kwargs,
+        )
 
     def is_db_available(self, database_name: str) -> bool:
         """

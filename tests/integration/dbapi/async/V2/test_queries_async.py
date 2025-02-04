@@ -258,6 +258,22 @@ async def test_parameterized_query(connection: Connection) -> None:
         )
 
 
+async def test_parameterized_query_with_special_chars(connection: Connection) -> None:
+    """Query parameters are handled properly."""
+    with connection.cursor() as c:
+        params = ["text with 'quote'", "text with \\slashes"]
+
+        await c.execute(
+            "SELECT ? as one, ? as two",
+            params,
+        )
+
+        result = await c.fetchall()
+        assert result == [
+            [params[0], params[1]]
+        ], "Invalid data in table after parameterized insert"
+
+
 async def test_multi_statement_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
