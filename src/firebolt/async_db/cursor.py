@@ -27,13 +27,7 @@ from httpx import (
 )
 
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
-from firebolt.common._types import (
-    ColType,
-    ParameterType,
-    SetParameter,
-    escape_chars_v1,
-    escape_chars_v2,
-)
+from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.base_cursor import (
     JSON_OUTPUT_FORMAT,
     RESET_SESSION_HEADER,
@@ -48,6 +42,7 @@ from firebolt.common.base_cursor import (
     check_not_closed,
     check_query_executed,
 )
+from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -442,7 +437,7 @@ class CursorV2(Cursor):
             *args,
             client=client,
             connection=connection,
-            escape_chars=escape_chars_v2,
+            formatter=create_statement_formatter(version=2),
             **kwargs,
         )
 
@@ -525,7 +520,7 @@ class CursorV1(Cursor):
             *args,
             client=client,
             connection=connection,
-            escape_chars=escape_chars_v1,
+            formatter=create_statement_formatter(version=1),
             **kwargs,
         )
 

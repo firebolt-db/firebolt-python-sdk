@@ -15,10 +15,10 @@ from firebolt.common._types import (
     Column,
     RawColType,
     SetParameter,
-    StatementFormatter,
     parse_type,
     parse_value,
 )
+from firebolt.common.statement_formatter import StatementFormatter
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
@@ -199,7 +199,7 @@ class BaseCursor:
     default_arraysize = 1
 
     def __init__(
-        self, *args: Any, escape_chars: Dict[str, str] = {}, **kwargs: Any
+        self, *args: Any, formatter: StatementFormatter, **kwargs: Any
     ) -> None:
         self._arraysize = self.default_arraysize
         # These fields initialized here for type annotations purpose
@@ -207,7 +207,7 @@ class BaseCursor:
         self._descriptions: Optional[List[Column]] = None
         self._statistics: Optional[Statistics] = None
         self._row_sets: List[RowSet] = []
-        self._formatter = StatementFormatter(escape_chars)
+        self._formatter = formatter
         # User-defined set parameters
         self._set_parameters: Dict[str, Any] = dict()
         # Server-side parameters (user can't change them)

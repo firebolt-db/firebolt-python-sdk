@@ -4,11 +4,12 @@ from unittest.mock import MagicMock
 from pytest import fixture, mark
 
 from firebolt.common.base_cursor import BaseCursor
+from firebolt.common.statement_formatter import create_statement_formatter
 
 
 @fixture
 def cursor():
-    cursor = BaseCursor()
+    cursor = BaseCursor(formatter=create_statement_formatter(version=2))
     cursor.connection = MagicMock()
     return cursor
 

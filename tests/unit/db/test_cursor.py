@@ -524,13 +524,13 @@ def test_cursor_skip_parse(
     mock_query()
 
     with patch(
-        "firebolt.common._types.StatementFormatter.split_format_sql"
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
     ) as split_format_sql_mock:
         cursor.execute("non-an-actual-sql")
         split_format_sql_mock.assert_called_once()
 
     with patch(
-        "firebolt.common._types.StatementFormatter.split_format_sql"
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
     ) as split_format_sql_mock:
         cursor.execute("non-an-actual-sql", skip_parsing=True)
         split_format_sql_mock.assert_not_called()
