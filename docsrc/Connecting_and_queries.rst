@@ -224,11 +224,6 @@ below use the data queried from ``test_table`` created in the
 
 	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
-	::
-
-		print(cursor.fetchall())
-
-	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
 Fetching query result information
 -----------------------
