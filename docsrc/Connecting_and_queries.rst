@@ -655,6 +655,23 @@ has finished successfully, None if query is still running and False if the query
     else:
         print("Query failed")
 
+Cancelling a running query
+--------------------------
+
+To cancel a running query, use the :py:meth:`firebolt.db.connection.Connection.cancel_async_query` method. This method
+will send a cancel request to the server and the query will be stopped.
+
+::
+
+    token = cursor.async_query_token
+    connection.cancel_async_query(token)
+    
+    # Verify that the query was cancelled
+    running = connection.is_async_query_running(token)
+    print(running) # False
+    successful = connection.is_async_query_successful(token)
+    print(successful) # False
+
 
 Thread safety
 ==============================
