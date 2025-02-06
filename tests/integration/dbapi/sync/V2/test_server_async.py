@@ -98,3 +98,23 @@ def test_check_async_execution_fails(connection: Connection) -> None:
         cursor.execute_async(f"MALFORMED QUERY")
     with raises(FireboltError):
         cursor.async_query_token
+
+
+def test_cancel_async_query(connection: Connection) -> None:
+    cursor = connection.cursor()
+    rnd_suffix = str(randint(0, 1000))
+    table_name = f"test_insert_async_{rnd_suffix}"
+    try:
+        cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
+        cursor.execute_async(f"INSERT INTO {table_name} {LONG_SELECT}")
+        token = cursor.async_query_token
+        assert token is not None, "Async token was not returned"
+        assert connection.is_async_query_running(token) == True
+        connection.cancel_async_query(token)
+        assert connection.is_async_query_running(token) == False
+        assert connection.is_async_query_successful(token) == False
+        cursor.execute(f"SELECT * FROM {table_name}")
+        result = cursor.fetchall()
+        assert result == []
+    finally:
+        cursor.execute(f"DROP TABLE {table_name}")

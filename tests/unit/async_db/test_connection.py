@@ -492,3 +492,49 @@ async def test_async_query_status_unexpected_result(
             await connection.is_async_query_running("token")
         with raises(FireboltError):
             await connection.is_async_query_successful("token")
+
+
+async def test_async_query_cancellation(
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_callback: Callable,
+    async_query_callback_factory: Callable,
+    async_query_data: List[List[ColType]],
+    async_query_meta: List[Tuple[str, str]],
+    mock_connection_flow: Callable,
+):
+    """Test async query cancellation"""
+    mock_connection_flow()
+    async_query_data[0][5] = "RUNNING"
+    async_query_status_running_callback = async_query_callback_factory(
+        async_query_data, async_query_meta
+    )
+
+    query_dict = dict(zip([m[0] for m in async_query_meta], async_query_data[0]))
+    query_id = query_dict["query_id"]
+
+    httpx_mock.add_callback(
+        async_query_status_running_callback,
+        url=query_url,
+        match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+    )
+
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        match_content=f"CANCEL QUERY WHERE query_id='{query_id}'".encode("utf-8"),
+    )
+
+    async with await connect(
+        database=db_name,
+        auth=auth,
+        engine_name=engine_name,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        await connection.cancel_async_query("token")
