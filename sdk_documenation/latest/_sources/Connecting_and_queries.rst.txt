@@ -48,7 +48,6 @@ To get started, follow the steps below:
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
     .. note::
-        If you specify ``engine_name`` but not the ``database`` Python SDK will automatically resolve the database for you behind the scenes.
 
         If an ``engine_name`` is not specified the SDK will not be bound to any engine. In this case, if also no ``database`` is specified
         you can still connect, but queries are limited to database and engine management queries e.g. ``CREATE DATABASE``, ``START ENGINE``, etc.

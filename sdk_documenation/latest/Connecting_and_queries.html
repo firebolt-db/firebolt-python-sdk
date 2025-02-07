@@ -149,7 +149,6 @@ any command or query requests to your Firebolt database.</p>
 </table>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If you specify <code class="docutils literal notranslate"><span class="pre">engine_name</span></code> but not the <code class="docutils literal notranslate"><span class="pre">database</span></code> Python SDK will automatically resolve the database for you behind the scenes.</p>
 <p>If an <code class="docutils literal notranslate"><span class="pre">engine_name</span></code> is not specified the SDK will not be bound to any engine. In this case, if also no <code class="docutils literal notranslate"><span class="pre">database</span></code> is specified
 you can still connect, but queries are limited to database and engine management queries e.g. <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">DATABASE</span></code>, <code class="docutils literal notranslate"><span class="pre">START</span> <span class="pre">ENGINE</span></code>, etc.
 To interact with tables in a database you have to provide the <code class="docutils literal notranslate"><span class="pre">database</span></code> parameter when connecting with no engine.</p>
