@@ -578,6 +578,27 @@ def async_query_meta() -> List[Tuple[str, str]]:
 
 
 @fixture
+def async_query_data() -> List[List[ColType]]:
+    query_data = [
+        [
+            "developer",
+            "ecosystem_ci",
+            "2025-01-23 14:08:06.087953+00",
+            "2025-01-23 14:08:06.134208+00",
+            "2025-01-23 14:08:06.410542+00",
+            "ENDED_SUCCESSFULLY",
+            "aaa-3333-5555-dddd-ae5et2da3cbe",
+            "bbb-2222-5555-dddd-b2d0o518ce94",
+            "",
+            "2",
+            "2",
+            "0",
+        ]
+    ]
+    return query_data
+
+
+@fixture
 def async_query_callback_factory(
     query_statistics: Dict[str, Any],
 ) -> Callable:

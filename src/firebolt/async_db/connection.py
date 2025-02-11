@@ -11,9 +11,11 @@ from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import (
+    ASYNC_QUERY_CANCEL,
     ASYNC_QUERY_STATUS_REQUEST,
     ASYNC_QUERY_STATUS_RUNNING,
     ASYNC_QUERY_STATUS_SUCCESSFUL,
+    AsyncQueryInfo,
     BaseConnection,
 )
 from firebolt.common.cache import _firebolt_system_engine_cache
@@ -90,19 +92,33 @@ class Connection(BaseConnection):
         return c
 
     # Server-side async methods
-    async def _get_async_query_status(self, token: str) -> str:
+    async def _get_async_query_info(self, token: str) -> AsyncQueryInfo:
         if self.cursor_type != CursorV2:
             raise FireboltError(
                 "This method is only supported for connection with service account."
             )
         cursor = self.cursor()
-        await cursor.execute(ASYNC_QUERY_STATUS_REQUEST.format(token=token))
+        await cursor.execute(ASYNC_QUERY_STATUS_REQUEST, [token])
         result = await cursor.fetchone()
         if cursor.rowcount != 1 or not result:
             raise FireboltError("Unexpected result from async query status request.")
         columns = cursor.description
         result_dict = dict(zip([column.name for column in columns], result))
-        return str(result_dict.get("status"))
+
+        if not result_dict.get("status") or not result_dict.get("query_id"):
+            raise FireboltError(
+                "Something went wrong - async query status request returned "
+                "unexpected result with status and/or query id missing. "
+                "Rerun the command and reach out to Firebolt support if "
+                "the issue persists."
+            )
+
+        # Only pass the expected keys to AsyncQueryInfo
+        filtered_result_dict = {
+            k: v for k, v in result_dict.items() if k in AsyncQueryInfo._fields
+        }
+
+        return AsyncQueryInfo(**filtered_result_dict)
 
     async def is_async_query_running(self, token: str) -> bool:
         """
@@ -114,8 +130,8 @@ class Connection(BaseConnection):
         Returns:
             bool: True if async query is still running, False otherwise
         """
-        status = await self._get_async_query_status(token)
-        return status == ASYNC_QUERY_STATUS_RUNNING
+        async_query_details = await self._get_async_query_info(token)
+        return async_query_details.status == ASYNC_QUERY_STATUS_RUNNING
 
     async def is_async_query_successful(self, token: str) -> Optional[bool]:
         """
@@ -128,10 +144,22 @@ class Connection(BaseConnection):
             bool: None if the query is still running, True if successful,
                   False otherwise
         """
-        status = await self._get_async_query_status(token)
-        if status == ASYNC_QUERY_STATUS_RUNNING:
+        async_query_details = await self._get_async_query_info(token)
+        if async_query_details.status == ASYNC_QUERY_STATUS_RUNNING:
             return None
-        return status == ASYNC_QUERY_STATUS_SUCCESSFUL
+        return async_query_details.status == ASYNC_QUERY_STATUS_SUCCESSFUL
+
+    async def cancel_async_query(self, token: str) -> None:
+        """
+        Cancel an async query.
+
+        Args:
+            token: Async query token. Can be obtained from Cursor.async_query_token.
+        """
+        async_query_details = await self._get_async_query_info(token)
+        async_query_id = async_query_details.query_id
+        cursor = self.cursor()
+        await cursor.execute(ASYNC_QUERY_CANCEL, [async_query_id])
 
     # Context manager support
     async def __aenter__(self) -> Connection:
