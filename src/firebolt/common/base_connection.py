@@ -1,10 +1,30 @@
+from collections import namedtuple
 from typing import Any, List, Type
 
 from firebolt.utils.exception import ConnectionClosedError
 
 ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
 ASYNC_QUERY_STATUS_SUCCESSFUL = "ENDED_SUCCESSFULLY"
-ASYNC_QUERY_STATUS_REQUEST = "CALL fb_GetAsyncStatus('{token}')"
+ASYNC_QUERY_STATUS_REQUEST = "CALL fb_GetAsyncStatus(?)"
+ASYNC_QUERY_CANCEL = "CANCEL QUERY WHERE query_id=?"
+
+AsyncQueryInfo = namedtuple(
+    "AsyncQueryInfo",
+    [
+        "account_name",
+        "user_name",
+        "submitted_time",
+        "start_time",
+        "end_time",
+        "status",
+        "request_id",
+        "query_id",
+        "error_message",
+        "scanned_bytes",
+        "scanned_rows",
+        "retries",
+    ],
+)
 
 
 class BaseConnection:
