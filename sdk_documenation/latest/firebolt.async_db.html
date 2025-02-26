@@ -58,6 +58,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.async_db.connection.Connection"><code class="docutils literal notranslate"><span class="pre">Connection</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.aclose"><code class="docutils literal notranslate"><span class="pre">Connection.aclose()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.api_endpoint"><code class="docutils literal notranslate"><span class="pre">Connection.api_endpoint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.cancel_async_query"><code class="docutils literal notranslate"><span class="pre">Connection.cancel_async_query()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.client_class"><code class="docutils literal notranslate"><span class="pre">Connection.client_class</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.closed"><code class="docutils literal notranslate"><span class="pre">Connection.closed</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.commit"><code class="docutils literal notranslate"><span class="pre">Connection.commit()</span></code></a></li>
@@ -189,6 +190,17 @@ so commit and rollback methods are not implemented.</p>
 <dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.api_endpoint">
 <span class="sig-name descname"><span class="pre">api_endpoint</span></span><a class="headerlink" href="#firebolt.async_db.connection.Connection.api_endpoint" title="Link to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.cancel_async_query">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cancel_async_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.connection.Connection.cancel_async_query" title="Link to this definition"></a></dt>
+<dd><p>Cancel an async query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>token</strong> – Async query token. Can be obtained from Cursor.async_query_token.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.client_class">
