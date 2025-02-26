@@ -65,6 +65,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#server-side-asynchronous-query-execution">Server-side asynchronous query execution</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#submitting-an-asynchronous-query">Submitting an asynchronous query</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#monitoring-the-query-status">Monitoring the query status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cancelling-a-running-query">Cancelling a running query</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#thread-safety">Thread safety</a></li>
@@ -681,6 +682,21 @@ has finished successfully, None if query is still running and False if the query
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Query was successful&quot;</span><span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
     <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Query failed&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cancelling-a-running-query">
+<h3>Cancelling a running query<a class="headerlink" href="#cancelling-a-running-query" title="Link to this heading"></a></h3>
+<p>To cancel a running query, use the <a class="reference internal" href="firebolt.db.html#firebolt.db.connection.Connection.cancel_async_query" title="firebolt.db.connection.Connection.cancel_async_query"><code class="xref py py-meth docutils literal notranslate"><span class="pre">firebolt.db.connection.Connection.cancel_async_query()</span></code></a> method. This method
+will send a cancel request to the server and the query will be stopped.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">token</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">async_query_token</span>
+<span class="n">connection</span><span class="o">.</span><span class="n">cancel_async_query</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+<span class="c1"># Verify that the query was cancelled</span>
+<span class="n">running</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">is_async_query_running</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">running</span><span class="p">)</span> <span class="c1"># False</span>
+<span class="n">successful</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">is_async_query_successful</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">successful</span><span class="p">)</span> <span class="c1"># False</span>
 </pre></div>
 </div>
 </section>
