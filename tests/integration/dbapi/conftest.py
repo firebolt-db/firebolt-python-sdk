@@ -214,15 +214,14 @@ def select_geography_response() -> List[ColType]:
 def setup_struct_query() -> str:
     return """
         SET advanced_mode=1;
-        SET enable_struct=1;
         SET enable_create_table_v2=true;
-        SET enable_row_selection=true;
+        SET enable_struct_syntax=true;
         SET prevent_create_on_information_schema=true;
         SET enable_create_table_with_struct_type=true;
         DROP TABLE IF EXISTS test_struct;
         DROP TABLE IF EXISTS test_struct_helper;
-        CREATE TABLE IF NOT EXISTS test_struct(id int not null, s struct(a array(int) not null, b datetime null) not null);
-        CREATE TABLE IF NOT EXISTS test_struct_helper(a array(int) not null, b datetime null);
+        CREATE TABLE IF NOT EXISTS test_struct(id int not null, s struct(a array(int) null, b datetime null) not null);
+        CREATE TABLE IF NOT EXISTS test_struct_helper(a array(int) null, b datetime null);
         INSERT INTO test_struct_helper(a, b) VALUES ([1, 2], '2019-07-31 01:01:01');
         INSERT INTO test_struct(id, s) SELECT 1, test_struct_helper FROM test_struct_helper;
     """
