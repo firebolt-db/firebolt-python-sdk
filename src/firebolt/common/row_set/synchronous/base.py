@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
-
-from httpx import SyncByteStream
+from typing import Iterator, List, Optional
 
 from firebolt.common._types import ColType
-from firebolt.common.row_set.types import Column, Statistics
+from firebolt.common.row_set.types import ByteStream, Column, Statistics
 
 
 class BaseRowSet(ABC):
@@ -12,9 +10,8 @@ class BaseRowSet(ABC):
     Base class for all sync row sets.
     """
 
-    @classmethod
     @abstractmethod
-    def from_response_stream(cls, stream: SyncByteStream) -> "BaseRowSet":
+    def append_response_stream(self, stream: ByteStream) -> None:
         ...
 
     @property
@@ -41,7 +38,7 @@ class BaseRowSet(ABC):
         ...
 
     @abstractmethod
-    def __iter__(self) -> "BaseRowSet":
+    def __iter__(self) -> Iterator[List[ColType]]:
         ...
 
     @abstractmethod

@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import AsyncIterator, List, Optional
 
 from async_property import async_property  # type: ignore
-from httpx import AsyncByteStream
 
 from firebolt.common._types import ColType
-from firebolt.common.row_set.types import Column, Statistics
+from firebolt.common.row_set.types import AsyncByteStream, Column, Statistics
 
 
 class BaseAsyncRowSet(ABC):
@@ -13,9 +12,8 @@ class BaseAsyncRowSet(ABC):
     Base class for all async row sets.
     """
 
-    @classmethod
     @abstractmethod
-    async def from_response_stream(cls, stream: AsyncByteStream) -> "BaseAsyncRowSet":
+    async def append_response_stream(self, stream: AsyncByteStream) -> None:
         ...
 
     @async_property
@@ -39,7 +37,7 @@ class BaseAsyncRowSet(ABC):
         ...
 
     @abstractmethod
-    async def __aiter__(self) -> "BaseAsyncRowSet":
+    def __aiter__(self) -> AsyncIterator[List[ColType]]:
         ...
 
     @abstractmethod

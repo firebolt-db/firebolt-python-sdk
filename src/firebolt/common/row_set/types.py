@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from collections import namedtuple
 from dataclasses import dataclass, fields
-from typing import Optional
+from typing import AsyncIterator, Iterator, List, Optional, Protocol, Union
+
+from firebolt.common._types import ExtendedType, RawColType
 
 
 @dataclass
@@ -39,15 +40,40 @@ class Statistics:
                 setattr(self, field.name, _type(value))
 
 
-Column = namedtuple(
-    "Column",
-    (
-        "name",
-        "type_code",
-        "display_size",
-        "internal_size",
-        "precision",
-        "scale",
-        "null_ok",
-    ),
-)
+@dataclass
+class RowsResponse:
+    """
+    Class for query execution response.
+    """
+
+    row_count: int
+    columns: List[Column]
+    statistics: Optional[Statistics]
+    rows: List[List[RawColType]]
+
+
+@dataclass
+class Column:
+    name: str
+    type_code: Union[type, ExtendedType]
+    display_size: Optional[int] = None
+    internal_size: Optional[int] = None
+    precision: Optional[int] = None
+    scale: Optional[int] = None
+    null_ok: Optional[bool] = None
+
+
+class ByteStream(Protocol):
+    def __iter__(self) -> Iterator[bytes]:
+        ...
+
+    def close(self) -> None:
+        ...
+
+
+class AsyncByteStream(Protocol):
+    def __aiter__(self) -> AsyncIterator[bytes]:
+        ...
+
+    def aclose(self) -> None:
+        ...
