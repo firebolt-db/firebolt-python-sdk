@@ -27,18 +27,20 @@ from httpx import (
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.base_cursor import (
-    JSON_OUTPUT_FORMAT,
-    RESET_SESSION_HEADER,
-    UPDATE_ENDPOINT_HEADER,
-    UPDATE_PARAMETERS_HEADER,
     BaseCursor,
-    CursorState,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
     async_not_allowed,
     check_not_closed,
     check_query_executed,
+)
+from firebolt.common.constants import (
+    JSON_OUTPUT_FORMAT,
+    RESET_SESSION_HEADER,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
+    CursorState,
 )
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (

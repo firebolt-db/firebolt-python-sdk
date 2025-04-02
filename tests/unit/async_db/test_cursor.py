@@ -7,8 +7,9 @@ from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
-from firebolt.common._types import Column
-from firebolt.common.base_cursor import ColType, CursorState
+from firebolt.common.base_cursor import ColType
+from firebolt.common.constants import CursorState
+from firebolt.common.row_set.types import Column
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,

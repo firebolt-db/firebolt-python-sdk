@@ -9,7 +9,8 @@ from pytest import mark, raises
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.connection import connect
 from firebolt.client.auth.base import Auth
-from firebolt.common._types import ColType, Column
+from firebolt.common._types import ColType
+from firebolt.common.row_set.types import Column
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(

@@ -8,7 +8,8 @@ from typing import Any, Callable, List, Tuple
 from pytest import mark, raises
 
 from firebolt.client.auth import Auth
-from firebolt.common._types import ColType, Column
+from firebolt.common._types import ColType
+from firebolt.common.row_set.types import Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 from tests.integration.dbapi.utils import assert_deep_eq
 

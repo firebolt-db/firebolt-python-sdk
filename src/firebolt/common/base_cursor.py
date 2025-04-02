@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass, fields
-from enum import Enum
 from functools import wraps
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -12,12 +10,18 @@ from httpx import URL, Response
 
 from firebolt.common._types import (
     ColType,
-    Column,
     RawColType,
     SetParameter,
     parse_type,
     parse_value,
 )
+from firebolt.common.constants import (
+    DISALLOWED_PARAMETER_LIST,
+    IMMUTABLE_PARAMETER_LIST,
+    USE_PARAMETER_LIST,
+    CursorState,
+)
+from firebolt.common.row_set.types import AsyncResponse, Column, Statistics
 from firebolt.common.statement_formatter import StatementFormatter
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -30,28 +34,6 @@ from firebolt.utils.exception import (
 from firebolt.utils.util import Timer, fix_url_schema
 
 logger = logging.getLogger(__name__)
-
-
-JSON_OUTPUT_FORMAT = "JSON_Compact"
-
-
-class CursorState(Enum):
-    NONE = 1
-    ERROR = 2
-    DONE = 3
-    CLOSED = 4
-
-
-# Parameters that should be set using USE instead of SET
-USE_PARAMETER_LIST = ["database", "engine"]
-# parameters that can only be set by the backend
-DISALLOWED_PARAMETER_LIST = ["output_format"]
-# parameters that are set by the backend and should not be set by the user
-IMMUTABLE_PARAMETER_LIST = USE_PARAMETER_LIST + DISALLOWED_PARAMETER_LIST
-
-UPDATE_ENDPOINT_HEADER = "Firebolt-Update-Endpoint"
-UPDATE_PARAMETERS_HEADER = "Firebolt-Update-Parameters"
-RESET_SESSION_HEADER = "Firebolt-Reset-Session"
 
 
 def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
@@ -86,40 +68,6 @@ def _raise_if_internal_set_parameter(parameter: SetParameter) -> None:
             f"Set parameter '{parameter.name}' is not allowed. "
             "Try again with a different parameter name."
         )
-
-
-@dataclass
-class AsyncResponse:
-    token: str
-    message: str
-    monitorSql: str
-
-
-@dataclass
-class Statistics:
-    """
-    Class for query execution statistics.
-    """
-
-    elapsed: float
-    rows_read: int
-    bytes_read: int
-    time_before_execution: float
-    time_to_execute: float
-    scanned_bytes_cache: Optional[float] = None
-    scanned_bytes_storage: Optional[float] = None
-
-    def __post_init__(self) -> None:
-        for field in fields(self):
-            value = getattr(self, field.name)
-            _type = eval(field.type)  # type: ignore
-
-            # Unpack Optional
-            if hasattr(_type, "__args__"):
-                _type = _type.__args__[0]
-            if value is not None and not isinstance(value, _type):
-                # convert values to proper types
-                setattr(self, field.name, _type(value))
 
 
 RowSet = Tuple[

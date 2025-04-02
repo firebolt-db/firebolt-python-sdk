@@ -77,19 +77,6 @@ NUMBER = int
 DATETIME = datetime
 ROWID = int
 
-Column = namedtuple(
-    "Column",
-    (
-        "name",
-        "type_code",
-        "display_size",
-        "internal_size",
-        "precision",
-        "scale",
-        "null_ok",
-    ),
-)
-
 
 class ExtendedType:
     """Base type for all extended types in Firebolt (array, decimal, struct, etc.)."""

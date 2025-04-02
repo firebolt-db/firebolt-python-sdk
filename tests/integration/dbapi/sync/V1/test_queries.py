@@ -7,7 +7,8 @@ from typing import Any, Callable, List
 from pytest import fixture, mark, raises
 
 from firebolt.client.auth import Auth
-from firebolt.common._types import ColType, Column
+from firebolt.common._types import ColType
+from firebolt.common.row_set.types import Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
