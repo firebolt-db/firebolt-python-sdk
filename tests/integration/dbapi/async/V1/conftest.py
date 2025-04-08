@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import List
 
 from pytest import fixture
 
@@ -81,8 +82,8 @@ async def connection_no_engine(
 
 @fixture
 def all_types_query_response_v1(
-    all_types_query_response: list[list[ColType]],
-) -> list[list[ColType]]:
+    all_types_query_response: List[List[ColType]],
+) -> List[List[ColType]]:
     """
     V1 still returns decimals as floats, despite overflow. That's why it's not fully accurate.
     """
