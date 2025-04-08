@@ -1,10 +1,12 @@
 import io
 from typing import AsyncIterator, List, Optional
 
+from httpx import Response
+
 from firebolt.common._types import ColType
 from firebolt.common.row_set.asynchronous.base import BaseAsyncRowSet
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
-from firebolt.common.row_set.types import AsyncByteStream, Column, Statistics
+from firebolt.common.row_set.types import Column, Statistics
 
 
 class InMemoryAsyncRowSet(BaseAsyncRowSet):
@@ -15,16 +17,20 @@ class InMemoryAsyncRowSet(BaseAsyncRowSet):
     def __init__(self) -> None:
         self._sync_row_set = InMemoryRowSet()
 
-    async def append_response_stream(self, stream: AsyncByteStream) -> None:
-        sync_stream = io.BytesIO(b"".join([b async for b in stream]))
+    def append_empty_response(self) -> None:
+        self._sync_row_set.append_empty_response()
+
+    async def append_response(self, response: Response) -> None:
+        sync_stream = io.BytesIO(b"".join([b async for b in response.aiter_bytes()]))
         self._sync_row_set.append_response_stream(sync_stream)
+        await response.aclose()
 
     @property
-    async def row_count(self) -> int:
+    def row_count(self) -> int:
         return self._sync_row_set.row_count
 
     @property
-    async def columns(self) -> List[Column]:
+    def columns(self) -> List[Column]:
         return self._sync_row_set.columns
 
     @property
@@ -38,7 +44,10 @@ class InMemoryAsyncRowSet(BaseAsyncRowSet):
         return self
 
     async def __anext__(self) -> List[ColType]:
-        return next(self._sync_row_set)
+        try:
+            return next(self._sync_row_set)
+        except StopIteration:
+            raise StopAsyncIteration
 
     async def aclose(self) -> None:
         return self._sync_row_set.close()

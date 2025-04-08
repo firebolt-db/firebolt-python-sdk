@@ -6,7 +6,7 @@ from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
-from firebolt.common.base_cursor import ColType
+from firebolt.common._types import ColType
 from firebolt.common.constants import CursorState
 from firebolt.common.row_set.types import Column
 from firebolt.utils.exception import (
@@ -85,7 +85,7 @@ async def test_closed_cursor(cursor: Cursor):
             await getattr(cursor, amethod)(*args)
 
     with raises(CursorClosedError):
-        with cursor:
+        async with cursor:
             pass
 
     with raises(CursorClosedError):
@@ -139,7 +139,7 @@ async def test_cursor_no_query(
     cursor._reset()
     cursor.setoutputsize(0)
     # Context manager is also available
-    with cursor:
+    async with cursor:
         pass
     # should this be available?
     # async with cursor:
@@ -496,7 +496,7 @@ async def test_cursor_multi_statement(
             await cursor.fetchone() == python_query_data[i]
         ), f"Invalid data row at position {i}"
 
-    assert await cursor.nextset() is None
+    assert await cursor.nextset() is False
 
 
 async def test_cursor_set_statements(

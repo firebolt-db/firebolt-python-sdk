@@ -1,6 +1,9 @@
+from decimal import Decimal
+
 from pytest import fixture
 
 from firebolt.client.auth.base import Auth
+from firebolt.common._types import ColType
 from firebolt.db import Connection, connect
 
 
@@ -93,3 +96,14 @@ def connection_system_engine(
     )
     yield connection
     connection.close()
+
+
+@fixture
+def all_types_query_response_v1(
+    all_types_query_response: list[list[ColType]],
+) -> list[list[ColType]]:
+    """
+    V1 still returns decimals as floats, despite overflow. That's why it's not fully accurate.
+    """
+    all_types_query_response[0][18] = Decimal("1231232.1234599999152123928070068359375")
+    return all_types_query_response

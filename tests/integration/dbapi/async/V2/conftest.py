@@ -103,7 +103,7 @@ async def service_account_no_user(
     # function-level fixture so we need to make sa name is unique
     randomness = "".join(random.choices(string.ascii_letters + string.digits, k=2))
     sa_account_name = f"{database_name}_no_user_{randomness}"
-    with connection_system_engine_no_db.cursor() as cursor:
+    async with connection_system_engine_no_db.cursor() as cursor:
         await cursor.execute(
             f'CREATE SERVICE ACCOUNT "{sa_account_name}" '
             "WITH DESCRIPTION = 'Ecosytem test with no user'"

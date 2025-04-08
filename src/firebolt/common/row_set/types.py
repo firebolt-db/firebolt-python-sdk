@@ -75,5 +75,5 @@ class AsyncByteStream(Protocol):
     def __aiter__(self) -> AsyncIterator[bytes]:
         ...
 
-    def aclose(self) -> None:
+    async def aclose(self) -> None:
         ...

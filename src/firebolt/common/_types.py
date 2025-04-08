@@ -325,7 +325,7 @@ def parse_value(
             raise DataError(f"Invalid bytea value {value}: str expected")
         return _parse_bytea(value)
     if isinstance(ctype, DECIMAL):
-        if not isinstance(value, (str, int)):
+        if not isinstance(value, (str, int, float)):
             raise DataError(f"Invalid decimal value {value}: str or int expected")
         return Decimal(value)
     if isinstance(ctype, ARRAY):

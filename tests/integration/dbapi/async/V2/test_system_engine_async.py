@@ -24,7 +24,7 @@ async def test_system_engine(
     all_types_query_system_engine_response: List[ColType],
     timezone_name: str,
 ) -> None:
-    with connection_system_engine.cursor() as c:
+    async with connection_system_engine.cursor() as c:
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
         assert c.rowcount == 1, "Invalid rowcount value"
         data = await c.fetchall()
@@ -86,7 +86,7 @@ async def test_system_engine_use_engine(
     connection_system_engine: Connection, database_name: str, engine_name: str
 ):
     table_name = "test_table_async"
-    with connection_system_engine.cursor() as cursor:
+    async with connection_system_engine.cursor() as cursor:
         await cursor.execute(f'USE DATABASE "{database_name}"')
         await cursor.execute(f'USE ENGINE "{engine_name}"')
         await cursor.execute(f'CREATE TABLE IF NOT EXISTS "{table_name}" (id int)')

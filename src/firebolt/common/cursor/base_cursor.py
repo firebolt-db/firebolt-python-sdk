@@ -2,36 +2,28 @@ from __future__ import annotations
 
 import logging
 import re
-from functools import wraps
 from types import TracebackType
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from httpx import URL, Response
 
-from firebolt.common._types import (
-    ColType,
-    RawColType,
-    SetParameter,
-    parse_type,
-    parse_value,
-)
+from firebolt.common._types import RawColType, SetParameter
 from firebolt.common.constants import (
     DISALLOWED_PARAMETER_LIST,
     IMMUTABLE_PARAMETER_LIST,
     USE_PARAMETER_LIST,
     CursorState,
 )
+from firebolt.common.cursor.decorators import (
+    async_not_allowed,
+    check_not_closed,
+    check_query_executed,
+)
+from firebolt.common.row_set.base import BaseRowSet
 from firebolt.common.row_set.types import AsyncResponse, Column, Statistics
 from firebolt.common.statement_formatter import StatementFormatter
-from firebolt.utils.exception import (
-    ConfigurationError,
-    CursorClosedError,
-    DataError,
-    FireboltError,
-    MethodNotAllowedInAsyncError,
-    QueryNotRunError,
-)
-from firebolt.utils.util import Timer, fix_url_schema
+from firebolt.utils.exception import ConfigurationError, FireboltError
+from firebolt.utils.util import fix_url_schema
 
 logger = logging.getLogger(__name__)
 
@@ -78,51 +70,6 @@ RowSet = Tuple[
 ]
 
 
-def check_not_closed(func: Callable) -> Callable:
-    """(Decorator) ensure cursor is not closed before calling method."""
-
-    @wraps(func)
-    def inner(self: BaseCursor, *args: Any, **kwargs: Any) -> Any:
-        if self.closed:
-            raise CursorClosedError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
-
-
-def check_query_executed(func: Callable) -> Callable:
-    """
-    (Decorator) ensure that some query has been executed before
-    calling cursor method.
-    """
-
-    @wraps(func)
-    def inner(self: BaseCursor, *args: Any, **kwargs: Any) -> Any:
-        if self._state == CursorState.NONE:
-            raise QueryNotRunError(method_name=func.__name__)
-        if self._query_token:
-            # query_token is set only for async queries
-            raise MethodNotAllowedInAsyncError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
-
-
-def async_not_allowed(func: Callable) -> Callable:
-    """
-    (Decorator) ensure that fetch methods are not called on async queries.
-    """
-
-    @wraps(func)
-    def inner(self: BaseCursor, *args: Any, **kwargs: Any) -> Any:
-        if self._query_token:
-            # query_token is set only for async queries
-            raise MethodNotAllowedInAsyncError(method_name=func.__name__)
-        return func(self, *args, **kwargs)
-
-    return inner
-
-
 class BaseCursor:
     __slots__ = (
         "connection",
@@ -130,17 +77,11 @@ class BaseCursor:
         "_arraysize",
         "_client",
         "_state",
-        "_descriptions",
-        "_statistics",
-        "_rowcount",
-        "_rows",
-        "_idx",
-        "_row_sets",
         "_formatter",
-        "_next_set_idx",
         "_set_parameters",
         "_query_id",
         "_query_token",
+        "_row_set",
         "engine_url",
     )
 
@@ -151,21 +92,15 @@ class BaseCursor:
     ) -> None:
         self._arraysize = self.default_arraysize
         # These fields initialized here for type annotations purpose
-        self._rows: Optional[List[List[RawColType]]] = None
-        self._descriptions: Optional[List[Column]] = None
-        self._statistics: Optional[Statistics] = None
-        self._row_sets: List[RowSet] = []
         self._formatter = formatter
         # User-defined set parameters
         self._set_parameters: Dict[str, Any] = dict()
         # Server-side parameters (user can't change them)
         self.parameters: Dict[str, str] = dict()
         self.engine_url = ""
-        self._rowcount = -1
-        self._idx = 0
-        self._next_set_idx = 0
         self._query_id = ""
         self._query_token = ""
+        self._row_set: Optional[BaseRowSet] = None
         self._reset()
 
     @property
@@ -191,19 +126,25 @@ class BaseCursor:
             * ``scale``
             * ``null_ok``
         """
-        return self._descriptions
+        if not self._row_set:
+            return None
+        return self._row_set.columns
 
     @property  # type: ignore
     @check_not_closed
     def statistics(self) -> Optional[Statistics]:
         """Query execution statistics returned by the backend."""
-        return self._statistics
+        if not self._row_set:
+            return None
+        return self._row_set.statistics
 
     @property  # type: ignore
     @check_not_closed
     def rowcount(self) -> int:
         """The number of rows produced by last query."""
-        return self._rowcount
+        if not self._row_set:
+            return -1
+        return self._row_set.row_count
 
     @property  # type: ignore
     @check_not_closed
@@ -234,38 +175,23 @@ class BaseCursor:
             )
         self._arraysize = value
 
-    @property
-    def closed(self) -> bool:
-        """True if connection is closed, False otherwise."""
-        return self._state == CursorState.CLOSED
-
     @check_not_closed
     @async_not_allowed
     @check_query_executed
-    def nextset(self) -> Optional[bool]:
+    def nextset(self) -> bool:
         """
         Skip to the next available set, discarding any remaining rows
         from the current set.
         Returns True if operation was successful;
-        None if there are no more sets to retrive.
+        False if there are no more sets to retrieve.
         """
-        return self._pop_next_set()
+        assert self._row_set is not None
+        return self._row_set.nextset()
 
-    def _pop_next_set(self) -> Optional[bool]:
-        """
-        Same functionality as .nextset, but doesn't check that query has been executed.
-        """
-        if self._next_set_idx >= len(self._row_sets):
-            return None
-        (
-            self._rowcount,
-            self._descriptions,
-            self._statistics,
-            self._rows,
-        ) = self._row_sets[self._next_set_idx]
-        self._idx = 0
-        self._next_set_idx += 1
-        return True
+    @property
+    def closed(self) -> bool:
+        """True if connection is closed, False otherwise."""
+        return self._state == CursorState.CLOSED
 
     def flush_parameters(self) -> None:
         """Cleanup all previously set parameters"""
@@ -274,13 +200,7 @@ class BaseCursor:
     def _reset(self) -> None:
         """Clear all data stored from previous query."""
         self._state = CursorState.NONE
-        self._rows = None
-        self._descriptions = None
-        self._statistics = None
-        self._rowcount = -1
-        self._idx = 0
-        self._row_sets = []
-        self._next_set_idx = 0
+        self._row_set = None
         self._query_id = ""
         self._query_token = ""
 
@@ -331,107 +251,6 @@ class BaseCursor:
         """Handle async response from the server."""
         async_response = AsyncResponse(**response.json())
         self._query_token = async_response.token
-
-    def _row_set_from_response(self, response: Response) -> RowSet:
-        """Fetch information about executed query from http response."""
-
-        # Empty response is returned for insert query
-        if response.headers.get("content-length", "") == "0":
-            return -1, None, None, None
-        try:
-            # Skip parsing floats to properly parse them later
-            query_data = response.json(parse_float=str)
-            rowcount = int(query_data["rows"])
-            descriptions: Optional[List[Column]] = [
-                Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
-                for d in query_data["meta"]
-            ]
-            if not descriptions:
-                descriptions = None
-            statistics = Statistics(**query_data["statistics"])
-            # Parse data during fetch
-            rows = query_data["data"]
-            return rowcount, descriptions, statistics, rows
-        except (KeyError, ValueError) as err:
-            raise DataError(f"Invalid query data format: {str(err)}")
-
-    def _append_row_set(
-        self,
-        row_set: RowSet,
-    ) -> None:
-        """Store information about executed query."""
-        self._row_sets.append(row_set)
-        if self._next_set_idx == 0:
-            # Populate values for first set
-            self._pop_next_set()
-
-    def _parse_row(self, row: List[RawColType]) -> List[ColType]:
-        """Parse a single data row based on query column types."""
-        assert len(row) == len(self.description)
-        return [
-            parse_value(col, self.description[i].type_code) for i, col in enumerate(row)
-        ]
-
-    def _get_next_range(self, size: int) -> Tuple[int, int]:
-        """
-        Return range of next rows of size (if possible),
-        and update _idx to point to the end of this range
-        """
-
-        if self._rows is None:
-            # No elements to take
-            raise DataError("no rows to fetch")
-
-        left = self._idx
-        right = min(self._idx + size, len(self._rows))
-        self._idx = right
-        return left, right
-
-    _performance_log_message = (
-        "[PERFORMANCE] Parsing query output into native Python types"
-    )
-
-    @check_not_closed
-    @async_not_allowed
-    @check_query_executed
-    def fetchone(self) -> Optional[List[ColType]]:
-        """Fetch the next row of a query result set."""
-        left, right = self._get_next_range(1)
-        if left == right:
-            # We are out of elements
-            return None
-        assert self._rows is not None
-        with Timer(self._performance_log_message):
-            result = self._parse_row(self._rows[left])
-        return result
-
-    @check_not_closed
-    @async_not_allowed
-    @check_query_executed
-    def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        """
-        Fetch the next set of rows of a query result;
-        cursor.arraysize is default size.
-        """
-        size = size if size is not None else self.arraysize
-        left, right = self._get_next_range(size)
-        assert self._rows is not None
-        rows = self._rows[left:right]
-        with Timer(self._performance_log_message):
-            result = [self._parse_row(row) for row in rows]
-        return result
-
-    @check_not_closed
-    @async_not_allowed
-    @check_query_executed
-    def fetchall(self) -> List[List[ColType]]:
-        """Fetch all remaining rows of a query result."""
-        left, right = self._get_next_range(self.rowcount)
-        assert self._rows is not None
-        rows = self._rows[left:right]
-        with Timer(self._performance_log_message):
-            result = [self._parse_row(row) for row in rows]
-        return result
 
     @check_not_closed
     def setinputsizes(self, sizes: List[int]) -> None:

@@ -179,7 +179,7 @@ class Connection(BaseConnection):
         for c in cursors:
             # Here c can already be closed by another thread,
             # but it shouldn't raise an error in this case
-            c.close()
+            await c.aclose()
         await self._client.aclose()
         self._is_closed = True
 

@@ -439,7 +439,7 @@ def test_cursor_multi_statement(
             cursor.fetchone() == python_query_data[i]
         ), f"Invalid data row at position {i}"
 
-    assert cursor.nextset() is None
+    assert cursor.nextset() is False
 
 
 def test_cursor_set_statements(

@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import time
 from abc import ABCMeta, abstractmethod
+from itertools import islice
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -26,15 +27,6 @@ from httpx import (
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
-from firebolt.common.base_cursor import (
-    BaseCursor,
-    _parse_update_endpoint,
-    _parse_update_parameters,
-    _raise_if_internal_set_parameter,
-    async_not_allowed,
-    check_not_closed,
-    check_query_executed,
-)
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
     RESET_SESSION_HEADER,
@@ -42,6 +34,19 @@ from firebolt.common.constants import (
     UPDATE_PARAMETERS_HEADER,
     CursorState,
 )
+from firebolt.common.cursor.base_cursor import (
+    BaseCursor,
+    _parse_update_endpoint,
+    _parse_update_parameters,
+    _raise_if_internal_set_parameter,
+)
+from firebolt.common.cursor.decorators import (
+    async_not_allowed,
+    check_not_closed,
+    check_query_executed,
+)
+from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
+from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
@@ -54,7 +59,11 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
-from firebolt.utils.util import _print_error_body, raise_errors_from_body
+from firebolt.utils.util import (
+    Timer,
+    _print_error_body,
+    raise_errors_from_body,
+)
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -87,6 +96,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
+        self._row_set: Optional[BaseSyncRowSet] = None
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
@@ -169,6 +179,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
+
+        # append empty result set
+        self._append_row_set_from_response(None)
 
     def _parse_response_headers(self, headers: Headers) -> None:
         if headers.get(UPDATE_ENDPOINT_HEADER):
@@ -267,8 +280,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             self._parse_async_response(resp)
         else:
             self._parse_response_headers(resp.headers)
-            row_set = self._row_set_from_response(resp)
-            self._append_row_set(row_set)
+            self._append_row_set_from_response(resp)
 
     @check_not_closed
     def execute(
@@ -346,6 +358,59 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """
         self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
+
+    def _append_row_set_from_response(
+        self,
+        response: Optional[Response],
+    ) -> None:
+        """Store information about executed query."""
+        if self._row_set is None:
+            self._row_set = InMemoryRowSet()
+
+        if response is None:
+            self._row_set.append_empty_response()
+        else:
+            self._row_set.append_response(response)
+
+    _performance_log_message = (
+        "[PERFORMANCE] Parsing query output into native Python types"
+    )
+
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    def fetchone(self) -> Optional[List[ColType]]:
+        """Fetch the next row of a query result set."""
+        assert self._row_set is not None
+        with Timer(self._performance_log_message):
+            return next(self._row_set, None)
+
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
+        """
+        Fetch the next set of rows of a query result;
+        cursor.arraysize is default size.
+        """
+        assert self._row_set is not None
+        size = size if size is not None else self.arraysize
+        with Timer(self._performance_log_message):
+            return list(islice(self._row_set, size))
+
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    def fetchall(self) -> List[List[ColType]]:
+        """Fetch all remaining rows of a query result."""
+        assert self._row_set is not None
+        with Timer(self._performance_log_message):
+            return list(self._row_set)
+
+    def close(self) -> None:
+        super().close()
+        if self._row_set is not None:
+            self._row_set.close()
 
     @abstractmethod
     def is_db_available(self, database: str) -> bool:

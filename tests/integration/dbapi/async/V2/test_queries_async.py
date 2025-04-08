@@ -47,7 +47,7 @@ async def test_select(
     timezone_name: str,
 ) -> None:
     """Select handles all data types properly."""
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         # For timestamptz test
         assert (
             await c.execute(f"SET time_zone={timezone_name}") == -1
@@ -79,7 +79,7 @@ async def test_select(
 
 
 async def test_select_inf(connection: Connection) -> None:
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute("SELECT 'inf'::float, '-inf'::float")
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
@@ -88,7 +88,7 @@ async def test_select_inf(connection: Connection) -> None:
 
 
 async def test_select_nan(connection: Connection) -> None:
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute("SELECT 'nan'::float, '-nan'::float")
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
@@ -106,7 +106,7 @@ async def test_long_query(
 
     minimal_time(350)
 
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute(LONG_SELECT)
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
@@ -117,11 +117,11 @@ async def test_drop_create(connection: Connection) -> None:
 
     async def test_query(c: Cursor, query: str) -> None:
         await c.execute(query)
-        assert c.description == None
+        assert c.description == []
         assert c.rowcount == 0
 
     """Create table query is handled properly"""
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         # Cleanup
         await c.execute('DROP AGGREGATING INDEX IF EXISTS "test_db_agg_idx"')
         await c.execute('DROP TABLE IF EXISTS "test_drop_create_async"')
@@ -165,12 +165,12 @@ async def test_insert(connection: Connection) -> None:
     async def test_empty_query(c: Cursor, query: str) -> None:
         assert await c.execute(query) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
         assert await c.fetchone() is None
         assert len(await c.fetchmany()) == 0
         assert len(await c.fetchall()) == 0
 
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_insert_async_tb"')
         await c.execute(
             'CREATE FACT TABLE "test_insert_async_tb"(id int, sn string null, f float,'
@@ -213,12 +213,12 @@ async def test_parameterized_query(connection: Connection) -> None:
     async def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
         assert await c.execute(query, params) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
         assert await c.fetchone() is None
         assert len(await c.fetchmany()) == 0
         assert len(await c.fetchall()) == 0
 
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_tb_async_parameterized"')
         await c.execute(
             'CREATE FACT TABLE "test_tb_async_parameterized"(i int, f float, s string, sn'
@@ -261,7 +261,7 @@ async def test_parameterized_query(connection: Connection) -> None:
 
 async def test_parameterized_query_with_special_chars(connection: Connection) -> None:
     """Query parameters are handled properly."""
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         params = ["text with 'quote'", "text with \\slashes"]
 
         await c.execute(
@@ -278,7 +278,7 @@ async def test_parameterized_query_with_special_chars(connection: Connection) ->
 async def test_multi_statement_query(connection: Connection) -> None:
     """Query parameters are handled properly"""
 
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_tb_async_multi_statement"')
         await c.execute(
             'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)'
@@ -290,7 +290,7 @@ async def test_multi_statement_query(connection: Connection) -> None:
             'SELECT * FROM "test_tb_async_multi_statement";'
             'SELECT * FROM "test_tb_async_multi_statement" WHERE i <= 1'
         )
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
 
         assert await c.nextset()
 
@@ -328,11 +328,11 @@ async def test_multi_statement_query(connection: Connection) -> None:
             "Invalid data in table after parameterized insert",
         )
 
-        assert await c.nextset() is None
+        assert await c.nextset() is False
 
 
 async def test_set_invalid_parameter(connection: Connection):
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         assert len(c._set_parameters) == 0
         with raises(OperationalError):
             await c.execute("SET some_invalid_parameter = 1")
@@ -344,7 +344,7 @@ async def test_bytea_roundtrip(
     connection: Connection,
 ) -> None:
     """Inserted and than selected bytea value doesn't get corrupted."""
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip_2"')
         await c.execute(
             'CREATE FACT TABLE "test_bytea_roundtrip_2"(id int, b bytea) primary index id'
@@ -435,7 +435,7 @@ async def test_select_geography(
     select_geography_description: List[Column],
     select_geography_response: List[ColType],
 ) -> None:
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute(select_geography_query)
         assert (
             c.description == select_geography_description
@@ -457,7 +457,7 @@ async def test_select_struct(
     select_struct_description: List[Column],
     select_struct_response: List[ColType],
 ):
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         try:
             await c.execute(setup_struct_query)
             await c.execute(select_struct_query)

@@ -5,16 +5,7 @@ import time
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from types import TracebackType
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Dict,
-    Iterator,
-    List,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
 from urllib.parse import urljoin
 
 from httpx import (
@@ -28,15 +19,6 @@ from httpx import (
 
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
-from firebolt.common.base_cursor import (
-    BaseCursor,
-    _parse_update_endpoint,
-    _parse_update_parameters,
-    _raise_if_internal_set_parameter,
-    async_not_allowed,
-    check_not_closed,
-    check_query_executed,
-)
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
     RESET_SESSION_HEADER,
@@ -44,6 +26,19 @@ from firebolt.common.constants import (
     UPDATE_PARAMETERS_HEADER,
     CursorState,
 )
+from firebolt.common.cursor.base_cursor import (
+    BaseCursor,
+    _parse_update_endpoint,
+    _parse_update_parameters,
+    _raise_if_internal_set_parameter,
+)
+from firebolt.common.cursor.decorators import (
+    async_not_allowed,
+    check_not_closed,
+    check_query_executed,
+)
+from firebolt.common.row_set.asynchronous.base import BaseAsyncRowSet
+from firebolt.common.row_set.asynchronous.in_memory import InMemoryAsyncRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
@@ -60,7 +55,12 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from firebolt.utils.util import _print_error_body, raise_errors_from_body
+from firebolt.utils.async_util import async_islice
+from firebolt.utils.util import (
+    Timer,
+    _print_error_body,
+    raise_errors_from_body,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +90,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
+        self._row_set: Optional[BaseAsyncRowSet] = None
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
@@ -123,13 +124,14 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         try:
-            return await self._client.request(
+            req = self._client.build_request(
                 url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
                 method="POST",
                 params=parameters,
                 content=query,
                 timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
             )
+            return await self._client.send(req, stream=True)
         except TimeoutException:
             raise QueryTimeoutError()
 
@@ -171,6 +173,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # set parameter passed validation
         self._set_parameters[parameter.name] = parameter.value
+
+        # append empty result set
+        await self._append_row_set_from_response(None)
 
     async def _parse_response_headers(self, headers: Headers) -> None:
         if headers.get(UPDATE_ENDPOINT_HEADER):
@@ -273,8 +278,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             self._parse_async_response(resp)
         else:
             await self._parse_response_headers(resp.headers)
-            row_set = self._row_set_from_response(resp)
-            self._append_row_set(row_set)
+            await self._append_row_set_from_response(resp)
 
     @check_not_closed
     async def execute(
@@ -355,6 +359,66 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         await self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
 
+    async def _append_row_set_from_response(
+        self,
+        response: Optional[Response],
+    ) -> None:
+        """Store information about executed query."""
+        if self._row_set is None:
+            self._row_set = InMemoryAsyncRowSet()
+        if response is None:
+            self._row_set.append_empty_response()
+        else:
+            await self._row_set.append_response(response)
+
+    _performance_log_message = (
+        "[PERFORMANCE] Parsing query output into native Python types"
+    )
+
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    async def fetchone(self) -> Optional[List[ColType]]:
+        """Fetch the next row of a query result set."""
+        assert self._row_set is not None
+        with Timer(self._performance_log_message):
+            # anext() is only supported in Python 3.10+
+            try:
+                return await self._row_set.__anext__()
+            except StopAsyncIteration:
+                return None
+
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
+        """
+        Fetch the next set of rows of a query result;
+        cursor.arraysize is default size.
+        """
+        assert self._row_set is not None
+        size = size if size is not None else self.arraysize
+        with Timer(self._performance_log_message):
+            return await async_islice(self._row_set, size)
+
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    async def fetchall(self) -> List[List[ColType]]:
+        """Fetch all remaining rows of a query result."""
+        assert self._row_set is not None
+        with Timer(self._performance_log_message):
+            return [it async for it in self._row_set]
+
+    @wraps(BaseCursor.nextset)
+    async def nextset(self) -> None:
+        return super().nextset()
+
+    async def aclose(self) -> None:
+        super().close()
+        if self._row_set is not None:
+            await self._row_set.aclose()
+
     @abstractmethod
     async def is_db_available(self, database: str) -> bool:
         """Verify that the database exists."""
@@ -365,28 +429,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Verify that the engine is running."""
         ...
 
-    @wraps(BaseCursor.fetchone)
-    async def fetchone(self) -> Optional[List[ColType]]:
-        """Fetch the next row of a query result set."""
-        return super().fetchone()
-
-    @wraps(BaseCursor.fetchmany)
-    async def fetchmany(self, size: Optional[int] = None) -> List[List[ColType]]:
-        """
-        Fetch the next set of rows of a query result;
-        size is cursor.arraysize by default.
-        """
-        return super().fetchmany(size)
-
-    @wraps(BaseCursor.fetchall)
-    async def fetchall(self) -> List[List[ColType]]:
-        """Fetch all remaining rows of a query result."""
-        return super().fetchall()
-
-    @wraps(BaseCursor.nextset)
-    async def nextset(self) -> None:
-        return super().nextset()
-
     # Iteration support
     @check_not_closed
     @async_not_allowed
@@ -394,36 +436,21 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def __aiter__(self) -> Cursor:
         return self
 
-    # TODO: figure out how to implement __aenter__ and __await__
     @check_not_closed
-    def __aenter__(self) -> Cursor:
+    async def __aenter__(self) -> Cursor:
         return self
-
-    @check_not_closed
-    def __enter__(self) -> Cursor:
-        return self
-
-    def __exit__(
-        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
-    ) -> None:
-        self.close()
-
-    def __await__(self) -> Iterator:
-        yield None
 
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
-        self.close()
+        await self.aclose()
 
     @check_not_closed
     @async_not_allowed
     @check_query_executed
     async def __anext__(self) -> List[ColType]:
-        row = await self.fetchone()
-        if row is None:
-            raise StopAsyncIteration
-        return row
+        assert self._row_set is not None
+        return await self._row_set.__anext__()
 
 
 class CursorV2(Cursor):
