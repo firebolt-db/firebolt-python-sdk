@@ -185,7 +185,7 @@ def test_cursor_execute(
             cursor.rowcount == -1
         ), f"Invalid rowcount value for insert using {message}."
         assert (
-            cursor.description is None
+            cursor.description == []
         ), f"Invalid description for insert using {message}."
 
 
@@ -407,7 +407,7 @@ def test_cursor_multi_statement(
 
     assert cursor.nextset()
     assert cursor.rowcount == -1, "Invalid cursor row count"
-    assert cursor.description is None, "Invalid cursor description"
+    assert cursor.description == [], "Invalid cursor description"
     with raises(DataError) as exc_info:
         cursor.fetchall()
 
@@ -440,7 +440,7 @@ def test_cursor_set_statements(
 
     rc = cursor.execute("set a = b")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         cursor.fetchall()
 
@@ -458,7 +458,7 @@ def test_cursor_set_statements(
 
     rc = cursor.execute("set param1=1")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         cursor.fetchall()
 
@@ -474,7 +474,7 @@ def test_cursor_set_statements(
 
     rc = cursor.execute("set param2=0")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         cursor.fetchall()
 
