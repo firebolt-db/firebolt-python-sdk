@@ -31,6 +31,7 @@ def async_byte_stream(b: bytes) -> AsyncByteStream:
             return self.b
 
         async def aclose(self) -> None:
+            # No-op since there is nothing to close
             pass
 
     return ABS(b)

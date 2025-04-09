@@ -99,4 +99,5 @@ class InMemoryRowSet(BaseSyncRowSet):
         return self._parse_row(self._row_set.rows[self._current_row])
 
     def close(self) -> None:
+        # No-op for in-memory row set
         pass
