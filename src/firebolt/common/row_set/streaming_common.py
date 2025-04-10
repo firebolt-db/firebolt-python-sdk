@@ -1,5 +1,5 @@
 import json
-from typing import Iterator, List, Optional
+from typing import Any, Iterator, List, Optional
 
 from httpx import Response
 
@@ -46,6 +46,8 @@ class StreamingRowSetCommonBase:
     def _reset(self) -> None:
         """
         Reset the state of the streaming row set.
+
+        Resets internal counters, iterators, and cached data for the next row set.
         """
         self._current_row_set_idx += 1
         self._current_row_count = -1
@@ -60,8 +62,10 @@ class StreamingRowSetCommonBase:
     def _current_response(self) -> Optional[Response]:
         """
         Get the current response.
+
         Returns:
             Optional[Response]: The current response.
+
         Raises:
             DataError: If no results are available.
         """
@@ -73,16 +77,18 @@ class StreamingRowSetCommonBase:
         self, next_line: Optional[str]
     ) -> Optional[JSONLinesRecord]:
         """
-        Generator that yields JSON lines from the current response stream.
+        Parse a JSON line into a JSONLinesRecord.
 
         Args:
             next_line: The next line from the response stream.
 
         Returns:
-            JSONLinesRecord: The parsed JSON lines record.
+            JSONLinesRecord: The parsed JSON lines record, or None if line is None.
+
         Raises:
             OperationalError: If the JSON line is invalid or if it contains
-            a record of invalid format.
+                a record of invalid format.
+            FireboltStructuredError: If the record contains error information.
         """
         if next_line is None:
             return None
@@ -105,15 +111,17 @@ class StreamingRowSetCommonBase:
         self, record: Optional[JSONLinesRecord]
     ) -> List[Column]:
         """
-        Fetch columns from the JSON lines record.
+        Extract column definitions from a JSON lines record.
 
         Args:
             record: The JSON lines record to fetch columns from.
+
         Returns:
             List[Column]: The list of columns.
+
         Raises:
             OperationalError: If the JSON line is unexpectedly empty or
-            if it's message type is unexpected.
+                if its message type is unexpected.
         """
         if record is None:
             self._response_consumed = True
@@ -136,14 +144,17 @@ class StreamingRowSetCommonBase:
         self, record: Optional[JSONLinesRecord]
     ) -> Optional[DataRecord]:
         """
-        Pop the data record from the JSON lines record.
+        Extract a data record from a JSON lines record.
+
         Args:
             record: The JSON lines record to pop data from.
+
         Returns:
-            Optional[DataRecord]: The data record.
+            Optional[DataRecord]: The data record or None if no more data is available.
+
         Raises:
             OperationalError: If the JSON line is unexpectedly empty or
-            if it's message type is unexpected.
+                if its message type is unexpected.
         """
         if record is None:
             if not self._response_consumed:
@@ -166,18 +177,37 @@ class StreamingRowSetCommonBase:
             )
         return record
 
+    def _parse_row(self, row_data: Any) -> List[ColType]:
+        """
+        Parse a row of data from raw format to typed values.
+
+        This is an abstract method that must be implemented by subclasses.
+
+        Args:
+            row_data: Raw row data to be parsed
+
+        Returns:
+            List[ColType]: Parsed row data with proper types
+
+        Raises:
+            NotImplementedError: This method must be implemented by subclasses
+        """
+        raise NotImplementedError("Subclasses must implement _parse_row")
+
     def _get_next_data_row_from_current_record(self) -> List[ColType]:
         """
-        Get the next data row from the current record.
+        Extract the next data row from the current record.
+
         Returns:
-            List[ColType]: The next data row.
+            List[ColType]: The next data row with parsed column values.
+
         Raises:
             StopIteration: If there are no more rows to return.
         """
         if self._current_record is None:
             raise StopIteration
 
-        data_row = self._parse_row(  # type: ignore
+        data_row = self._parse_row(
             self._current_record.data[self._current_record_row_idx]
         )
         self._current_record_row_idx += 1

@@ -195,6 +195,9 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
 
         This method ensures all HTTP responses are properly closed and resources
         are released.
+
+        Raises:
+            OperationalError: If an error occurs while closing the responses
         """
         errors: List[BaseException] = []
         for response in self._responses[self._current_row_set_idx :]:
