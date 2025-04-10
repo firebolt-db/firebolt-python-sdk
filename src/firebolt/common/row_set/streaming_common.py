@@ -49,7 +49,7 @@ class StreamingRowSetCommonBase:
 
         Resets internal counters, iterators, and cached data for the next row set.
         """
-        self._current_row_set_idx += 1
+        self._current_row_set_idx = 0
         self._current_row_count = -1
         self._current_statistics = None
         self._lines_iter = None
