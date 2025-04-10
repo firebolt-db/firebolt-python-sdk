@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List, Optional
 
+from firebolt.common._types import ColType, RawColType, parse_value
 from firebolt.common.row_set.types import Column, Statistics
 
 
@@ -31,3 +32,9 @@ class BaseRowSet(ABC):
     @abstractmethod
     def append_empty_response(self) -> None:
         ...
+
+    def _parse_row(self, row: List[RawColType]) -> List[ColType]:
+        assert len(row) == len(self.columns)
+        return [
+            parse_value(col, self.columns[i].type_code) for i, col in enumerate(row)
+        ]

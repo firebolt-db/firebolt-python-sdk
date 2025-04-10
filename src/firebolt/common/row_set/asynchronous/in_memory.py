@@ -1,5 +1,5 @@
 import io
-from typing import AsyncIterator, List, Optional
+from typing import List, Optional
 
 from httpx import Response
 
@@ -39,9 +39,6 @@ class InMemoryAsyncRowSet(BaseAsyncRowSet):
 
     def nextset(self) -> bool:
         return self._sync_row_set.nextset()
-
-    def __aiter__(self) -> AsyncIterator[List[ColType]]:
-        return self
 
     async def __anext__(self) -> List[ColType]:
         try:

@@ -16,9 +16,8 @@ class BaseSyncRowSet(BaseRowSet, ABC):
     def append_response(self, response: Response) -> None:
         ...
 
-    @abstractmethod
     def __iter__(self) -> Iterator[List[ColType]]:
-        ...
+        return self
 
     @abstractmethod
     def __next__(self) -> List[ColType]:

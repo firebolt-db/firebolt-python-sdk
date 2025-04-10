@@ -1,0 +1,75 @@
+from dataclasses import dataclass
+from enum import Enum
+from typing import Any, Dict, List, Union
+
+from firebolt.common._types import RawColType
+from firebolt.common.row_set.types import Statistics
+from firebolt.utils.exception import OperationalError
+
+
+class MessageType(Enum):
+    start = "START"
+    data = "DATA"
+    success = "FINISH_SUCCESSFULLY"
+    error = "FINISH_WITH_ERROR"
+
+
+@dataclass
+class Column:
+    name: str
+    type: str
+
+
+@dataclass
+class StartRecord:
+    message_type: MessageType
+    result_columns: List[Column]
+    query_id: str
+    query_label: str
+    request_id: str
+
+
+@dataclass
+class DataRecord:
+    message_type: MessageType
+    data: List[List[RawColType]]
+
+
+@dataclass
+class ErrorRecord:
+    message_type: MessageType
+    errors: List[Dict[str, Any]]
+    query_id: str
+    query_label: str
+    request_id: str
+    statistics: Statistics
+
+
+@dataclass
+class SuccessRecord:
+    message_type: MessageType
+    statistics: Statistics
+
+
+JSONLinesRecord = Union[StartRecord, DataRecord, ErrorRecord, SuccessRecord]
+
+
+def parse_json_lines_record(record: dict) -> JSONLinesRecord:
+    """
+    Parse a JSON lines record into its corresponding data class.
+    """
+
+    message_type = MessageType(record["message_type"])
+
+    try:
+        if message_type == MessageType.start:
+            return StartRecord(**record)
+        elif message_type == MessageType.data:
+            return DataRecord(**record)
+        elif message_type == MessageType.error:
+            return ErrorRecord(**record)
+        elif message_type == MessageType.success:
+            return SuccessRecord(**record)
+        raise OperationalError(f"Unknown message type: {message_type}")
+    except TypeError as e:
+        raise OperationalError(f"Invalid JSON lines record format: {e}")
