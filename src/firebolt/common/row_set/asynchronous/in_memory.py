@@ -21,9 +21,13 @@ class InMemoryAsyncRowSet(BaseAsyncRowSet):
         self._sync_row_set.append_empty_response()
 
     async def append_response(self, response: Response) -> None:
-        sync_stream = io.BytesIO(b"".join([b async for b in response.aiter_bytes()]))
-        self._sync_row_set.append_response_stream(sync_stream)
-        await response.aclose()
+        try:
+            sync_stream = io.BytesIO(
+                b"".join([b async for b in response.aiter_bytes()])
+            )
+            self._sync_row_set.append_response_stream(sync_stream)
+        finally:
+            await response.aclose()
 
     @property
     def row_count(self) -> int:

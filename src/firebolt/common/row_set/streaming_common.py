@@ -44,6 +44,9 @@ class StreamingRowSetCommonBase:
         self._reset()
 
     def _reset(self) -> None:
+        """
+        Reset the state of the streaming row set.
+        """
         self._current_row_set_idx += 1
         self._current_row_count = -1
         self._current_statistics = None
@@ -57,6 +60,10 @@ class StreamingRowSetCommonBase:
     def _current_response(self) -> Optional[Response]:
         """
         Get the current response.
+        Returns:
+            Optional[Response]: The current response.
+        Raises:
+            DataError: If no results are available.
         """
         if self._current_row_set_idx >= len(self._responses):
             raise DataError("No results available.")
@@ -67,14 +74,25 @@ class StreamingRowSetCommonBase:
     ) -> Optional[JSONLinesRecord]:
         """
         Generator that yields JSON lines from the current response stream.
+
+        Args:
+            next_line: The next line from the response stream.
+
+        Returns:
+            JSONLinesRecord: The parsed JSON lines record.
+        Raises:
+            OperationalError: If the JSON line is invalid or if it contains
+            a record of invalid format.
         """
         if next_line is None:
             return None
 
         try:
             record = json.loads(next_line)
-        except json.JSONDecodeError:
-            raise OperationalError(f"Invalid JSON line response format: {next_line}")
+        except json.JSONDecodeError as err:
+            raise OperationalError(
+                f"Invalid JSON line response format: {next_line}"
+            ) from err
 
         record = parse_json_lines_record(record)
         if isinstance(record, ErrorRecord):
@@ -88,6 +106,14 @@ class StreamingRowSetCommonBase:
     ) -> List[Column]:
         """
         Fetch columns from the JSON lines record.
+
+        Args:
+            record: The JSON lines record to fetch columns from.
+        Returns:
+            List[Column]: The list of columns.
+        Raises:
+            OperationalError: If the JSON line is unexpectedly empty or
+            if it's message type is unexpected.
         """
         if record is None:
             self._response_consumed = True
@@ -109,6 +135,16 @@ class StreamingRowSetCommonBase:
     def _pop_data_record_from_record(
         self, record: Optional[JSONLinesRecord]
     ) -> Optional[DataRecord]:
+        """
+        Pop the data record from the JSON lines record.
+        Args:
+            record: The JSON lines record to pop data from.
+        Returns:
+            Optional[DataRecord]: The data record.
+        Raises:
+            OperationalError: If the JSON line is unexpectedly empty or
+            if it's message type is unexpected.
+        """
         if record is None:
             if not self._response_consumed:
                 self._response_consumed = True
@@ -131,6 +167,13 @@ class StreamingRowSetCommonBase:
         return record
 
     def _get_next_data_row_from_current_record(self) -> List[ColType]:
+        """
+        Get the next data row from the current record.
+        Returns:
+            List[ColType]: The next data row.
+        Raises:
+            StopIteration: If there are no more rows to return.
+        """
         if self._current_record is None:
             raise StopIteration
 

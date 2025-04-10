@@ -29,8 +29,10 @@ class InMemoryRowSet(BaseSyncRowSet):
         """
         Create an InMemoryRowSet from a response.
         """
-        self.append_response_stream(response.iter_bytes())
-        response.close()
+        try:
+            self.append_response_stream(response.iter_bytes())
+        finally:
+            response.close()
 
     def append_response_stream(self, stream: Iterator[bytes]) -> None:
         """

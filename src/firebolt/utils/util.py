@@ -237,3 +237,22 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
             raise ValueError(f"Multiple values found for key '{key}'")
         query_params_dict[key] = values[0]
     return result_url, query_params_dict
+
+
+class _ExceptionGroup(Exception):
+    """A base class for grouping exceptions.
+
+    This class is used to create an exception group that can contain multiple
+    exceptions. It is a placeholder for Python 3.11's ExceptionGroup, which
+    allows for grouping exceptions together.
+    """
+
+    def __init__(self, message: str, exceptions: list[BaseException]):
+        super().__init__(message)
+        self.exceptions = exceptions
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({self.exceptions})"
+
+
+ExceptionGroup = getattr(__builtins__, "ExceptionGroup", _ExceptionGroup)

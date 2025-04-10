@@ -57,6 +57,16 @@ JSONLinesRecord = Union[StartRecord, DataRecord, ErrorRecord, SuccessRecord]
 def parse_json_lines_record(record: dict) -> JSONLinesRecord:
     """
     Parse a JSON lines record into its corresponding data class.
+
+    Args:
+        record (dict): The JSON lines record to parse.
+
+    Returns:
+        JSONLinesRecord: The parsed JSON lines record.
+
+    Raises:
+        OperationalError: If the JSON line message_type is unknown or if it contains
+            a record of invalid format.
     """
 
     message_type = MessageType(record["message_type"])
