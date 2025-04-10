@@ -27,7 +27,7 @@ class StreamingRowSetCommonBase:
 
     def __init__(self) -> None:
         self._responses: List[Optional[Response]] = []
-        self._current_row_set_idx = 0
+        self._current_row_set_idx: int = 0
 
         # current row set
         self._lines_iter: Optional[Iterator[str]]
@@ -48,8 +48,8 @@ class StreamingRowSetCommonBase:
         Reset the state of the streaming row set.
 
         Resets internal counters, iterators, and cached data for the next row set.
+        Note: Does not reset _current_row_set_idx to allow for multiple row sets.
         """
-        self._current_row_set_idx = 0
         self._current_row_count = -1
         self._current_statistics = None
         self._lines_iter = None
@@ -104,8 +104,20 @@ class StreamingRowSetCommonBase:
         if isinstance(record, ErrorRecord):
             self._response_consumed = True
             self._current_statistics = record.statistics
-            raise FireboltStructuredError(**record.errors[0])
+            self._handle_error_record(record)
         return record
+
+    def _handle_error_record(self, record: ErrorRecord) -> None:
+        """
+        Handle an error record by raising the appropriate exception.
+
+        Args:
+            record: The error record to handle.
+
+        Raises:
+            FireboltStructuredError: With details from the error record.
+        """
+        raise FireboltStructuredError({"errors": record.errors})
 
     def _fetch_columns_from_record(
         self, record: Optional[JSONLinesRecord]

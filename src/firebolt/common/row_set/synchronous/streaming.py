@@ -146,6 +146,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
                 except HTTPError as err:
                     self.close()
                     raise OperationalError("Failed to close response.") from err
+            self._current_row_set_idx += 1
             self._reset()
             self._current_columns = self._fetch_columns()
             return True

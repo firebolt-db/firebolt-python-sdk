@@ -74,7 +74,7 @@ class TestStreamingRowSetCommonBase:
         streaming_rowset._reset()
 
         # Check values are reset
-        assert streaming_rowset._current_row_set_idx == 0
+        assert streaming_rowset._current_row_set_idx == 11
         assert streaming_rowset._current_row_count == -1
         assert streaming_rowset._current_statistics is None
         assert streaming_rowset._lines_iter is None
