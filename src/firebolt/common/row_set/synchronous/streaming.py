@@ -207,10 +207,12 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
                     response.close()
                 except HTTPError as err:
                     errors.append(err)
+
+        self._reset()
+        self._responses = []
+
+        # Propagate any errors that occurred during closing
         if errors:
             raise OperationalError("Failed to close row set.") from ExceptionGroup(
                 "Errors during closing http streams.", errors
             )
-
-        self._reset()
-        self._responses = []

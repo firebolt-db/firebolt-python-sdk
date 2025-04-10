@@ -57,6 +57,7 @@ class StreamingRowSetCommonBase:
         self._current_record_row_idx = -1
         self._response_consumed = False
         self._current_columns = None
+        self._rows_returned = 0
 
     @property
     def _current_response(self) -> Optional[Response]:

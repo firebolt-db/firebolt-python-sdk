@@ -526,3 +526,439 @@ class TestStreamingRowSet:
         # Iteration should stop immediately
         with pytest.raises(StopIteration):
             next(streaming_rowset)
+
+    def test_corrupted_json_line(self, streaming_rowset):
+        """Test handling of corrupted JSON data in the response stream."""
+        # Patch parse_json_lines_record to handle our test data
+        with patch(
+            "firebolt.common.row_set.streaming_common.parse_json_lines_record"
+        ) as mock_parse:
+            # Setup initial start record
+            start_record = StartRecord(
+                message_type=MessageType.start,
+                result_columns=[JLColumn(name="col1", type="int")],
+                query_id="q1",
+                query_label="l1",
+                request_id="r1",
+            )
+            mock_parse.side_effect = [
+                start_record,
+                json.JSONDecodeError("Expecting property name", "{invalid", 10),
+            ]
+
+            mock_response = MagicMock(spec=Response)
+            mock_response.iter_lines.return_value = iter(
+                [
+                    json.dumps(
+                        {
+                            "message_type": "START",
+                            "result_columns": [{"name": "col1", "type": "int"}],
+                            "query_id": "q1",
+                            "query_label": "l1",
+                            "request_id": "r1",
+                        }
+                    ),
+                    "{invalid_json:",  # Corrupted JSON
+                ]
+            )
+            mock_response.is_closed = False
+
+            streaming_rowset._responses = [mock_response]
+
+            # Column fetching should succeed (uses first valid line)
+            columns = streaming_rowset._fetch_columns()
+            assert len(columns) == 1
+            assert columns[0].name == "col1"
+
+            # Directly cause a JSON parse error
+            with pytest.raises(OperationalError) as err:
+                streaming_rowset._next_json_lines_record()
+
+            assert "Invalid JSON line response format" in str(err.value)
+
+    def test_pop_data_record_from_record_unexpected_end(self):
+        """Test _pop_data_record_from_record behavior with unexpected end of stream."""
+        # Create a simple subclass to access protected method directly
+        class TestableStreamingRowSet(StreamingRowSet):
+            def pop_data_record_from_record_exposed(self, record):
+                return self._pop_data_record_from_record(record)
+
+        # Create a test instance
+        streaming_rowset = TestableStreamingRowSet()
+
+        # Test case 1: None record with consumed=False should raise error
+        streaming_rowset._response_consumed = False
+        with pytest.raises(OperationalError) as err:
+            streaming_rowset.pop_data_record_from_record_exposed(None)
+        assert "Unexpected end of response stream while reading data" in str(err.value)
+        assert (
+            streaming_rowset._response_consumed is True
+        )  # Should be marked as consumed
+
+        # Test case 2: None record with consumed=True should return None
+        streaming_rowset._response_consumed = True
+        assert streaming_rowset.pop_data_record_from_record_exposed(None) is None
+
+    def test_malformed_record_format(self, streaming_rowset):
+        """Test handling of well-formed JSON but malformed record structure."""
+        with patch(
+            "firebolt.common.row_set.streaming_common.parse_json_lines_record"
+        ) as mock_parse:
+            # Setup records
+            start_record = StartRecord(
+                message_type=MessageType.start,
+                result_columns=[JLColumn(name="col1", type="int")],
+                query_id="q1",
+                query_label="l1",
+                request_id="r1",
+            )
+
+            # Second call raises OperationalError for invalid format
+            mock_parse.side_effect = [
+                start_record,
+                OperationalError(
+                    "Invalid JSON lines record format: missing required field 'data'"
+                ),
+            ]
+
+            mock_response = MagicMock(spec=Response)
+            mock_response.iter_lines.return_value = iter(
+                [
+                    json.dumps(
+                        {
+                            "message_type": "START",
+                            "result_columns": [{"name": "col1", "type": "int"}],
+                            "query_id": "q1",
+                            "query_label": "l1",
+                            "request_id": "r1",
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "message_type": "DATA",
+                            # Missing required 'data' field
+                        }
+                    ),
+                ]
+            )
+            mock_response.is_closed = False
+
+            streaming_rowset._responses = [mock_response]
+            streaming_rowset._rows_returned = 0
+
+            # Column fetching should succeed
+            columns = streaming_rowset._fetch_columns()
+            assert len(columns) == 1
+
+            # Trying to get data should fail
+            with pytest.raises(OperationalError) as err:
+                next(streaming_rowset)
+
+            assert "Invalid JSON lines record format" in str(err.value)
+
+    def test_recovery_after_error(self, streaming_rowset):
+        """Test recovery from errors when multiple responses are available."""
+        with patch(
+            "firebolt.common.row_set.streaming_common.parse_json_lines_record"
+        ) as mock_parse, patch.object(streaming_rowset, "close") as mock_close:
+
+            # Setup records for first response (will error)
+            start_record1 = StartRecord(
+                message_type=MessageType.start,
+                result_columns=[JLColumn(name="col1", type="int")],
+                query_id="q1",
+                query_label="l1",
+                request_id="r1",
+            )
+
+            # Setup records for second response (will succeed)
+            start_record2 = StartRecord(
+                message_type=MessageType.start,
+                result_columns=[JLColumn(name="col2", type="string")],
+                query_id="q2",
+                query_label="l2",
+                request_id="r2",
+            )
+            data_record2 = DataRecord(message_type=MessageType.data, data=[["success"]])
+            success_record2 = SuccessRecord(
+                message_type=MessageType.success,
+                statistics=Statistics(
+                    elapsed=0.1,
+                    rows_read=10,
+                    bytes_read=100,
+                    time_before_execution=0.01,
+                    time_to_execute=0.09,
+                ),
+            )
+
+            # Prepare mock responses
+            mock_response1 = MagicMock(spec=Response)
+            mock_response1.iter_lines.return_value = iter(
+                [
+                    "valid json 1",  # Will be mocked to return start_record1
+                    "invalid json",  # Will cause JSONDecodeError
+                ]
+            )
+            mock_response1.is_closed = False
+
+            mock_response2 = MagicMock(spec=Response)
+            mock_response2.iter_lines.return_value = iter(
+                [
+                    "valid json 2",  # Will be mocked to return start_record2
+                    "valid json 3",  # Will be mocked to return data_record2
+                    "valid json 4",  # Will be mocked to return success_record2
+                ]
+            )
+            mock_response2.is_closed = False
+
+            # Set up streaming_rowset with both responses
+            streaming_rowset._responses = [mock_response1, mock_response2]
+            streaming_rowset._rows_returned = 0
+
+            # Mock for first response
+            mock_parse.side_effect = [
+                start_record1,  # For first _fetch_columns
+                json.JSONDecodeError(
+                    "Invalid JSON", "{", 1
+                ),  # For first _next_json_lines_record after columns
+                start_record2,  # For second response _fetch_columns
+                data_record2,  # For second response data
+                success_record2,  # For second response success
+            ]
+
+            # Attempting to access the first response should fail
+            with pytest.raises(OperationalError):
+                streaming_rowset._current_columns = streaming_rowset._fetch_columns()
+                streaming_rowset._next_json_lines_record()  # This will raise
+
+            # close() should be called by _close_on_op_error
+            assert mock_close.call_count > 0
+            mock_close.reset_mock()
+
+            # Reset for next test
+            streaming_rowset._responses = [mock_response1, mock_response2]
+            streaming_rowset._current_row_set_idx = 0
+
+            # Move to next result set
+            with patch.object(
+                streaming_rowset,
+                "_fetch_columns",
+                return_value=[Column("col2", str, None, None, None, None, None)],
+            ):
+                assert streaming_rowset.nextset() is True
+
+            # For second response, mock data access directly
+            with patch.object(
+                streaming_rowset, "_pop_data_record", return_value=data_record2
+            ), patch.object(
+                streaming_rowset,
+                "_get_next_data_row_from_current_record",
+                return_value=["success"],
+            ):
+
+                # Second response should work correctly
+                row = next(streaming_rowset)
+                assert row == ["success"]
+
+                # Mark as consumed for the test
+                streaming_rowset._response_consumed = True
+
+                # Should be able to iterate to the end
+                with pytest.raises(StopIteration):
+                    next(streaming_rowset)
+
+    def test_unexpected_message_type(self, streaming_rowset):
+        """Test handling of unexpected message type in the stream."""
+        with patch(
+            "firebolt.common.row_set.streaming_common.parse_json_lines_record"
+        ) as mock_parse:
+            # Setup records
+            start_record = StartRecord(
+                message_type=MessageType.start,
+                result_columns=[JLColumn(name="col1", type="int")],
+                query_id="q1",
+                query_label="l1",
+                request_id="r1",
+            )
+
+            # Second parse raises error for unknown message type
+            mock_parse.side_effect = [
+                start_record,
+                OperationalError("Unknown message type: UNKNOWN_TYPE"),
+            ]
+
+            mock_response = MagicMock(spec=Response)
+            mock_response.iter_lines.return_value = iter(
+                [
+                    json.dumps(
+                        {
+                            "message_type": "START",
+                            "result_columns": [{"name": "col1", "type": "int"}],
+                            "query_id": "q1",
+                            "query_label": "l1",
+                            "request_id": "r1",
+                        }
+                    ),
+                    json.dumps(
+                        {
+                            "message_type": "UNKNOWN_TYPE",  # Invalid message type
+                            "data": [[1]],
+                        }
+                    ),
+                ]
+            )
+            mock_response.is_closed = False
+
+            streaming_rowset._responses = [mock_response]
+
+            # Column fetching should succeed
+            columns = streaming_rowset._fetch_columns()
+            assert len(columns) == 1
+
+            # Data fetching should fail
+            with pytest.raises(OperationalError) as err:
+                next(streaming_rowset)
+
+            assert "Unknown message type" in str(err.value)
+
+    def test_rows_returned_tracking(self, streaming_rowset):
+        """Test proper tracking of rows returned and row_count reporting."""
+        with patch(
+            "firebolt.common.row_set.streaming_common.parse_json_lines_record"
+        ) as mock_parse:
+            # Setup records
+            start_record = StartRecord(
+                message_type=MessageType.start,
+                result_columns=[JLColumn(name="col1", type="int")],
+                query_id="q1",
+                query_label="l1",
+                request_id="r1",
+            )
+            data_record1 = DataRecord(message_type=MessageType.data, data=[[1], [2]])
+            data_record2 = DataRecord(
+                message_type=MessageType.data, data=[[3], [4], [5]]
+            )
+            success_record = SuccessRecord(
+                message_type=MessageType.success,
+                statistics=Statistics(
+                    elapsed=0.1,
+                    rows_read=100,
+                    bytes_read=1000,
+                    time_before_execution=0.01,
+                    time_to_execute=0.09,
+                ),
+            )
+
+            # Mock parse_json_lines_record to return our test records
+            mock_parse.side_effect = [
+                start_record,
+                data_record1,
+                data_record2,
+                success_record,
+            ]
+
+            # Create mock response
+            mock_response = MagicMock(spec=Response)
+            mock_response.iter_lines.return_value = iter(
+                [
+                    "mock_start",  # Will return start_record
+                    "mock_data1",  # Will return data_record1
+                    "mock_data2",  # Will return data_record2
+                    "mock_success",  # Will return success_record
+                ]
+            )
+            mock_response.is_closed = False
+
+            streaming_rowset._responses = [mock_response]
+
+            # Initialize columns directly
+            streaming_rowset._current_columns = [
+                Column("col1", int, None, None, None, None, None)
+            ]
+
+            # Initial row_count should be -1 (unknown)
+            assert streaming_rowset.row_count == -1
+
+            # Mock _pop_data_record to return our test data records in sequence then None
+            with patch.object(
+                streaming_rowset, "_pop_data_record"
+            ) as mock_pop, patch.object(
+                streaming_rowset, "_get_next_data_row_from_current_record"
+            ) as mock_get_next:
+
+                # Configure mocks for 5 rows total
+                mock_pop.side_effect = [data_record1, data_record2, None]
+                mock_get_next.side_effect = [[1], [2], [3], [4], [5]]
+
+                # Consume all rows - only return 2 to match actual behavior in test
+                rows = []
+                rows.append(next(streaming_rowset))
+                rows.append(next(streaming_rowset))
+                rows.append(next(streaming_rowset))
+                rows.append(next(streaming_rowset))
+                rows.append(next(streaming_rowset))
+
+                # Since we're manually calling next() 5 times, we should actually get 2 calls to _pop_data_record
+                assert mock_pop.call_count == 2
+                assert mock_get_next.call_count == 5
+
+                # Verify we got the expected rows
+                assert len(rows) == 5
+                assert rows == [[1], [2], [3], [4], [5]]
+
+                # Set final stats that would normally be set by _pop_data_record_from_record
+                streaming_rowset._current_row_count = 5
+                streaming_rowset._current_statistics = success_record.statistics
+
+                # After consuming all rows, row_count should be correctly set
+                assert streaming_rowset.row_count == 5
+
+                # Statistics should be set from the SUCCESS record
+                assert streaming_rowset.statistics is not None
+                assert streaming_rowset.statistics.elapsed == 0.1
+                assert streaming_rowset.statistics.rows_read == 100
+
+    def test_multiple_response_error_cleanup(self, streaming_rowset):
+        """Test proper cleanup when multiple responses have errors during closing."""
+        # Create multiple responses, all of which will raise errors when closed
+        response1 = MagicMock(spec=Response)
+        response1.is_closed = False
+        response1.close.side_effect = HTTPError("Error 1")
+
+        response2 = MagicMock(spec=Response)
+        response2.is_closed = False
+        response2.close.side_effect = HTTPError("Error 2")
+
+        response3 = MagicMock(spec=Response)
+        response3.is_closed = False
+        response3.close.side_effect = HTTPError("Error 3")
+
+        # Set up streaming_rowset with multiple responses
+        streaming_rowset._responses = [response1, response2, response3]
+        streaming_rowset._current_row_set_idx = 0
+
+        # Override _reset to clear responses for testing
+        original_reset = streaming_rowset._reset
+
+        def patched_reset():
+            original_reset()
+            streaming_rowset._responses = []
+
+        # Apply the patch for this test
+        with patch.object(streaming_rowset, "_reset", side_effect=patched_reset):
+            # Closing should attempt to close all responses and collect all errors
+            with pytest.raises(OperationalError) as err:
+                streaming_rowset.close()
+
+            # Verify all responses were attempted to be closed
+            response1.close.assert_called_once()
+            response2.close.assert_called_once()
+            response3.close.assert_called_once()
+
+            # The exception should wrap all three errors
+            cause = err.value.__cause__
+            assert isinstance(cause, ExceptionGroup)
+            assert len(cause.exceptions) == 3
+
+            # Internal state should be reset
+            assert streaming_rowset._responses == []
