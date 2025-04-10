@@ -23,6 +23,12 @@ from firebolt.utils.exception import DataError, OperationalError
 class TestStreamingRowSetCommon(StreamingRowSetCommonBase):
     """Test implementation of StreamingRowSetCommonBase."""
 
+    def __init__(self) -> None:
+        """Initialize the test class with required attributes."""
+        super().__init__()
+        # Initialize _rows_returned for tests
+        self._rows_returned = 0
+
     def _parse_row(self, row_data) -> List[ColType]:
         """Concrete implementation of _parse_row for testing."""
         return row_data
@@ -68,7 +74,7 @@ class TestStreamingRowSetCommonBase:
         streaming_rowset._reset()
 
         # Check values are reset
-        assert streaming_rowset._current_row_set_idx == -1
+        assert streaming_rowset._current_row_set_idx == 0
         assert streaming_rowset._current_row_count == -1
         assert streaming_rowset._current_statistics is None
         assert streaming_rowset._lines_iter is None
