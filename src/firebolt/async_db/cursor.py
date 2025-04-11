@@ -39,6 +39,7 @@ from firebolt.common.cursor.decorators import (
 )
 from firebolt.common.row_set.asynchronous.base import BaseAsyncRowSet
 from firebolt.common.row_set.asynchronous.in_memory import InMemoryAsyncRowSet
+from firebolt.common.row_set.asynchronous.streaming import StreamingAsyncRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
@@ -78,6 +79,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         arraysize: Read/Write, specifies the number of rows to fetch at a time
             with the :py:func:`fetchmany` method
     """
+
+    in_memory_row_set_type = InMemoryAsyncRowSet
+    streaming_row_set_type = StreamingAsyncRowSet
 
     def __init__(
         self,
@@ -192,6 +196,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
 
+    async def _close_rowset_and_reset(self) -> None:
+        """Reset cursor state."""
+        if self._row_set is not None:
+            await self._row_set.aclose()
+        super()._reset()
+
     @abstractmethod
     async def execute_async(
         self,
@@ -209,8 +219,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         skip_parsing: bool = False,
         timeout: Optional[float] = None,
         async_execution: bool = False,
+        streaming: bool = False,
     ) -> None:
-        self._reset()
+        await self._close_rowset_and_reset()
+        self._initialize_rowset(streaming)
         queries: List[Union[SetParameter, str]] = (
             [raw_query]
             if skip_parsing
@@ -359,13 +371,45 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         await self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
 
+    @check_not_closed
+    async def execute_stream(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> None:
+        """Prepare and execute a database query, with streaming results.
+
+        Supported features:
+            Parameterized queries: Placeholder characters ('?') are substituted
+                with values provided in `parameters`. Values are formatted to
+                be properly recognized by database and to exclude SQL injection.
+            Multi-statement queries: Multiple statements, provided in a single query
+                and separated by semicolon, are executed separately and sequentially.
+                To switch to next statement result, use `nextset` method.
+            SET statements: To provide additional query execution parameters, execute
+                `SET param=value` statement before it. All parameters are stored in
+                cursor object until it's closed. They can also be removed with
+                `flush_parameters` method call.
+
+        Args:
+            query (str): SQL query to execute.
+            parameters (Optional[Sequence[ParameterType]]): Substitution parameters.
+                Used to replace '?' placeholders inside a query with actual values.
+            skip_parsing (bool): Flag to disable query parsing. This will
+                disable parameterized, multi-statement and SET queries,
+                while improving performance
+        """
+        params_list = [parameters] if parameters else []
+        await self._do_execute(query, params_list, skip_parsing, streaming=True)
+
     async def _append_row_set_from_response(
         self,
         response: Optional[Response],
     ) -> None:
         """Store information about executed query."""
         if self._row_set is None:
-            self._row_set = InMemoryAsyncRowSet()
+            raise OperationalError("Row set is not initialized.")
         if response is None:
             self._row_set.append_empty_response()
         else:

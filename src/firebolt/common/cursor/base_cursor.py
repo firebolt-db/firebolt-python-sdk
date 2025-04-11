@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from httpx import URL, Response
 
@@ -82,6 +82,8 @@ class BaseCursor:
     )
 
     default_arraysize = 1
+    in_memory_row_set_type: Type = BaseRowSet
+    streaming_row_set_type: Type = BaseRowSet
 
     def __init__(
         self, *args: Any, formatter: StatementFormatter, **kwargs: Any
@@ -255,3 +257,10 @@ class BaseCursor:
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
         self.close()
+
+    def _initialize_rowset(self, is_streaming: bool) -> None:
+        """Initialize the row set."""
+        if is_streaming:
+            self._row_set = self.streaming_row_set_type()
+        else:
+            self._row_set = self.in_memory_row_set_type()

@@ -47,6 +47,7 @@ from firebolt.common.cursor.decorators import (
 )
 from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
+from firebolt.common.row_set.synchronous.streaming import StreamingRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
@@ -84,6 +85,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         arraysize: Read/Write, specifies the number of rows to fetch at a time
             with the :py:func:`fetchmany` method
     """
+
+    in_memory_row_set_type = InMemoryRowSet
+    streaming_row_set_type = StreamingRowSet
 
     def __init__(
         self,
@@ -198,6 +202,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
 
+    def _close_rowset_and_reset(self) -> None:
+        """Reset the cursor state."""
+        if self._row_set is not None:
+            self._row_set.close()
+        super()._reset()
+
     @abstractmethod
     def execute_async(
         self,
@@ -215,8 +225,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         skip_parsing: bool = False,
         timeout: Optional[float] = None,
         async_execution: bool = False,
+        streaming: bool = False,
     ) -> None:
-        self._reset()
+        self._close_rowset_and_reset()
+        self._initialize_rowset(streaming)
         queries: List[Union[SetParameter, str]] = (
             [raw_query]
             if skip_parsing
@@ -359,13 +371,24 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
 
+    @check_not_closed
+    def execute_stream(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> None:
+        """Execute a streaming query."""
+        params_list = [parameters] if parameters else []
+        self._do_execute(query, params_list, skip_parsing, streaming=True)
+
     def _append_row_set_from_response(
         self,
         response: Optional[Response],
     ) -> None:
         """Store information about executed query."""
         if self._row_set is None:
-            self._row_set = InMemoryRowSet()
+            raise OperationalError("Row set is not initialized.")
 
         if response is None:
             self._row_set.append_empty_response()

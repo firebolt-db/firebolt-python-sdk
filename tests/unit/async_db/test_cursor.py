@@ -540,7 +540,8 @@ async def test_cursor_skip_parse(
     mock_query()
 
     with patch(
-        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql",
+        return_value=["sql"],
     ) as split_format_sql_mock:
         await cursor.execute("non-an-actual-sql")
         split_format_sql_mock.assert_called_once()

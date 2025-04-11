@@ -609,7 +609,8 @@ async def test_cursor_skip_parse(
     httpx_mock.add_callback(query_callback, url=query_url)
 
     with patch(
-        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql",
+        return_value=["sql"],
     ) as split_format_sql_mock:
         await cursor.execute("non-an-actual-sql")
         split_format_sql_mock.assert_called_once()
