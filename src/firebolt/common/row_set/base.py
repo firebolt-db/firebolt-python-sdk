@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from firebolt.common._types import ColType, RawColType, parse_value
 from firebolt.common.row_set.types import Column, Statistics
+from firebolt.utils.exception import OperationalError
 
 
 class BaseRowSet(ABC):
@@ -22,11 +23,7 @@ class BaseRowSet(ABC):
 
     @property
     @abstractmethod
-    def columns(self) -> List[Column]:
-        ...
-
-    @abstractmethod
-    def nextset(self) -> bool:
+    def columns(self) -> Optional[List[Column]]:
         ...
 
     @abstractmethod
@@ -34,6 +31,8 @@ class BaseRowSet(ABC):
         ...
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
+        if not self.columns:
+            raise OperationalError("No columns definitions available yet.")
         assert len(row) == len(self.columns)
         return [
             parse_value(col, self.columns[i].type_code) for i, col in enumerate(row)

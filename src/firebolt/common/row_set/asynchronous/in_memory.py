@@ -41,7 +41,7 @@ class InMemoryAsyncRowSet(BaseAsyncRowSet):
     def statistics(self) -> Optional[Statistics]:
         return self._sync_row_set.statistics
 
-    def nextset(self) -> bool:
+    async def nextset(self) -> bool:
         return self._sync_row_set.nextset()
 
     async def __anext__(self) -> List[ColType]:

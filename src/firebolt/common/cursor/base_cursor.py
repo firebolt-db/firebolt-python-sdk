@@ -14,11 +14,7 @@ from firebolt.common.constants import (
     USE_PARAMETER_LIST,
     CursorState,
 )
-from firebolt.common.cursor.decorators import (
-    async_not_allowed,
-    check_not_closed,
-    check_query_executed,
-)
+from firebolt.common.cursor.decorators import check_not_closed
 from firebolt.common.row_set.base import BaseRowSet
 from firebolt.common.row_set.types import AsyncResponse, Column, Statistics
 from firebolt.common.statement_formatter import StatementFormatter
@@ -174,19 +170,6 @@ class BaseCursor:
                 f" got {type(value).__name__}"
             )
         self._arraysize = value
-
-    @check_not_closed
-    @async_not_allowed
-    @check_query_executed
-    def nextset(self) -> bool:
-        """
-        Skip to the next available set, discarding any remaining rows
-        from the current set.
-        Returns True if operation was successful;
-        False if there are no more sets to retrieve.
-        """
-        assert self._row_set is not None
-        return self._row_set.nextset()
 
     @property
     def closed(self) -> bool:

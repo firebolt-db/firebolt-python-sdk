@@ -26,3 +26,7 @@ class BaseSyncRowSet(BaseRowSet, ABC):
     @abstractmethod
     def close(self) -> None:
         ...
+
+    @abstractmethod
+    def nextset(self) -> bool:
+        ...

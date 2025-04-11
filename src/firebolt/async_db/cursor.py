@@ -4,7 +4,6 @@ import logging
 import time
 import warnings
 from abc import ABCMeta, abstractmethod
-from functools import wraps
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
 from urllib.parse import urljoin
@@ -56,7 +55,7 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from firebolt.utils.async_util import async_islice
+from firebolt.utils.async_util import anext, async_islice
 from firebolt.utils.util import (
     Timer,
     _print_error_body,
@@ -383,13 +382,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Fetch the next row of a query result set."""
         assert self._row_set is not None
         with Timer(self._performance_log_message):
-            # anext() is only supported in Python 3.10+
-            # this means we cannot just do return anext(self._row_set),
-            # we need to handle iteration manually
-            try:
-                return await self._row_set.__anext__()
-            except StopAsyncIteration:
-                return None
+            return anext(self._row_set, None)
 
     @check_not_closed
     @async_not_allowed
@@ -413,9 +406,19 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         with Timer(self._performance_log_message):
             return [it async for it in self._row_set]
 
-    @wraps(BaseCursor.nextset)
-    async def nextset(self) -> None:
-        return super().nextset()
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    async def nextset(self) -> bool:
+        """
+        Skip to the next available set, discarding any remaining rows
+        from the current set.
+
+        Returns:
+            bool: True if there is a next result set, False otherwise
+        """
+        assert self._row_set is not None
+        return await self._row_set.nextset()
 
     async def aclose(self) -> None:
         super().close()

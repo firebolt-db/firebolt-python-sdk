@@ -26,3 +26,7 @@ class BaseAsyncRowSet(BaseRowSet, ABC):
     @abstractmethod
     async def aclose(self) -> None:
         ...
+
+    @abstractmethod
+    async def nextset(self) -> bool:
+        ...

@@ -1,5 +1,5 @@
 import json
-from typing import Any, Iterator, List, Optional
+from typing import Any, AsyncIterator, Iterator, List, Optional, Union
 
 from httpx import Response
 
@@ -30,11 +30,10 @@ class StreamingRowSetCommonBase:
         self._current_row_set_idx: int = 0
 
         # current row set
-        self._lines_iter: Optional[Iterator[str]]
         self._rows_returned: int
         self._current_row_count: int
         self._current_statistics: Optional[Statistics]
-        self._current_columns: Optional[List[Column]]
+        self._current_columns: Optional[List[Column]] = None
         self._response_consumed: bool
 
         # current json lines record
@@ -52,7 +51,7 @@ class StreamingRowSetCommonBase:
         """
         self._current_row_count = -1
         self._current_statistics = None
-        self._lines_iter = None
+        self._lines_ite: Optional[Union[AsyncIterator[str], Iterator[str]]] = None
         self._current_record = None
         self._current_record_row_idx = -1
         self._response_consumed = False

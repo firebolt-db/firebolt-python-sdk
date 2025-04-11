@@ -1,27 +1,28 @@
-from contextlib import contextmanager
-from typing import Generator, Iterator, List, Optional
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, AsyncIterator, List, Optional
 
 from httpx import HTTPError, Response
 
 from firebolt.common._types import ColType
+from firebolt.common.row_set.asynchronous.base import BaseAsyncRowSet
 from firebolt.common.row_set.json_lines import DataRecord, JSONLinesRecord
 from firebolt.common.row_set.streaming_common import StreamingRowSetCommonBase
-from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.types import Column, Statistics
+from firebolt.utils.async_util import anext
 from firebolt.utils.exception import OperationalError
 from firebolt.utils.util import ExceptionGroup
 
 
-class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
+class StreamingAsyncRowSet(BaseAsyncRowSet, StreamingRowSetCommonBase):
     """
-    A row set that streams rows from a response.
+    A row set that streams rows from a response asynchronously.
     """
 
     def __init__(self) -> None:
         super().__init__()
-        self._lines_iter: Optional[Iterator[str]] = None
+        self._lines_iter: Optional[AsyncIterator[str]] = None
 
-    def append_response(self, response: Response) -> None:
+    async def append_response(self, response: Response) -> None:
         """
         Append a response to the row set.
 
@@ -34,7 +35,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         self._responses.append(response)
         if len(self._responses) == 1:
             # First response, initialize the columns
-            self._current_columns = self._fetch_columns()
+            self._current_columns = await self._fetch_columns()
 
     def append_empty_response(self) -> None:
         """
@@ -42,8 +43,8 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         self._responses.append(None)
 
-    @contextmanager
-    def _close_on_op_error(self) -> Generator[None, None, None]:
+    @asynccontextmanager
+    async def _close_on_op_error(self) -> AsyncGenerator[None, None]:
         """
         Context manager to close the row set if OperationalError occurs.
 
@@ -56,10 +57,10 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         try:
             yield
         except OperationalError:
-            self.close()
+            await self.aclose()
             raise
 
-    def _next_json_lines_record(self) -> Optional[JSONLinesRecord]:
+    async def _next_json_lines_record(self) -> Optional[JSONLinesRecord]:
         """
         Get the next JSON lines record from the current response stream.
 
@@ -73,12 +74,12 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
             return None
         if self._lines_iter is None:
             try:
-                self._lines_iter = self._current_response.iter_lines()
+                self._lines_iter = self._current_response.aiter_lines()
             except HTTPError as err:
                 raise OperationalError("Failed to read response stream.") from err
 
-        next_line = next(self._lines_iter, None)
-        with self._close_on_op_error():
+        next_line = await anext(self._lines_iter, None)
+        async with self._close_on_op_error():
             return self._next_json_lines_record_from_line(next_line)
 
     @property
@@ -91,7 +92,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         return self._current_row_count
 
-    def _fetch_columns(self) -> List[Column]:
+    async def _fetch_columns(self) -> List[Column]:
         """
         Fetch column metadata from the current response.
 
@@ -103,8 +104,8 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         if self._current_response is None:
             return []
-        with self._close_on_op_error():
-            record = self._next_json_lines_record()
+        async with self._close_on_op_error():
+            record = await self._next_json_lines_record()
             return self._fetch_columns_from_record(record)
 
     @property
@@ -127,7 +128,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         return self._current_statistics
 
-    def nextset(self) -> bool:
+    async def nextset(self) -> bool:
         """
         Move to the next result set.
 
@@ -141,17 +142,17 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         if self._current_row_set_idx + 1 < len(self._responses):
             if self._current_response is not None:
                 try:
-                    self._current_response.close()
+                    await self._current_response.aclose()
                 except HTTPError as err:
-                    self.close()
+                    await self.aclose()
                     raise OperationalError("Failed to close response.") from err
             self._current_row_set_idx += 1
             self._reset()
-            self._current_columns = self._fetch_columns()
+            self._current_columns = await self._fetch_columns()
             return True
         return False
 
-    def _pop_data_record(self) -> Optional[DataRecord]:
+    async def _pop_data_record(self) -> Optional[DataRecord]:
         """
         Pop the next data record from the current response stream.
 
@@ -162,36 +163,36 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         Raises:
             OperationalError: If an error occurs while reading the record
         """
-        record = self._next_json_lines_record()
-        with self._close_on_op_error():
+        record = await self._next_json_lines_record()
+        async with self._close_on_op_error():
             return self._pop_data_record_from_record(record)
 
-    def __next__(self) -> List[ColType]:
+    async def __anext__(self) -> List[ColType]:
         """
-        Get the next row of data.
+        Get the next row of data asynchronously.
 
         Returns:
             List[ColType]: The next row of data
 
         Raises:
-            StopIteration: If there are no more rows
+            StopAsyncIteration: If there are no more rows
             OperationalError: If an error occurs while reading the row
         """
         if self._current_response is None or self._response_consumed:
-            raise StopIteration
+            raise StopAsyncIteration
 
         self._current_record_row_idx += 1
         if self._current_record is None or self._current_record_row_idx >= len(
             self._current_record.data
         ):
-            self._current_record = self._pop_data_record()
+            self._current_record = await self._pop_data_record()
             self._current_record_row_idx = -1
 
         return self._get_next_data_row_from_current_record()
 
-    def close(self) -> None:
+    async def aclose(self) -> None:
         """
-        Close the row set and all responses.
+        Close the row set and all responses asynchronously.
 
         This method ensures all HTTP responses are properly closed and resources
         are released.
@@ -203,7 +204,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         for response in self._responses[self._current_row_set_idx :]:
             if response is not None and not response.is_closed:
                 try:
-                    response.close()
+                    await response.aclose()
                 except HTTPError as err:
                     errors.append(err)
 

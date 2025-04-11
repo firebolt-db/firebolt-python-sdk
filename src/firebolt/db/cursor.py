@@ -407,6 +407,20 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         with Timer(self._performance_log_message):
             return list(self._row_set)
 
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    def nextset(self) -> bool:
+        """
+        Skip to the next available set, discarding any remaining rows
+        from the current set.
+
+        Returns:
+            bool: True if there is a next result set, False otherwise
+        """
+        assert self._row_set is not None
+        return self._row_set.nextset()
+
     def close(self) -> None:
         super().close()
         if self._row_set is not None:
