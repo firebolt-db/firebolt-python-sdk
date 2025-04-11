@@ -382,7 +382,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Fetch the next row of a query result set."""
         assert self._row_set is not None
         with Timer(self._performance_log_message):
-            return anext(self._row_set, None)
+            return await anext(self._row_set, None)
 
     @check_not_closed
     @async_not_allowed

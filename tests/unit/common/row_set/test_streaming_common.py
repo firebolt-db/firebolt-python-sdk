@@ -48,7 +48,6 @@ class TestStreamingRowSetCommonBase:
         assert streaming_rowset._current_row_set_idx == 0
 
         # These should be reset
-        assert streaming_rowset._lines_iter is None
         assert hasattr(streaming_rowset, "_rows_returned")
         assert streaming_rowset._current_row_count == -1
         assert streaming_rowset._current_statistics is None
@@ -64,7 +63,6 @@ class TestStreamingRowSetCommonBase:
         streaming_rowset._current_row_set_idx = 11
         streaming_rowset._current_row_count = 10
         streaming_rowset._current_statistics = MagicMock()
-        streaming_rowset._lines_iter = iter([])
         streaming_rowset._current_record = MagicMock()
         streaming_rowset._current_record_row_idx = 5
         streaming_rowset._response_consumed = True
@@ -77,7 +75,6 @@ class TestStreamingRowSetCommonBase:
         assert streaming_rowset._current_row_set_idx == 11
         assert streaming_rowset._current_row_count == -1
         assert streaming_rowset._current_statistics is None
-        assert streaming_rowset._lines_iter is None
         assert streaming_rowset._current_record is None
         assert streaming_rowset._current_record_row_idx == -1
         assert streaming_rowset._response_consumed is False
