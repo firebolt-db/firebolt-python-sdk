@@ -159,12 +159,14 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         try:
-            return self._client.post(
+            req = self._client.build_request(
                 url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
+                method="POST",
                 params=parameters,
                 content=query,
                 timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
             )
+            return self._client.send(req, stream=True)
         except TimeoutException:
             raise QueryTimeoutError()
 

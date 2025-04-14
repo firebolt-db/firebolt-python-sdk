@@ -33,8 +33,6 @@ class ClientCredentials(_RequestBasedAuth):
         "_user_agent",
     )
 
-    requires_response_body = True
-
     def __init__(
         self,
         client_id: str,

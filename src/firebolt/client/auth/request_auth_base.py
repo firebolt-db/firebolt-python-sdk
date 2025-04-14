@@ -14,6 +14,7 @@ class _RequestBasedAuth(Auth):
 
     def __init__(self, use_token_cache: bool = True):
         self._user_agent = get_user_agent_header()
+        self.requires_response_body = False
         super().__init__(use_token_cache)
 
     def _make_auth_request(self) -> Request:
@@ -44,7 +45,9 @@ class _RequestBasedAuth(Auth):
             AuthenticationError: Error while authenticating with provided credentials
         """
         try:
+            self.requires_response_body = True
             response = yield self._make_auth_request()
+            # self.requires_response_body = False
             response.raise_for_status()
 
             parsed = response.json()

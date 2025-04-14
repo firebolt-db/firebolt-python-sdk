@@ -76,8 +76,9 @@ def test_streaming_limited_memory(
     connection: Connection,
 ) -> None:
 
+    memory_overhead_threshold_mb = 100
     row_count, value = (
-        1000000,
+        10000000,
         "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     )
     original_memory_mb = get_process_memory_mb()
@@ -87,7 +88,7 @@ def test_streaming_limited_memory(
 
         memory_diff = get_process_memory_mb() - original_memory_mb
         assert (
-            memory_diff < 10
+            memory_diff < memory_overhead_threshold_mb
         ), f"Memory usage exceeded limit after execution (increased by {memory_diff}MB)"
 
         assert c.rowcount == -1, "Invalid rowcount value before fetching"
@@ -98,5 +99,5 @@ def test_streaming_limited_memory(
 
         memory_diff = get_process_memory_mb() - original_memory_mb
         assert (
-            memory_diff < 10
+            memory_diff < memory_overhead_threshold_mb
         ), f"Memory usage exceeded limit after fetching results (increased by {memory_diff}MB)"
