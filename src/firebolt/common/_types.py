@@ -154,9 +154,12 @@ class _InternalType(Enum):
     """Enum of all internal Firebolt types, except for `array`."""
 
     Int = "int"
+    Integer = "integer"
     Long = "long"
+    BigInt = "bigint"
     Float = "float"
     Double = "double"
+    DoublePrecision = "double_precision"
 
     Text = "text"
 
@@ -181,9 +184,12 @@ class _InternalType(Enum):
         """Convert internal type to Python type."""
         types = {
             _InternalType.Int: int,
+            _InternalType.Integer: int,
             _InternalType.Long: int,
+            _InternalType.BigInt: int,
             _InternalType.Float: float,
             _InternalType.Double: float,
+            _InternalType.DoublePrecision: float,
             _InternalType.Text: str,
             _InternalType.Date: date,
             _InternalType.DateExt: date,

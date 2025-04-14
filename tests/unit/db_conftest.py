@@ -488,9 +488,12 @@ def mock_insert_query(
 def types_map() -> Dict[str, type]:
     base_types = {
         "int": int,
+        "integer": int,
         "long": int,
+        "bigint": int,
         "float": float,
         "double": float,
+        "double_precision": float,
         "text": str,
         "date": date,
         "pgdate": date,
