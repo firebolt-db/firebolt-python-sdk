@@ -458,7 +458,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     @check_not_closed
     def __enter__(self) -> Cursor:
         warnings.warn(
-            "Using __enter__ is deprecated, use async with instead", DeprecationWarning
+            "Using __enter__ is deprecated, use 'async with' instead", DeprecationWarning
         )
         return self
 
