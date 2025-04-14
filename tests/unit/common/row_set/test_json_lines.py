@@ -1,14 +1,18 @@
-from typing import Any, Dict
+from copy import deepcopy
+from typing import Any, Dict, Type
 
 from pytest import mark, raises
 
 from firebolt.common.row_set.json_lines import (
+    Column,
     DataRecord,
     ErrorRecord,
+    JSONLinesRecord,
     StartRecord,
     SuccessRecord,
     parse_json_lines_record,
 )
+from firebolt.common.row_set.types import Statistics
 from firebolt.utils.exception import OperationalError
 
 
@@ -69,11 +73,14 @@ from firebolt.utils.exception import OperationalError
     ],
 )
 def test_parse_json_lines_record(
-    record_data: Dict[str, Any], expected_type: type, message_type_value: str
+    record_data: Dict[str, Any],
+    expected_type: Type[JSONLinesRecord],
+    message_type_value: str,
 ):
     """Test that parse_json_lines_record correctly parses various record types."""
-    # Parse the record
-    record = parse_json_lines_record(record_data)
+    # Copy the record to avoid modifying the original during parsing
+    record_data_copy = deepcopy(record_data)
+    record = parse_json_lines_record(record_data_copy)
 
     # Verify common properties
     assert isinstance(record, expected_type)
@@ -81,31 +88,31 @@ def test_parse_json_lines_record(
 
     # Verify type-specific properties
     if expected_type == StartRecord:
+        result_columns = record_data["result_columns"]
         assert record.query_id == record_data["query_id"]
         assert record.query_label == record_data["query_label"]
         assert record.request_id == record_data["request_id"]
-        assert len(record.result_columns) == len(record_data["result_columns"])
-        # Check that result_columns contains dictionaries with the expected keys
+        assert len(record.result_columns) == len(result_columns)
         for i, col in enumerate(record.result_columns):
-            assert isinstance(col, dict)
-            assert col["name"] == record_data["result_columns"][i]["name"]
-            assert col["type"] == record_data["result_columns"][i]["type"]
+            assert isinstance(col, Column)
+            assert col.name == result_columns[i]["name"]
+            assert col.type == record_data["result_columns"][i]["type"]
     elif expected_type == DataRecord:
         assert record.data == record_data["data"]
     elif expected_type == SuccessRecord:
         # Check that statistics dict has the expected values
-        assert isinstance(record.statistics, dict)
+        assert isinstance(record.statistics, Statistics)
         for key, value in record_data["statistics"].items():
-            assert record.statistics[key] == value
+            assert getattr(record.statistics, key) == value
     elif expected_type == ErrorRecord:
         assert record.errors == record_data["errors"]
         assert record.query_id == record_data["query_id"]
         assert record.query_label == record_data["query_label"]
         assert record.request_id == record_data["request_id"]
         # Check that statistics dict has the expected values
-        assert isinstance(record.statistics, dict)
+        assert isinstance(record.statistics, Statistics)
         for key, value in record_data["statistics"].items():
-            assert record.statistics[key] == value
+            assert getattr(record.statistics, key) == value
 
 
 def test_parse_json_lines_record_invalid_message_type():

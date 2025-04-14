@@ -11,6 +11,8 @@ from firebolt.common._types import RawColType, SetParameter
 from firebolt.common.constants import (
     DISALLOWED_PARAMETER_LIST,
     IMMUTABLE_PARAMETER_LIST,
+    JSON_LINES_OUTPUT_FORMAT,
+    JSON_OUTPUT_FORMAT,
     USE_PARAMETER_LIST,
     CursorState,
 )
@@ -259,8 +261,30 @@ class BaseCursor:
         self.close()
 
     def _initialize_rowset(self, is_streaming: bool) -> None:
-        """Initialize the row set."""
+        """
+        Initialize the row set.
+
+        Args:
+            is_streaming (bool): Flag indicating if streaming is enabled.
+
+        Returns:
+            None
+        """
         if is_streaming:
             self._row_set = self.streaming_row_set_type()
         else:
             self._row_set = self.in_memory_row_set_type()
+
+    @staticmethod
+    def _get_output_format(is_streaming: bool) -> str:
+        """
+        Get the output format based on whether streaming is enabled or not.
+        Args:
+            is_streaming (bool): Flag indicating if streaming is enabled.
+
+        Returns:
+            str: The output format string.
+        """
+        if is_streaming:
+            return JSON_LINES_OUTPUT_FORMAT
+        return JSON_OUTPUT_FORMAT

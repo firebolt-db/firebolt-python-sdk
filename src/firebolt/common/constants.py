@@ -9,6 +9,7 @@ DEFAULT_TIMEOUT_SECONDS: int = 60
 # Running statuses in information schema
 ENGINE_STATUS_RUNNING_LIST = ["RUNNING", "Running", "ENGINE_STATE_RUNNING"]
 JSON_OUTPUT_FORMAT = "JSON_Compact"
+JSON_LINES_OUTPUT_FORMAT = "JSONLines_Compact"
 
 
 class CursorState(Enum):

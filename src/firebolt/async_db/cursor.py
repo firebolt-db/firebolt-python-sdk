@@ -20,7 +20,6 @@ from httpx import (
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.constants import (
-    JSON_OUTPUT_FORMAT,
     RESET_SESSION_HEADER,
     UPDATE_ENDPOINT_HEADER,
     UPDATE_PARAMETERS_HEADER,
@@ -237,7 +236,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         try:
             for query in queries:
                 await self._execute_single_query(
-                    query, timeout_controller, async_execution
+                    query, timeout_controller, async_execution, streaming
                 )
             self._state = CursorState.DONE
         except Exception:
@@ -249,6 +248,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: Union[SetParameter, str],
         timeout_controller: TimeoutController,
         async_execution: bool,
+        streaming: bool,
     ) -> None:
         start_time = time.time()
         Cursor._log_query(query)
@@ -263,7 +263,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             await self._validate_set_parameter(query, timeout_controller.remaining())
         else:
             await self._handle_query_execution(
-                query, timeout_controller, async_execution
+                query, timeout_controller, async_execution, streaming
             )
 
         if not async_execution:
@@ -275,9 +275,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             logger.info("Query submitted for async execution.")
 
     async def _handle_query_execution(
-        self, query: str, timeout_controller: TimeoutController, async_execution: bool
+        self,
+        query: str,
+        timeout_controller: TimeoutController,
+        async_execution: bool,
+        streaming: bool,
     ) -> None:
-        query_params: Dict[str, Any] = {"output_format": JSON_OUTPUT_FORMAT}
+        query_params: Dict[str, Any] = {
+            "output_format": self._get_output_format(streaming)
+        }
         if async_execution:
             query_params["async"] = True
         resp = await self._api_request(

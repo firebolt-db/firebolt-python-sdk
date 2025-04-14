@@ -68,18 +68,23 @@ def parse_json_lines_record(record: dict) -> JSONLinesRecord:
         OperationalError: If the JSON line message_type is unknown or if it contains
             a record of invalid format.
     """
+    if "message_type" not in record:
+        raise OperationalError("Invalid JSON lines record format: missing message_type")
 
     message_type = MessageType(record["message_type"])
 
     try:
         if message_type == MessageType.start:
-            return StartRecord(**record)
+            result_columns = [Column(**col) for col in record.pop("result_columns")]
+            return StartRecord(result_columns=result_columns, **record)
         elif message_type == MessageType.data:
             return DataRecord(**record)
         elif message_type == MessageType.error:
-            return ErrorRecord(**record)
+            statistics = Statistics(**record.pop("statistics"))
+            return ErrorRecord(statistics=statistics, **record)
         elif message_type == MessageType.success:
-            return SuccessRecord(**record)
+            statistics = Statistics(**record.pop("statistics"))
+            return SuccessRecord(statistics=statistics, **record)
         raise OperationalError(f"Unknown message type: {message_type}")
-    except TypeError as e:
+    except (TypeError, KeyError) as e:
         raise OperationalError(f"Invalid JSON lines record format: {e}")
