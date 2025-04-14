@@ -30,10 +30,11 @@ class Statistics:
     elapsed: float
     rows_read: int
     bytes_read: int
-    time_before_execution: float
-    time_to_execute: float
+    time_before_execution: Optional[float] = None
+    time_to_execute: Optional[float] = None
     scanned_bytes_cache: Optional[float] = None
     scanned_bytes_storage: Optional[float] = None
+    result_rows: Optional[int] = None
 
     def __post_init__(self) -> None:
         for field in fields(self):

@@ -87,4 +87,4 @@ def parse_json_lines_record(record: dict) -> JSONLinesRecord:
             return SuccessRecord(statistics=statistics, **record)
         raise OperationalError(f"Unknown message type: {message_type}")
     except (TypeError, KeyError) as e:
-        raise OperationalError(f"Invalid JSON lines record format: {e}")
+        raise OperationalError(f"Invalid JSON lines {message_type} record format: {e}")
