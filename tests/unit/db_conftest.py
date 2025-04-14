@@ -1,3 +1,5 @@
+import json
+from dataclasses import asdict
 from datetime import date, datetime
 from decimal import Decimal
 from json import dumps as jdumps
@@ -9,7 +11,16 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.async_db.cursor import ColType
 from firebolt.common._types import STRUCT
-from firebolt.common.constants import JSON_OUTPUT_FORMAT
+from firebolt.common.constants import (
+    JSON_LINES_OUTPUT_FORMAT,
+    JSON_OUTPUT_FORMAT,
+)
+from firebolt.common.row_set.json_lines import (
+    DataRecord,
+    MessageType,
+    StartRecord,
+    SuccessRecord,
+)
 from firebolt.common.row_set.types import Column
 from firebolt.db import ARRAY, DECIMAL
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
@@ -39,6 +50,21 @@ def query_description() -> List[Column]:
         Column("decimal", "Decimal(12, 34)", None, None, None, None, None),
         Column("bytea", "bytea", None, None, None, None, None),
         Column("geography", "geography", None, None, None, None, None),
+    ]
+
+
+@fixture
+def streaming_result_columns(query_description) -> List[Dict[str, str]]:
+    def map_type(t: str) -> str:
+        alternatives = {
+            "int": "integer",
+            "long": "bigint",
+            "double": "double precision",
+        }
+        return alternatives.get(t, t)
+
+    return [
+        {"name": col.name, "type": map_type(col.type_code)} for col in query_description
     ]
 
 
@@ -256,6 +282,17 @@ def async_query_url(engine_url: str, db_name: str) -> URL:
             "output_format": JSON_OUTPUT_FORMAT,
             "database": db_name,
             "async": "true",
+        },
+    )
+
+
+@fixture
+def streaming_query_url(engine_url: str, db_name: str) -> URL:
+    return URL(
+        f"https://{engine_url}/",
+        params={
+            "output_format": JSON_LINES_OUTPUT_FORMAT,
+            "database": db_name,
         },
     )
 
@@ -493,7 +530,7 @@ def types_map() -> Dict[str, type]:
         "bigint": int,
         "float": float,
         "double": float,
-        "double_precision": float,
+        "double precision": float,
         "text": str,
         "date": date,
         "pgdate": date,
@@ -503,6 +540,8 @@ def types_map() -> Dict[str, type]:
         "Nothing": str,
         "Decimal(123, 4)": DECIMAL(123, 4),
         "Decimal(38,0)": DECIMAL(38, 0),
+        "numeric(123, 4)": DECIMAL(123, 4),
+        "numeric(38,0)": DECIMAL(38, 0),
         # Invalid decimal format
         "Decimal(38)": str,
         "boolean": bool,
@@ -666,5 +705,68 @@ def async_query_callback(async_token: str) -> Callable:
             "token": async_token,
         }
         return Response(status_code=codes.ACCEPTED, json=query_response)
+
+    return do_query
+
+
+@fixture
+def streaming_query_response(
+    streaming_result_columns: List[Dict[str, str]],
+    query_data: List[List[ColType]],
+    query_statistics: Dict[str, Any],
+) -> str:
+    records = [
+        StartRecord(
+            message_type=MessageType.start.value,
+            result_columns=streaming_result_columns,
+            query_id="query_id",
+            query_label="query_label",
+            request_id="request_id",
+        ),
+        DataRecord(message_type=MessageType.data.value, data=query_data),
+        SuccessRecord(
+            message_type=MessageType.success.value, statistics=query_statistics
+        ),
+    ]
+    return "\n".join(json.dumps(asdict(record)) for record in records)
+
+
+@fixture
+def streaming_insert_query_response(
+    query_statistics: Dict[str, Any],
+) -> str:
+    records = [
+        StartRecord(
+            message_type=MessageType.start.value,
+            result_columns=[],
+            query_id="query_id",
+            query_label="query_label",
+            request_id="request_id",
+        ),
+        SuccessRecord(
+            message_type=MessageType.success.value, statistics=query_statistics
+        ),
+    ]
+    return "\n".join(json.dumps(asdict(record)) for record in records)
+
+
+@fixture
+def streaming_query_callback(streaming_query_response) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        assert f"output_format={JSON_LINES_OUTPUT_FORMAT}" in str(request.url)
+        return Response(status_code=codes.OK, content=streaming_query_response)
+
+    return do_query
+
+
+@fixture
+def streaming_insert_query_callback(streaming_insert_query_response) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        assert f"output_format={JSON_LINES_OUTPUT_FORMAT}" in str(request.url)
+        return Response(status_code=codes.OK, content=streaming_insert_query_response)
 
     return do_query

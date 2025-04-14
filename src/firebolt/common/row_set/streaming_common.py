@@ -1,5 +1,5 @@
 import json
-from typing import Any, AsyncIterator, Iterator, List, Optional, Union
+from typing import Any, AsyncIterator, Iterator, List, Optional, Type, Union
 
 from httpx import Response
 
@@ -206,7 +206,9 @@ class StreamingRowSetCommonBase:
         """
         raise NotImplementedError("Subclasses must implement _parse_row")
 
-    def _get_next_data_row_from_current_record(self) -> List[ColType]:
+    def _get_next_data_row_from_current_record(
+        self, stop_iteration_err_cls: Type[Union[StopIteration, StopAsyncIteration]]
+    ) -> List[ColType]:
         """
         Extract the next data row from the current record.
 
@@ -217,7 +219,7 @@ class StreamingRowSetCommonBase:
             StopIteration: If there are no more rows to return.
         """
         if self._current_record is None:
-            raise StopIteration
+            raise stop_iteration_err_cls
 
         data_row = self._parse_row(
             self._current_record.data[self._current_record_row_idx]

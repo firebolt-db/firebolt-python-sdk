@@ -31,7 +31,7 @@ class BaseRowSet(ABC):
         ...
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
-        if not self.columns:
+        if self.columns is None:
             raise OperationalError("No columns definitions available yet.")
         assert len(row) == len(self.columns)
         return [

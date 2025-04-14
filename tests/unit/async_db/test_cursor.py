@@ -860,3 +860,47 @@ async def test_cursor_execute_async_respects_api_errors(
     )
     with raises(HTTPStatusError):
         await cursor.execute_async("SELECT 2")
+
+
+async def test_cursor_execute_stream(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    streaming_query_callback: Callable,
+    streaming_insert_query_callback: Callable,
+    cursor: Cursor,
+    python_query_description: List[Column],
+    python_query_data: List[List[ColType]],
+):
+    httpx_mock.add_callback(streaming_query_callback, url=streaming_query_url)
+    await cursor.execute_stream("select * from large_table")
+    assert (
+        cursor.rowcount == -1
+    ), f"Expected row count to be -1 until the end of streaming for execution with streaming"
+    for i, (desc, exp) in enumerate(zip(cursor.description, python_query_description)):
+        assert desc == exp, f"Invalid column description at position {i}"
+
+    for i in range(len(python_query_data)):
+        assert (
+            await cursor.fetchone() == python_query_data[i]
+        ), f"Invalid data row at position {i} for execution with streaming."
+
+    assert (
+        await cursor.fetchone() is None
+    ), f"Non-empty fetchone after all data received for execution with streaming."
+
+    assert cursor.rowcount == len(
+        python_query_data
+    ), f"Invalid rowcount value after streaming finished for execute with streaming."
+
+    # Query with empty output
+    httpx_mock.add_callback(streaming_insert_query_callback, url=streaming_query_url)
+    await cursor.execute_stream("insert into t values (1, 2)")
+    assert (
+        cursor.rowcount == -1
+    ), f"Invalid rowcount value for insert using execution with streaming."
+    assert (
+        cursor.description == []
+    ), f"Invalid description for insert using execution with streaming."
+    assert (
+        await cursor.fetchone() is None
+    ), f"Invalid statistics for insert using execution with streaming."

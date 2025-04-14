@@ -115,7 +115,7 @@ class DECIMAL(ExtendedType):
     """Class for holding `decimal` value information in Firebolt DB."""
 
     __name__ = "Decimal"
-    _prefix = "Decimal("
+    _prefixes = ["Decimal(", "numeric("]
 
     def __init__(self, precision: int, scale: int):
         self.precision = precision
@@ -159,7 +159,7 @@ class _InternalType(Enum):
     BigInt = "bigint"
     Float = "float"
     Double = "double"
-    DoublePrecision = "double_precision"
+    DoublePrecision = "double precision"
 
     Text = "text"
 
@@ -262,13 +262,14 @@ def parse_type(raw_type: str) -> Union[type, ExtendedType]:  # noqa: C901
     if raw_type.startswith(ARRAY._prefix) and raw_type.endswith(")"):
         return ARRAY(parse_type(raw_type[len(ARRAY._prefix) : -1]))
     # Handle decimal
-    if raw_type.startswith(DECIMAL._prefix) and raw_type.endswith(")"):
-        try:
-            prec_scale = raw_type[len(DECIMAL._prefix) : -1].split(",")
-            precision, scale = int(prec_scale[0]), int(prec_scale[1])
-            return DECIMAL(precision, scale)
-        except (ValueError, IndexError):
-            pass
+    for prefix in DECIMAL._prefixes:
+        if raw_type.startswith(prefix) and raw_type.endswith(")"):
+            try:
+                prec_scale = raw_type[len(prefix) : -1].split(",")
+                precision, scale = int(prec_scale[0]), int(prec_scale[1])
+                return DECIMAL(precision, scale)
+            except (ValueError, IndexError):
+                pass
     # Handle structs
     if raw_type.startswith(STRUCT._prefix) and raw_type.endswith(")"):
         try:

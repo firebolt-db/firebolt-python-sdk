@@ -302,8 +302,9 @@ class TestStreamingRowSetCommonBase:
         """Test _get_next_data_row_from_current_record with None record."""
         streaming_rowset._current_record = None
 
-        with raises(StopIteration):
-            streaming_rowset._get_next_data_row_from_current_record()
+        for ex in [StopIteration, StopAsyncIteration]:
+            with raises(ex):
+                streaming_rowset._get_next_data_row_from_current_record(ex)
 
     def test_get_next_data_row_from_current_record(self, streaming_rowset):
         """Test _get_next_data_row_from_current_record with valid record."""
@@ -315,13 +316,13 @@ class TestStreamingRowSetCommonBase:
         streaming_rowset._current_record = data_record
         streaming_rowset._current_record_row_idx = 0
 
-        row = streaming_rowset._get_next_data_row_from_current_record()
+        row = streaming_rowset._get_next_data_row_from_current_record(StopIteration)
 
         assert row == [1, 2, 3]
         assert streaming_rowset._current_record_row_idx == 1
         assert streaming_rowset._rows_returned == 1
 
-        row = streaming_rowset._get_next_data_row_from_current_record()
+        row = streaming_rowset._get_next_data_row_from_current_record(StopIteration)
 
         assert row == [4, 5, 6]
         assert streaming_rowset._current_record_row_idx == 2

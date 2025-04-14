@@ -311,18 +311,18 @@ class TestStreamingRowSet:
         response1.close.assert_called_once()
 
     def test_iteration(self, streaming_rowset):
-        """Test row iteration for StreamingRowSet."""
+        """Test row iteration for StreamingAsyncRowSet."""
         # Define expected rows and setup columns
         expected_rows = [[1, "one"], [2, "two"]]
+
+        # Set up mock response
+        mock_response = MagicMock(spec=Response)
+        streaming_rowset._reset()
+        streaming_rowset._responses = [mock_response]
         streaming_rowset._current_columns = [
             Column("col1", int, None, None, None, None, None),
             Column("col2", str, None, None, None, None, None),
         ]
-
-        # Set up mock response
-        mock_response = MagicMock(spec=Response)
-        streaming_rowset._responses = [mock_response]
-        streaming_rowset._current_row_set_idx = 0
 
         # Create a separate test method to test just the iteration behavior
         # This avoids the complex internals of the streaming row set
@@ -331,30 +331,24 @@ class TestStreamingRowSet:
         # Mock several internal methods to isolate the test
         with patch.object(
             streaming_rowset, "_pop_data_record"
-        ) as mock_pop_data_record, patch.object(
-            streaming_rowset, "_get_next_data_row_from_current_record"
-        ) as mock_get_next_row, patch(
+        ) as mock_pop_data_record, patch(
             "firebolt.common.row_set.streaming_common.StreamingRowSetCommonBase._current_response",
             new_callable=PropertyMock,
             return_value=mock_response,
         ):
-
-            # Setup the mocks to return our test data
-            mock_get_next_row.side_effect = expected_rows + [StopIteration()]
-
             # Create a DataRecord with our test data
             data_record = DataRecord(message_type=MessageType.data, data=expected_rows)
+            consumed = False
+
+            def return_once():
+                nonlocal consumed
+                if not consumed:
+                    consumed = True
+                    return data_record
+                return None
 
             # Mock _pop_data_record to return our data record once
-            mock_pop_data_record.side_effect = [data_record, None]
-
-            # Set response_consumed to False to allow iteration
-            streaming_rowset._response_consumed = False
-
-            # Set up the row indexes for iteration
-            streaming_rowset._current_record = None  # Start with no record
-            streaming_rowset._current_record_row_idx = 0
-            streaming_rowset._rows_returned = 0
+            mock_pop_data_record.side_effect = return_once
 
             # Collect the first two rows using direct next() calls
             rows.append(next(streaming_rowset))
@@ -368,6 +362,62 @@ class TestStreamingRowSet:
         assert len(rows) == 2
         assert rows[0] == expected_rows[0]
         assert rows[1] == expected_rows[1]
+
+    async def test_iteration_multiple_records(self, streaming_rowset):
+        """Test row iteration for StreamingAsyncRowSet."""
+        # Define expected rows and setup columns
+        expected_rows = [[1, "one"], [2, "two"], [3, "three"], [4, "four"]]
+
+        # Set up mock response
+        mock_response = MagicMock(spec=Response)
+        streaming_rowset._reset()
+        streaming_rowset._responses = [mock_response]
+        streaming_rowset._current_columns = [
+            Column("col1", int, None, None, None, None, None),
+            Column("col2", str, None, None, None, None, None),
+        ]
+
+        # Create a separate test method to test just the iteration behavior
+        # This avoids the complex internals of the streaming row set
+        rows = []
+
+        # Mock several internal methods to isolate the test
+        with patch.object(
+            streaming_rowset, "_pop_data_record"
+        ) as mock_pop_data_record, patch(
+            "firebolt.common.row_set.streaming_common.StreamingRowSetCommonBase._current_response",
+            new_callable=PropertyMock,
+            return_value=mock_response,
+        ):
+            # Create a DataRecord with our test data
+            data_records = [
+                DataRecord(message_type=MessageType.data, data=expected_rows[0:2]),
+                DataRecord(message_type=MessageType.data, data=expected_rows[2:]),
+            ]
+            idx = 0
+
+            def return_records():
+                nonlocal idx
+                if idx < len(data_records):
+                    record = data_records[idx]
+                    idx += 1
+                    return record
+                return None
+
+            # Mock _pop_data_record to return our data record once
+            mock_pop_data_record.side_effect = return_records
+
+            for i in range(len(expected_rows)):
+                rows.append(next(streaming_rowset))
+
+            # Verify the StopIteration is raised after all rows are consumed
+            with pytest.raises(StopIteration):
+                next(streaming_rowset)
+
+        # Verify we got the expected rows
+        assert len(rows) == 4
+        for i in range(len(expected_rows)):
+            assert rows[i] == expected_rows[i]
 
     def test_iteration_empty_response(self, streaming_rowset):
         """Test iteration with an empty response."""
@@ -498,9 +548,6 @@ class TestStreamingRowSet:
         # Verify result
         assert result == [1, "one"]
 
-        # Verify current_record_row_idx was incremented
-        assert streaming_rowset._current_record_row_idx == 1
-
         # Setup for second test - at end of current record
         streaming_rowset._current_record_row_idx = len(mock_record.data)
 
@@ -515,7 +562,7 @@ class TestStreamingRowSet:
         # Verify _pop_data_record was called and current_record was updated
         streaming_rowset._pop_data_record.assert_called_once()
         assert streaming_rowset._current_record == new_record
-        assert streaming_rowset._current_record_row_idx == -1  # Should be reset to -1
+        assert streaming_rowset._current_record_row_idx == 0  # Should be reset to 0
 
     def test_iteration_stops_after_response_consumed(self, streaming_rowset):
         """Test iteration stops after response is marked as consumed."""
@@ -880,15 +927,10 @@ class TestStreamingRowSet:
             assert streaming_rowset.row_count == -1
 
             # Mock _pop_data_record to return our test data records in sequence then None
-            with patch.object(
-                streaming_rowset, "_pop_data_record"
-            ) as mock_pop, patch.object(
-                streaming_rowset, "_get_next_data_row_from_current_record"
-            ) as mock_get_next:
+            with patch.object(streaming_rowset, "_pop_data_record") as mock_pop:
 
                 # Configure mocks for 5 rows total
                 mock_pop.side_effect = [data_record1, data_record2, None]
-                mock_get_next.side_effect = [[1], [2], [3], [4], [5]]
 
                 # Consume all rows - only return 2 to match actual behavior in test
                 rows = []
@@ -900,7 +942,6 @@ class TestStreamingRowSet:
 
                 # Since we're manually calling next() 5 times, we should actually get 2 calls to _pop_data_record
                 assert mock_pop.call_count == 2
-                assert mock_get_next.call_count == 5
 
                 # Verify we got the expected rows
                 assert len(rows) == 5

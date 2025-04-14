@@ -181,14 +181,13 @@ class StreamingAsyncRowSet(BaseAsyncRowSet, StreamingRowSetCommonBase):
         if self._current_response is None or self._response_consumed:
             raise StopAsyncIteration
 
-        self._current_record_row_idx += 1
         if self._current_record is None or self._current_record_row_idx >= len(
             self._current_record.data
         ):
             self._current_record = await self._pop_data_record()
-            self._current_record_row_idx = -1
+            self._current_record_row_idx = 0
 
-        return self._get_next_data_row_from_current_record()
+        return self._get_next_data_row_from_current_record(StopAsyncIteration)
 
     async def aclose(self) -> None:
         """
