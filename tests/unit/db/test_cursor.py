@@ -15,6 +15,7 @@ from firebolt.utils.exception import (
     CursorClosedError,
     DataError,
     FireboltError,
+    FireboltStructuredError,
     MethodNotAllowedInAsyncError,
     OperationalError,
     ProgrammingError,
@@ -889,3 +890,50 @@ def test_cursor_execute_stream(
     assert (
         cursor.fetchone() is None
     ), f"Invalid statistics for insert using execution with streaming."
+
+
+def test_cursor_execute_stream_error(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    cursor: Cursor,
+    streaming_error_query_callback: Callable,
+):
+    """Test error handling in execute_stream method."""
+
+    # Test HTTP error (connection error)
+    def http_error(*args, **kwargs):
+        raise StreamError("httpx streaming error")
+
+    httpx_mock.add_callback(http_error, url=streaming_query_url)
+    with raises(StreamError) as excinfo:
+        cursor.execute_stream("select * from large_table")
+
+    assert cursor._state == CursorState.ERROR
+    assert str(excinfo.value) == "httpx streaming error"
+
+    httpx_mock.reset(True)
+
+    # Test HTTP status error
+    httpx_mock.add_callback(
+        lambda *args, **kwargs: Response(
+            status_code=codes.BAD_REQUEST,
+        ),
+        url=streaming_query_url,
+    )
+    with raises(HTTPStatusError) as excinfo:
+        cursor.execute_stream("select * from large_table")
+
+    assert cursor._state == CursorState.ERROR
+    assert "Bad Request" in str(excinfo.value)
+
+    httpx_mock.reset(True)
+
+    # Test in-body error (ErrorRecord)
+    httpx_mock.add_callback(streaming_error_query_callback, url=streaming_query_url)
+
+    # Execution works fine
+    cursor.execute_stream("select * from large_table")
+
+    # Error is raised during streaming
+    with raises(FireboltStructuredError):
+        cursor.fetchall()

@@ -17,6 +17,7 @@ from firebolt.common.constants import (
 )
 from firebolt.common.row_set.json_lines import (
     DataRecord,
+    ErrorRecord,
     MessageType,
     StartRecord,
     SuccessRecord,
@@ -582,27 +583,6 @@ def types_map() -> Dict[str, type]:
 
 
 @fixture
-def async_query_data() -> List[List[ColType]]:
-    query_data = [
-        [
-            "developer",
-            "ecosystem_ci",
-            "2025-01-23 14:08:06.087953+00",
-            "2025-01-23 14:08:06.134208+00",
-            "2025-01-23 14:08:06.410542+00",
-            "ENDED_SUCCESSFULLY",
-            "db4c7542-3058-4e2a-9d49-ae5ea2da3cbe",
-            "f9520387-224c-48e9-9858-b2d05518ce94",
-            "",
-            "2",
-            "2",
-            "0",
-        ]
-    ]
-    return query_data
-
-
-@fixture
 def async_query_meta() -> List[Tuple[str, str]]:
     query_meta = [
         ("account_name", "text null"),
@@ -619,27 +599,6 @@ def async_query_meta() -> List[Tuple[str, str]]:
         ("retries", "long null"),
     ]
     return query_meta
-
-
-@fixture
-def async_query_data() -> List[List[ColType]]:
-    query_data = [
-        [
-            "developer",
-            "ecosystem_ci",
-            "2025-01-23 14:08:06.087953+00",
-            "2025-01-23 14:08:06.134208+00",
-            "2025-01-23 14:08:06.410542+00",
-            "ENDED_SUCCESSFULLY",
-            "aaa-3333-5555-dddd-ae5et2da3cbe",
-            "bbb-2222-5555-dddd-b2d0o518ce94",
-            "",
-            "2",
-            "2",
-            "0",
-        ]
-    ]
-    return query_data
 
 
 @fixture
@@ -768,5 +727,42 @@ def streaming_insert_query_callback(streaming_insert_query_response) -> Callable
         assert request.method == "POST"
         assert f"output_format={JSON_LINES_OUTPUT_FORMAT}" in str(request.url)
         return Response(status_code=codes.OK, content=streaming_insert_query_response)
+
+    return do_query
+
+
+@fixture
+def streaming_error_query_response(
+    streaming_result_columns: List[Dict[str, str]],
+    query_statistics: Dict[str, Any],
+) -> str:
+    error_message = "Query execution error: Table 'large_table' doesn't exist"
+    records = [
+        StartRecord(
+            message_type=MessageType.start.value,
+            result_columns=streaming_result_columns,
+            query_id="query_id",
+            query_label="query_label",
+            request_id="request_id",
+        ),
+        ErrorRecord(
+            message_type=MessageType.error.value,
+            errors=[{"message": error_message}],
+            query_id="error_query_id",
+            query_label="error_query_label",
+            request_id="error_request_id",
+            statistics=query_statistics,
+        ),
+    ]
+    return "\n".join(json.dumps(asdict(record)) for record in records)
+
+
+@fixture
+def streaming_error_query_callback(streaming_error_query_response) -> Callable:
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        assert f"output_format={JSON_LINES_OUTPUT_FORMAT}" in str(request.url)
+        return Response(status_code=codes.OK, content=streaming_error_query_response)
 
     return do_query
