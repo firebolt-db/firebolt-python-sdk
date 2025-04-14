@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import time
+import warnings
 from abc import ABCMeta, abstractmethod
 from functools import wraps
 from types import TracebackType
@@ -383,6 +384,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         assert self._row_set is not None
         with Timer(self._performance_log_message):
             # anext() is only supported in Python 3.10+
+            # this means we cannot just do return anext(self._row_set),
+            # we need to handle iteration manually
             try:
                 return await self._row_set.__anext__()
             except StopAsyncIteration:
@@ -451,6 +454,18 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     async def __anext__(self) -> List[ColType]:
         assert self._row_set is not None
         return await self._row_set.__anext__()
+
+    @check_not_closed
+    def __enter__(self) -> Cursor:
+        warnings.warn(
+            "Using __enter__ is deprecated, use async with instead", DeprecationWarning
+        )
+        return self
+
+    def __exit__(
+        self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
+    ) -> None:
+        return None
 
 
 class CursorV2(Cursor):
