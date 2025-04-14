@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
-from typing import AsyncIterator, Iterator, List, Optional, Protocol, Union
+from typing import (
+    Any,
+    AsyncIterator,
+    Iterator,
+    List,
+    Optional,
+    Protocol,
+    Union,
+)
 
 from firebolt.common._types import ExtendedType, RawColType
 
@@ -61,6 +69,13 @@ class Column:
     precision: Optional[int] = None
     scale: Optional[int] = None
     null_ok: Optional[bool] = None
+
+    def __getitem__(self, item: int) -> Any:
+        """Support indexing for column attributes."""
+        field_names = [f.name for f in fields(self)]
+        if item >= len(field_names):
+            raise IndexError("Index out of range")
+        return getattr(self, field_names[item])
 
 
 class ByteStream(Protocol):
