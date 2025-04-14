@@ -20,6 +20,7 @@ from httpx import (
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.constants import (
+    JSON_OUTPUT_FORMAT,
     RESET_SESSION_HEADER,
     UPDATE_ENDPOINT_HEADER,
     UPDATE_PARAMETERS_HEADER,
@@ -672,3 +673,14 @@ class CursorV1(Cursor):
         raise NotSupportedError(
             "Async execution is not supported in this version " " of Firebolt."
         )
+
+    def _initialize_rowset(self, is_streaming: bool) -> None:
+        """Initialize row set."""
+        # Streaming is not supported in v1
+        self._row_set = self.in_memory_row_set_type()
+
+    @staticmethod
+    def _get_output_format(is_streaming: bool) -> str:
+        """Get output format."""
+        # Streaming is not supported in v1
+        return JSON_OUTPUT_FORMAT
