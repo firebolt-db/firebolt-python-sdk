@@ -2,13 +2,13 @@ import os
 from typing import List
 
 import psutil
-from integration.dbapi.utils import assert_deep_eq
 from pytest import raises
 
 from firebolt.async_db import Connection
 from firebolt.common._types import ColType
 from firebolt.common.row_set.json_lines import Column
 from firebolt.utils.exception import FireboltStructuredError
+from tests.integration.dbapi.utils import assert_deep_eq
 
 
 async def test_streaming_select(
