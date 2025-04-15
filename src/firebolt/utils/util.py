@@ -7,6 +7,7 @@ from typing import (
     TYPE_CHECKING,
     Callable,
     Dict,
+    List,
     Optional,
     Tuple,
     Type,
@@ -247,7 +248,7 @@ class _ExceptionGroup(Exception):
     allows for grouping exceptions together.
     """
 
-    def __init__(self, message: str, exceptions: list[BaseException]):
+    def __init__(self, message: str, exceptions: List[BaseException]):
         super().__init__(message)
         self.exceptions = exceptions
 
