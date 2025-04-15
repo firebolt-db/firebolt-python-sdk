@@ -3,10 +3,12 @@ from typing import List
 
 import psutil
 from integration.dbapi.utils import assert_deep_eq
+from pytest import raises
 
 from firebolt.async_db import Connection
 from firebolt.common._types import ColType
 from firebolt.common.row_set.json_lines import Column
+from firebolt.utils.exception import FireboltStructuredError
 
 
 def test_streaming_select(
@@ -101,3 +103,19 @@ def test_streaming_limited_memory(
         assert (
             memory_diff < memory_overhead_threshold_mb
         ), f"Memory usage exceeded limit after fetching results (increased by {memory_diff}MB)"
+
+
+def test_streaming_error(
+    connection: Connection,
+) -> None:
+    """Select handles errors properly."""
+    sql = (
+        "select date(a) from (select '2025-01-01' as a union all select 'invalid' as a)"
+    )
+    with connection.cursor() as c:
+        with raises(FireboltStructuredError) as e:
+            c.execute_stream(sql)
+
+        assert "Unable to cast TEXT 'invalid' to date" in str(
+            e.value
+        ), "Invalid error message"

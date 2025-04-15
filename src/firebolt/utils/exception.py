@@ -294,7 +294,7 @@ class ConfigurationError(InterfaceError):
     """Invalid configuration error."""
 
 
-class FireboltStructuredError(Error):
+class FireboltStructuredError(ProgrammingError):
     """Base class for structured errors received in JSON body."""
 
     # Output will look like this after formatting:

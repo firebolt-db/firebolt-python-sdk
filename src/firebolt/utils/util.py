@@ -160,20 +160,7 @@ def validate_engine_name_and_url_v1(
         )
 
 
-def _print_error_body(resp: Response) -> None:
-    """log error body if it exists, since it's not always logged by default"""
-    try:
-        if (
-            codes.is_error(resp.status_code)
-            and "Content-Length" in resp.headers
-            and int(resp.headers["Content-Length"]) > 0
-        ):
-            logger.error(f"Something went wrong: {resp.read().decode('utf-8')}")
-    except Exception:
-        pass
-
-
-def raise_errors_from_body(resp: Response) -> None:
+def raise_errors_from_body_if_any(resp: Response) -> None:
     """
     Process error in response body. Only raise errors if the json body
     can be parsed and contains errors. Otherwise, let the rest of the code
@@ -190,12 +177,15 @@ def raise_errors_from_body(resp: Response) -> None:
             to_raise = FireboltStructuredError(decoded)
 
     except Exception:
-        # If we can't parse the body, let the rest of the code handle it
-        # we can't raise an exception here because it would mask the original error
-        pass
+        # If we can't parse the body, print out the error body
+        if "Content-Length" in resp.headers and int(resp.headers["Content-Length"]) > 0:
+            logger.error(f"Something went wrong: {resp.read().decode('utf-8')}")
 
     if to_raise:
         raise to_raise
+
+    # Raise status error if no error info was found in the body
+    resp.raise_for_status()
 
 
 class Timer:

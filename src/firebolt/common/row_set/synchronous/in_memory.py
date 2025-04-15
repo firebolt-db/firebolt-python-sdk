@@ -6,7 +6,7 @@ from httpx import Response
 from firebolt.common._types import ColType, parse_type
 from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.types import Column, RowsResponse, Statistics
-from firebolt.utils.exception import DataError
+from firebolt.utils.exception import DataError, FireboltStructuredError
 
 
 class InMemoryRowSet(BaseSyncRowSet):
@@ -44,6 +44,10 @@ class InMemoryRowSet(BaseSyncRowSet):
         else:
             try:
                 query_data = json.loads(content)
+
+                if "errors" in query_data and len(query_data["errors"]) > 0:
+                    raise FireboltStructuredError(query_data)
+
                 columns = [
                     Column(
                         d["name"], parse_type(d["type"]), None, None, None, None, None
