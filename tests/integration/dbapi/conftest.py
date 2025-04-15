@@ -5,7 +5,8 @@ from typing import List
 
 from pytest import fixture
 
-from firebolt.common._types import STRUCT, ColType, Column
+from firebolt.common._types import STRUCT, ColType
+from firebolt.common.row_set.types import Column
 from firebolt.db import ARRAY, DECIMAL, Connection
 
 LOGGER = getLogger(__name__)
@@ -214,6 +215,7 @@ def select_geography_response() -> List[ColType]:
 def setup_struct_query() -> str:
     return """
         SET advanced_mode=1;
+        SET enable_struct=true;
         SET enable_create_table_v2=true;
         SET enable_struct_syntax=true;
         SET prevent_create_on_information_schema=true;

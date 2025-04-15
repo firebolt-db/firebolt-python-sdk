@@ -7,7 +7,8 @@ from typing import Any, Callable, List
 from pytest import fixture, mark, raises
 
 from firebolt.client.auth import Auth
-from firebolt.common._types import ColType, Column
+from firebolt.common._types import ColType
+from firebolt.common.row_set.types import Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
@@ -29,7 +30,7 @@ def test_connect_engine_name(
     connection_engine_name: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
+    all_types_query_response_v1: List[ColType],
     timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
@@ -37,7 +38,7 @@ def test_connect_engine_name(
         connection_engine_name,
         all_types_query,
         all_types_query_description,
-        all_types_query_response,
+        all_types_query_response_v1,
         timezone_name,
     )
 
@@ -46,7 +47,7 @@ def test_connect_no_engine(
     connection_no_engine: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
+    all_types_query_response_v1: List[ColType],
     timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
@@ -54,7 +55,7 @@ def test_connect_no_engine(
         connection_no_engine,
         all_types_query,
         all_types_query_description,
-        all_types_query_response,
+        all_types_query_response_v1,
         timezone_name,
     )
 
@@ -63,7 +64,7 @@ def test_select(
     connection: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
-    all_types_query_response: List[ColType],
+    all_types_query_response_v1: List[ColType],
     timezone_name: str,
 ) -> None:
     """Select handles all data types properly."""
@@ -81,14 +82,14 @@ def test_select(
         assert c.rowcount == 1, "Invalid rowcount value"
         data = c.fetchall()
         assert len(data) == c.rowcount, "Invalid data length"
-        assert_deep_eq(data, all_types_query_response, "Invalid data")
+        assert_deep_eq(data, all_types_query_response_v1, "Invalid data")
         assert c.description == all_types_query_description, "Invalid description value"
         assert len(data[0]) == len(c.description), "Invalid description length"
         assert len(c.fetchall()) == 0, "Redundant data returned by fetchall"
 
         # Different fetch types
         c.execute(all_types_query)
-        assert c.fetchone() == all_types_query_response[0], "Invalid fetchone data"
+        assert c.fetchone() == all_types_query_response_v1[0], "Invalid fetchone data"
         assert c.fetchone() is None, "Redundant data returned by fetchone"
 
         c.execute(all_types_query)
@@ -96,7 +97,7 @@ def test_select(
         data = c.fetchmany()
         assert len(data) == 1, "Invalid data size returned by fetchmany"
         assert_deep_eq(
-            data, all_types_query_response, "Invalid data returned by fetchmany"
+            data, all_types_query_response_v1, "Invalid data returned by fetchmany"
         )
 
 
@@ -139,7 +140,7 @@ def test_drop_create(connection: Connection) -> None:
 
     def test_query(c: Cursor, query: str) -> None:
         c.execute(query)
-        assert c.description == None
+        assert c.description == []
         # Inconsistent behaviour in Firebolt
         # assert c.rowcount == -1
 
@@ -188,7 +189,7 @@ def test_insert(connection: Connection) -> None:
     def test_empty_query(c: Cursor, query: str) -> None:
         assert c.execute(query) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
         assert c.fetchone() is None
         assert len(c.fetchmany()) == 0
         assert len(c.fetchall()) == 0
@@ -250,7 +251,7 @@ def test_parameterized_query(connection: Connection) -> None:
     def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
         assert c.execute(query, params) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
         assert c.fetchone() is None
         assert len(c.fetchmany()) == 0
         assert len(c.fetchall()) == 0
@@ -272,7 +273,7 @@ def test_parameterized_query(connection: Connection) -> None:
             datetime(2022, 1, 1, 1, 1, 1),
             True,
             [1, 2, 3],
-            Decimal("123.456"),
+            Decimal(123.456),
         ]
 
         test_empty_query(
@@ -310,7 +311,7 @@ def test_multi_statement_query(connection: Connection) -> None:
             'SELECT * FROM "test_tb_multi_statement";'
             'SELECT * FROM "test_tb_multi_statement" WHERE i <= 1'
         )
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
 
         assert c.nextset()
 
@@ -348,7 +349,7 @@ def test_multi_statement_query(connection: Connection) -> None:
             "Invalid data in table after parameterized insert",
         )
 
-        assert c.nextset() is None
+        assert c.nextset() is False
 
 
 def test_set_invalid_parameter(connection: Connection):

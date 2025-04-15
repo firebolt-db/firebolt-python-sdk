@@ -117,7 +117,7 @@ async def test_database_not_exists(
 
 async def test_sql_error(connection: Connection) -> None:
     """Connection properly reacts to SQL execution error."""
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         with raises(OperationalError) as exc_info:
             await c.execute("select ]")
 

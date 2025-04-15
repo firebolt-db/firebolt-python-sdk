@@ -8,7 +8,8 @@ from typing import Any, Callable, List, Tuple
 from pytest import mark, raises
 
 from firebolt.client.auth import Auth
-from firebolt.common._types import ColType, Column
+from firebolt.common._types import ColType
+from firebolt.common.row_set.types import Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 from tests.integration.dbapi.utils import assert_deep_eq
 
@@ -120,7 +121,7 @@ def test_drop_create(connection: Connection) -> None:
 
     def test_query(c: Cursor, query: str) -> None:
         c.execute(query)
-        assert c.description == None
+        assert c.description == []
         assert c.rowcount == 0
 
     """Create table query is handled properly"""
@@ -168,7 +169,7 @@ def test_insert(connection: Connection) -> None:
     def test_empty_query(c: Cursor, query: str) -> None:
         assert c.execute(query) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
         assert c.fetchone() is None
         assert len(c.fetchmany()) == 0
         assert len(c.fetchall()) == 0
@@ -229,7 +230,7 @@ def test_parameterized_query(connection: Connection) -> None:
     def test_empty_query(c: Cursor, query: str, params: tuple) -> None:
         assert c.execute(query, params) == 0, "Invalid row count returned"
         assert c.rowcount == 0, "Invalid rowcount value"
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
         assert c.fetchone() is None
         assert len(c.fetchmany()) == 0
         assert len(c.fetchall()) == 0
@@ -289,7 +290,7 @@ def test_multi_statement_query(connection: Connection) -> None:
             'SELECT * FROM "test_tb_multi_statement";'
             'SELECT * FROM "test_tb_multi_statement" WHERE i <= 1'
         )
-        assert c.description is None, "Invalid description"
+        assert c.description == [], "Invalid description"
 
         assert c.nextset()
 
@@ -327,7 +328,7 @@ def test_multi_statement_query(connection: Connection) -> None:
             "Invalid data in table after parameterized insert",
         )
 
-        assert c.nextset() is None
+        assert c.nextset() is False
 
 
 def test_set_invalid_parameter(connection: Connection):

@@ -6,9 +6,10 @@ from httpx import URL, HTTPStatusError, Request, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.common._types import Column
+from firebolt.common.constants import CursorState
+from firebolt.common.row_set.types import Column
 from firebolt.db import Cursor
-from firebolt.db.cursor import ColType, CursorState
+from firebolt.db.cursor import ColType
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
@@ -184,7 +185,7 @@ def test_cursor_execute(
             cursor.rowcount == -1
         ), f"Invalid rowcount value for insert using {message}."
         assert (
-            cursor.description is None
+            cursor.description == []
         ), f"Invalid description for insert using {message}."
 
 
@@ -406,7 +407,7 @@ def test_cursor_multi_statement(
 
     assert cursor.nextset()
     assert cursor.rowcount == -1, "Invalid cursor row count"
-    assert cursor.description is None, "Invalid cursor description"
+    assert cursor.description == [], "Invalid cursor description"
     with raises(DataError) as exc_info:
         cursor.fetchall()
 
@@ -423,7 +424,7 @@ def test_cursor_multi_statement(
             cursor.fetchone() == python_query_data[i]
         ), f"Invalid data row at position {i}"
 
-    assert cursor.nextset() is None
+    assert cursor.nextset() is False
 
 
 def test_cursor_set_statements(
@@ -439,7 +440,7 @@ def test_cursor_set_statements(
 
     rc = cursor.execute("set a = b")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         cursor.fetchall()
 
@@ -457,7 +458,7 @@ def test_cursor_set_statements(
 
     rc = cursor.execute("set param1=1")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         cursor.fetchall()
 
@@ -473,7 +474,7 @@ def test_cursor_set_statements(
 
     rc = cursor.execute("set param2=0")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         cursor.fetchall()
 

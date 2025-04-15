@@ -3,7 +3,8 @@ from typing import List
 
 from pytest import raises
 
-from firebolt.common._types import ColType, Column
+from firebolt.common._types import ColType
+from firebolt.common.row_set.types import Column
 from firebolt.db import Connection
 from firebolt.utils.exception import FireboltStructuredError
 from tests.integration.dbapi.utils import assert_deep_eq

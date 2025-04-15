@@ -77,19 +77,6 @@ NUMBER = int
 DATETIME = datetime
 ROWID = int
 
-Column = namedtuple(
-    "Column",
-    (
-        "name",
-        "type_code",
-        "display_size",
-        "internal_size",
-        "precision",
-        "scale",
-        "null_ok",
-    ),
-)
-
 
 class ExtendedType:
     """Base type for all extended types in Firebolt (array, decimal, struct, etc.)."""
@@ -338,7 +325,7 @@ def parse_value(
             raise DataError(f"Invalid bytea value {value}: str expected")
         return _parse_bytea(value)
     if isinstance(ctype, DECIMAL):
-        if not isinstance(value, (str, int)):
+        if not isinstance(value, (str, int, float)):
             raise DataError(f"Invalid decimal value {value}: str or int expected")
         return Decimal(value)
     if isinstance(ctype, ARRAY):

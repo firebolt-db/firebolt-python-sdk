@@ -7,8 +7,9 @@ from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Cursor
-from firebolt.common._types import Column
-from firebolt.common.base_cursor import ColType, CursorState
+from firebolt.common._types import ColType
+from firebolt.common.constants import CursorState
+from firebolt.common.row_set.types import Column
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
@@ -83,7 +84,7 @@ async def test_closed_cursor(cursor: Cursor):
             await getattr(cursor, amethod)(*args)
 
     with raises(CursorClosedError):
-        with cursor:
+        async with cursor:
             pass
 
     with raises(CursorClosedError):
@@ -133,7 +134,7 @@ async def test_cursor_no_query(
     cursor._reset()
     cursor.setoutputsize(0)
     # Context manager is also available
-    with cursor:
+    async with cursor:
         pass
     # should this be available?
     # async with cursor:
@@ -187,7 +188,7 @@ async def test_cursor_execute(
             cursor.rowcount == -1
         ), f"Invalid rowcount value for insert using {message}."
         assert (
-            cursor.description is None
+            cursor.description == []
         ), f"Invalid description for insert using {message}."
 
 
@@ -411,7 +412,7 @@ async def test_cursor_multi_statement(
 
     assert await cursor.nextset()
     assert cursor.rowcount == -1, "Invalid cursor row count"
-    assert cursor.description is None, "Invalid cursor description"
+    assert cursor.description == [], "Invalid cursor description"
     assert cursor.statistics is None, "Invalid cursor statistics"
 
     with raises(DataError) as exc_info:
@@ -438,7 +439,7 @@ async def test_cursor_multi_statement(
             await cursor.fetchone() == python_query_data[i]
         ), f"Invalid data row at position {i}"
 
-    assert await cursor.nextset() is None
+    assert await cursor.nextset() is False
 
 
 async def test_cursor_set_statements(
@@ -454,7 +455,7 @@ async def test_cursor_set_statements(
 
     rc = await cursor.execute("set a = b")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         await cursor.fetchall()
 
@@ -472,7 +473,7 @@ async def test_cursor_set_statements(
 
     rc = await cursor.execute("set param1=1")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         await cursor.fetchall()
 
@@ -488,7 +489,7 @@ async def test_cursor_set_statements(
 
     rc = await cursor.execute("set param2=0")
     assert rc == -1, "Invalid row count returned"
-    assert cursor.description is None, "Non-empty description for set"
+    assert cursor.description == [], "Non-empty description for set"
     with raises(DataError):
         await cursor.fetchall()
 

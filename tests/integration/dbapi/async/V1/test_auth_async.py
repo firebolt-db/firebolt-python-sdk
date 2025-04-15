@@ -9,7 +9,7 @@ from firebolt.utils.exception import AuthenticationError
 @mark.skip(reason="flaky, token not updated each time")
 async def test_refresh_token(connection: Connection) -> None:
     """Auth refreshes token on expiration/invalidation"""
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         # Works fine
         await c.execute("show tables")
 
@@ -35,7 +35,7 @@ async def test_credentials_invalidation(
     """Auth raises authentication error on credentials invalidation"""
     # Can't pytest.parametrize it due to nested event loop error
     for conn in [connection, username_password_connection]:
-        with conn.cursor() as c:
+        async with conn.cursor() as c:
             # Works fine
             await c.execute("show tables")
 
