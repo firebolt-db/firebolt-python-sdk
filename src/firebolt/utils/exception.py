@@ -273,6 +273,23 @@ class NotSupportedError(DatabaseError):
     """
 
 
+class V1NotSupportedError(NotSupportedError):
+    """Operation not supported in Firebolt V1
+
+    Exception raised when trying to use the functionality
+    that is not supported in Firebolt V1.
+    """
+
+    msg = (
+        "{} is not supported in this version of Firebolt. "
+        "Please contact support to upgrade your account to a new version."
+    )
+
+    def __init__(self, operation: str) -> None:
+
+        super().__init__(self.msg.format(operation))
+
+
 class ConfigurationError(InterfaceError):
     """Invalid configuration error."""
 

@@ -53,10 +53,10 @@ from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltError,
-    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
+    V1NotSupportedError,
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
@@ -628,9 +628,15 @@ class CursorV1(Cursor):
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
     ) -> int:
-        raise NotSupportedError(
-            "Async execution is not supported in this version " " of Firebolt."
-        )
+        raise V1NotSupportedError("Async execution")
+
+    def execute_stream(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> None:
+        raise V1NotSupportedError("Query result streaming")
 
     def _initialize_rowset(self, is_streaming: bool) -> None:
         """Initialize row set."""
