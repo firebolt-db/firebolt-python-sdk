@@ -137,24 +137,24 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
-        if resp.status_code == codes.INTERNAL_SERVER_ERROR:
-            raise OperationalError(
-                f"Error executing query:\n{resp.read().decode('utf-8')}"
-            )
-        if resp.status_code == codes.FORBIDDEN:
-            if self.database and not await self.is_db_available(self.database):
-                raise FireboltDatabaseError(f"Database {self.database} does not exist")
-            raise ProgrammingError(resp.read().decode("utf-8"))
-        if (
-            resp.status_code == codes.SERVICE_UNAVAILABLE
-            or resp.status_code == codes.NOT_FOUND
-        ) and not await self.is_engine_running(self.engine_url):
-            raise EngineNotRunningError(
-                f"Firebolt engine {self.engine_url} "
-                "needs to be running to run queries against it."
-            )
         if codes.is_error(resp.status_code):
             await resp.aread()
+            if resp.status_code == codes.INTERNAL_SERVER_ERROR:
+                raise OperationalError(f"Error executing query:\n{resp.text}")
+            if resp.status_code == codes.FORBIDDEN:
+                if self.database and not await self.is_db_available(self.database):
+                    raise FireboltDatabaseError(
+                        f"Database {self.database} does not exist"
+                    )
+                raise ProgrammingError(resp.text)
+            if (
+                resp.status_code == codes.SERVICE_UNAVAILABLE
+                or resp.status_code == codes.NOT_FOUND
+            ) and not await self.is_engine_running(self.engine_url):
+                raise EngineNotRunningError(
+                    f"Firebolt engine {self.engine_url} "
+                    "needs to be running to run queries against it."
+                )
             raise_errors_from_body_if_any(resp)
 
     async def _validate_set_parameter(
@@ -167,6 +167,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
+            await resp.aread()
             raise OperationalError(resp.text)
         await self._raise_if_error(resp)
 
@@ -289,6 +290,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         await self._raise_if_error(resp)
         if async_execution:
+            await resp.aread()
             self._parse_async_response(resp)
         else:
             await self._parse_response_headers(resp.headers)

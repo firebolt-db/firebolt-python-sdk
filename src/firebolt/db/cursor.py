@@ -102,26 +102,24 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
-        if resp.status_code == codes.INTERNAL_SERVER_ERROR:
-            raise OperationalError(
-                f"Error executing query:\n{resp.read().decode('utf-8')}"
-            )
-        if resp.status_code == codes.FORBIDDEN:
-            if self.database and not self.is_db_available(self.database):
-                raise FireboltDatabaseError(
-                    f"Database {self.parameters['database']} does not exist"
-                )
-            raise ProgrammingError(resp.read().decode("utf-8"))
-        if (
-            resp.status_code == codes.SERVICE_UNAVAILABLE
-            or resp.status_code == codes.NOT_FOUND
-        ) and not self.is_engine_running(self.engine_url):
-            raise EngineNotRunningError(
-                f"Firebolt engine {self.engine_name} "
-                "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
-            )
         if codes.is_error(resp.status_code):
             resp.read()
+            if resp.status_code == codes.INTERNAL_SERVER_ERROR:
+                raise OperationalError(f"Error executing query:\n{resp.text}")
+            if resp.status_code == codes.FORBIDDEN:
+                if self.database and not self.is_db_available(self.database):
+                    raise FireboltDatabaseError(
+                        f"Database {self.parameters['database']} does not exist"
+                    )
+                raise ProgrammingError(resp.text)
+            if (
+                resp.status_code == codes.SERVICE_UNAVAILABLE
+                or resp.status_code == codes.NOT_FOUND
+            ) and not self.is_engine_running(self.engine_url):
+                raise EngineNotRunningError(
+                    f"Firebolt engine {self.engine_name} "
+                    "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
+                )
             raise_errors_from_body_if_any(resp)
 
     def _api_request(
@@ -175,6 +173,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
+            resp.read()
             raise OperationalError(resp.text)
         self._raise_if_error(resp)
 
@@ -297,6 +296,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         self._raise_if_error(resp)
         if async_execution:
+            resp.read()
             self._parse_async_response(resp)
         else:
             self._parse_response_headers(resp.headers)
