@@ -127,4 +127,4 @@ def test_parse_json_lines_record_invalid_format():
         # Missing required fields
         parse_json_lines_record({"message_type": "START"})
 
-    assert "Invalid JSON lines record format" in str(exc_info.value)
+    assert str(exc_info.value).startswith("Invalid JSON lines")
