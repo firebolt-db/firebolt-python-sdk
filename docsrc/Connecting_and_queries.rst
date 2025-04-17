@@ -681,7 +681,7 @@ This does not always fit the needs of the application, especially when the resul
 In this case, you can use the `execute_stream` cursor method to fetch results in chunks.
 
 .. note::
-    The `execute_stream` method is not supported for asynchronous queries. It can only be used with synchronous queries.
+    The `execute_stream` method is not supported with :ref:`connecting_and_queries:Server-side asynchronous query execution`. It can only be used with regular queries.
 
 .. note::
     If you enable result streaming, the query execution might finish successfully, but the actual error might be returned while iterating the rows.
