@@ -57,7 +57,7 @@ if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
 from firebolt.utils.async_util import anext, async_islice
-from firebolt.utils.util import Timer, raise_errors_from_body_if_any
+from firebolt.utils.util import Timer, raise_error_from_response
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +155,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                     f"Firebolt engine {self.engine_url} "
                     "needs to be running to run queries against it."
                 )
-            raise_errors_from_body_if_any(resp)
+            raise_error_from_response(resp)
 
     async def _validate_set_parameter(
         self, parameter: SetParameter, timeout: Optional[float]

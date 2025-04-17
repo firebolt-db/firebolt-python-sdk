@@ -60,7 +60,7 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
-from firebolt.utils.util import Timer, raise_errors_from_body_if_any
+from firebolt.utils.util import Timer, raise_error_from_response
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -120,7 +120,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                     f"Firebolt engine {self.engine_name} "
                     "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
                 )
-            raise_errors_from_body_if_any(resp)
+            raise_error_from_response(resp)
 
     def _api_request(
         self,

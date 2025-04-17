@@ -160,11 +160,12 @@ def validate_engine_name_and_url_v1(
         )
 
 
-def raise_errors_from_body_if_any(resp: Response) -> None:
+def raise_error_from_response(resp: Response) -> None:
     """
-    Process error in response body. Only raise errors if the json body
-    can be parsed and contains errors. Otherwise, let the rest of the code
-    handle the error.
+    Raise a correct error from the response.
+    Look for a structured error in the body and raise it.
+    If the body doesn't contain a structured error,
+    log the body and raise a status code error.
 
     Args:
         resp (Response): HTTP response

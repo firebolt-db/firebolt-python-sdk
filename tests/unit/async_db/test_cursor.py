@@ -946,9 +946,10 @@ async def test_cursor_execute_stream_error(
     # Test in-body error (ErrorRecord)
     httpx_mock.add_callback(streaming_error_query_callback, url=streaming_query_url)
 
-    # Execution works fine
-    await cursor.execute_stream("select * from large_table")
+    for method in (cursor.fetchone, cursor.fetchmany, cursor.fetchall):
+        # Execution works fine
+        await cursor.execute_stream("select * from large_table")
 
-    # Error is raised during streaming
-    with raises(FireboltStructuredError):
-        await cursor.fetchall()
+        # Error is raised during streaming
+        with raises(FireboltStructuredError):
+            await method()
