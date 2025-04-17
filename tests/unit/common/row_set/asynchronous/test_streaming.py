@@ -480,26 +480,6 @@ class TestStreamingAsyncRowSet:
         assert "Failed to close row set" in str(err.value)
         assert isinstance(err.value.__cause__, ExceptionGroup)
 
-    async def test_close_on_error_context_manager(self, streaming_rowset):
-        """Test _close_on_op_error context manager."""
-        # Create an awaitable mock for aclose method
-        async def mock_aclose():
-            pass
-
-        streaming_rowset.aclose = MagicMock()
-        streaming_rowset.aclose.side_effect = mock_aclose
-
-        # When no error occurs, close should not be called
-        async with streaming_rowset._close_on_op_error():
-            pass
-        streaming_rowset.aclose.assert_not_called()
-
-        # When OperationalError occurs, close should be called
-        with pytest.raises(OperationalError):
-            async with streaming_rowset._close_on_op_error():
-                raise OperationalError("Test error")
-        streaming_rowset.aclose.assert_called_once()
-
     async def test_next_json_lines_record_none_response(self, streaming_rowset):
         """Test _next_json_lines_record with None response."""
         streaming_rowset.append_empty_response()
@@ -517,6 +497,7 @@ class TestStreamingAsyncRowSet:
 
         response = MagicMock(spec=Response)
         response.aiter_lines.side_effect = HTTPError("Test error")
+        response.is_closed = True
 
         streaming_rowset._responses = [response]
 

@@ -1,5 +1,5 @@
-from contextlib import contextmanager
-from typing import Generator, Iterator, List, Optional
+from functools import wraps
+from typing import Any, Callable, Iterator, List, Optional
 
 from httpx import HTTPError, Response
 
@@ -10,6 +10,28 @@ from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.types import Column, Statistics
 from firebolt.utils.exception import OperationalError
 from firebolt.utils.util import ExceptionGroup
+
+
+def close_on_op_error(func: Callable) -> Callable:
+    """
+    Decorator to close the response on OperationalError.
+    Args:
+        func: Function to be decorated
+
+    Returns:
+        Callable: Decorated function
+
+    """
+
+    @wraps(func)
+    def inner(self: "StreamingRowSet", *args: Any, **kwargs: Any) -> Any:
+        try:
+            return func(self, *args, **kwargs)
+        except OperationalError:
+            self.close()
+            raise
+
+    return inner
 
 
 class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
@@ -42,23 +64,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         self._responses.append(None)
 
-    @contextmanager
-    def _close_on_op_error(self) -> Generator[None, None, None]:
-        """
-        Context manager to close the row set if OperationalError occurs.
-
-        Yields:
-            None
-
-        Raises:
-            OperationalError: Propagates the original error after closing the row set
-        """
-        try:
-            yield
-        except OperationalError:
-            self.close()
-            raise
-
+    @close_on_op_error
     def _next_json_lines_record(self) -> Optional[JSONLinesRecord]:
         """
         Get the next JSON lines record from the current response stream.
@@ -78,8 +84,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
                 raise OperationalError("Failed to read response stream.") from err
 
         next_line = next(self._lines_iter, None)
-        with self._close_on_op_error():
-            return self._next_json_lines_record_from_line(next_line)
+        return self._next_json_lines_record_from_line(next_line)
 
     @property
     def row_count(self) -> int:
@@ -91,6 +96,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         return self._current_row_count
 
+    @close_on_op_error
     def _fetch_columns(self) -> List[Column]:
         """
         Fetch column metadata from the current response.
@@ -103,9 +109,8 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         if self._current_response is None:
             return []
-        with self._close_on_op_error():
-            record = self._next_json_lines_record()
-            return self._fetch_columns_from_record(record)
+        record = self._next_json_lines_record()
+        return self._fetch_columns_from_record(record)
 
     @property
     def columns(self) -> Optional[List[Column]]:
@@ -151,6 +156,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
             return True
         return False
 
+    @close_on_op_error
     def _pop_data_record(self) -> Optional[DataRecord]:
         """
         Pop the next data record from the current response stream.
@@ -163,8 +169,7 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
             OperationalError: If an error occurs while reading the record
         """
         record = self._next_json_lines_record()
-        with self._close_on_op_error():
-            return self._pop_data_record_from_record(record)
+        return self._pop_data_record_from_record(record)
 
     def __next__(self) -> List[ColType]:
         """
