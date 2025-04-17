@@ -2,7 +2,7 @@ import os
 from typing import List
 
 import psutil
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.async_db import Connection
 from firebolt.common._types import ColType
@@ -75,7 +75,7 @@ def get_process_memory_mb() -> float:
     return psutil.Process(os.getpid()).memory_info().rss / (1024**2)
 
 
-# @mark.slow
+@mark.slow
 async def test_streaming_limited_memory(
     connection: Connection,
 ) -> None:
