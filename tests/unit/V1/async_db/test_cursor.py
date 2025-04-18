@@ -609,7 +609,8 @@ async def test_cursor_skip_parse(
     httpx_mock.add_callback(query_callback, url=query_url)
 
     with patch(
-        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql"
+        "firebolt.common.statement_formatter.StatementFormatter.split_format_sql",
+        return_value=["sql"],
     ) as split_format_sql_mock:
         await cursor.execute("non-an-actual-sql")
         split_format_sql_mock.assert_called_once()
@@ -690,3 +691,10 @@ async def test_cursor_execute_async_raises(cursor: Cursor) -> None:
     with raises(NotSupportedError) as e:
         await cursor.execute_async("select 1")
     assert "Async execution is not supported" in str(e.value), "invalid error"
+
+
+async def test_cursor_execute_streaming_raises(cursor: Cursor) -> None:
+    """Test that calling execute_async raises an error."""
+    with raises(NotSupportedError) as e:
+        await cursor.execute_stream("select 1")
+    assert "Query result streaming is not supported" in str(e.value), "invalid error"

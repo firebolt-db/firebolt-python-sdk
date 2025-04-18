@@ -16,9 +16,8 @@ class BaseAsyncRowSet(BaseRowSet, ABC):
     async def append_response(self, response: Response) -> None:
         ...
 
-    @abstractmethod
     def __aiter__(self) -> AsyncIterator[List[ColType]]:
-        ...
+        return self
 
     @abstractmethod
     async def __anext__(self) -> List[ColType]:
@@ -26,4 +25,8 @@ class BaseAsyncRowSet(BaseRowSet, ABC):
 
     @abstractmethod
     async def aclose(self) -> None:
+        ...
+
+    @abstractmethod
+    async def nextset(self) -> bool:
         ...

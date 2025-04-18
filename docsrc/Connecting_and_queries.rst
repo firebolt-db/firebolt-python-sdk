@@ -672,6 +672,37 @@ will send a cancel request to the server and the query will be stopped.
     print(successful) # False
 
 
+
+Streaming query results
+==============================
+
+By default, the driver will fetch all the results at once and store them in memory.
+This does not always fit the needs of the application, especially when the result set is large.
+In this case, you can use the `execute_stream` cursor method to fetch results in chunks.
+
+.. note::
+    The `execute_stream` method is not supported with :ref:`connecting_and_queries:Server-side asynchronous query execution`. It can only be used with regular queries.
+
+.. note::
+    If you enable result streaming, the query execution might finish successfully, but the actual error might be returned while iterating the rows.
+
+Synchronous example:
+::
+
+    with connection.cursor() as cursor:
+        cursor.execute_stream("SELECT * FROM my_huge_table")
+        for row in cursor:
+            # Process the row
+            print(row)
+
+Asynchronous example:
+::
+    async with async_connection.cursor() as cursor:
+        await cursor.execute_stream("SELECT * FROM my_huge_table")
+        async for row in cursor:
+            # Process the row
+            print(row)
+
 Thread safety
 ==============================
 

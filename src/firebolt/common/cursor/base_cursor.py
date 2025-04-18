@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 import re
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from httpx import URL, Response
 
@@ -11,14 +11,12 @@ from firebolt.common._types import RawColType, SetParameter
 from firebolt.common.constants import (
     DISALLOWED_PARAMETER_LIST,
     IMMUTABLE_PARAMETER_LIST,
+    JSON_LINES_OUTPUT_FORMAT,
+    JSON_OUTPUT_FORMAT,
     USE_PARAMETER_LIST,
     CursorState,
 )
-from firebolt.common.cursor.decorators import (
-    async_not_allowed,
-    check_not_closed,
-    check_query_executed,
-)
+from firebolt.common.cursor.decorators import check_not_closed
 from firebolt.common.row_set.base import BaseRowSet
 from firebolt.common.row_set.types import AsyncResponse, Column, Statistics
 from firebolt.common.statement_formatter import StatementFormatter
@@ -86,6 +84,8 @@ class BaseCursor:
     )
 
     default_arraysize = 1
+    in_memory_row_set_type: Type = BaseRowSet
+    streaming_row_set_type: Type = BaseRowSet
 
     def __init__(
         self, *args: Any, formatter: StatementFormatter, **kwargs: Any
@@ -175,19 +175,6 @@ class BaseCursor:
             )
         self._arraysize = value
 
-    @check_not_closed
-    @async_not_allowed
-    @check_query_executed
-    def nextset(self) -> bool:
-        """
-        Skip to the next available set, discarding any remaining rows
-        from the current set.
-        Returns True if operation was successful;
-        False if there are no more sets to retrieve.
-        """
-        assert self._row_set is not None
-        return self._row_set.nextset()
-
     @property
     def closed(self) -> bool:
         """True if connection is closed, False otherwise."""
@@ -272,3 +259,17 @@ class BaseCursor:
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
         self.close()
+
+    @staticmethod
+    def _get_output_format(is_streaming: bool) -> str:
+        """
+        Get the output format based on whether streaming is enabled or not.
+        Args:
+            is_streaming (bool): Flag indicating if streaming is enabled.
+
+        Returns:
+            str: The output format string.
+        """
+        if is_streaming:
+            return JSON_LINES_OUTPUT_FORMAT
+        return JSON_OUTPUT_FORMAT

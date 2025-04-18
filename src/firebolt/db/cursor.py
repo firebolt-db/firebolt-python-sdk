@@ -47,23 +47,20 @@ from firebolt.common.cursor.decorators import (
 )
 from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
+from firebolt.common.row_set.synchronous.streaming import StreamingRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltError,
-    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
+    V1NotSupportedError,
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
-from firebolt.utils.util import (
-    Timer,
-    _print_error_body,
-    raise_errors_from_body,
-)
+from firebolt.utils.util import Timer, raise_error_from_response
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -102,28 +99,25 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
-        if resp.status_code == codes.INTERNAL_SERVER_ERROR:
-            raise OperationalError(
-                f"Error executing query:\n{resp.read().decode('utf-8')}"
-            )
-        if resp.status_code == codes.FORBIDDEN:
-            if self.database and not self.is_db_available(self.database):
-                raise FireboltDatabaseError(
-                    f"Database {self.parameters['database']} does not exist"
+        if codes.is_error(resp.status_code):
+            resp.read()
+            if resp.status_code == codes.INTERNAL_SERVER_ERROR:
+                raise OperationalError(f"Error executing query:\n{resp.text}")
+            if resp.status_code == codes.FORBIDDEN:
+                if self.database and not self.is_db_available(self.database):
+                    raise FireboltDatabaseError(
+                        f"Database {self.parameters['database']} does not exist"
+                    )
+                raise ProgrammingError(resp.text)
+            if (
+                resp.status_code == codes.SERVICE_UNAVAILABLE
+                or resp.status_code == codes.NOT_FOUND
+            ) and not self.is_engine_running(self.engine_url):
+                raise EngineNotRunningError(
+                    f"Firebolt engine {self.engine_name} "
+                    "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
                 )
-            raise ProgrammingError(resp.read().decode("utf-8"))
-        if (
-            resp.status_code == codes.SERVICE_UNAVAILABLE
-            or resp.status_code == codes.NOT_FOUND
-        ) and not self.is_engine_running(self.engine_url):
-            raise EngineNotRunningError(
-                f"Firebolt engine {self.engine_name} "
-                "needs to be running to run queries against it."  # pragma: no mutate # noqa: E501
-            )
-        raise_errors_from_body(resp)
-        # If no structure for error is found, log the body and raise the error
-        _print_error_body(resp)
-        resp.raise_for_status()
+            raise_error_from_response(resp)
 
     def _api_request(
         self,
@@ -155,12 +149,14 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if self.parameters:
             parameters = {**self.parameters, **parameters}
         try:
-            return self._client.post(
+            req = self._client.build_request(
                 url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
+                method="POST",
                 params=parameters,
                 content=query,
                 timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
             )
+            return self._client.send(req, stream=True)
         except TimeoutException:
             raise QueryTimeoutError()
 
@@ -174,6 +170,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
+            resp.read()
             raise OperationalError(resp.text)
         self._raise_if_error(resp)
 
@@ -198,6 +195,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
 
+    def _close_rowset_and_reset(self) -> None:
+        """Reset the cursor state."""
+        if self._row_set is not None:
+            self._row_set.close()
+        super()._reset()
+
     @abstractmethod
     def execute_async(
         self,
@@ -215,8 +218,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         skip_parsing: bool = False,
         timeout: Optional[float] = None,
         async_execution: bool = False,
+        streaming: bool = False,
     ) -> None:
-        self._reset()
+        self._close_rowset_and_reset()
+        self._row_set = StreamingRowSet() if streaming else InMemoryRowSet()
         queries: List[Union[SetParameter, str]] = (
             [raw_query]
             if skip_parsing
@@ -230,7 +235,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             )
         try:
             for query in queries:
-                self._execute_single_query(query, timeout_controller, async_execution)
+                self._execute_single_query(
+                    query, timeout_controller, async_execution, streaming
+                )
             self._state = CursorState.DONE
         except Exception:
             self._state = CursorState.ERROR
@@ -241,6 +248,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: Union[SetParameter, str],
         timeout_controller: TimeoutController,
         async_execution: bool,
+        streaming: bool,
     ) -> None:
         start_time = time.time()
         Cursor._log_query(query)
@@ -254,7 +262,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 )
             self._validate_set_parameter(query, timeout_controller.remaining())
         else:
-            self._handle_query_execution(query, timeout_controller, async_execution)
+            self._handle_query_execution(
+                query, timeout_controller, async_execution, streaming
+            )
 
         if not async_execution:
             logger.info(
@@ -265,9 +275,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             logger.info("Query submitted for async execution.")
 
     def _handle_query_execution(
-        self, query: str, timeout_controller: TimeoutController, async_execution: bool
+        self,
+        query: str,
+        timeout_controller: TimeoutController,
+        async_execution: bool,
+        streaming: bool,
     ) -> None:
-        query_params: Dict[str, Any] = {"output_format": JSON_OUTPUT_FORMAT}
+        query_params: Dict[str, Any] = {
+            "output_format": self._get_output_format(streaming)
+        }
         if async_execution:
             query_params["async"] = True
         resp = self._api_request(
@@ -277,6 +293,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         self._raise_if_error(resp)
         if async_execution:
+            resp.read()
             self._parse_async_response(resp)
         else:
             self._parse_response_headers(resp.headers)
@@ -359,13 +376,24 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
 
+    @check_not_closed
+    def execute_stream(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> None:
+        """Execute a streaming query."""
+        params_list = [parameters] if parameters else []
+        self._do_execute(query, params_list, skip_parsing, streaming=True)
+
     def _append_row_set_from_response(
         self,
         response: Optional[Response],
     ) -> None:
         """Store information about executed query."""
         if self._row_set is None:
-            self._row_set = InMemoryRowSet()
+            raise OperationalError("Row set is not initialized.")
 
         if response is None:
             self._row_set.append_empty_response()
@@ -406,6 +434,20 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         assert self._row_set is not None
         with Timer(self._performance_log_message):
             return list(self._row_set)
+
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    def nextset(self) -> bool:
+        """
+        Skip to the next available set, discarding any remaining rows
+        from the current set.
+
+        Returns:
+            bool: True if there is a next result set, False otherwise
+        """
+        assert self._row_set is not None
+        return self._row_set.nextset()
 
     def close(self) -> None:
         super().close()
@@ -578,6 +620,18 @@ class CursorV1(Cursor):
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
     ) -> int:
-        raise NotSupportedError(
-            "Async execution is not supported in this version " " of Firebolt."
-        )
+        raise V1NotSupportedError("Async execution")
+
+    def execute_stream(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> None:
+        raise V1NotSupportedError("Query result streaming")
+
+    @staticmethod
+    def _get_output_format(is_streaming: bool) -> str:
+        """Get output format."""
+        # Streaming is not supported in v1
+        return JSON_OUTPUT_FORMAT

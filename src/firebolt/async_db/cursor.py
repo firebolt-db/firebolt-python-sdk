@@ -4,7 +4,6 @@ import logging
 import time
 import warnings
 from abc import ABCMeta, abstractmethod
-from functools import wraps
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
 from urllib.parse import urljoin
@@ -40,15 +39,16 @@ from firebolt.common.cursor.decorators import (
 )
 from firebolt.common.row_set.asynchronous.base import BaseAsyncRowSet
 from firebolt.common.row_set.asynchronous.in_memory import InMemoryAsyncRowSet
+from firebolt.common.row_set.asynchronous.streaming import StreamingAsyncRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltError,
-    NotSupportedError,
     OperationalError,
     ProgrammingError,
     QueryTimeoutError,
+    V1NotSupportedError,
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
@@ -56,12 +56,8 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from firebolt.utils.async_util import async_islice
-from firebolt.utils.util import (
-    Timer,
-    _print_error_body,
-    raise_errors_from_body,
-)
+from firebolt.utils.async_util import anext, async_islice
+from firebolt.utils.util import Timer, raise_error_from_response
 
 logger = logging.getLogger(__name__)
 
@@ -138,26 +134,25 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     async def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
-        if resp.status_code == codes.INTERNAL_SERVER_ERROR:
-            raise OperationalError(
-                f"Error executing query:\n{resp.read().decode('utf-8')}"
-            )
-        if resp.status_code == codes.FORBIDDEN:
-            if self.database and not await self.is_db_available(self.database):
-                raise FireboltDatabaseError(f"Database {self.database} does not exist")
-            raise ProgrammingError(resp.read().decode("utf-8"))
-        if (
-            resp.status_code == codes.SERVICE_UNAVAILABLE
-            or resp.status_code == codes.NOT_FOUND
-        ) and not await self.is_engine_running(self.engine_url):
-            raise EngineNotRunningError(
-                f"Firebolt engine {self.engine_url} "
-                "needs to be running to run queries against it."
-            )
-        raise_errors_from_body(resp)
-        # If no structure for error is found, log the body and raise the error
-        _print_error_body(resp)
-        resp.raise_for_status()
+        if codes.is_error(resp.status_code):
+            await resp.aread()
+            if resp.status_code == codes.INTERNAL_SERVER_ERROR:
+                raise OperationalError(f"Error executing query:\n{resp.text}")
+            if resp.status_code == codes.FORBIDDEN:
+                if self.database and not await self.is_db_available(self.database):
+                    raise FireboltDatabaseError(
+                        f"Database {self.database} does not exist"
+                    )
+                raise ProgrammingError(resp.text)
+            if (
+                resp.status_code == codes.SERVICE_UNAVAILABLE
+                or resp.status_code == codes.NOT_FOUND
+            ) and not await self.is_engine_running(self.engine_url):
+                raise EngineNotRunningError(
+                    f"Firebolt engine {self.engine_url} "
+                    "needs to be running to run queries against it."
+                )
+            raise_error_from_response(resp)
 
     async def _validate_set_parameter(
         self, parameter: SetParameter, timeout: Optional[float]
@@ -169,6 +164,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
+            await resp.aread()
             raise OperationalError(resp.text)
         await self._raise_if_error(resp)
 
@@ -193,6 +189,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
 
+    async def _close_rowset_and_reset(self) -> None:
+        """Reset cursor state."""
+        if self._row_set is not None:
+            await self._row_set.aclose()
+        super()._reset()
+
     @abstractmethod
     async def execute_async(
         self,
@@ -210,8 +212,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         skip_parsing: bool = False,
         timeout: Optional[float] = None,
         async_execution: bool = False,
+        streaming: bool = False,
     ) -> None:
-        self._reset()
+        await self._close_rowset_and_reset()
+        self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
         queries: List[Union[SetParameter, str]] = (
             [raw_query]
             if skip_parsing
@@ -226,7 +230,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         try:
             for query in queries:
                 await self._execute_single_query(
-                    query, timeout_controller, async_execution
+                    query, timeout_controller, async_execution, streaming
                 )
             self._state = CursorState.DONE
         except Exception:
@@ -238,6 +242,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: Union[SetParameter, str],
         timeout_controller: TimeoutController,
         async_execution: bool,
+        streaming: bool,
     ) -> None:
         start_time = time.time()
         Cursor._log_query(query)
@@ -252,7 +257,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             await self._validate_set_parameter(query, timeout_controller.remaining())
         else:
             await self._handle_query_execution(
-                query, timeout_controller, async_execution
+                query, timeout_controller, async_execution, streaming
             )
 
         if not async_execution:
@@ -264,9 +269,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             logger.info("Query submitted for async execution.")
 
     async def _handle_query_execution(
-        self, query: str, timeout_controller: TimeoutController, async_execution: bool
+        self,
+        query: str,
+        timeout_controller: TimeoutController,
+        async_execution: bool,
+        streaming: bool,
     ) -> None:
-        query_params: Dict[str, Any] = {"output_format": JSON_OUTPUT_FORMAT}
+        query_params: Dict[str, Any] = {
+            "output_format": self._get_output_format(streaming)
+        }
         if async_execution:
             query_params["async"] = True
         resp = await self._api_request(
@@ -276,6 +287,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         )
         await self._raise_if_error(resp)
         if async_execution:
+            await resp.aread()
             self._parse_async_response(resp)
         else:
             await self._parse_response_headers(resp.headers)
@@ -360,13 +372,45 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         await self._do_execute(query, parameters_seq, timeout=timeout_seconds)
         return self.rowcount
 
+    @check_not_closed
+    async def execute_stream(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> None:
+        """Prepare and execute a database query, with streaming results.
+
+        Supported features:
+            Parameterized queries: Placeholder characters ('?') are substituted
+                with values provided in `parameters`. Values are formatted to
+                be properly recognized by database and to exclude SQL injection.
+            Multi-statement queries: Multiple statements, provided in a single query
+                and separated by semicolon, are executed separately and sequentially.
+                To switch to next statement result, use `nextset` method.
+            SET statements: To provide additional query execution parameters, execute
+                `SET param=value` statement before it. All parameters are stored in
+                cursor object until it's closed. They can also be removed with
+                `flush_parameters` method call.
+
+        Args:
+            query (str): SQL query to execute.
+            parameters (Optional[Sequence[ParameterType]]): Substitution parameters.
+                Used to replace '?' placeholders inside a query with actual values.
+            skip_parsing (bool): Flag to disable query parsing. This will
+                disable parameterized, multi-statement and SET queries,
+                while improving performance
+        """
+        params_list = [parameters] if parameters else []
+        await self._do_execute(query, params_list, skip_parsing, streaming=True)
+
     async def _append_row_set_from_response(
         self,
         response: Optional[Response],
     ) -> None:
         """Store information about executed query."""
         if self._row_set is None:
-            self._row_set = InMemoryAsyncRowSet()
+            raise OperationalError("Row set is not initialized.")
         if response is None:
             self._row_set.append_empty_response()
         else:
@@ -383,13 +427,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Fetch the next row of a query result set."""
         assert self._row_set is not None
         with Timer(self._performance_log_message):
-            # anext() is only supported in Python 3.10+
-            # this means we cannot just do return anext(self._row_set),
-            # we need to handle iteration manually
-            try:
-                return await self._row_set.__anext__()
-            except StopAsyncIteration:
-                return None
+            return await anext(self._row_set, None)
 
     @check_not_closed
     @async_not_allowed
@@ -413,9 +451,19 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         with Timer(self._performance_log_message):
             return [it async for it in self._row_set]
 
-    @wraps(BaseCursor.nextset)
-    async def nextset(self) -> None:
-        return super().nextset()
+    @check_not_closed
+    @async_not_allowed
+    @check_query_executed
+    async def nextset(self) -> bool:
+        """
+        Skip to the next available set, discarding any remaining rows
+        from the current set.
+
+        Returns:
+            bool: True if there is a next result set, False otherwise
+        """
+        assert self._row_set is not None
+        return await self._row_set.nextset()
 
     async def aclose(self) -> None:
         super().close()
@@ -616,6 +664,18 @@ class CursorV1(Cursor):
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
     ) -> int:
-        raise NotSupportedError(
-            "Async execution is not supported in this version " " of Firebolt."
-        )
+        raise V1NotSupportedError("Async execution")
+
+    async def execute_stream(
+        self,
+        query: str,
+        parameters: Optional[Sequence[ParameterType]] = None,
+        skip_parsing: bool = False,
+    ) -> None:
+        raise V1NotSupportedError("Query result streaming")
+
+    @staticmethod
+    def _get_output_format(is_streaming: bool) -> str:
+        """Get output format."""
+        # Streaming is not supported in v1
+        return JSON_OUTPUT_FORMAT

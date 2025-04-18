@@ -3,10 +3,10 @@ from typing import Iterator, List, Optional
 
 from httpx import Response
 
-from firebolt.common._types import ColType, RawColType, parse_type, parse_value
+from firebolt.common._types import ColType, parse_type
 from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.types import Column, RowsResponse, Statistics
-from firebolt.utils.exception import DataError
+from firebolt.utils.exception import DataError, FireboltStructuredError
 
 
 class InMemoryRowSet(BaseSyncRowSet):
@@ -29,8 +29,10 @@ class InMemoryRowSet(BaseSyncRowSet):
         """
         Create an InMemoryRowSet from a response.
         """
-        self.append_response_stream(response.iter_bytes())
-        response.close()
+        try:
+            self.append_response_stream(response.iter_bytes())
+        finally:
+            response.close()
 
     def append_response_stream(self, stream: Iterator[bytes]) -> None:
         """
@@ -42,6 +44,10 @@ class InMemoryRowSet(BaseSyncRowSet):
         else:
             try:
                 query_data = json.loads(content)
+
+                if "errors" in query_data and len(query_data["errors"]) > 0:
+                    raise FireboltStructuredError(query_data)
+
                 columns = [
                     Column(
                         d["name"], parse_type(d["type"]), None, None, None, None, None
@@ -60,6 +66,8 @@ class InMemoryRowSet(BaseSyncRowSet):
 
     @property
     def _row_set(self) -> RowsResponse:
+        if self._current_row_set_idx >= len(self._row_sets):
+            raise DataError("No results available.")
         return self._row_sets[self._current_row_set_idx]
 
     @property
@@ -80,15 +88,6 @@ class InMemoryRowSet(BaseSyncRowSet):
             self._current_row = -1
             return True
         return False
-
-    def _parse_row(self, row: List[RawColType]) -> List[ColType]:
-        assert len(row) == len(self.columns)
-        return [
-            parse_value(col, self.columns[i].type_code) for i, col in enumerate(row)
-        ]
-
-    def __iter__(self) -> Iterator[List[ColType]]:
-        return self
 
     def __next__(self) -> List[ColType]:
         if self._row_set.row_count == -1:

@@ -145,6 +145,7 @@ class Auth(HttpxAuth):
         Overridden in order to lock and ensure no more than
         one authentication request is sent at a time. This
         avoids excessive load on the auth server.
+        It also makes sure to read the response body in case of an error status code
         """
         if self.requires_request_body:
             await request.aread()
@@ -161,7 +162,7 @@ class Auth(HttpxAuth):
 
         while True:
             response = yield request
-            if self.requires_response_body:
+            if self.requires_response_body or codes.is_error(response.status_code):
                 await response.aread()
 
             try:
@@ -177,3 +178,26 @@ class Auth(HttpxAuth):
                     and self._lock._owner_task == get_current_task()  # type: ignore
                 ):
                     self._lock.release()
+
+    def sync_auth_flow(self, request: Request) -> Generator[Request, Response, None]:
+        """
+        Execute the authentication flow synchronously.
+
+        Overridden in order to ensure reading the response body
+        in case of an error status code
+        """
+        if self.requires_request_body:
+            request.read()
+
+        flow = self.auth_flow(request)
+        request = next(flow)
+
+        while True:
+            response = yield request
+            if self.requires_response_body or codes.is_error(response.status_code):
+                response.read()
+
+            try:
+                request = flow.send(response)
+            except StopIteration:
+                break
