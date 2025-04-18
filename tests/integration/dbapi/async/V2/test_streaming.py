@@ -121,3 +121,20 @@ async def test_streaming_error(
         assert "Unable to cast TEXT 'invalid' to date" in str(
             e.value
         ), "Invalid error message"
+
+
+async def test_streaming_error_during_fetching(
+    connection: Connection,
+) -> None:
+    """Select handles errors properly during fetching."""
+    sql = "select 1/(i-100000) as a from generate_series(1,100000) as i"
+    async with connection.cursor() as c:
+        await c.execute_stream(sql)
+
+        # first result is fetched with no error
+        await c.fetchone()
+
+        with raises(FireboltStructuredError) as e:
+            await c.fetchall()
+
+        assert c.statistics is not None

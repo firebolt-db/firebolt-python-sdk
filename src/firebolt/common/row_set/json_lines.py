@@ -11,7 +11,7 @@ class MessageType(Enum):
     start = "START"
     data = "DATA"
     success = "FINISH_SUCCESSFULLY"
-    error = "FINISH_WITH_ERROR"
+    error = "FINISH_WITH_ERRORS"
 
 
 @dataclass

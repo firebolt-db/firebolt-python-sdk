@@ -28,8 +28,8 @@ class Statistics:
     """
 
     elapsed: float
-    rows_read: int
-    bytes_read: int
+    rows_read: Optional[int] = None
+    bytes_read: Optional[int] = None
     time_before_execution: Optional[float] = None
     time_to_execute: Optional[float] = None
     scanned_bytes_cache: Optional[float] = None
