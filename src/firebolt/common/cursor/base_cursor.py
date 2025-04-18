@@ -260,21 +260,6 @@ class BaseCursor:
     ) -> None:
         self.close()
 
-    def _initialize_rowset(self, is_streaming: bool) -> None:
-        """
-        Initialize the row set.
-
-        Args:
-            is_streaming (bool): Flag indicating if streaming is enabled.
-
-        Returns:
-            None
-        """
-        if is_streaming:
-            self._row_set = self.streaming_row_set_type()
-        else:
-            self._row_set = self.in_memory_row_set_type()
-
     @staticmethod
     def _get_output_format(is_streaming: bool) -> str:
         """

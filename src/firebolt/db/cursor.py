@@ -82,9 +82,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             with the :py:func:`fetchmany` method
     """
 
-    in_memory_row_set_type = InMemoryRowSet
-    streaming_row_set_type = StreamingRowSet
-
     def __init__(
         self,
         *args: Any,
@@ -224,7 +221,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         streaming: bool = False,
     ) -> None:
         self._close_rowset_and_reset()
-        self._initialize_rowset(streaming)
+        self._row_set = StreamingRowSet() if streaming else InMemoryRowSet()
         queries: List[Union[SetParameter, str]] = (
             [raw_query]
             if skip_parsing
@@ -632,11 +629,6 @@ class CursorV1(Cursor):
         skip_parsing: bool = False,
     ) -> None:
         raise V1NotSupportedError("Query result streaming")
-
-    def _initialize_rowset(self, is_streaming: bool) -> None:
-        """Initialize row set."""
-        # Streaming is not supported in v1
-        self._row_set = self.in_memory_row_set_type()
 
     @staticmethod
     def _get_output_format(is_streaming: bool) -> str:
