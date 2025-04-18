@@ -169,7 +169,7 @@ class TestStreamingRowSetCommonBase:
         mock_parse.return_value = mock_record
 
         error_record_json = {
-            "message_type": "FINISH_WITH_ERROR",
+            "message_type": "FINISH_WITH_ERRORS",
             "errors": [{"msg": "error message", "error_code": 123}],
             "query_id": "query_id",
             "query_label": "query_label",

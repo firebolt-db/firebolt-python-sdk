@@ -54,7 +54,7 @@ from firebolt.utils.exception import OperationalError
         ),
         (
             {
-                "message_type": "FINISH_WITH_ERROR",
+                "message_type": "FINISH_WITH_ERRORS",
                 "errors": [{"message": "error message", "code": 123}],
                 "query_id": "query_id",
                 "query_label": "query_label",
@@ -68,7 +68,7 @@ from firebolt.utils.exception import OperationalError
                 },
             },
             ErrorRecord,
-            "FINISH_WITH_ERROR",
+            "FINISH_WITH_ERRORS",
         ),
     ],
 )
