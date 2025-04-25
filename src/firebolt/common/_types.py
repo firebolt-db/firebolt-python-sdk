@@ -87,6 +87,9 @@ class ExtendedType:
     def is_valid_type(type_: Any) -> bool:
         return type_ in _col_types or isinstance(type_, ExtendedType)
 
+    # Remember to override this method in subclasses
+    # if __eq__ is overridden
+    # https://docs.python.org/3/reference/datamodel.html#object.__hash__
     def __hash__(self) -> int:
         return hash(str(self))
 
@@ -110,6 +113,8 @@ class ARRAY(ExtendedType):
             return NotImplemented
         return other.subtype == self.subtype
 
+    __hash__ = ExtendedType.__hash__
+
 
 class DECIMAL(ExtendedType):
     """Class for holding `decimal` value information in Firebolt DB."""
@@ -129,6 +134,8 @@ class DECIMAL(ExtendedType):
             return NotImplemented
         return other.precision == self.precision and other.scale == self.scale
 
+    __hash__ = ExtendedType.__hash__
+
 
 class STRUCT(ExtendedType):
     __name__ = "Struct"
@@ -145,6 +152,8 @@ class STRUCT(ExtendedType):
 
     def __eq__(self, other: Any) -> bool:
         return isinstance(other, STRUCT) and other.fields == self.fields
+
+    __hash__ = ExtendedType.__hash__
 
 
 NULLABLE_SUFFIX = "null"
