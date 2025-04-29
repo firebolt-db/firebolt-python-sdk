@@ -219,6 +219,7 @@ def test_parse_value_datetime_errors() -> None:
     [
         ("123.456", Decimal("123.456")),
         (123, Decimal("123")),
+        (123.456, Decimal("123.456")),
         (None, None),
     ],
 )
