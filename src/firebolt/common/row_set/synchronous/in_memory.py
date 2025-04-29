@@ -43,7 +43,8 @@ class InMemoryRowSet(BaseSyncRowSet):
             self.append_empty_response()
         else:
             try:
-                query_data = json.loads(content)
+                # Skip parsing floats to properly parse them later
+                query_data = json.loads(content, parse_float=str)
 
                 if "errors" in query_data and len(query_data["errors"]) > 0:
                     raise FireboltStructuredError(query_data)

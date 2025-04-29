@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
@@ -611,6 +612,7 @@ class TestStreamingRowSet:
 
     def test_pop_data_record_from_record_unexpected_end(self):
         """Test _pop_data_record_from_record behavior with unexpected end of stream."""
+
         # Create a simple subclass to access protected method directly
         class TestableStreamingRowSet(StreamingRowSet):
             def pop_data_record_from_record_exposed(self, record):
@@ -989,3 +991,28 @@ class TestStreamingRowSet:
 
             # Internal state should be reset
             assert streaming_rowset._responses == []
+
+    def test_streaming_with_decimals(
+        self,
+        streaming_rowset: StreamingRowSet,
+        mock_decimal_response_streaming: Response,
+    ):
+        """Test handling of decimal data types in streaming responses."""
+        # Add the response to the row set
+        streaming_rowset.append_response(mock_decimal_response_streaming)
+
+        # Verify columns are correctly identified
+        assert len(streaming_rowset.columns) == 3
+
+        # Get all rows
+        rows = list(streaming_rowset)
+
+        # Verify we got the expected number of rows
+        assert len(rows) == 2
+
+        # Verify decimal values are correctly parsed in both formats (string and float)
+        for row in rows:
+            assert isinstance(row[2], Decimal), "Expected Decimal type"
+            assert (
+                str(row[2]) == "1231232.123459999990457054844258706536"
+            ), "Decimal value mismatch"

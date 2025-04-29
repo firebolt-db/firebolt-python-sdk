@@ -100,7 +100,7 @@ def connection_system_engine(
 
 
 @fixture
-def all_types_query_response_v1(
+def all_types_query_response(
     all_types_query_response: List[List[ColType]],
 ) -> List[List[ColType]]:
     """

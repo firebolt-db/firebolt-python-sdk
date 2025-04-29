@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -173,6 +174,7 @@ class TestInMemoryAsyncRowSet:
 
     async def test_append_response(self, in_memory_rowset, mock_response):
         """Test appending a response with data."""
+
         # Create a proper aclose method
         async def mock_aclose():
             mock_response.is_closed = True
@@ -207,6 +209,7 @@ class TestInMemoryAsyncRowSet:
         self, in_memory_rowset, mock_empty_response
     ):
         """Test appending a response with empty content."""
+
         # Create a proper aclose method
         async def mock_aclose():
             mock_empty_response.is_closed = True
@@ -226,6 +229,7 @@ class TestInMemoryAsyncRowSet:
         self, in_memory_rowset, mock_invalid_json_response
     ):
         """Test appending a response with invalid JSON."""
+
         # Create a proper aclose method
         async def mock_aclose():
             mock_invalid_json_response.is_closed = True
@@ -245,6 +249,7 @@ class TestInMemoryAsyncRowSet:
         self, in_memory_rowset, mock_missing_meta_response
     ):
         """Test appending a response with missing meta field."""
+
         # Create a proper aclose method
         async def mock_aclose():
             mock_missing_meta_response.is_closed = True
@@ -264,6 +269,7 @@ class TestInMemoryAsyncRowSet:
         self, in_memory_rowset, mock_missing_data_response
     ):
         """Test appending a response with missing data field."""
+
         # Create a proper aclose method
         async def mock_aclose():
             mock_missing_data_response.is_closed = True
@@ -281,6 +287,7 @@ class TestInMemoryAsyncRowSet:
 
     async def test_nextset_no_more_sets(self, in_memory_rowset, mock_response):
         """Test nextset when there are no more result sets."""
+
         # Create a proper aclose method
         async def mock_aclose():
             pass
@@ -296,6 +303,7 @@ class TestInMemoryAsyncRowSet:
         The implementation seems to add rowsets correctly, but behaves differently
         than expected when accessing them via nextset.
         """
+
         # Create a proper aclose method
         async def mock_aclose():
             pass
@@ -322,6 +330,7 @@ class TestInMemoryAsyncRowSet:
 
     async def test_iteration(self, in_memory_rowset, mock_response):
         """Test row iteration."""
+
         # Create a proper aclose method
         async def mock_aclose():
             pass
@@ -347,6 +356,7 @@ class TestInMemoryAsyncRowSet:
         This test is tricky because in the mock setup, the second row set
         is actually empty despite us adding the same mock response.
         """
+
         # Create a proper aclose method
         async def mock_aclose():
             pass
@@ -410,6 +420,7 @@ class TestInMemoryAsyncRowSet:
 
     async def test_aclose(self, in_memory_rowset, mock_response):
         """Test aclose method."""
+
         # Create a proper aclose method
         async def mock_aclose():
             pass
@@ -423,3 +434,23 @@ class TestInMemoryAsyncRowSet:
 
             # Verify sync close was called
             mock_close.assert_called_once()
+
+    async def test_append_response_with_decimals(
+        self, in_memory_rowset: InMemoryAsyncRowSet, mock_decimal_bytes_stream: Response
+    ):
+
+        await in_memory_rowset.append_response(mock_decimal_bytes_stream)
+
+        # Verify basic properties
+        assert in_memory_rowset.row_count == 2
+        assert len(in_memory_rowset.columns) == 3
+
+        # Get the row values and check decimal values are equal
+        rows = [row async for row in in_memory_rowset]
+
+        # Verify the decimal value is correctly parsed
+        for row in rows:
+            assert isinstance(row[2], Decimal), "Expected Decimal type"
+            assert (
+                str(row[2]) == "1231232.123459999990457054844258706536"
+            ), "Decimal value mismatch"
