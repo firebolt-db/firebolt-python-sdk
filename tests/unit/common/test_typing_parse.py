@@ -219,13 +219,14 @@ def test_parse_value_datetime_errors() -> None:
     [
         ("123.456", Decimal("123.456")),
         (123, Decimal("123")),
+        (123.456, Decimal("123.456")),
         (None, None),
     ],
 )
 def test_parse_decimal(value, expected) -> None:
     assert (
         parse_value(value, DECIMAL(38, 3)) == expected
-    ), "Error parsing decimal(38, 3): provided {value}, expected {expected}"
+    ), f"Error parsing decimal(38, 3): provided {value}, expected {expected}"
 
 
 @mark.parametrize(
