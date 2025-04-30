@@ -16,7 +16,7 @@ def mock_decimal_response_streaming() -> Response:
         "result_columns": [
             {"name": "col1", "type": "int"},
             {"name": "col2", "type": "string"},
-            {"name": "col3", "type": "Decimal(10, 2)"},
+            {"name": "col3", "type": "numeric(10, 2)"},
         ],
         "query_id": "q1",
         "query_label": "l1",
