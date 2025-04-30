@@ -341,12 +341,8 @@ def parse_value(
             raise DataError(f"Invalid bytea value {value}: str expected")
         return _parse_bytea(value)
     if isinstance(ctype, DECIMAL):
-        if not isinstance(value, (str, int, float)):
+        if not isinstance(value, (str, int)):
             raise DataError(f"Invalid decimal value {value}: str or int expected")
-        if isinstance(value, float):
-            # Decimal constructor doesn't support float
-            # so we need to convert it to string first
-            value = str(value)
         return Decimal(value)
     if isinstance(ctype, ARRAY):
         if not isinstance(value, list):

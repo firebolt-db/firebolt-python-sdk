@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,7 +13,7 @@ class TestInMemoryRowSet:
     """Tests for InMemoryRowSet functionality."""
 
     @pytest.fixture
-    def in_memory_rowset(self):
+    def in_memory_rowset(self) -> InMemoryRowSet:
         """Create a fresh InMemoryRowSet instance."""
         return InMemoryRowSet()
 
@@ -173,6 +174,28 @@ class TestInMemoryRowSet:
         assert in_memory_rowset.row_count == 2
         assert len(in_memory_rowset.columns) == 2
         assert in_memory_rowset.statistics is not None
+
+    def test_append_response_stream_with_decimals(
+        self,
+        in_memory_rowset: InMemoryRowSet,
+        mock_decimal_bytes_stream: Response,
+    ):
+        """Test appending a stream with decimal data type."""
+        in_memory_rowset.append_response(mock_decimal_bytes_stream)
+
+        assert len(in_memory_rowset._row_sets) == 1
+        assert in_memory_rowset.row_count == 2
+        assert len(in_memory_rowset.columns) == 3
+
+        # Get the row values and check decimal values are equal
+        rows = list(in_memory_rowset)
+
+        # Verify the decimal value is correctly parsed
+        for row in rows:
+            assert isinstance(row[2], Decimal), "Expected Decimal type"
+            assert (
+                str(row[2]) == "1231232.123459999990457054844258706536"
+            ), "Decimal value mismatch"
 
     def test_append_response_stream_multi_chunk(
         self, in_memory_rowset, mock_multi_chunk_bytes_stream

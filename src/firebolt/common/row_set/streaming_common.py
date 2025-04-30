@@ -94,7 +94,8 @@ class StreamingRowSetCommonBase:
             return None
 
         try:
-            record = json.loads(next_line)
+            # Skip parsing floats to properly parse them later
+            record = json.loads(next_line, parse_float=str)
         except json.JSONDecodeError as err:
             raise OperationalError(
                 f"Invalid JSON line response format: {next_line}"

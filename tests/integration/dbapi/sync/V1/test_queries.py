@@ -30,7 +30,7 @@ def test_connect_engine_name(
     connection_engine_name: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
-    all_types_query_response_v1: List[ColType],
+    all_types_query_response: List[ColType],
     timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
@@ -38,7 +38,7 @@ def test_connect_engine_name(
         connection_engine_name,
         all_types_query,
         all_types_query_description,
-        all_types_query_response_v1,
+        all_types_query_response,
         timezone_name,
     )
 
@@ -47,7 +47,7 @@ def test_connect_no_engine(
     connection_no_engine: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
-    all_types_query_response_v1: List[ColType],
+    all_types_query_response: List[ColType],
     timezone_name: str,
 ) -> None:
     """Connecting with engine name is handled properly."""
@@ -55,7 +55,7 @@ def test_connect_no_engine(
         connection_no_engine,
         all_types_query,
         all_types_query_description,
-        all_types_query_response_v1,
+        all_types_query_response,
         timezone_name,
     )
 
@@ -64,7 +64,7 @@ def test_select(
     connection: Connection,
     all_types_query: str,
     all_types_query_description: List[Column],
-    all_types_query_response_v1: List[ColType],
+    all_types_query_response: List[ColType],
     timezone_name: str,
 ) -> None:
     """Select handles all data types properly."""
@@ -82,14 +82,14 @@ def test_select(
         assert c.rowcount == 1, "Invalid rowcount value"
         data = c.fetchall()
         assert len(data) == c.rowcount, "Invalid data length"
-        assert_deep_eq(data, all_types_query_response_v1, "Invalid data")
+        assert_deep_eq(data, all_types_query_response, "Invalid data")
         assert c.description == all_types_query_description, "Invalid description value"
         assert len(data[0]) == len(c.description), "Invalid description length"
         assert len(c.fetchall()) == 0, "Redundant data returned by fetchall"
 
         # Different fetch types
         c.execute(all_types_query)
-        assert c.fetchone() == all_types_query_response_v1[0], "Invalid fetchone data"
+        assert c.fetchone() == all_types_query_response[0], "Invalid fetchone data"
         assert c.fetchone() is None, "Redundant data returned by fetchone"
 
         c.execute(all_types_query)
@@ -97,7 +97,7 @@ def test_select(
         data = c.fetchmany()
         assert len(data) == 1, "Invalid data size returned by fetchmany"
         assert_deep_eq(
-            data, all_types_query_response_v1, "Invalid data returned by fetchmany"
+            data, all_types_query_response, "Invalid data returned by fetchmany"
         )
 
 
@@ -273,7 +273,7 @@ def test_parameterized_query(connection: Connection) -> None:
             datetime(2022, 1, 1, 1, 1, 1),
             True,
             [1, 2, 3],
-            Decimal(123.456),
+            Decimal("123.456"),
         ]
 
         test_empty_query(
