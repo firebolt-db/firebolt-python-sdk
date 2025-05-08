@@ -230,7 +230,7 @@ class Connection(BaseConnection):
 
     # Server-side async methods
 
-    def _get_async_query_info(self, token: str) -> AsyncQueryInfo:
+    def get_async_query_info(self, token: str) -> AsyncQueryInfo:
         if self.cursor_type != CursorV2:
             raise FireboltError(
                 "This method is only supported for connection with service account."
@@ -268,7 +268,7 @@ class Connection(BaseConnection):
         Returns:
             bool: True if async query is still running, False otherwise
         """
-        return self._get_async_query_info(token).status == ASYNC_QUERY_STATUS_RUNNING
+        return self.get_async_query_info(token).status == ASYNC_QUERY_STATUS_RUNNING
 
     def is_async_query_successful(self, token: str) -> Optional[bool]:
         """
@@ -281,7 +281,7 @@ class Connection(BaseConnection):
             bool: None if the query is still running, True if successful,
                   False otherwise
         """
-        async_query_info = self._get_async_query_info(token)
+        async_query_info = self.get_async_query_info(token)
         if async_query_info.status == ASYNC_QUERY_STATUS_RUNNING:
             return None
         return async_query_info.status == ASYNC_QUERY_STATUS_SUCCESSFUL
@@ -293,7 +293,7 @@ class Connection(BaseConnection):
         Args:
             token: Async query token. Can be obtained from Cursor.async_query_token.
         """
-        async_query_id = self._get_async_query_info(token).query_id
+        async_query_id = self.get_async_query_info(token).query_id
         cursor = self.cursor()
         cursor.execute(ASYNC_QUERY_CANCEL, [async_query_id])
 
