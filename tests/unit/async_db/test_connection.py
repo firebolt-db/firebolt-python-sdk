@@ -578,3 +578,93 @@ async def test_async_query_cancellation(
         api_endpoint=api_endpoint,
     ) as connection:
         await connection.cancel_async_query("token")
+
+
+async def test_get_async_query_info(
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    async_query_callback_factory: Callable,
+    async_query_data: List[List[ColType]],
+    async_query_meta: List[Tuple[str, str]],
+    mock_connection_flow: Callable,
+):
+    """Test get_async_query_info method"""
+    mock_connection_flow()
+    async_query_callback = async_query_callback_factory(
+        async_query_data, async_query_meta
+    )
+
+    httpx_mock.add_callback(
+        async_query_callback,
+        url=query_url,
+        match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+    )
+
+    async with await connect(
+        database=db_name,
+        auth=auth,
+        engine_name=engine_name,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        result = await connection.get_async_query_info("token")
+
+        # Verify we got a list with one AsyncQueryInfo object
+        assert len(result) == 1
+        expected_server_status = async_query_data[0][5]
+        assert result[0].status == expected_server_status
+
+        # Verify query_id matches the expected value from the data
+        expected_query_id = async_query_data[0][7]  # Index of query_id in data
+        assert result[0].query_id == expected_query_id
+
+
+async def test_multiple_results_for_async_token(
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    async_query_callback_factory: Callable,
+    async_multiple_query_data: List[List[ColType]],
+    async_query_meta: List[Tuple[str, str]],
+    mock_connection_flow: Callable,
+):
+    """
+    Test get_async_query_info method with multiple results for the same token.
+    This future-proofs the code against changes in the server response.
+    """
+    mock_connection_flow()
+    async_query_callback = async_query_callback_factory(
+        async_multiple_query_data, async_query_meta
+    )
+
+    httpx_mock.add_callback(
+        async_query_callback,
+        url=query_url,
+        match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+    )
+
+    async with await connect(
+        database=db_name,
+        auth=auth,
+        engine_name=engine_name,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with raises(NotImplementedError):
+            await connection.is_async_query_successful("token")
+        with raises(NotImplementedError):
+            await connection.is_async_query_running("token")
+
+        query_info = await connection.get_async_query_info("token")
+        assert len(query_info) == 2, "Expected two results for the same token"
+        assert query_info[0].query_id == async_multiple_query_data[0][7]
+        assert query_info[1].query_id == async_multiple_query_data[1][7]

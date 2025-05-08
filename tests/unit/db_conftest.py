@@ -604,6 +604,41 @@ def async_query_data() -> List[List[ColType]]:
 
 
 @fixture
+def async_multiple_query_data() -> List[List[ColType]]:
+    query_data = [
+        [
+            "developer",
+            "ecosystem_ci",
+            "2025-01-23 14:08:06.087953+00",
+            "2025-01-23 14:08:06.134208+00",
+            "2025-01-23 14:08:06.410542+00",
+            "ENDED_SUCCESSFULLY",
+            "123e4567-e89b-12d3-a456-426614174000",
+            "f9520387-224c-48e9-9858-b2d05518ce94",
+            "",
+            "2",
+            "2",
+            "0",
+        ],
+        [
+            "developer",
+            "ecosystem_ci",
+            "2025-01-23 14:08:06.087953+00",
+            "2025-01-23 14:08:06.134208+00",
+            "2025-01-23 14:08:06.410542+00",
+            "RUNNING",
+            "",
+            "987e6543-e21b-34d3-b654-426614174111",
+            "",
+            "2",
+            "2",
+            "0",
+        ],
+    ]
+    return query_data
+
+
+@fixture
 def async_query_meta() -> List[Tuple[str, str]]:
     query_meta = [
         ("account_name", "text null"),

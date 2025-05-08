@@ -28,6 +28,15 @@ def test_insert_async(connection: Connection) -> None:
         cursor.execute(f"SELECT * FROM {table_name}")
         result = cursor.fetchall()
         assert result == [[1, "test"]]
+        info = connection.get_async_query_info(token)
+        assert len(info) == 1
+        # Verify query id is showing in query history
+        cursor.execute(
+            "SELECT 1 FROM information_schema.engine_query_history WHERE status='STARTED_EXECUTION' AND query_id = ?",
+            [info[0].query_id],
+        )
+        query_history_result = cursor.fetchall()
+        assert len(query_history_result) == 1
     finally:
         cursor.execute(f"DROP TABLE {table_name}")
 
@@ -48,7 +57,7 @@ def test_insert_async_running(connection: Connection) -> None:
 
 
 def test_check_async_execution_from_another_connection(
-    connection_factory: Callable[..., Connection]
+    connection_factory: Callable[..., Connection],
 ) -> None:
     connection_1 = connection_factory()
     connection_2 = connection_factory()
