@@ -4,7 +4,7 @@ from typing import Callable
 
 from pytest import raises
 
-from firebolt.db import Connection
+from firebolt.async_db import Connection
 from firebolt.utils.exception import FireboltError, FireboltStructuredError
 
 LONG_SELECT = "SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)"  # approx 3 sec
@@ -30,6 +30,15 @@ async def test_insert_async(connection: Connection) -> None:
         await cursor.execute(f"SELECT * FROM {table_name}")
         result = await cursor.fetchall()
         assert result == [[1, "test"]]
+        info = await connection.get_async_query_info(token)
+        assert len(info) == 1
+        # Verify query id is showing in query history
+        await cursor.execute(
+            "SELECT 1 FROM information_schema.engine_query_history WHERE status='STARTED_EXECUTION' AND query_id = ?",
+            [info[0].query_id],
+        )
+        query_history_result = await cursor.fetchall()
+        assert len(query_history_result) == 1
     finally:
         await cursor.execute(f"DROP TABLE {table_name}")
 
@@ -50,7 +59,7 @@ async def test_insert_async_running(connection: Connection) -> None:
 
 
 async def test_check_async_execution_from_another_connection(
-    connection_factory: Callable[..., Connection]
+    connection_factory: Callable[..., Connection],
 ) -> None:
     connection_1 = await connection_factory()
     connection_2 = await connection_factory()
