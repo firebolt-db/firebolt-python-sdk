@@ -672,6 +672,24 @@ will send a cancel request to the server and the query will be stopped.
     print(successful) # False
 
 
+Retrieving asynchronous query information
+-----------------------------------------
+
+To get additional information about an async query, use the :py:meth:`firebolt.db.connection.Connection.get_async_query_info` method.
+This method returns a list of ``AsyncQueryInfo`` objects, each containing detailed information about the query execution.
+
+::
+
+    token = cursor.async_query_token
+    query_info_list = connection.get_async_query_info(token)
+
+    for query_info in query_info_list:
+        print(f"Query ID: {query_info.query_id}")
+        print(f"Status: {query_info.status}")
+        print(f"Submitted time: {query_info.submitted_time}")
+        print(f"Rows scanned: {query_info.scanned_rows}")
+        print(f"Error message: {query_info.error_message}")
+
 
 Streaming query results
 ==============================
