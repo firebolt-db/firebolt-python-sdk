@@ -34,11 +34,11 @@ async def test_insert_async(connection: Connection) -> None:
         assert len(info) == 1
         # Verify query id is showing in query history
         for _ in range(3):
-            cursor.execute(
+            await cursor.execute(
                 "SELECT 1 FROM information_schema.engine_query_history WHERE status='STARTED_EXECUTION' AND query_id = ?",
                 [info[0].query_id],
             )
-            query_history_result = cursor.fetchall()
+            query_history_result = await cursor.fetchall()
             if len(query_history_result) != 0:
                 break
             # Sometimes it takes a while for the query history to be updated
