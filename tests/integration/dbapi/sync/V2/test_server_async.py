@@ -30,14 +30,18 @@ def test_insert_async(connection: Connection) -> None:
         assert result == [[1, "test"]]
         info = connection.get_async_query_info(token)
         assert len(info) == 1
-        # Wait for query history to be updated
-        time.sleep(2)
         # Verify query id is showing in query history
-        cursor.execute(
-            "SELECT 1 FROM information_schema.engine_query_history WHERE status='STARTED_EXECUTION' AND query_id = ?",
-            [info[0].query_id],
-        )
-        query_history_result = cursor.fetchall()
+        for _ in range(3):
+            cursor.execute(
+                "SELECT 1 FROM information_schema.engine_query_history WHERE status='STARTED_EXECUTION' AND query_id = ?",
+                [info[0].query_id],
+            )
+            query_history_result = cursor.fetchall()
+            if len(query_history_result) != 0:
+                break
+            # Sometimes it takes a while for the query history to be updated
+            # so we will retry a few times
+            time.sleep(10)
         assert len(query_history_result) == 1
     finally:
         cursor.execute(f"DROP TABLE {table_name}")
