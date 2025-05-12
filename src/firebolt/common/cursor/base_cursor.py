@@ -98,7 +98,7 @@ class BaseCursor:
         # Server-side parameters (user can't change them)
         self.parameters: Dict[str, str] = dict()
         self.engine_url = ""
-        self._query_id = ""
+        self._query_id = ""  # not used
         self._query_token = ""
         self._row_set: Optional[BaseRowSet] = None
         self._reset()
@@ -149,7 +149,11 @@ class BaseCursor:
     @property  # type: ignore
     @check_not_closed
     def query_id(self) -> str:
-        """The query id of a query executed asynchronously."""
+        """
+        Deprecated: This property is not populated anymore and is left for
+        backward compatibility.
+        """
+        # FIR-42243
         return self._query_id
 
     @property
