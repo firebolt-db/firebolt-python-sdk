@@ -30,6 +30,8 @@ def test_insert_async(connection: Connection) -> None:
         assert result == [[1, "test"]]
         info = connection.get_async_query_info(token)
         assert len(info) == 1
+        # Wait for query history to be updated
+        time.sleep(2)
         # Verify query id is showing in query history
         cursor.execute(
             "SELECT 1 FROM information_schema.engine_query_history WHERE status='STARTED_EXECUTION' AND query_id = ?",
