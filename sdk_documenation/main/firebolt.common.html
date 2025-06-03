@@ -124,6 +124,10 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.QueryTimeoutError"><code class="docutils literal notranslate"><span class="pre">QueryTimeoutError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.V1NotSupportedError"><code class="docutils literal notranslate"><span class="pre">V1NotSupportedError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.utils.exception.V1NotSupportedError.msg"><code class="docutils literal notranslate"><span class="pre">V1NotSupportedError.msg</span></code></a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.utils.exception.Warning"><code class="docutils literal notranslate"><span class="pre">Warning</span></code></a></li>
 </ul>
 </li>
@@ -499,7 +503,7 @@ like division by zero, numeric value out of range, etc.</p>
 <dl class="py exception">
 <dt class="sig sig-object py" id="firebolt.utils.exception.FireboltStructuredError">
 <em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">FireboltStructuredError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">json</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.FireboltStructuredError" title="Link to this definition"></a></dt>
-<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a></p>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.ProgrammingError" title="firebolt.utils.exception.ProgrammingError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ProgrammingError</span></code></a></p>
 <p>Base class for structured errors received in JSON body.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.utils.exception.FireboltStructuredError.message_template">
@@ -632,6 +636,20 @@ syntax error in the SQL statement, wrong number of parameters specified, etc.</p
 <dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.FireboltError" title="firebolt.utils.exception.FireboltError"><code class="xref py py-class docutils literal notranslate"><span class="pre">FireboltError</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">TimeoutError</span></code></p>
 <p>Query execution timed out.</p>
 <p>Exception raised when the query execution exceeds the specified timeout.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="firebolt.utils.exception.V1NotSupportedError">
+<em class="property"><span class="pre">exception</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">firebolt.utils.exception.</span></span><span class="sig-name descname"><span class="pre">V1NotSupportedError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#firebolt.utils.exception.V1NotSupportedError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#firebolt.utils.exception.NotSupportedError" title="firebolt.utils.exception.NotSupportedError"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotSupportedError</span></code></a></p>
+<p>Operation not supported in Firebolt V1</p>
+<p>Exception raised when trying to use the functionality
+that is not supported in Firebolt V1.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="firebolt.utils.exception.V1NotSupportedError.msg">
+<span class="sig-name descname"><span class="pre">msg</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'{}</span> <span class="pre">is</span> <span class="pre">not</span> <span class="pre">supported</span> <span class="pre">in</span> <span class="pre">this</span> <span class="pre">version</span> <span class="pre">of</span> <span class="pre">Firebolt.</span> <span class="pre">Please</span> <span class="pre">contact</span> <span class="pre">support</span> <span class="pre">to</span> <span class="pre">upgrade</span> <span class="pre">your</span> <span class="pre">account</span> <span class="pre">to</span> <span class="pre">a</span> <span class="pre">new</span> <span class="pre">version.'</span></em><a class="headerlink" href="#firebolt.utils.exception.V1NotSupportedError.msg" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py exception">

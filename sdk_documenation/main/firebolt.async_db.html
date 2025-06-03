@@ -58,6 +58,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.async_db.connection.Connection"><code class="docutils literal notranslate"><span class="pre">Connection</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.aclose"><code class="docutils literal notranslate"><span class="pre">Connection.aclose()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.api_endpoint"><code class="docutils literal notranslate"><span class="pre">Connection.api_endpoint</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.cancel_async_query"><code class="docutils literal notranslate"><span class="pre">Connection.cancel_async_query()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.client_class"><code class="docutils literal notranslate"><span class="pre">Connection.client_class</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.closed"><code class="docutils literal notranslate"><span class="pre">Connection.closed</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.commit"><code class="docutils literal notranslate"><span class="pre">Connection.commit()</span></code></a></li>
@@ -65,6 +66,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.cursor_type"><code class="docutils literal notranslate"><span class="pre">Connection.cursor_type</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.database"><code class="docutils literal notranslate"><span class="pre">Connection.database</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.engine_url"><code class="docutils literal notranslate"><span class="pre">Connection.engine_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.get_async_query_info"><code class="docutils literal notranslate"><span class="pre">Connection.get_async_query_info()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.is_async_query_running"><code class="docutils literal notranslate"><span class="pre">Connection.is_async_query_running()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.connection.Connection.is_async_query_successful"><code class="docutils literal notranslate"><span class="pre">Connection.is_async_query_successful()</span></code></a></li>
 </ul>
@@ -75,10 +77,12 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#module-firebolt.async_db.cursor">Cursor</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor"><code class="docutils literal notranslate"><span class="pre">Cursor</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.aclose"><code class="docutils literal notranslate"><span class="pre">Cursor.aclose()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.connection"><code class="docutils literal notranslate"><span class="pre">Cursor.connection</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.engine_url"><code class="docutils literal notranslate"><span class="pre">Cursor.engine_url</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.execute"><code class="docutils literal notranslate"><span class="pre">Cursor.execute()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.execute_async"><code class="docutils literal notranslate"><span class="pre">Cursor.execute_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.execute_stream"><code class="docutils literal notranslate"><span class="pre">Cursor.execute_stream()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.executemany"><code class="docutils literal notranslate"><span class="pre">Cursor.executemany()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.fetchall"><code class="docutils literal notranslate"><span class="pre">Cursor.fetchall()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.Cursor.fetchmany"><code class="docutils literal notranslate"><span class="pre">Cursor.fetchmany()</span></code></a></li>
@@ -91,6 +95,7 @@
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.CursorV1.connection"><code class="docutils literal notranslate"><span class="pre">CursorV1.connection</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.CursorV1.engine_url"><code class="docutils literal notranslate"><span class="pre">CursorV1.engine_url</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.CursorV1.execute_async"><code class="docutils literal notranslate"><span class="pre">CursorV1.execute_async()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.CursorV1.execute_stream"><code class="docutils literal notranslate"><span class="pre">CursorV1.execute_stream()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#firebolt.async_db.cursor.CursorV1.parameters"><code class="docutils literal notranslate"><span class="pre">CursorV1.parameters</span></code></a></li>
 </ul>
 </li>
@@ -190,6 +195,17 @@ so commit and rollback methods are not implemented.</p>
 <span class="sig-name descname"><span class="pre">api_endpoint</span></span><a class="headerlink" href="#firebolt.async_db.connection.Connection.api_endpoint" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.cancel_async_query">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cancel_async_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.connection.Connection.cancel_async_query" title="Link to this definition"></a></dt>
+<dd><p>Cancel an async query.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>token</strong> – Async query token. Can be obtained from Cursor.async_query_token.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.client_class">
 <span class="sig-name descname"><span class="pre">client_class</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">type</span></em><a class="headerlink" href="#firebolt.async_db.connection.Connection.client_class" title="Link to this definition"></a></dt>
@@ -226,6 +242,25 @@ so commit and rollback methods are not implemented.</p>
 <dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.engine_url">
 <span class="sig-name descname"><span class="pre">engine_url</span></span><a class="headerlink" href="#firebolt.async_db.connection.Connection.engine_url" title="Link to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.get_async_query_info">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_async_query_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">token</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">AsyncQueryInfo</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.async_db.connection.Connection.get_async_query_info" title="Link to this definition"></a></dt>
+<dd><p>Retrieve information about an asynchronous query using its token.
+This method fetches the status and details of an asynchronous query
+identified by the provided token.
+:param token: The token identifying the asynchronous query.
+:type token: str</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of AsyncQueryInfo objects containing
+details about the asynchronous query.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[AsyncQueryInfo]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.async_db.connection.Connection.is_async_query_running">
@@ -313,6 +348,11 @@ with the <a class="reference internal" href="#firebolt.async_db.cursor.Cursor.fe
 </ul>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.aclose">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">aclose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.aclose" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.connection">
 <span class="sig-name descname"><span class="pre">connection</span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.connection" title="Link to this definition"></a></dt>
@@ -371,6 +411,39 @@ while improving performance</p></li>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.execute_stream">
+<span class="sig-name descname"><span class="pre">execute_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parsing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.execute_stream" title="Link to this definition"></a></dt>
+<dd><p>Prepare and execute a database query, with streaming results.</p>
+<dl class="simple">
+<dt>Supported features:</dt><dd><dl class="simple">
+<dt>Parameterized queries: Placeholder characters (‘?’) are substituted</dt><dd><p>with values provided in <cite>parameters</cite>. Values are formatted to
+be properly recognized by database and to exclude SQL injection.</p>
+</dd>
+<dt>Multi-statement queries: Multiple statements, provided in a single query</dt><dd><p>and separated by semicolon, are executed separately and sequentially.
+To switch to next statement result, use <cite>nextset</cite> method.</p>
+</dd>
+<dt>SET statements: To provide additional query execution parameters, execute</dt><dd><p><cite>SET param=value</cite> statement before it. All parameters are stored in
+cursor object until it’s closed. They can also be removed with
+<cite>flush_parameters</cite> method call.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<em>str</em>) – SQL query to execute.</p></li>
+<li><p><strong>parameters</strong> (<em>Optional</em><em>[</em><em>Sequence</em><em>[</em><em>ParameterType</em><em>]</em><em>]</em>) – Substitution parameters.
+Used to replace ‘?’ placeholders inside a query with actual values.</p></li>
+<li><p><strong>skip_parsing</strong> (<em>bool</em>) – Flag to disable query parsing. This will
+disable parameterized, multi-statement and SET queries,
+while improving performance</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.executemany">
 <span class="sig-name descname"><span class="pre">executemany</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters_seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_seconds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.executemany" title="Link to this definition"></a></dt>
 <dd><p>Prepare and execute a database query.</p>
@@ -413,30 +486,36 @@ for each subset are executed sequentially.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.fetchall">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fetchall</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.fetchall" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fetchall</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.fetchall" title="Link to this definition"></a></dt>
 <dd><p>Fetch all remaining rows of a query result.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.fetchmany">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fetchmany</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.fetchmany" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fetchmany</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.fetchmany" title="Link to this definition"></a></dt>
 <dd><p>Fetch the next set of rows of a query result;
 cursor.arraysize is default size.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.fetchone">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">fetchone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.fetchone" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">fetchone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.fetchone" title="Link to this definition"></a></dt>
 <dd><p>Fetch the next row of a query result set.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.Cursor.nextset">
-<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">nextset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.nextset" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">nextset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.Cursor.nextset" title="Link to this definition"></a></dt>
 <dd><p>Skip to the next available set, discarding any remaining rows
-from the current set.
-Returns True if operation was successful;
-None if there are no more sets to retrive.</p>
+from the current set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if there is a next result set, False otherwise</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py attribute">
@@ -464,6 +543,39 @@ None if there are no more sets to retrive.</p>
 <dt class="sig sig-object py" id="firebolt.async_db.cursor.CursorV1.execute_async">
 <em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute_async</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parsing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.CursorV1.execute_async" title="Link to this definition"></a></dt>
 <dd><p>Execute a database query without maintaining a connection.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="firebolt.async_db.cursor.CursorV1.execute_stream">
+<em class="property"><span class="pre">async</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">execute_stream</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameters</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">date</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Decimal</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Sequence</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_parsing</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#firebolt.async_db.cursor.CursorV1.execute_stream" title="Link to this definition"></a></dt>
+<dd><p>Prepare and execute a database query, with streaming results.</p>
+<dl class="simple">
+<dt>Supported features:</dt><dd><dl class="simple">
+<dt>Parameterized queries: Placeholder characters (‘?’) are substituted</dt><dd><p>with values provided in <cite>parameters</cite>. Values are formatted to
+be properly recognized by database and to exclude SQL injection.</p>
+</dd>
+<dt>Multi-statement queries: Multiple statements, provided in a single query</dt><dd><p>and separated by semicolon, are executed separately and sequentially.
+To switch to next statement result, use <cite>nextset</cite> method.</p>
+</dd>
+<dt>SET statements: To provide additional query execution parameters, execute</dt><dd><p><cite>SET param=value</cite> statement before it. All parameters are stored in
+cursor object until it’s closed. They can also be removed with
+<cite>flush_parameters</cite> method call.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>query</strong> (<em>str</em>) – SQL query to execute.</p></li>
+<li><p><strong>parameters</strong> (<em>Optional</em><em>[</em><em>Sequence</em><em>[</em><em>ParameterType</em><em>]</em><em>]</em>) – Substitution parameters.
+Used to replace ‘?’ placeholders inside a query with actual values.</p></li>
+<li><p><strong>skip_parsing</strong> (<em>bool</em>) – Flag to disable query parsing. This will
+disable parameterized, multi-statement and SET queries,
+while improving performance</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py attribute">

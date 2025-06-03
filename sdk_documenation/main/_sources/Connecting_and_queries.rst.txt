@@ -48,7 +48,6 @@ To get started, follow the steps below:
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
     .. note::
-        If you specify ``engine_name`` but not the ``database`` Python SDK will automatically resolve the database for you behind the scenes.
 
         If an ``engine_name`` is not specified the SDK will not be bound to any engine. In this case, if also no ``database`` is specified
         you can still connect, but queries are limited to database and engine management queries e.g. ``CREATE DATABASE``, ``START ENGINE``, etc.
@@ -224,11 +223,6 @@ below use the data queried from ``test_table`` created in the
 
 	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
-	::
-
-		print(cursor.fetchall())
-
-	**Returns**: ``[[2, 'world'], [1, 'hello'], [3, '!']]``
 
 Fetching query result information
 -----------------------
@@ -660,6 +654,72 @@ has finished successfully, None if query is still running and False if the query
     else:
         print("Query failed")
 
+Cancelling a running query
+--------------------------
+
+To cancel a running query, use the :py:meth:`firebolt.db.connection.Connection.cancel_async_query` method. This method
+will send a cancel request to the server and the query will be stopped.
+
+::
+
+    token = cursor.async_query_token
+    connection.cancel_async_query(token)
+    
+    # Verify that the query was cancelled
+    running = connection.is_async_query_running(token)
+    print(running) # False
+    successful = connection.is_async_query_successful(token)
+    print(successful) # False
+
+
+Retrieving asynchronous query information
+-----------------------------------------
+
+To get additional information about an async query, use the :py:meth:`firebolt.db.connection.Connection.get_async_query_info` method.
+This method returns a list of ``AsyncQueryInfo`` objects, each containing detailed information about the query execution.
+
+::
+
+    token = cursor.async_query_token
+    query_info_list = connection.get_async_query_info(token)
+
+    for query_info in query_info_list:
+        print(f"Query ID: {query_info.query_id}")
+        print(f"Status: {query_info.status}")
+        print(f"Submitted time: {query_info.submitted_time}")
+        print(f"Rows scanned: {query_info.scanned_rows}")
+        print(f"Error message: {query_info.error_message}")
+
+
+Streaming query results
+==============================
+
+By default, the driver will fetch all the results at once and store them in memory.
+This does not always fit the needs of the application, especially when the result set is large.
+In this case, you can use the `execute_stream` cursor method to fetch results in chunks.
+
+.. note::
+    The `execute_stream` method is not supported with :ref:`connecting_and_queries:Server-side asynchronous query execution`. It can only be used with regular queries.
+
+.. note::
+    If you enable result streaming, the query execution might finish successfully, but the actual error might be returned while iterating the rows.
+
+Synchronous example:
+::
+
+    with connection.cursor() as cursor:
+        cursor.execute_stream("SELECT * FROM my_huge_table")
+        for row in cursor:
+            # Process the row
+            print(row)
+
+Asynchronous example:
+::
+    async with async_connection.cursor() as cursor:
+        await cursor.execute_stream("SELECT * FROM my_huge_table")
+        async for row in cursor:
+            # Process the row
+            print(row)
 
 Thread safety
 ==============================
