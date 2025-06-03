@@ -65,8 +65,11 @@
 <li class="toctree-l2"><a class="reference internal" href="#server-side-asynchronous-query-execution">Server-side asynchronous query execution</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#submitting-an-asynchronous-query">Submitting an asynchronous query</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#monitoring-the-query-status">Monitoring the query status</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cancelling-a-running-query">Cancelling a running query</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#retrieving-asynchronous-query-information">Retrieving asynchronous query information</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#streaming-query-results">Streaming query results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#thread-safety">Thread safety</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#using-date-and-datetime-values">Using DATE and DATETIME values</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#execution-timeout">Execution timeout</a></li>
@@ -149,7 +152,6 @@ any command or query requests to your Firebolt database.</p>
 </table>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If you specify <code class="docutils literal notranslate"><span class="pre">engine_name</span></code> but not the <code class="docutils literal notranslate"><span class="pre">database</span></code> Python SDK will automatically resolve the database for you behind the scenes.</p>
 <p>If an <code class="docutils literal notranslate"><span class="pre">engine_name</span></code> is not specified the SDK will not be bound to any engine. In this case, if also no <code class="docutils literal notranslate"><span class="pre">database</span></code> is specified
 you can still connect, but queries are limited to database and engine management queries e.g. <code class="docutils literal notranslate"><span class="pre">CREATE</span> <span class="pre">DATABASE</span></code>, <code class="docutils literal notranslate"><span class="pre">START</span> <span class="pre">ENGINE</span></code>, etc.
 To interact with tables in a database you have to provide the <code class="docutils literal notranslate"><span class="pre">database</span></code> parameter when connecting with no engine.</p>
@@ -298,10 +300,6 @@ below use the data queried from <code class="docutils literal notranslate"><span
 </pre></div>
 </div>
 <p><strong>Returns</strong>: <code class="docutils literal notranslate"><span class="pre">[[1,</span> <span class="pre">'hello'],</span> <span class="pre">[3,</span> <span class="pre">'!']]</span></code></p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">())</span>
-</pre></div>
-</div>
-<p><strong>Returns</strong>: <code class="docutils literal notranslate"><span class="pre">[[2,</span> <span class="pre">'world'],</span> <span class="pre">[1,</span> <span class="pre">'hello'],</span> <span class="pre">[3,</span> <span class="pre">'!']]</span></code></p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">())</span>
 </pre></div>
 </div>
@@ -689,6 +687,67 @@ has finished successfully, None if query is still running and False if the query
 </pre></div>
 </div>
 </section>
+<section id="cancelling-a-running-query">
+<h3>Cancelling a running query<a class="headerlink" href="#cancelling-a-running-query" title="Link to this heading"></a></h3>
+<p>To cancel a running query, use the <a class="reference internal" href="firebolt.db.html#firebolt.db.connection.Connection.cancel_async_query" title="firebolt.db.connection.Connection.cancel_async_query"><code class="xref py py-meth docutils literal notranslate"><span class="pre">firebolt.db.connection.Connection.cancel_async_query()</span></code></a> method. This method
+will send a cancel request to the server and the query will be stopped.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">token</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">async_query_token</span>
+<span class="n">connection</span><span class="o">.</span><span class="n">cancel_async_query</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+<span class="c1"># Verify that the query was cancelled</span>
+<span class="n">running</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">is_async_query_running</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">running</span><span class="p">)</span> <span class="c1"># False</span>
+<span class="n">successful</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">is_async_query_successful</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">successful</span><span class="p">)</span> <span class="c1"># False</span>
+</pre></div>
+</div>
+</section>
+<section id="retrieving-asynchronous-query-information">
+<h3>Retrieving asynchronous query information<a class="headerlink" href="#retrieving-asynchronous-query-information" title="Link to this heading"></a></h3>
+<p>To get additional information about an async query, use the <a class="reference internal" href="firebolt.db.html#firebolt.db.connection.Connection.get_async_query_info" title="firebolt.db.connection.Connection.get_async_query_info"><code class="xref py py-meth docutils literal notranslate"><span class="pre">firebolt.db.connection.Connection.get_async_query_info()</span></code></a> method.
+This method returns a list of <code class="docutils literal notranslate"><span class="pre">AsyncQueryInfo</span></code> objects, each containing detailed information about the query execution.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">token</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">async_query_token</span>
+<span class="n">query_info_list</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">get_async_query_info</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">query_info</span> <span class="ow">in</span> <span class="n">query_info_list</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Query ID: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">query_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Status: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Submitted time: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">submitted_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rows scanned: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">scanned_rows</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error message: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="streaming-query-results">
+<h2>Streaming query results<a class="headerlink" href="#streaming-query-results" title="Link to this heading"></a></h2>
+<p>By default, the driver will fetch all the results at once and store them in memory.
+This does not always fit the needs of the application, especially when the result set is large.
+In this case, you can use the <cite>execute_stream</cite> cursor method to fetch results in chunks.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <cite>execute_stream</cite> method is not supported with <a class="reference internal" href="#server-side-asynchronous-query-execution"><span class="std std-ref">Server-side asynchronous query execution</span></a>. It can only be used with regular queries.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you enable result streaming, the query execution might finish successfully, but the actual error might be returned while iterating the rows.</p>
+</div>
+<p>Synchronous example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute_stream</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM my_huge_table&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="c1"># Process the row</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Asynchronous example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">with</span> <span class="n">async_connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute_stream</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM my_huge_table&quot;</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="c1"># Process the row</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <section id="thread-safety">
 <h2>Thread safety<a class="headerlink" href="#thread-safety" title="Link to this heading"></a></h2>
