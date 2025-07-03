@@ -11,6 +11,7 @@ from firebolt.async_db.connection import connect
 from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
+from firebolt.utils.exception import FireboltStructuredError
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(
@@ -50,7 +51,7 @@ async def test_select(
     async with connection.cursor() as c:
         # For timestamptz test
         assert (
-            await c.execute(f"SET time_zone={timezone_name}") == -1
+            await c.execute(f"SET timezone={timezone_name}") == -1
         ), "Invalid set statment row count"
 
         assert await c.execute(all_types_query) == 1, "Invalid row count returned"
@@ -112,6 +113,7 @@ async def test_long_query(
         assert len(data) == 1, "Invalid data size returned by fetchall"
 
 
+@mark.parametrize("connection", ["remote"], indirect=True)
 async def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
@@ -334,9 +336,12 @@ async def test_multi_statement_query(connection: Connection) -> None:
 async def test_set_invalid_parameter(connection: Connection):
     async with connection.cursor() as c:
         assert len(c._set_parameters) == 0
-        with raises(OperationalError):
+        with raises((OperationalError, FireboltStructuredError)) as e:
             await c.execute("SET some_invalid_parameter = 1")
 
+        assert "Unknown setting" in str(e.value) or "query param not allowed" in str(
+            e.value
+        ), "Invalid error message"
         assert len(c._set_parameters) == 0
 
 
@@ -424,7 +429,7 @@ async def test_connection_with_mixed_case_db_and_engine(
         engine_name=test_engine_name,
     ) as connection:
         cursor = connection.cursor()
-        await cursor.execute('CREATE TABLE "test_table" (id int)')
+        await cursor.execute('CREATE TABLE IF NOT EXISTS "test_table" (id int)')
         # This fails if we're not running on a user engine
         await cursor.execute('INSERT INTO "test_table" VALUES (1)')
 

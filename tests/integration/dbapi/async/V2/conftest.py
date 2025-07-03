@@ -10,20 +10,34 @@ from firebolt.client.auth.client_credentials import ClientCredentials
 from tests.integration.conftest import Secret
 
 
-@fixture
+@fixture(params=["remote", "core"])
 async def connection(
     engine_name: str,
     database_name: str,
     auth: Auth,
+    core_auth: Auth,
     account_name: str,
     api_endpoint: str,
+    request: Any,
 ) -> Connection:
+    if request.param == "core":
+        kwargs = {
+            "engine_name": None,
+            "database": "firebolt",
+            "auth": core_auth,
+            "account_name": None,
+            "api_endpoint": None,
+        }
+    else:
+        kwargs = {
+            "engine_name": engine_name,
+            "database": database_name,
+            "auth": auth,
+            "account_name": account_name,
+            "api_endpoint": api_endpoint,
+        }
     async with await connect(
-        engine_name=engine_name,
-        database=database_name,
-        auth=auth,
-        account_name=account_name,
-        api_endpoint=api_endpoint,
+        **kwargs,
     ) as connection:
         yield connection
 

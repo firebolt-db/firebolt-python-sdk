@@ -6,6 +6,7 @@ from typing import Optional
 from pytest import fixture, mark
 
 from firebolt.client.auth import ClientCredentials
+from firebolt.client.auth.firebolt_core import FireboltCore
 from firebolt.client.auth.username_password import UsernamePassword
 
 LOGGER = getLogger(__name__)
@@ -118,6 +119,11 @@ def service_secret() -> Secret:
 @fixture(scope="session")
 def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
     return ClientCredentials(service_id, service_secret.value)
+
+
+@fixture(scope="session")
+def core_auth() -> FireboltCore:
+    return FireboltCore()
 
 
 @fixture(scope="session")

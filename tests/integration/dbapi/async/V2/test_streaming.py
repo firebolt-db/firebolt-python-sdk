@@ -22,7 +22,7 @@ async def test_streaming_select(
     async with connection.cursor() as c:
         # For timestamptz test
         assert (
-            await c.execute(f"SET time_zone={timezone_name}") == -1
+            await c.execute(f"SET timezone={timezone_name}") == -1
         ), "Invalid set statment row count"
 
         await c.execute_stream(all_types_query)

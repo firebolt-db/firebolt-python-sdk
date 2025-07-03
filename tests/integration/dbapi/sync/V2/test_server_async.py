@@ -9,6 +9,13 @@ from firebolt.utils.exception import FireboltError, FireboltStructuredError
 
 LONG_SELECT = "SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)"  # approx 3 sec
 
+# Async is only supported in remote engines, no core support yet
+@fixture(scope="module")
+@mark.parametrize("connection", ["remote"], indirect=True)
+def connection(connection: Connection) -> Connection:
+    """Fixture to provide a connection for testing."""
+    return connection
+
 
 def test_insert_async(connection: Connection) -> None:
     cursor = connection.cursor()
