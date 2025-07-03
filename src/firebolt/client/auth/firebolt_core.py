@@ -1,9 +1,8 @@
-from typing import AsyncGenerator, Generator, Optional
+from typing import AsyncGenerator, Generator
 
 from httpx import Request, Response
 
 from firebolt.client.auth.base import Auth, FireboltAuthVersion
-from firebolt.utils.firebolt_core import get_firebolt_core_engine_url
 
 
 class FireboltCore(Auth):
@@ -12,29 +11,19 @@ class FireboltCore(Auth):
     Represents authentication for local/remote Docker-based deployments of Firebolt,
     which do not require authentication.
 
-    Args:
-        url (str, optional): URL in format protocol://host:port.
-            Protocol defaults to http, host defaults to localhost, port
-            defaults to 3473.
-
     Attributes:
-        url (str): The parsed URL for the Firebolt Core instance.
         protocol (str): The protocol (http or https).
         host (str): The host (IPv4, IPv6, hostname, or localhost).
         port (int): The port number.
     """
 
     __slots__ = (
-        "url",
         "_token",
         "_expires",
         "_use_token_cache",
     )
 
-    def __init__(self, url: Optional[str] = None):
-        # Parse URL and build the complete URL
-        self.url = get_firebolt_core_engine_url(url)
-
+    def __init__(self) -> None:
         # Initialize with no token caching
         super().__init__(use_token_cache=False)
 
@@ -49,7 +38,7 @@ class FireboltCore(Auth):
         Returns:
             FireboltCore: Auth object
         """
-        return FireboltCore(self.url)
+        return FireboltCore()
 
     def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.

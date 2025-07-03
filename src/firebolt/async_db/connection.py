@@ -27,9 +27,7 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
     FireboltError,
 )
-from firebolt.utils.firebolt_core import (
-    get_firebolt_core_connection_parameters,
-)
+from firebolt.utils.firebolt_core import parse_firebolt_core_url
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
@@ -417,20 +415,13 @@ async def connect_core(
     Returns:
         Connection: A connection to Firebolt Core
     """
-    connection_params = get_firebolt_core_connection_parameters(
-        connection_url, database
-    )
+    connection_params = parse_firebolt_core_url(connection_url)
 
-    connection_url = (
-        connection_params["protocol"]
-        + "://"
-        + connection_params["host"]
-        + (f":{connection_params['port']}" if connection_params["port"] else "")
-    )
+    verified_url = connection_params.geturl()
     client = AsyncClientV2(
         auth=auth,
         account_name="",  # FireboltCore does not require an account name
-        base_url=connection_url,
+        base_url=verified_url,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
@@ -438,9 +429,9 @@ async def connect_core(
     await client.account_id
 
     return Connection(
-        engine_url=connection_url,
-        database=connection_params["database"],
+        engine_url=verified_url,
+        database=database,
         client=client,
         cursor_type=CursorV2,
-        api_endpoint=connection_url,
+        api_endpoint=verified_url,
     )
