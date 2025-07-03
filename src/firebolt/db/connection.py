@@ -9,6 +9,7 @@ from httpx import Timeout
 
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
+from firebolt.client.auth.base import FireboltAuthVersion
 from firebolt.common.base_connection import (
     ASYNC_QUERY_CANCEL,
     ASYNC_QUERY_STATUS_REQUEST,
@@ -27,6 +28,9 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
     FireboltError,
 )
+from firebolt.utils.firebolt_core import (
+    get_firebolt_core_connection_parameters,
+)
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
@@ -41,6 +45,7 @@ def connect(
     engine_url: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
     disable_cache: bool = False,
+    url: Optional[str] = None,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
     # auth parameter is optional in function signature
@@ -57,9 +62,17 @@ def connect(
     auth_version = auth.get_firebolt_version()
     if disable_cache:
         _firebolt_system_engine_cache.disable()
-    # Use v2 if auth is ClientCredentials
-    # Use v1 if auth is ServiceAccount or UsernamePassword
-    if auth_version == 2:
+    # Use CORE if auth is FireboltCore
+    # Use V2 if auth is ClientCredentials
+    # Use V1 if auth is ServiceAccount or UsernamePassword
+    if auth_version == FireboltAuthVersion.CORE:
+        return connect_core(
+            auth=auth,
+            user_agent_header=user_agent_header,
+            database=database,
+            connection_url=url,
+        )
+    elif auth_version == FireboltAuthVersion.V2:
         assert account_name is not None
         return connect_v2(
             auth=auth,
@@ -69,7 +82,7 @@ def connect(
             engine_name=engine_name,
             api_endpoint=api_endpoint,
         )
-    elif auth_version == 1:
+    elif auth_version == FireboltAuthVersion.V1:
         return connect_v1(
             auth=auth,
             user_agent_header=user_agent_header,
@@ -384,3 +397,51 @@ def connect_v1(
         headers={"User-Agent": user_agent_header},
     )
     return Connection(engine_url, database, client, CursorV1, api_endpoint)
+
+
+def connect_core(
+    auth: Auth,
+    user_agent_header: str,
+    database: Optional[str] = None,
+    connection_url: Optional[str] = None,
+) -> Connection:
+    """Connect to Firebolt Core.
+
+    Args:
+        auth (Auth): Authentication object (must be FireboltCore)
+        user_agent_header (str): User agent header string
+        database (Optional[str]): Name of the database to connect to
+        (defaults to 'firebolt')
+        url (Optional[str]): URL in format protocol://host:port
+            Protocol defaults to http, host defaults to localhost, port
+            defaults to 3473.
+        additional_parameters (Dict[str, Any]): Dictionary of additional parameters
+
+    Returns:
+        Connection: A connection to Firebolt Core
+    """
+    connection_params = get_firebolt_core_connection_parameters(
+        connection_url, database
+    )
+
+    connection_url = (
+        connection_params["protocol"]
+        + "://"
+        + connection_params["host"]
+        + (f":{connection_params['port']}" if connection_params["port"] else "")
+    )
+    client = ClientV2(
+        auth=auth,
+        account_name="",  # FireboltCore does not require an account name
+        base_url=connection_url,
+        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+        headers={"User-Agent": user_agent_header},
+    )
+
+    return Connection(
+        engine_url=connection_url,
+        database=connection_params["database"],
+        client=client,
+        cursor_type=CursorV2,
+        api_endpoint=connection_url,
+    )

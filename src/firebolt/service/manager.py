@@ -5,13 +5,14 @@ from httpx import Timeout
 
 from firebolt.client import (
     DEFAULT_API_URL,
-    Auth,
     ClientV1,
     ClientV2,
     log_request,
     log_response,
     raise_on_4xx_5xx,
 )
+from firebolt.client.auth import Auth
+from firebolt.client.auth.base import FireboltAuthVersion
 from firebolt.common import Settings
 from firebolt.db import connect
 from firebolt.service.V1.binding import BindingService
@@ -94,10 +95,10 @@ class ResourceManager:
         assert auth is not None
 
         version = auth.get_firebolt_version()
-        if version == 2:
+        if version == FireboltAuthVersion.V2:
             client_class = ClientV2
             assert account_name is not None
-        elif version == 1:
+        elif version == FireboltAuthVersion.V1:
             client_class = ClientV1
         else:
             raise ValueError(f"Unsupported Firebolt version: {version}")
