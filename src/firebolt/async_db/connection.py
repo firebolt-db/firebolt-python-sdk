@@ -27,7 +27,10 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
     FireboltError,
 )
-from firebolt.utils.firebolt_core import parse_firebolt_core_url
+from firebolt.utils.firebolt_core import (
+    parse_firebolt_core_url,
+    validate_firebolt_core_parameters,
+)
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
@@ -232,9 +235,8 @@ async def connect(
     # Use V1 if auth is ServiceAccount or UsernamePassword
     auth_version = auth.get_firebolt_version()
     if auth_version == FireboltAuthVersion.CORE:
-        # TODO: validate parameters don't contain any that are not
-        # supported by FireboltCore
-        # e.g. account_name, engine_name, engine_url, etc.
+        # Verify that Core-incompatible parameters are not provided
+        validate_firebolt_core_parameters(account_name, engine_name, engine_url)
         return await connect_core(
             auth=auth,
             user_agent_header=user_agent_header,

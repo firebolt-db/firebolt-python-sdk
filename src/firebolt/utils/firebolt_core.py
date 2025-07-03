@@ -4,6 +4,39 @@ from urllib.parse import ParseResult, urlparse
 from firebolt.utils.exception import ConfigurationError
 
 
+def validate_firebolt_core_parameters(
+    account_name: Optional[str] = None,
+    engine_name: Optional[str] = None,
+    engine_url: Optional[str] = None,
+) -> None:
+    """Validate that no incompatible parameters are provided with
+    FireboltCore authentication.
+
+    Args:
+        account_name (Optional[str]): Account name parameter to validate
+        engine_name (Optional[str]): Engine name parameter to validate
+        engine_url (Optional[str]): Engine URL parameter to validate
+
+    Raises:
+        ConfigurationError: If any incompatible parameters are provided
+    """
+    forbidden_params = {}
+    if account_name:
+        forbidden_params["account_name"] = account_name
+    if engine_name:
+        forbidden_params["engine_name"] = engine_name
+    if engine_url:
+        forbidden_params["engine_url"] = engine_url
+
+    if forbidden_params:
+        param_list = ", ".join(f"'{p}'" for p in forbidden_params.keys())
+        raise ConfigurationError(
+            f"Parameters {param_list} are not compatible with Firebolt Core "
+            "authentication. These parameters should not be provided when "
+            "using Firebolt Core."
+        )
+
+
 def parse_firebolt_core_url(url: Optional[str] = None) -> ParseResult:
     """Parse a Firebolt Core URL into its components.
 

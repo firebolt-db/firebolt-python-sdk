@@ -3,7 +3,10 @@
 from pytest import raises
 
 from firebolt.utils.exception import ConfigurationError
-from firebolt.utils.firebolt_core import parse_firebolt_core_url
+from firebolt.utils.firebolt_core import (
+    parse_firebolt_core_url,
+    validate_firebolt_core_parameters,
+)
 
 
 def test_ipv6_url_parsing():
@@ -70,3 +73,34 @@ def test_invalid_url_parsing():
     # Test invalid port (too large)
     with raises(ConfigurationError, match="Invalid URL format"):
         parse_firebolt_core_url("http://localhost:70000")
+
+
+def test_validate_firebolt_core_parameters():
+    """Test validation of parameters for FireboltCore authentication."""
+    # Test with no parameters (should pass)
+    validate_firebolt_core_parameters()  # No exception should be raised
+
+    # Test with individual forbidden parameters
+    with raises(ConfigurationError, match="'account_name' are not compatible"):
+        validate_firebolt_core_parameters(account_name="test_account")
+
+    with raises(ConfigurationError, match="'engine_name' are not compatible"):
+        validate_firebolt_core_parameters(engine_name="test_engine")
+
+    with raises(ConfigurationError, match="'engine_url' are not compatible"):
+        validate_firebolt_core_parameters(engine_url="https://example.com")
+
+    # Test with multiple forbidden parameters
+    with raises(ConfigurationError, match="'account_name', 'engine_name'"):
+        validate_firebolt_core_parameters(
+            account_name="test_account", engine_name="test_engine"
+        )
+
+    with raises(
+        ConfigurationError, match="'account_name', 'engine_name', 'engine_url'"
+    ):
+        validate_firebolt_core_parameters(
+            account_name="test_account",
+            engine_name="test_engine",
+            engine_url="https://example.com",
+        )
