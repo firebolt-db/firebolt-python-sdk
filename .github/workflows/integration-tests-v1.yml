@@ -86,16 +86,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-      - name: Write certificate and certificate key to file
+      - name: Generate self-signed SSL cert
         run: |
-          mkdir "${{ github.workspace }}/.github/resources/core/certs"
-          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
-          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
+          mkdir -p /.github/resources/core/certs
+          openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
+            -keyout ${{ github.workspace }}/.github/resources/core/certs/selfsigned.key \
+            -out ${{ github.workspace }}/.github/resources/core/certs/selfsigned.crt \
+            -subj "/CN=localhost"
+
+      # - name: Write certificate and certificate key to file
+      #   run: |
+      #     mkdir "${{ github.workspace }}/.github/resources/core/certs"
+      #     echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
+      #     echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
 
       - name: Install certs to keystore
         run: |
             # Add cert to system CA store
-            sudo cp ${{ github.workspace }}/.github/resources/core/certs/localhost.pem /usr/local/share/ca-certificates/localhost.crt
+            sudo cp ${{ github.workspace }}/.github/resources/core/certs/selfsigned.crt /usr/local/share/ca-certificates/localhost.crt
             sudo update-ca-certificates
             
 
