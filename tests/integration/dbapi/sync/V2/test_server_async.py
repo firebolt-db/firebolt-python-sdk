@@ -2,7 +2,7 @@ import time
 from random import randint
 from typing import Callable
 
-from pytest import raises
+from pytest import mark, raises
 
 from firebolt.db import Connection
 from firebolt.utils.exception import FireboltError, FireboltStructuredError
@@ -10,11 +10,8 @@ from firebolt.utils.exception import FireboltError, FireboltStructuredError
 LONG_SELECT = "SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)"  # approx 3 sec
 
 # Async is only supported in remote engines, no core support yet
-@fixture(scope="module")
-@mark.parametrize("connection", ["remote"], indirect=True)
-def connection(connection: Connection) -> Connection:
-    """Fixture to provide a connection for testing."""
-    return connection
+# Mark all the tests in this module to run only with the "remote" connection
+pytestmark = mark.parametrize("connection", ["remote"], indirect=True)
 
 
 def test_insert_async(connection: Connection) -> None:
@@ -70,6 +67,7 @@ def test_insert_async_running(connection: Connection) -> None:
 
 
 def test_check_async_execution_from_another_connection(
+    connection: Connection,
     connection_factory: Callable[..., Connection],
 ) -> None:
     connection_1 = connection_factory()
