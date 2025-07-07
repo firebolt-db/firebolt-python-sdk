@@ -410,7 +410,7 @@ async def connect_core(
         user_agent_header (str): User agent header string
         database (Optional[str]): Name of the database to connect to
             (defaults to 'firebolt')
-        url (Optional[str]): URL in format protocol://host:port
+        connection_url (Optional[str]): URL in format protocol://host:port
             Protocol defaults to http, host defaults to localhost, port
             defaults to 3473.
 

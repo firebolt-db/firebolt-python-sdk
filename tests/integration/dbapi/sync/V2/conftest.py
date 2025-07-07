@@ -18,6 +18,7 @@ def connection(
     core_auth: Auth,
     account_name: str,
     api_endpoint: str,
+    core_url: str,
     request: Any,
 ) -> Connection:
     if request.param == "core":
@@ -25,6 +26,7 @@ def connection(
             "engine_name": None,
             "database": "firebolt",
             "auth": core_auth,
+            "url": core_url,
             "account_name": None,
             "api_endpoint": None,
         }

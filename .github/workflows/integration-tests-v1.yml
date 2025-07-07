@@ -11,7 +11,7 @@ on:
         description: 'Python version'
         required: false
         type: string
-        default: '3.9'
+        default: '3.10'
       os_name:
         description: 'The operating system'
         required: false
@@ -27,7 +27,7 @@ on:
         description: 'Python version'
         required: false
         type: string
-        default: '3.9'
+        default: '3.10'
       os_name:
         description: 'Operating system'
         required: false
@@ -58,7 +58,7 @@ jobs:
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python_version }}
@@ -148,22 +148,9 @@ jobs:
           DATABASE_NAME: "firebolt"
           ENGINE_NAME: ""
           STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: "api.staging.firebolt.io"
+          API_ENDPOINT: ""
           ACCOUNT_NAME: ""
           CORE_URL: "http://localhost:3473"
-        run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
-
-      - name: Run integration tests HTTPS
-        env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: "api.staging.firebolt.io"
-          ACCOUNT_NAME: ""
-          CORE_URL: "https://localhost:443"
         run: |
           pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
 

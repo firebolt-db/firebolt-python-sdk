@@ -46,7 +46,6 @@ def test_connect_no_db(
     )
 
 
-@mark.parametrize("connection", ["remote"], indirect=True)
 def test_select(
     connection: Connection,
     all_types_query: str,
@@ -58,7 +57,7 @@ def test_select(
     with connection.cursor() as c:
         # For timestamptz test
         assert (
-            c.execute(f"SET time_zone={timezone_name}") == -1
+            c.execute(f"SET timezone={timezone_name}") == -1
         ), "Invalid set statment row count"
 
         assert c.execute(all_types_query) == 1, "Invalid row count returned"
@@ -118,6 +117,7 @@ def test_long_query(
         assert len(data) == 1, "Invalid data size returned by fetchall"
 
 
+# Not compatible with core
 @mark.parametrize("connection", ["remote"], indirect=True)
 def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""

@@ -47,7 +47,7 @@ jobs:
   run-core-integration-tests:
     runs-on: ${{ inputs.os_name }}
     env:
-      DOCKER_COMPOSE_FILE: ${{ github.workspace }}/src/integrationTest/resources/core/docker-compose.yaml
+      DOCKER_COMPOSE_FILE: ${{ github.workspace }}/.github/resources/core/docker-compose.yml
       SERVICE_PORT: 3473
       SERVICE_URL: http://localhost:3473
       MAX_RETRIES: 30
@@ -58,7 +58,7 @@ jobs:
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python_version }}
@@ -86,20 +86,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-    #   - name: Write certificate and certificate key to file
-    #     run: |
-    #       mkdir "${{ github.workspace }}/src/integrationTest/resources/core/certs"
-    #       echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/src/integrationTest/resources/core/certs/localhost-key.pem
-    #       echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/src/integrationTest/resources/core/certs/localhost.pem
+      - name: Write certificate and certificate key to file
+        run: |
+          mkdir "${{ github.workspace }}/.github/resources/core/certs"
+          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
+          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
 
-    #   - name: Install certs to keystore
-    #     run: |
-    #       sudo keytool -importcert \
-    #         -keystore "$JAVA_HOME/lib/security/cacerts" \
-    #         -storepass changeit \
-    #         -file "${{ github.workspace }}/src/integrationTest/resources/core/certs/localhost.pem" \
-    #         -alias dev-localhost \
-    #         -noprompt
+      - name: Install certs to keystore
+        run: |
+          sudo keytool -importcert \
+            -keystore "$JAVA_HOME/lib/security/cacerts" \
+            -storepass changeit \
+            -file "${{ github.workspace }}/.github/resources/core/certs/localhost.pem" \
+            -alias dev-localhost \
+            -noprompt
 
       # if no image tag was passed in, then use the image tag from the defaults
       - name: Set image tag
@@ -141,17 +141,18 @@ jobs:
           docker compose -f "$DOCKER_COMPOSE_FILE" logs
           exit 1
 
-      - name: Run integration tests
+      - name: Run integration tests HTTP
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
           DATABASE_NAME: "firebolt"
           ENGINE_NAME: ""
           STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: "api.staging.firebolt.io"
+          API_ENDPOINT: ""
           ACCOUNT_NAME: ""
+          CORE_URL: "http://localhost:3473"
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --runslow  --alluredir=allure-results
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
 
       - name: Stop container
         if: always()

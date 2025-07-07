@@ -416,10 +416,9 @@ def connect_core(
         user_agent_header (str): User agent header string
         database (Optional[str]): Name of the database to connect to
         (defaults to 'firebolt')
-        url (Optional[str]): URL in format protocol://host:port
+        connection_url (Optional[str]): URL in format protocol://host:port
             Protocol defaults to http, host defaults to localhost, port
             defaults to 3473.
-        additional_parameters (Dict[str, Any]): Dictionary of additional parameters
 
     Returns:
         Connection: A connection to Firebolt Core
@@ -427,6 +426,7 @@ def connect_core(
     connection_params = parse_firebolt_core_url(connection_url)
 
     verified_url = connection_params.geturl()
+
     client = ClientV2(
         auth=auth,
         account_name="",  # FireboltCore does not require an account name

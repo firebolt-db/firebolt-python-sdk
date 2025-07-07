@@ -10,11 +10,6 @@ class FireboltCore(Auth):
 
     Represents authentication for local/remote Docker-based deployments of Firebolt,
     which do not require authentication.
-
-    Attributes:
-        protocol (str): The protocol (http or https).
-        host (str): The host (IPv4, IPv6, hostname, or localhost).
-        port (int): The port number.
     """
 
     __slots__ = (

@@ -113,6 +113,7 @@ async def test_long_query(
         assert len(data) == 1, "Invalid data size returned by fetchall"
 
 
+# Not compatible with core
 @mark.parametrize("connection", ["remote"], indirect=True)
 async def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
