@@ -88,7 +88,7 @@ jobs:
 
       - name: Generate self-signed SSL cert
         run: |
-          mkdir -p /.github/resources/core/certs
+          mkdir -p ${{ github.workspace }}/.github/resources/core/certs
           openssl req -x509 -nodes -days 1 -newkey rsa:2048 \
             -keyout ${{ github.workspace }}/.github/resources/core/certs/selfsigned.key \
             -out ${{ github.workspace }}/.github/resources/core/certs/selfsigned.crt \
