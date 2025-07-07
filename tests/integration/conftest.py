@@ -1,5 +1,5 @@
 from logging import getLogger
-from os import environ
+from os import environ, getenv
 from time import time
 from typing import Optional
 
@@ -154,7 +154,7 @@ def stopped_engine_url() -> str:
 
 @fixture(scope="session")
 def core_url() -> str:
-    return os.getenv(CORE_URL_ENV, "")
+    return getenv(CORE_URL_ENV, "")
 
 
 @fixture(scope="function")
