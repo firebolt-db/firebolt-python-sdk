@@ -47,7 +47,7 @@ jobs:
   run-core-integration-tests:
     runs-on: ${{ inputs.os_name }}
     env:
-      DOCKER_COMPOSE_FILE: ${{ github.workspace }}/.github/resources/core/docker-compose.yaml
+      DOCKER_COMPOSE_FILE: ${{ github.workspace }}/.github/resources/core/docker-compose.yml
       SERVICE_PORT: 3473
       SERVICE_URL: http://localhost:3473
       MAX_RETRIES: 30
