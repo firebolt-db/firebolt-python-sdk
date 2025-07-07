@@ -141,7 +141,7 @@ jobs:
           docker compose -f "$DOCKER_COMPOSE_FILE" logs
           exit 1
 
-      - name: Run integration tests
+      - name: Run integration tests HTTP
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -150,8 +150,22 @@ jobs:
           STOPPED_ENGINE_NAME: ""
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: ""
+          CORE_URL: "http://localhost:3473"
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --runslow  --alluredir=allure-results
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --runslow  --alluredir=allure-results/http/
+
+      - name: Run integration tests HTTPS
+        env:
+          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          DATABASE_NAME: "firebolt"
+          ENGINE_NAME: ""
+          STOPPED_ENGINE_NAME: ""
+          API_ENDPOINT: "api.staging.firebolt.io"
+          ACCOUNT_NAME: ""
+          CORE_URL: "https://localhost:443"
+        run: |
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --runslow  --alluredir=allure-results/https/
 
       - name: Stop container
         if: always()
