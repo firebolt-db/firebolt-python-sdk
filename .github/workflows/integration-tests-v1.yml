@@ -151,7 +151,7 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: ""
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --runslow  --alluredir=allure-results
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --runslow  --alluredir=allure-results
 
       - name: Stop container
         if: always()
