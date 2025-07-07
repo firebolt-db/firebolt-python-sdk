@@ -101,12 +101,17 @@ class FireboltClientMixin(FireboltClientMixinBase):
             api_endpoint=str(self._api_endpoint),
             timeout=self.timeout,
             headers=self.headers,
+            verify=self.verify,
         )
 
 
 class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
     def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs, transport=KeepaliveTransport())
+        super().__init__(
+            *args,
+            **kwargs,
+            transport=KeepaliveTransport(verify=kwargs.get("verify", True)),
+        )
 
     @property
     @abstractmethod
@@ -269,7 +274,11 @@ class ClientV1(Client):
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
     def __init__(self, *args: Any, **kwargs: Any):
-        super().__init__(*args, **kwargs, transport=AsyncKeepaliveTransport())
+        super().__init__(
+            *args,
+            **kwargs,
+            transport=AsyncKeepaliveTransport(verify=kwargs.get("verify", True)),
+        )
 
     @property
     @abstractmethod
