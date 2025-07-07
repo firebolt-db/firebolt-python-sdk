@@ -86,20 +86,20 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-
 
-    #   - name: Write certificate and certificate key to file
-    #     run: |
-    #       mkdir "${{ github.workspace }}/.github/resources/core/certs"
-    #       echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
-    #       echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
+      - name: Write certificate and certificate key to file
+        run: |
+          mkdir "${{ github.workspace }}/.github/resources/core/certs"
+          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
+          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
 
-    #   - name: Install certs to keystore
-    #     run: |
-    #       sudo keytool -importcert \
-    #         -keystore "$JAVA_HOME/lib/security/cacerts" \
-    #         -storepass changeit \
-    #         -file "${{ github.workspace }}/.github/resources/core/certs/localhost.pem" \
-    #         -alias dev-localhost \
-    #         -noprompt
+      - name: Install certs to keystore
+        run: |
+          sudo keytool -importcert \
+            -keystore "$JAVA_HOME/lib/security/cacerts" \
+            -storepass changeit \
+            -file "${{ github.workspace }}/.github/resources/core/certs/localhost.pem" \
+            -alias dev-localhost \
+            -noprompt
 
       # if no image tag was passed in, then use the image tag from the defaults
       - name: Set image tag
