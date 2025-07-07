@@ -27,7 +27,7 @@ on:
         description: 'Python version'
         required: false
         type: string
-        default: '3.9'
+        default: '3.10'
       os_name:
         description: 'Operating system'
         required: false
@@ -58,7 +58,7 @@ jobs:
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
-      - name: Set up Python 3.8
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ inputs.python_version }}
@@ -94,12 +94,10 @@ jobs:
 
       - name: Install certs to keystore
         run: |
-          sudo keytool -importcert \
-            -keystore "$JAVA_HOME/lib/security/cacerts" \
-            -storepass changeit \
-            -file "${{ github.workspace }}/.github/resources/core/certs/localhost.pem" \
-            -alias dev-localhost \
-            -noprompt
+            # Add cert to system CA store
+            sudo cp ${{ github.workspace }}/.github/resources/core/certs/localhost.pem /usr/local/share/ca-certificates/localhost.crt
+            sudo update-ca-certificates
+            
 
       # if no image tag was passed in, then use the image tag from the defaults
       - name: Set image tag
