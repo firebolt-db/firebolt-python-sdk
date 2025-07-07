@@ -152,7 +152,7 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: "http://localhost:3473"
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/http/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
 
       - name: Run integration tests HTTPS
         env:
@@ -165,7 +165,7 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: "https://localhost:443"
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/https/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
 
       - name: Stop container
         if: always()
