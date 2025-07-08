@@ -95,12 +95,8 @@ jobs:
 
       - name: Install certs to keystore
         run: |
-          sudo keytool -importcert \
-            -keystore "$JAVA_HOME/lib/security/cacerts" \
-            -storepass changeit \
-            -file "${{ github.workspace }}/.github/resources/core/certs/client.pem" \
-            -alias dev-localhost \
-            -noprompt
+          sudo cp ${GITHUB_WORKSPACE}/.github/resources/core/certs/client.crt /usr/local/share/ca-certificates/
+          sudo update-ca-certificates
 
       # if no image tag was passed in, then use the image tag from the defaults
       - name: Set image tag
