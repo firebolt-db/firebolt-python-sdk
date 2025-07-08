@@ -101,7 +101,6 @@ class FireboltClientMixin(FireboltClientMixinBase):
             api_endpoint=str(self._api_endpoint),
             timeout=self.timeout,
             headers=self.headers,
-            verify=self.verify,
         )
 
 
