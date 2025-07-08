@@ -89,17 +89,14 @@ jobs:
       - name: Write certificate and certificate key to file
         run: |
           mkdir "${{ github.workspace }}/.github/resources/core/certs"
-          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
-          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
+          pip install trustme
+          # Generate a self-signed certificate for localhost
+          python3 -m trustme -d "${{ github.workspace }}/.github/resources/core/certs/"
 
       - name: Install certs to keystore
         run: |
-          sudo keytool -importcert \
-            -keystore "$JAVA_HOME/lib/security/cacerts" \
-            -storepass changeit \
-            -file "${{ github.workspace }}/.github/resources/core/certs/localhost.pem" \
-            -alias dev-localhost \
-            -noprompt
+          sudo cp ${GITHUB_WORKSPACE}/.github/resources/core/certs/client.pem /usr/local/share/ca-certificates/client.crt
+          sudo update-ca-certificates
 
       # if no image tag was passed in, then use the image tag from the defaults
       - name: Set image tag
@@ -154,6 +151,24 @@ jobs:
         run: |
           pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
 
+      - name: Run integration tests HTTPS
+        env:
+          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          DATABASE_NAME: "firebolt"
+          ENGINE_NAME: ""
+          STOPPED_ENGINE_NAME: ""
+          API_ENDPOINT: ""
+          ACCOUNT_NAME: ""
+          CORE_URL: "https://localhost:443"
+        run: |
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results-https/
+
+      - name: print compose logs
+        if: always()
+        run: |
+          docker compose -f "$DOCKER_COMPOSE_FILE" logs
+      
       - name: Stop container
         if: always()
         run: |
@@ -175,5 +190,15 @@ jobs:
           github-key: ${{ secrets.GITHUB_TOKEN }}
           test-type: integration
           allure-dir: allure-results
+          pages-branch: gh-pages
+          repository-name: python-sdk
+
+      - name: Allure Report HTTPS
+        uses: firebolt-db/action-allure-report@v1
+        if: always()
+        with:
+          github-key: ${{ secrets.GITHUB_TOKEN }}
+          test-type: integration_https
+          allure-dir: allure-results-https
           pages-branch: gh-pages
           repository-name: python-sdk
