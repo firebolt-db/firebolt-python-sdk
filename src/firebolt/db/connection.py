@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+from ssl import SSLContext
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 from warnings import warn
 
 from httpx import Timeout
@@ -29,6 +30,7 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.firebolt_core import (
+    get_core_certificate_context,
     parse_firebolt_core_url,
     validate_firebolt_core_parameters,
 )
@@ -425,6 +427,10 @@ def connect_core(
     """
     connection_params = parse_firebolt_core_url(connection_url)
 
+    ctx: Union[SSLContext, bool] = True  # Default context
+    if connection_params.scheme == "https":
+        ctx = get_core_certificate_context()
+
     verified_url = connection_params.geturl()
 
     client = ClientV2(
@@ -433,6 +439,7 @@ def connect_core(
         base_url=verified_url,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
+        verify=ctx,
     )
 
     return Connection(
