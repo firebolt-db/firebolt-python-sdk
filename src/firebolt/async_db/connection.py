@@ -237,7 +237,7 @@ async def connect(
     if auth_version == FireboltAuthVersion.CORE:
         # Verify that Core-incompatible parameters are not provided
         validate_firebolt_core_parameters(account_name, engine_name, engine_url)
-        return await connect_core(
+        return connect_core(
             auth=auth,
             user_agent_header=user_agent_header,
             database=database,
@@ -397,7 +397,7 @@ async def connect_v1(
     return Connection(engine_url, database, client, CursorV1, api_endpoint)
 
 
-async def connect_core(
+def connect_core(
     auth: Auth,
     user_agent_header: str,
     database: Optional[str] = None,
