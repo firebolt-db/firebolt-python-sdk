@@ -65,14 +65,13 @@ class Auth(HttpxAuth):
         """
         return self._token
 
+    @abstractmethod
     def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
 
         Returns:
             FireboltAuthVersion: The authentication version enum
         """
-        # Base class returns an invalid version
-        return FireboltAuthVersion(-1)
 
     @property
     def expired(self) -> bool:
