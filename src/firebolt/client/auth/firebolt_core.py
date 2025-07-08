@@ -52,7 +52,7 @@ class FireboltCore(Auth):
         Raises:
             No exceptions are raised
         """
-        yield None  # No requests to yield, as no authentication is needed
+        yield from []  # No requests to yield, as no authentication is needed
 
     @property
     def token(self) -> str:
