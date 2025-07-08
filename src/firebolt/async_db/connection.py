@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import ssl
+import sys
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type
 
@@ -419,6 +421,19 @@ async def connect_core(
     """
     connection_params = parse_firebolt_core_url(connection_url)
 
+    # Import truststore only if python is 3.10 or higher
+    if sys.version_info < (3, 10) and connection_params.scheme == "https":
+        raise ConfigurationError(
+            "Firebolt Core connection over HTTPS is only supported in "
+            "Python 3.10 and higher."
+        )
+
+    ctx = True  # Default context for HTTP connections
+    if sys.version_info >= (3, 10) and connection_params.scheme == "https":
+        import truststore
+
+        ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+
     verified_url = connection_params.geturl()
     client = AsyncClientV2(
         auth=auth,
@@ -426,6 +441,7 @@ async def connect_core(
         base_url=verified_url,
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
+        verify=ctx,
     )
 
     await client.account_id
