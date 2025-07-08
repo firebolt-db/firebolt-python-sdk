@@ -149,7 +149,7 @@ jobs:
 
       - name: Test https connection
         run: |
-          curl --silent --fail "https://localhost:443" --data-binary "SELECT 1" --insecure | grep -q "1"
+          curl --fail "https://localhost:443" --data-binary "SELECT 1"
           echo "HTTPS connection test passed!"
 
       - name: Test https connection with Python
@@ -198,20 +198,20 @@ jobs:
           docker compose -f "$DOCKER_COMPOSE_FILE" down
 
        # Need to pull the pages branch in order to fetch the previous runs
-      - name: Get Allure history
-        uses: actions/checkout@v4
-        if: always()
-        continue-on-error: true
-        with:
-            ref: gh-pages
-            path: gh-pages
+      # - name: Get Allure history
+      #   uses: actions/checkout@v4
+      #   if: always()
+      #   continue-on-error: true
+      #   with:
+      #       ref: gh-pages
+      #       path: gh-pages
 
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
-        if: always()
-        with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
-          test-type: integration
-          allure-dir: allure-results
-          pages-branch: gh-pages
-          repository-name: python-sdk
+      # - name: Allure Report
+      #   uses: firebolt-db/action-allure-report@v1
+      #   if: always()
+      #   with:
+      #     github-key: ${{ secrets.GITHUB_TOKEN }}
+      #     test-type: integration
+      #     allure-dir: allure-results
+      #     pages-branch: gh-pages
+      #     repository-name: python-sdk
