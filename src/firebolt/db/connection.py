@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import ssl
 import sys
 from types import TracebackType
@@ -428,17 +429,13 @@ def connect_core(
     """
     connection_params = parse_firebolt_core_url(connection_url)
 
-    # Import truststore only if python is 3.10 or higher
-    if sys.version_info < (3, 10) and connection_params.scheme == "https":
-        raise ConfigurationError(
-            "Firebolt Core connection over HTTPS is only supported in "
-            "Python 3.10 and higher."
-        )
+    ctx = True  # Default context for SSL verification
+    # if connection_params.scheme == "https" and os.getenv("SSL_CERT_FILE"):
+    #     ctx = ssl.create_default_context(cafile=os.getenv("SSL_CERT_FILE"))
 
-    ctx = True  # Default context for HTTP connections
-    if sys.version_info >= (3, 10) and connection_params.scheme == "https":
+
+    if connection_params.scheme == "https":
         import truststore
-
         ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
 
     verified_url = connection_params.geturl()

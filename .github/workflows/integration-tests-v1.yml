@@ -89,15 +89,18 @@ jobs:
       - name: Write certificate and certificate key to file
         run: |
           mkdir "${{ github.workspace }}/.github/resources/core/certs"
-          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
-          echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
+          pip install trustme
+          # Generate a self-signed certificate for localhost
+          python3 -m trustme -d "${{ github.workspace }}/.github/resources/core/certs/
+          # echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
+          # echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
 
       - name: Install certs to keystore
         run: |
           sudo keytool -importcert \
             -keystore "$JAVA_HOME/lib/security/cacerts" \
             -storepass changeit \
-            -file "${{ github.workspace }}/.github/resources/core/certs/localhost.pem" \
+            -file "${{ github.workspace }}/.github/resources/core/certs/client.pem" \
             -alias dev-localhost \
             -noprompt
 
