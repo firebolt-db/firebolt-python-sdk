@@ -43,7 +43,7 @@ class FireboltCore(Auth):
         """
         return FireboltAuthVersion.CORE
 
-    def get_new_token_generator(self) -> Generator[Request, Response, None]:
+    def get_new_token_generator(self) -> Generator:
         """FireboltCore doesn't need token authentication.
 
         Yields:
@@ -52,11 +52,7 @@ class FireboltCore(Auth):
         Raises:
             No exceptions are raised
         """
-        # FireboltCore doesn't need to fetch a token
-        # This is required by the Auth interface but will never be called
-        # with real requests, so we make it return an empty generator
-        if False:  # pragma: no cover
-            yield
+        yield None  # No requests to yield, as no authentication is needed
 
     @property
     def token(self) -> str:
