@@ -428,8 +428,6 @@ async def connect_core(
         headers={"User-Agent": user_agent_header},
     )
 
-    await client.account_id
-
     return Connection(
         engine_url=verified_url,
         database=database,
