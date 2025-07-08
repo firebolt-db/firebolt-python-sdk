@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import ssl
-import sys
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type
 
@@ -30,6 +28,7 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.firebolt_core import (
+    get_core_certificate_context,
     parse_firebolt_core_url,
     validate_firebolt_core_parameters,
 )
@@ -421,15 +420,9 @@ async def connect_core(
     """
     connection_params = parse_firebolt_core_url(connection_url)
 
-    ctx = True  # Default context for SSL verification
-    # if connection_params.scheme == "https" and os.getenv("SSL_CERT_FILE"):
-    #     ctx = ssl.create_default_context(cafile=os.getenv("SSL_CERT_FILE"))
-
-
+    ctx = True  # Default context
     if connection_params.scheme == "https":
-        import truststore
-        ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-
+        ctx = get_core_certificate_context()
 
     verified_url = connection_params.geturl()
     client = AsyncClientV2(

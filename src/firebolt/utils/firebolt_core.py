@@ -1,7 +1,30 @@
+import os
+import ssl
+import sys
+from logging import warning
 from typing import Optional
 from urllib.parse import ParseResult, urlparse
 
 from firebolt.utils.exception import ConfigurationError
+
+
+def get_core_certificate_context():
+    """Get the SSL context for Firebolt Core connections."""
+    ctx = True  # Default context for SSL verification
+    if os.getenv("SSL_CERT_FILE"):
+        ctx = ssl.create_default_context(cafile=os.getenv("SSL_CERT_FILE"))
+    elif sys.version_info >= (3, 10):
+        # Can import truststore only if python is 3.10 or higher
+        import truststore
+
+        ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    else:
+        warning(
+            "Not able to use system certificate store for Firebolt Core."
+            " on Python < 3.10, you may need to set"
+            " SSL_CERT_FILE environment variable to your CA bundle."
+        )
+    return ctx
 
 
 def validate_firebolt_core_parameters(
