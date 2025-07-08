@@ -95,7 +95,7 @@ jobs:
 
       - name: Install certs to keystore
         run: |
-          sudo cp ${GITHUB_WORKSPACE}/.github/resources/core/certs/client.crt /usr/local/share/ca-certificates/
+          sudo cp ${GITHUB_WORKSPACE}/.github/resources/core/certs/client.pem /usr/local/share/ca-certificates/client.crt
           sudo update-ca-certificates
 
       # if no image tag was passed in, then use the image tag from the defaults
