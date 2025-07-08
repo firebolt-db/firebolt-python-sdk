@@ -92,8 +92,6 @@ jobs:
           pip install trustme
           # Generate a self-signed certificate for localhost
           python3 -m trustme -d "${{ github.workspace }}/.github/resources/core/certs/"
-          # echo "${{ secrets.FIREBOLT_CORE_DEV_CERT_PRIVATE_KEY }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost-key.pem
-          # echo "${{ secrets.FIREBOLT_CORE_DEV_CERT }}" > ${{ github.workspace }}/.github/resources/core/certs/localhost.pem
 
       - name: Install certs to keystore
         run: |
