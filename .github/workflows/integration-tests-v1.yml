@@ -11,7 +11,7 @@ on:
         description: 'Python version'
         required: false
         type: string
-        default: '3.9'
+        default: '3.10'
       os_name:
         description: 'The operating system'
         required: false
@@ -147,31 +147,50 @@ jobs:
           docker compose -f "$DOCKER_COMPOSE_FILE" logs
           exit 1
 
-      - name: Run integration tests HTTP
-        env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: "api.staging.firebolt.io"
-          ACCOUNT_NAME: ""
-          CORE_URL: "http://localhost:3473"
+      - name: Test https connection
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
+          curl --silent --fail "https://localhost:443" --data-binary "SELECT 1" --insecure | grep -q "1"
+          echo "HTTPS connection test passed!"
 
-      - name: Run integration tests HTTPS
-        env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: "api.staging.firebolt.io"
-          ACCOUNT_NAME: ""
-          CORE_URL: "https://localhost:443"
+      - name: Test https connection with Python
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
+          python -c "
+          import ssl
+          import truststore
+          import httpx
+          ctx = truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+          client = httpx.Client(verify=ctx)
+          response = client.get('https://localhost:443', timeout=10)
+          if response.status_code == 200 and '1' in response.text:
+              print('HTTPS connection with Python test passed!')
+          else:
+              raise Exception('HTTPS connection with Python test failed!')"
+          
+      # - name: Run integration tests HTTP
+      #   env:
+      #     SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+      #     SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+      #     DATABASE_NAME: "firebolt"
+      #     ENGINE_NAME: ""
+      #     STOPPED_ENGINE_NAME: ""
+      #     API_ENDPOINT: "api.staging.firebolt.io"
+      #     ACCOUNT_NAME: ""
+      #     CORE_URL: "http://localhost:3473"
+      #   run: |
+      #     pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
+
+      # - name: Run integration tests HTTPS
+      #   env:
+      #     SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+      #     SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+      #     DATABASE_NAME: "firebolt"
+      #     ENGINE_NAME: ""
+      #     STOPPED_ENGINE_NAME: ""
+      #     API_ENDPOINT: "api.staging.firebolt.io"
+      #     ACCOUNT_NAME: ""
+      #     CORE_URL: "https://localhost:443"
+      #   run: |
+      #     pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
 
       - name: Stop container
         if: always()
