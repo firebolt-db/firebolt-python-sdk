@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from enum import IntEnum
 from time import time
 from typing import AsyncGenerator, Generator, Optional
 
@@ -8,6 +9,14 @@ from httpx import Request, Response, codes
 
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.util import Timer, cached_property, get_internal_error_code
+
+
+class FireboltAuthVersion(IntEnum):
+    """Enum for Firebolt authentication versions."""
+
+    V1 = 1  # Service Account, Username Password
+    V2 = 2  # Client Credentials
+    CORE = 3  # Firebolt Core
 
 
 class AuthRequest(Request):
@@ -56,13 +65,13 @@ class Auth(HttpxAuth):
         """
         return self._token
 
-    def get_firebolt_version(self) -> int:
+    @abstractmethod
+    def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
 
         Returns:
-            int: Firebolt version
+            FireboltAuthVersion: The authentication version enum
         """
-        return -1
 
     @property
     def expired(self) -> bool:

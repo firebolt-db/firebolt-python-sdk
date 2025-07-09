@@ -1,6 +1,6 @@
 from typing import Optional
 
-from firebolt.client.auth.base import AuthRequest
+from firebolt.client.auth.base import AuthRequest, FireboltAuthVersion
 from firebolt.client.auth.request_auth_base import _RequestBasedAuth
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_URL
@@ -43,13 +43,13 @@ class UsernamePassword(_RequestBasedAuth):
         self.password = password
         super().__init__(use_token_cache)
 
-    def get_firebolt_version(self) -> int:
+    def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
 
         Returns:
-            int: Firebolt version
+            FireboltAuthVersion: V1 for Username Password authentication
         """
-        return 1
+        return FireboltAuthVersion.V1
 
     def copy(self) -> "UsernamePassword":
         """Make another auth object with same credentials.

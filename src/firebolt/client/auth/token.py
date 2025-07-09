@@ -3,6 +3,7 @@ from typing import Generator
 from httpx import Request, Response
 
 from firebolt.client.auth import Auth
+from firebolt.client.auth.base import FireboltAuthVersion
 from firebolt.utils.exception import AuthorizationError
 
 
@@ -23,13 +24,13 @@ class Token(Auth):
         super().__init__(use_token_cache=False)
         self._token = token
 
-    def get_firebolt_version(self) -> int:
+    def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
 
         Returns:
-            int: Firebolt version
+            FireboltAuthVersion: V1 for Token authentication
         """
-        return 1
+        return FireboltAuthVersion.V1
 
     def copy(self) -> "Token":
         """Make another auth object with same credentials.

@@ -1,11 +1,12 @@
 from logging import getLogger
-from os import environ
+from os import environ, getenv
 from time import time
 from typing import Optional
 
 from pytest import fixture, mark
 
 from firebolt.client.auth import ClientCredentials
+from firebolt.client.auth.firebolt_core import FireboltCore
 from firebolt.client.auth.username_password import UsernamePassword
 
 LOGGER = getLogger(__name__)
@@ -21,6 +22,7 @@ USER_NAME_ENV = "USER_NAME"
 PASSWORD_ENV = "PASSWORD"
 ENGINE_URL_ENV = "ENGINE_URL"
 STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
+CORE_URL_ENV = "CORE_URL"
 
 # https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
 # Adding slow marker to tests
@@ -121,6 +123,11 @@ def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
 
 
 @fixture(scope="session")
+def core_auth() -> FireboltCore:
+    return FireboltCore()
+
+
+@fixture(scope="session")
 def username() -> str:
     return must_env(USER_NAME_ENV)
 
@@ -143,6 +150,11 @@ def engine_url() -> str:
 @fixture(scope="session")
 def stopped_engine_url() -> str:
     return must_env(STOPPED_ENGINE_URL_ENV)
+
+
+@fixture(scope="session")
+def core_url() -> str:
+    return getenv(CORE_URL_ENV, "")
 
 
 @fixture(scope="function")

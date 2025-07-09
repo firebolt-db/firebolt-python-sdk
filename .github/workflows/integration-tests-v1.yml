@@ -59,7 +59,7 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: "firebolt"
         run: |
-          pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration -k "not V2" --runslow
+          pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration -k "not V2 and not core" --runslow
 
       - name: Save failed tests
         id: cache-tests-save
