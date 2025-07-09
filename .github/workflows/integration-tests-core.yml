@@ -181,6 +181,7 @@ jobs:
       - name: Allure Report
         uses: firebolt-db/action-allure-report@v1
         if: always()
+        continue-on-error: true
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
           test-type: integration
@@ -191,6 +192,7 @@ jobs:
       - name: Allure Report HTTPS
         uses: firebolt-db/action-allure-report@v1
         if: always()
+        continue-on-error: true
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
           test-type: integration_https
