@@ -1,6 +1,12 @@
 import os
 import sys
-from ssl import PROTOCOL_TLS_CLIENT, SSLContext, create_default_context
+from ssl import (
+    PROTOCOL_TLS_CLIENT,
+    Purpose,
+    SSLContext,
+    TLSVersion,
+    create_default_context,
+)
 from typing import Optional, Union
 from urllib.parse import ParseResult, urlparse
 
@@ -11,7 +17,10 @@ def get_core_certificate_context() -> Union[SSLContext, bool]:
     """Get the SSL context for Firebolt Core connections."""
     ctx: Union[SSLContext, bool] = True  # Default context for SSL verification
     if os.getenv("SSL_CERT_FILE"):
-        ctx = create_default_context(cafile=os.getenv("SSL_CERT_FILE"))
+        ctx = create_default_context(
+            Purpose.SERVER_AUTH, cafile=os.getenv("SSL_CERT_FILE")
+        )
+        ctx.minimum_version = TLSVersion.TLSv1_2
     elif sys.version_info >= (3, 10):
         # Can import truststore only if python is 3.10 or higher
         import truststore
