@@ -1,7 +1,29 @@
-from typing import Optional
+import os
+import sys
+from ssl import PROTOCOL_TLS_CLIENT, SSLContext, create_default_context
+from typing import Optional, Union
 from urllib.parse import ParseResult, urlparse
 
 from firebolt.utils.exception import ConfigurationError
+
+
+def get_core_certificate_context() -> Union[SSLContext, bool]:
+    """Get the SSL context for Firebolt Core connections."""
+    ctx: Union[SSLContext, bool] = True  # Default context for SSL verification
+    if os.getenv("SSL_CERT_FILE"):
+        ctx = create_default_context(cafile=os.getenv("SSL_CERT_FILE"))
+    elif sys.version_info >= (3, 10):
+        # Can import truststore only if python is 3.10 or higher
+        import truststore
+
+        ctx = truststore.SSLContext(PROTOCOL_TLS_CLIENT)
+    else:
+        raise ConfigurationError(
+            "Not able to use system certificate store for Firebolt Core."
+            " on Python < 3.10, you may need to set"
+            " SSL_CERT_FILE environment variable pointing to your .pem file."
+        )
+    return ctx
 
 
 def validate_firebolt_core_parameters(

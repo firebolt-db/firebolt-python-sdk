@@ -109,7 +109,7 @@ class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
         super().__init__(
             *args,
             **kwargs,
-            transport=KeepaliveTransport(),
+            transport=KeepaliveTransport(verify=kwargs.get("verify", True)),
         )
 
     @property
@@ -276,7 +276,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
         super().__init__(
             *args,
             **kwargs,
-            transport=AsyncKeepaliveTransport(),
+            transport=AsyncKeepaliveTransport(verify=kwargs.get("verify", True)),
         )
 
     @property
