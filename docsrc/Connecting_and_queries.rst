@@ -207,6 +207,30 @@ To get started, follow the steps below:
     `official docs <https://docs.firebolt.io/firebolt-core/firebolt-core-get-started>`_.
 
 
+**2.1. Connecting to an HTTPS Server**
+
+    If you are connecting to an HTTPS server running Firebolt Core, ensure the server's certificate is properly configured. Follow these steps:
+
+    - **Obtain the Certificate**: Ensure you have the certificate for the HTTPS server you are connecting to.
+
+    - **Install the Certificate in the System Certificate Store**: For Ubuntu users, copy the certificate to `/usr/local/share/ca-certificates/` and run the following command:
+
+      ```bash
+      sudo update-ca-certificates
+      ```
+
+      .. note::
+         Installing the certificate is also possible on other systems, but you need to use the correct path for your operating system's certificate store.
+
+    - **Provide the Certificate via Environment Variable**: Alternatively, set the `SSL_CERT_FILE` environment variable to the path of your certificate file. For example:
+
+      ```bash
+      export SSL_CERT_FILE=/path/to/your/certificate.pem
+      ```
+
+    - **Python Version Considerations**: The system certificate store is only available for users running Python 3.10 and above. If you are using an older version of Python, you must explicitly set the `SSL_CERT_FILE` environment variable to use the certificate.
+
+
 **3. Execute commands using the cursor**
 
     The ``cursor`` object can be used to send queries and commands to your Firebolt
@@ -832,4 +856,3 @@ function will raise a ``QueryTimeoutError`` exception.
     )
 
 **Warning**: If running multiple queries, and one of queries times out, all the previous queries will not be rolled back and their result will persist. All the remaining queries will be cancelled.
-
