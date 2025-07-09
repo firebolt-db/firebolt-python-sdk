@@ -1,6 +1,5 @@
 import os
 import sys
-from logging import warning
 from ssl import PROTOCOL_TLS_CLIENT, SSLContext, create_default_context
 from typing import Optional, Union
 from urllib.parse import ParseResult, urlparse
@@ -19,10 +18,10 @@ def get_core_certificate_context() -> Union[SSLContext, bool]:
 
         ctx = truststore.SSLContext(PROTOCOL_TLS_CLIENT)
     else:
-        warning(
+        raise ConfigurationError(
             "Not able to use system certificate store for Firebolt Core."
             " on Python < 3.10, you may need to set"
-            " SSL_CERT_FILE environment variable to your CA bundle."
+            " SSL_CERT_FILE environment variable pointing to your .pem file."
         )
     return ctx
 
