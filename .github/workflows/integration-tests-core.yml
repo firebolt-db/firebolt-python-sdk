@@ -1,4 +1,6 @@
 name: Core integration tests
+# Note: This workflow requires Docker containers and will skip tests on macOS runners
+# since GitHub's macOS runners don't support Docker. Tests run normally on Ubuntu.
 
 on:
   workflow_dispatch:
@@ -68,13 +70,16 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      # Install Docker on macOS runners since it's not pre-installed 
-      - name: Set up Docker on macOS
+      # Docker containers are not supported on GitHub's macOS runners
+      - name: Skip Docker-based tests on macOS
         if: runner.os == 'macOS'
-        uses: docker-practice/actions-setup-docker@master
-        timeout-minutes: 12
+        run: |
+          echo "::notice::Docker containers are not supported on GitHub's macOS runners"
+          echo "::notice::Core integration tests require Docker and will be skipped on macOS"
+          echo "::notice::Tests will run normally on Ubuntu runners"
 
       - name: Log in to GitHub Container Registry
+        if: runner.os != 'macOS'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -82,9 +87,11 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
+        if: runner.os != 'macOS'
         uses: docker/setup-buildx-action@v3
 
       - name: Cache Docker layers
+        if: runner.os != 'macOS'
         uses: actions/cache@v3
         with:
           path: /tmp/.buildx-cache
@@ -93,6 +100,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: Write certificate and certificate key to file
+        if: runner.os != 'macOS'
         run: |
           mkdir "${{ github.workspace }}/.github/resources/core/certs"
           pip install trustme
@@ -100,6 +108,7 @@ jobs:
           python3 -m trustme -d "${{ github.workspace }}/.github/resources/core/certs/"
 
       - name: Install certs to keystore
+        if: runner.os != 'macOS'
         run: |
           sudo cp ${GITHUB_WORKSPACE}/.github/resources/core/certs/client.pem /usr/local/share/ca-certificates/client.crt
           sudo update-ca-certificates
@@ -115,6 +124,7 @@ jobs:
           echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Prepare docker-compose.yml
+        if: runner.os != 'macOS'
         run: |
           if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
             echo "Error: Docker compose file not found at $DOCKER_COMPOSE_FILE"
@@ -126,11 +136,13 @@ jobs:
           cat "$DOCKER_COMPOSE_FILE"
 
       - name: Start service container
+        if: runner.os != 'macOS'
         run: |
           docker compose -f "$DOCKER_COMPOSE_FILE" up -d
           docker compose -f "$DOCKER_COMPOSE_FILE" ps
 
       - name: Wait for service to be ready
+        if: runner.os != 'macOS'
         run: |
           for i in $(seq 1 $MAX_RETRIES); do
             if curl --silent --fail "$SERVICE_URL" --data-binary "SELECT 1" | grep -q "1"; then
@@ -145,6 +157,7 @@ jobs:
           exit 1
 
       - name: Run integration tests HTTP
+        if: runner.os != 'macOS'
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -158,6 +171,7 @@ jobs:
           pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
 
       - name: Run integration tests HTTPS
+        if: runner.os != 'macOS'
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -171,7 +185,7 @@ jobs:
           pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results-https/
 
       - name: Stop container
-        if: always()
+        if: always() && runner.os != 'macOS'
         run: |
           docker compose -f "$DOCKER_COMPOSE_FILE" down
 
