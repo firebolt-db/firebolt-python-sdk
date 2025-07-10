@@ -46,7 +46,8 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Connecting and querying</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-connection">Setting up a connection</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-connection-cloud">Setting up a connection (Cloud)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-connection-core">Setting up a connection (Core)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#synchronous-command-and-query-examples">Synchronous command and query examples</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#inserting-and-selecting-data">Inserting and selecting data</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#fetching-query-results">Fetching query results</a></li>
@@ -66,8 +67,10 @@
 <li class="toctree-l3"><a class="reference internal" href="#submitting-an-asynchronous-query">Submitting an asynchronous query</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#monitoring-the-query-status">Monitoring the query status</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#cancelling-a-running-query">Cancelling a running query</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#retrieving-asynchronous-query-information">Retrieving asynchronous query information</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#streaming-query-results">Streaming query results</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#thread-safety">Thread safety</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#using-date-and-datetime-values">Using DATE and DATETIME values</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#execution-timeout">Execution timeout</a></li>
@@ -112,8 +115,8 @@
 <h1>Connecting and running queries<a class="headerlink" href="#connecting-and-running-queries" title="Link to this heading"></a></h1>
 <p>This topic provides a walkthrough and examples for how to use the Firebolt Python SDK to
 connect to Firebolt resources to run commands and query data.</p>
-<section id="setting-up-a-connection">
-<h2>Setting up a connection<a class="headerlink" href="#setting-up-a-connection" title="Link to this heading"></a></h2>
+<section id="setting-up-a-connection-cloud">
+<h2>Setting up a connection (Cloud)<a class="headerlink" href="#setting-up-a-connection-cloud" title="Link to this heading"></a></h2>
 <p>To connect to a Firebolt database to run queries or command, you must provide your account
 credentials through a connection request.</p>
 <p>To get started, follow the steps below:</p>
@@ -241,6 +244,76 @@ The caching is disabled by adding <code class="docutils literal notranslate"><sp
 it would look like: <code class="docutils literal notranslate"><span class="pre">auth=UsernamePassword(username,</span> <span class="pre">password,use_token_cache=False),</span></code></p>
 </div></blockquote>
 <p><strong>4. Execute commands using the cursor</strong></p>
+<blockquote>
+<div><p>The <code class="docutils literal notranslate"><span class="pre">cursor</span></code> object can be used to send queries and commands to your Firebolt
+database and engine. See below for examples of functions using the <code class="docutils literal notranslate"><span class="pre">cursor</span></code> object.</p>
+</div></blockquote>
+</section>
+<section id="setting-up-a-connection-core">
+<h2>Setting up a connection (Core)<a class="headerlink" href="#setting-up-a-connection-core" title="Link to this heading"></a></h2>
+<p>Firebolt Core is a Docker-based version of Firebolt that can be run locally or remotely. To connect to Firebolt Core, you need to use the <code class="docutils literal notranslate"><span class="pre">FireboltCore</span></code> authentication class, which doesn’t require actual credentials.</p>
+<p>To get started, follow the steps below:</p>
+<p><strong>1. Import modules</strong></p>
+<blockquote>
+<div><p>The Firebolt Python SDK requires you to import the following modules before making
+any command or query requests to your Firebolt Core instance.</p>
+</div></blockquote>
+<blockquote id="required-core-connection-imports">
+<div><div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.client.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">FireboltCore</span>
+</pre></div>
+</div>
+</div></blockquote>
+<p><strong>2. Connect to your database</strong></p>
+<blockquote>
+<div><p>To connect to Firebolt Core, you need to create a <code class="docutils literal notranslate"><span class="pre">FireboltCore</span></code> auth object and use it
+to establish a connection.</p>
+<p>A connection requires the following parameters:</p>
+<p>Here’s how to create a connection to Firebolt Core:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Connect to Firebolt Core</span>
+<span class="c1"># The database parameter defaults to &#39;firebolt&#39; if not specified</span>
+<span class="k">with</span> <span class="n">connect</span><span class="p">(</span>
+        <span class="n">auth</span><span class="o">=</span><span class="n">FireboltCore</span><span class="p">(),</span>
+        <span class="n">url</span><span class="o">=</span><span class="s2">&quot;http://localhost:3473&quot;</span><span class="p">,</span>
+        <span class="n">database</span><span class="o">=</span><span class="s2">&quot;firebolt&quot;</span>
+<span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="c1"># Create a cursor</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1"># Execute a simple test query</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT 1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Firebolt Core is assumed to be running locally on the default port (3473). For instructions
+on how to run Firebolt Core locally using Docker, refer to the
+<a class="reference external" href="https://docs.firebolt.io/firebolt-core/firebolt-core-get-started">official docs</a>.</p>
+</div>
+<p><strong>2.1. Connecting to an HTTPS Server</strong></p>
+<blockquote>
+<div><p>If you are connecting to an HTTPS server running Firebolt Core, ensure the server’s certificate is properly configured. Follow these steps:</p>
+<ul>
+<li><p><strong>Obtain the Certificate</strong>: Ensure you have the certificate for the HTTPS server you are connecting to.</p></li>
+<li><p><strong>Install the Certificate in the System Certificate Store</strong>: For Ubuntu users, copy the certificate to <cite>/usr/local/share/ca-certificates/</cite> and run the following command:</p>
+<p><code class="docutils literal notranslate"><span class="pre">`bash</span>
+<span class="pre">sudo</span> <span class="pre">update-ca-certificates</span>
+<span class="pre">`</span></code></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Installing the certificate is also possible on other systems, but you need to use the correct path for your operating system’s certificate store.</p>
+</div>
+</li>
+<li><p><strong>Provide the Certificate via Environment Variable</strong>: Alternatively, set the <cite>SSL_CERT_FILE</cite> environment variable to the path of your certificate file. For example:</p>
+<p><code class="docutils literal notranslate"><span class="pre">`bash</span>
+<span class="pre">export</span> <span class="pre">SSL_CERT_FILE=/path/to/your/certificate.pem</span>
+<span class="pre">`</span></code></p>
+</li>
+<li><p><strong>Python Version Considerations</strong>: The system certificate store is only available for users running Python 3.10 and above. If you are using an older version of Python, you must explicitly set the <cite>SSL_CERT_FILE</cite> environment variable to use the certificate.</p></li>
+</ul>
+</div></blockquote>
+<p><strong>3. Execute commands using the cursor</strong></p>
 <blockquote>
 <div><p>The <code class="docutils literal notranslate"><span class="pre">cursor</span></code> object can be used to send queries and commands to your Firebolt
 database and engine. See below for examples of functions using the <code class="docutils literal notranslate"><span class="pre">cursor</span></code> object.</p>
@@ -700,6 +773,52 @@ will send a cancel request to the server and the query will be stopped.</p>
 </pre></div>
 </div>
 </section>
+<section id="retrieving-asynchronous-query-information">
+<h3>Retrieving asynchronous query information<a class="headerlink" href="#retrieving-asynchronous-query-information" title="Link to this heading"></a></h3>
+<p>To get additional information about an async query, use the <a class="reference internal" href="firebolt.db.html#firebolt.db.connection.Connection.get_async_query_info" title="firebolt.db.connection.Connection.get_async_query_info"><code class="xref py py-meth docutils literal notranslate"><span class="pre">firebolt.db.connection.Connection.get_async_query_info()</span></code></a> method.
+This method returns a list of <code class="docutils literal notranslate"><span class="pre">AsyncQueryInfo</span></code> objects, each containing detailed information about the query execution.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">token</span> <span class="o">=</span> <span class="n">cursor</span><span class="o">.</span><span class="n">async_query_token</span>
+<span class="n">query_info_list</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">get_async_query_info</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">query_info</span> <span class="ow">in</span> <span class="n">query_info_list</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Query ID: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">query_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Status: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Submitted time: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">submitted_time</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rows scanned: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">scanned_rows</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error message: </span><span class="si">{</span><span class="n">query_info</span><span class="o">.</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="streaming-query-results">
+<h2>Streaming query results<a class="headerlink" href="#streaming-query-results" title="Link to this heading"></a></h2>
+<p>By default, the driver will fetch all the results at once and store them in memory.
+This does not always fit the needs of the application, especially when the result set is large.
+In this case, you can use the <cite>execute_stream</cite> cursor method to fetch results in chunks.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <cite>execute_stream</cite> method is not supported with <a class="reference internal" href="#server-side-asynchronous-query-execution"><span class="std std-ref">Server-side asynchronous query execution</span></a>. It can only be used with regular queries.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you enable result streaming, the query execution might finish successfully, but the actual error might be returned while iterating the rows.</p>
+</div>
+<p>Synchronous example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute_stream</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM my_huge_table&quot;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="c1"># Process the row</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Asynchronous example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">async</span> <span class="k">with</span> <span class="n">async_connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cursor</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">cursor</span><span class="o">.</span><span class="n">execute_stream</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM my_huge_table&quot;</span><span class="p">)</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="p">:</span>
+        <span class="c1"># Process the row</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <section id="thread-safety">
 <h2>Thread safety<a class="headerlink" href="#thread-safety" title="Link to this heading"></a></h2>
