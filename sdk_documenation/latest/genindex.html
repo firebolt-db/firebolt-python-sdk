@@ -87,6 +87,7 @@
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
  | <a href="#F"><strong>F</strong></a>
+ | <a href="#G"><strong>G</strong></a>
  | <a href="#I"><strong>I</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
@@ -96,6 +97,7 @@
  | <a href="#R"><strong>R</strong></a>
  | <a href="#S"><strong>S</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -132,12 +134,16 @@
       </ul></li>
       <li><a href="firebolt.common.html#firebolt.utils.exception.AccountNotFoundError">AccountNotFoundError</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.common.html#firebolt.utils.exception.AccountNotFoundOrNoAccessError">AccountNotFoundOrNoAccessError</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.async_db.html#firebolt.async_db.connection.Connection.aclose">aclose() (firebolt.async_db.connection.Connection method)</a>
+
+      <ul>
+        <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.aclose">(firebolt.async_db.cursor.Cursor method)</a>
 </li>
+      </ul></li>
       <li><a href="firebolt.common.html#firebolt.utils.exception.AlreadyBoundError">AlreadyBoundError</a>
 </li>
       <li><a href="firebolt.async_db.html#firebolt.async_db.connection.Connection.api_endpoint">api_endpoint (firebolt.async_db.connection.Connection attribute)</a>
@@ -203,7 +209,11 @@
       <li><a href="firebolt.client.html#firebolt.client.client.ClientV2">ClientV2 (class in firebolt.client.client)</a>
 </li>
       <li><a href="firebolt.db.html#firebolt.db.connection.Connection.close">close() (firebolt.db.connection.Connection method)</a>
+
+      <ul>
+        <li><a href="firebolt.db.html#firebolt.db.cursor.Cursor.close">(firebolt.db.cursor.Cursor method)</a>
 </li>
+      </ul></li>
       <li><a href="firebolt.async_db.html#firebolt.async_db.connection.Connection.closed">closed (firebolt.async_db.connection.Connection property)</a>
 
       <ul>
@@ -224,20 +234,26 @@
         <li><a href="firebolt.db.html#firebolt.db.connection.connect">(in module firebolt.db.connection)</a>, <a href="firebolt.db.html#id0">[1]</a>
 </li>
       </ul></li>
+      <li><a href="firebolt.async_db.html#firebolt.async_db.connection.connect_core">connect_core() (in module firebolt.async_db.connection)</a>
+
+      <ul>
+        <li><a href="firebolt.db.html#firebolt.db.connection.connect_core">(in module firebolt.db.connection)</a>
+</li>
+      </ul></li>
       <li><a href="firebolt.async_db.html#firebolt.async_db.connection.connect_v1">connect_v1() (in module firebolt.async_db.connection)</a>
 
       <ul>
         <li><a href="firebolt.db.html#firebolt.db.connection.connect_v1">(in module firebolt.db.connection)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.async_db.html#firebolt.async_db.connection.connect_v2">connect_v2() (in module firebolt.async_db.connection)</a>
 
       <ul>
         <li><a href="firebolt.db.html#firebolt.db.connection.connect_v2">(in module firebolt.db.connection)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.async_db.html#firebolt.async_db.connection.Connection">Connection (class in firebolt.async_db.connection)</a>
 
       <ul>
@@ -352,12 +368,12 @@
 </li>
       <li><a href="firebolt.common.html#firebolt.utils.exception.EngineNotRunningError">EngineNotRunningError</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.service.html#firebolt.service.manager.ResourceManager.engines">engines (firebolt.service.manager.ResourceManager attribute)</a>
 </li>
       <li><a href="firebolt.common.html#firebolt.utils.exception.Error">Error (in module firebolt.utils.exception)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.execute">execute() (firebolt.async_db.cursor.Cursor method)</a>
 
       <ul>
@@ -378,6 +394,16 @@
         <li><a href="firebolt.db.html#firebolt.db.cursor.CursorV2.execute_async">(firebolt.db.cursor.CursorV2 method)</a>
 </li>
       </ul></li>
+      <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.execute_stream">execute_stream() (firebolt.async_db.cursor.Cursor method)</a>
+
+      <ul>
+        <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.CursorV1.execute_stream">(firebolt.async_db.cursor.CursorV1 method)</a>
+</li>
+        <li><a href="firebolt.db.html#firebolt.db.cursor.Cursor.execute_stream">(firebolt.db.cursor.Cursor method)</a>
+</li>
+        <li><a href="firebolt.db.html#firebolt.db.cursor.CursorV1.execute_stream">(firebolt.db.cursor.CursorV1 method)</a>
+</li>
+      </ul></li>
       <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.executemany">executemany() (firebolt.async_db.cursor.Cursor method)</a>
 
       <ul>
@@ -391,11 +417,23 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.fetchall">fetchall() (firebolt.async_db.cursor.Cursor method)</a>
+
+      <ul>
+        <li><a href="firebolt.db.html#firebolt.db.cursor.Cursor.fetchall">(firebolt.db.cursor.Cursor method)</a>
 </li>
+      </ul></li>
       <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.fetchmany">fetchmany() (firebolt.async_db.cursor.Cursor method)</a>
+
+      <ul>
+        <li><a href="firebolt.db.html#firebolt.db.cursor.Cursor.fetchmany">(firebolt.db.cursor.Cursor method)</a>
 </li>
+      </ul></li>
       <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.fetchone">fetchone() (firebolt.async_db.cursor.Cursor method)</a>
+
+      <ul>
+        <li><a href="firebolt.db.html#firebolt.db.cursor.Cursor.fetchone">(firebolt.db.cursor.Cursor method)</a>
 </li>
+      </ul></li>
       <li>
     firebolt.async_db.connection
 
@@ -445,6 +483,8 @@
         <li><a href="firebolt.common.html#module-firebolt.common.token_storage">module</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     firebolt.common.urls
 
@@ -452,8 +492,6 @@
         <li><a href="firebolt.common.html#module-firebolt.common.urls">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     firebolt.common.util
 
@@ -506,6 +544,18 @@
 </li>
       <li><a href="firebolt.common.html#firebolt.common.settings.from_env">from_env() (in module firebolt.common.settings)</a>
 </li>
+  </ul></td>
+</tr></table>
+
+<h2 id="G">G</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="firebolt.async_db.html#firebolt.async_db.connection.Connection.get_async_query_info">get_async_query_info() (firebolt.async_db.connection.Connection method)</a>
+
+      <ul>
+        <li><a href="firebolt.db.html#firebolt.db.connection.Connection.get_async_query_info">(firebolt.db.connection.Connection method)</a>
+</li>
+      </ul></li>
   </ul></td>
 </tr></table>
 
@@ -590,13 +640,21 @@
 </li>
       </ul></li>
   </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="firebolt.common.html#firebolt.utils.exception.V1NotSupportedError.msg">msg (firebolt.utils.exception.V1NotSupportedError attribute)</a>
+</li>
+  </ul></td>
 </tr></table>
 
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.async_db.html#firebolt.async_db.cursor.Cursor.nextset">nextset() (firebolt.async_db.cursor.Cursor method)</a>
+
+      <ul>
+        <li><a href="firebolt.db.html#firebolt.db.cursor.Cursor.nextset">(firebolt.db.cursor.Cursor method)</a>
 </li>
+      </ul></li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.common.html#firebolt.utils.exception.NoAttachedDatabaseError">NoAttachedDatabaseError</a>
@@ -682,6 +740,14 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="firebolt.common.html#firebolt.common.settings.Settings.user">user (firebolt.common.settings.Settings attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="firebolt.common.html#firebolt.utils.exception.V1NotSupportedError">V1NotSupportedError</a>
 </li>
   </ul></td>
 </tr></table>
