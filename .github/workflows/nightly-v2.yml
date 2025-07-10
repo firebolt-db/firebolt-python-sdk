@@ -21,7 +21,8 @@ jobs:
       fail-fast: false # finish all jobs even if one fails
       matrix:
         # No windows support for core yet
-        os: [ubuntu-latest, macos-latest]
+        # Macos is missing docker support
+        os: [ubuntu-latest]
         python-version: ['3.10', '3.11', '3.12', '3.13']
     uses: ./.github/workflows/integration-tests-core.yml
     with:
