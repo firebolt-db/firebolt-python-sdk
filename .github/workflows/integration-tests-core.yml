@@ -68,7 +68,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      # Install Docker on macOS runners since it's not pre-installed
+      # Install Docker on macOS runners since it's not pre-installed 
       - name: Set up Docker on macOS
         if: runner.os == 'macOS'
         uses: docker-practice/actions-setup-docker@master
