@@ -1,4 +1,3 @@
-
 ###############################
 Connecting and running queries
 ###############################
@@ -7,8 +6,8 @@ This topic provides a walkthrough and examples for how to use the Firebolt Pytho
 connect to Firebolt resources to run commands and query data.
 
 
-Setting up a connection
-=========================
+Setting up a connection (Cloud)
+===============================
 
 To connect to a Firebolt database to run queries or command, you must provide your account
 credentials through a connection request.
@@ -145,6 +144,94 @@ To get started, follow the steps below:
 
 
 **4. Execute commands using the cursor**
+
+    The ``cursor`` object can be used to send queries and commands to your Firebolt
+    database and engine. See below for examples of functions using the ``cursor`` object.
+
+Setting up a connection (Core)
+===============================
+
+Firebolt Core is a Docker-based version of Firebolt that can be run locally or remotely. To connect to Firebolt Core, you need to use the ``FireboltCore`` authentication class, which doesn't require actual credentials.
+
+To get started, follow the steps below:
+
+**1. Import modules**
+
+    The Firebolt Python SDK requires you to import the following modules before making
+    any command or query requests to your Firebolt Core instance.
+
+.. _required_core_connection_imports:
+
+    ::
+
+        from firebolt.db import connect
+        from firebolt.client.auth import FireboltCore
+
+**2. Connect to your database**
+
+    To connect to Firebolt Core, you need to create a ``FireboltCore`` auth object and use it
+    to establish a connection.
+
+    A connection requires the following parameters:
+
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``auth``                           |  Auth object of type FireboltCore. This is a special authentication type that doesn't require credentials.     |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``database``                       |  Optional. The name of the database you would like to connect to. Defaults to "firebolt" if not specified.     |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``url``                            |  Optional. The URL of the Firebolt Core instance of form <scheme>://<host>:<port>.                             |
+    |                                    |  Defaults to "http://localhost:3473" if not specified.                                                         |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+
+    Here's how to create a connection to Firebolt Core:
+
+    ::
+
+        # Connect to Firebolt Core
+        # The database parameter defaults to 'firebolt' if not specified
+        with connect(
+                auth=FireboltCore(),
+                url="http://localhost:3473",
+                database="firebolt"
+        ) as connection:
+            # Create a cursor
+            cursor = connection.cursor()
+        
+            # Execute a simple test query
+            cursor.execute("SELECT 1")
+
+.. note::
+
+    Firebolt Core is assumed to be running locally on the default port (3473). For instructions 
+    on how to run Firebolt Core locally using Docker, refer to the 
+    `official docs <https://docs.firebolt.io/firebolt-core/firebolt-core-get-started>`_.
+
+
+**2.1. Connecting to an HTTPS Server**
+
+    If you are connecting to an HTTPS server running Firebolt Core, ensure the server's certificate is properly configured. Follow these steps:
+
+    - **Obtain the Certificate**: Ensure you have the certificate for the HTTPS server you are connecting to.
+
+    - **Install the Certificate in the System Certificate Store**: For Ubuntu users, copy the certificate to `/usr/local/share/ca-certificates/` and run the following command:
+
+      ```bash
+      sudo update-ca-certificates
+      ```
+
+      .. note::
+         Installing the certificate is also possible on other systems, but you need to use the correct path for your operating system's certificate store.
+
+    - **Provide the Certificate via Environment Variable**: Alternatively, set the `SSL_CERT_FILE` environment variable to the path of your certificate file. For example:
+
+      ```bash
+      export SSL_CERT_FILE=/path/to/your/certificate.pem
+      ```
+
+    - **Python Version Considerations**: The system certificate store is only available for users running Python 3.10 and above. If you are using an older version of Python, you must explicitly set the `SSL_CERT_FILE` environment variable to use the certificate.
+
+
+**3. Execute commands using the cursor**
 
     The ``cursor`` object can be used to send queries and commands to your Firebolt
     database and engine. See below for examples of functions using the ``cursor`` object.
@@ -769,4 +856,3 @@ function will raise a ``QueryTimeoutError`` exception.
     )
 
 **Warning**: If running multiple queries, and one of queries times out, all the previous queries will not be rolled back and their result will persist. All the remaining queries will be cancelled.
-
