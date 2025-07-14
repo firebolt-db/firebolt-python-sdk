@@ -16,6 +16,19 @@ jobs:
     secrets:
       FOSSA_TOKEN: ${{ secrets.FOSSA_TOKEN }}
       SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
+  core:
+    strategy:
+      fail-fast: false # finish all jobs even if one fails
+      matrix:
+        # No windows support for core yet
+        # Macos is missing docker support
+        os: [ubuntu-latest]
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    uses: ./.github/workflows/integration-tests-core.yml
+    with:
+      os_name: ${{ matrix.os }}
+      python_version: ${{ matrix.python-version }}
+      sendSlackNotifications: true
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -65,7 +78,7 @@ jobs:
           ACCOUNT_NAME: "firebolt"
           API_ENDPOINT: "api.staging.firebolt.io"
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V2"
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V2 and not core"
 
       - name: Slack Notify of failure
         if: failure()
