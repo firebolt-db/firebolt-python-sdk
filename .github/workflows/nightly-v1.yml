@@ -63,6 +63,7 @@ jobs:
           firebolt-password: ${{ secrets.FIREBOLT_STG_PASSWORD }}
           api-endpoint: "api.staging.firebolt.io"
           region: "us-east-1"
+          db_suffix: ${{ format('{0}_{1}', matrix.os, matrix.python-version) }}
 
       - name: Run integration tests
         env:
