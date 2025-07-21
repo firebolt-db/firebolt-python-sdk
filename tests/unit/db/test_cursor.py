@@ -1143,19 +1143,19 @@ def test_fb_numeric_with_cursor_set_parameters(
         (
             [b"hello", b"\x00\x01\x02", b""],
             [
-                {"name": "$1", "value": "b'hello'"},
-                {"name": "$2", "value": "b'\\x00\\x01\\x02'"},
-                {"name": "$3", "value": "b''"},
+                {"name": "$1", "value": "hello"},
+                {"name": "$2", "value": "\x00\x01\x02"},
+                {"name": "$3", "value": ""},
             ],
         ),
         # List/Array values
         (
             [[1, 2, 3], ["a", "b"], [], [None, True, False]],
             [
-                {"name": "$1", "value": "[1, 2, 3]"},
-                {"name": "$2", "value": "['a', 'b']"},
-                {"name": "$3", "value": "[]"},
-                {"name": "$4", "value": "[None, True, False]"},
+                {"name": "$1", "value": [1, 2, 3]},
+                {"name": "$2", "value": ["a", "b"]},
+                {"name": "$3", "value": []},
+                {"name": "$4", "value": [None, True, False]},
             ],
         ),
         # Mixed complex types
@@ -1163,8 +1163,8 @@ def test_fb_numeric_with_cursor_set_parameters(
             [Decimal("42.0"), b"binary", [1, "mixed"], {"key": "value"}],
             [
                 {"name": "$1", "value": "42.0"},
-                {"name": "$2", "value": "b'binary'"},
-                {"name": "$3", "value": "[1, 'mixed']"},
+                {"name": "$2", "value": "binary"},
+                {"name": "$3", "value": [1, "mixed"]},
                 {"name": "$4", "value": "{'key': 'value'}"},
             ],
         ),
@@ -1207,11 +1207,12 @@ def test_fb_numeric_nested_complex_structures(
     """Test that fb_numeric paramstyle handles deeply nested structures."""
     test_params = [
         {"nested": {"array": [1, 2, {"deep": True}]}},
+        # Here decimal is a part of the JSON so it should be converted to string
         [{"mixed": Decimal("123.45")}, [1, [2, [3]]]],
     ]
     expected_query_params = [
         {"name": "$1", "value": "{'nested': {'array': [1, 2, {'deep': True}]}}"},
-        {"name": "$2", "value": "[{'mixed': Decimal('123.45')}, [1, [2, [3]]]]"},
+        {"name": "$2", "value": ["{'mixed': Decimal('123.45')}", [1, [2, [3]]]]},
     ]
 
     test_query = "SELECT * FROM test WHERE data = $1 AND metadata = $2"

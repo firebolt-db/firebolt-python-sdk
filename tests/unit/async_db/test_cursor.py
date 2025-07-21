@@ -1249,19 +1249,19 @@ async def test_fb_numeric_execute_stream(
         (
             [b"hello", b"\x00\x01\x02", b""],
             [
-                {"name": "$1", "value": "b'hello'"},
-                {"name": "$2", "value": "b'\\x00\\x01\\x02'"},
-                {"name": "$3", "value": "b''"},
+                {"name": "$1", "value": "hello"},
+                {"name": "$2", "value": "\x00\x01\x02"},
+                {"name": "$3", "value": ""},
             ],
         ),
         # List/Array values - now converted to strings consistently
         (
             [[1, 2, 3], ["a", "b"], [], [None, True, False]],
             [
-                {"name": "$1", "value": "[1, 2, 3]"},
-                {"name": "$2", "value": "['a', 'b']"},
-                {"name": "$3", "value": "[]"},
-                {"name": "$4", "value": "[None, True, False]"},
+                {"name": "$1", "value": [1, 2, 3]},
+                {"name": "$2", "value": ["a", "b"]},
+                {"name": "$3", "value": []},
+                {"name": "$4", "value": [None, True, False]},
             ],
         ),
         # Mixed complex types - now converted to strings consistently
@@ -1269,8 +1269,8 @@ async def test_fb_numeric_execute_stream(
             [Decimal("42.0"), b"binary", [1, "mixed"], {"key": "value"}],
             [
                 {"name": "$1", "value": "42.0"},
-                {"name": "$2", "value": "b'binary'"},
-                {"name": "$3", "value": "[1, 'mixed']"},
+                {"name": "$2", "value": "binary"},
+                {"name": "$3", "value": [1, "mixed"]},
                 {"name": "$4", "value": "{'key': 'value'}"},
             ],
         ),
@@ -1302,20 +1302,12 @@ async def test_fb_numeric_mixed_basic_and_complex_types(
 ):
     """Test that fb_numeric paramstyle works with mixed basic and complex types in async mode."""
     # Mix of basic types (preserved) and complex types (converted to strings)
-    test_params = [
-        [1, 2, 3],  # List -> converted to string
-        42,  # Basic int -> preserved
-        {"key": "value", "number": 42},  # Dict -> converted to string
-        None,  # None -> preserved
-    ]
+    test_params = [[1, 2, 3], 42, {"key": "value", "number": 42}, None]
     expected_query_params = [
-        {"name": "$1", "value": "[1, 2, 3]"},  # Converted to string
-        {"name": "$2", "value": 42},  # Preserved as int
-        {
-            "name": "$3",
-            "value": "{'key': 'value', 'number': 42}",
-        },  # Converted to string
-        {"name": "$4", "value": None},  # Preserved as None
+        {"name": "$1", "value": [1, 2, 3]},
+        {"name": "$2", "value": 42},
+        {"name": "$3", "value": "{'key': 'value', 'number': 42}"},
+        {"name": "$4", "value": None},
     ]
 
     test_query = (

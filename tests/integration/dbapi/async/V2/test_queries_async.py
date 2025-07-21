@@ -497,7 +497,10 @@ async def test_fb_numeric_paramstyle_all_types(
             await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_all_types"')
             await c.execute(
                 'CREATE FACT TABLE "test_fb_numeric_all_types" ('
-                "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, a ARRAY(INT), dec DECIMAL(38, 3)"
+                "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, "
+                "a_int ARRAY(INT), dec DECIMAL(38, 3), "
+                "a_str ARRAY(STRING), a_nested ARRAY(ARRAY(INT)), "
+                "by BYTEA"
                 ") PRIMARY INDEX i"
             )
             params = [
@@ -508,18 +511,22 @@ async def test_fb_numeric_paramstyle_all_types(
                 date(2022, 1, 1),  # d DATE
                 datetime(2022, 1, 1, 1, 1, 1),  # dt DATETIME
                 True,  # b BOOL
-                [1, 2, 3],  # a ARRAY(INT)
+                [1, 2, 3],  # a_int ARRAY(INT)
                 Decimal("123.456"),  # dec DECIMAL(38, 3)
+                ["hello", "world", "test"],  # a_str ARRAY(STRING)
+                [[1, 2], [3, 4], [5]],  # a_nested ARRAY(ARRAY(INT))
+                Binary("test_bytea_data"),  # by BYTEA
             ]
             await c.execute(
-                'INSERT INTO "test_fb_numeric_all_types" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                'INSERT INTO "test_fb_numeric_all_types" VALUES '
+                "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
                 params,
             )
             await c.execute(
                 'SELECT * FROM "test_fb_numeric_all_types" WHERE i = $1', [1]
             )
             result = await c.fetchall()
-            # None is returned as None, arrays as lists, decimals as Decimal
+            # None is returned as None, arrays as lists, decimals as Decimal, bytea as bytes
             assert result == [params]
 
 

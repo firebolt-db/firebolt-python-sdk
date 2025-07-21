@@ -48,7 +48,9 @@ def _convert_parameter_value(value: Any) -> Any:
     if isinstance(value, Decimal):
         return str(value)
     elif isinstance(value, bytes):
-        return repr(value)  # This gives us the b'...' format
+        return value.decode("utf-8")
+    elif isinstance(value, list):
+        return [_convert_parameter_value(item) for item in value]
     else:
         return str(value)
 
