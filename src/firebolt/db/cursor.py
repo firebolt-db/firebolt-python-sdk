@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import time
 from abc import ABCMeta, abstractmethod
@@ -39,7 +38,6 @@ from firebolt.common.constants import (
 )
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
-    _convert_parameter_value,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
@@ -267,17 +265,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         Cursor._log_query(query)
         timeout_controller = TimeoutController(timeout)
         timeout_controller.raise_if_timeout()
-        param_list = parameters[0] if parameters else []
-        query_parameters = [
-            {"name": f"${i+1}", "value": _convert_parameter_value(value)}
-            for i, value in enumerate(param_list)
-        ]
-        query_params: Dict[str, Any] = {
-            "output_format": self._get_output_format(streaming),
-            "query_parameters": json.dumps(query_parameters),
-        }
-        if async_execution:
-            query_params["async"] = True
+        query_params = self._build_fb_numeric_query_params(
+            parameters, streaming, async_execution
+        )
         resp = self._api_request(
             query,
             query_params,
