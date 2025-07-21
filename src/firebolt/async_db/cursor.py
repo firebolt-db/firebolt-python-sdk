@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
 import warnings
@@ -21,6 +22,8 @@ from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
+    PARAMSTYLE_DEFAULT,
+    PARAMSTYLE_SUPPORTED,
     RESET_SESSION_HEADER,
     UPDATE_ENDPOINT_HEADER,
     UPDATE_PARAMETERS_HEADER,
@@ -28,6 +31,7 @@ from firebolt.common.constants import (
 )
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
+    _convert_parameter_value,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
@@ -80,10 +84,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self,
         *args: Any,
         client: AsyncClient,
-        connection: Connection,
+        connection: "Connection",
+        paramstyle: str = PARAMSTYLE_DEFAULT,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
+        self.paramstyle = paramstyle
         self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
@@ -216,26 +222,68 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         await self._close_rowset_and_reset()
         self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
-        queries: List[Union[SetParameter, str]] = (
-            [raw_query]
-            if skip_parsing
-            else self._formatter.split_format_sql(raw_query, parameters)
-        )
-        timeout_controller = TimeoutController(timeout)
-
-        if len(queries) > 1 and async_execution:
-            raise FireboltError(
-                "Server side async does not support multi-statement queries"
-            )
+        paramstyle = self.paramstyle or PARAMSTYLE_DEFAULT
+        if paramstyle not in PARAMSTYLE_SUPPORTED:
+            raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
         try:
-            for query in queries:
-                await self._execute_single_query(
-                    query, timeout_controller, async_execution, streaming
+            if paramstyle == "fb_numeric":
+                await self._execute_fb_numeric(
+                    raw_query, parameters, timeout, async_execution, streaming
                 )
+            else:
+                queries: List[Union[SetParameter, str]] = (
+                    [raw_query]
+                    if skip_parsing
+                    else self._formatter.split_format_sql(raw_query, parameters)
+                )
+                timeout_controller = TimeoutController(timeout)
+                if len(queries) > 1 and async_execution:
+                    raise FireboltError(
+                        "Server side async does not support multi-statement queries"
+                    )
+                for query in queries:
+                    await self._execute_single_query(
+                        query, timeout_controller, async_execution, streaming
+                    )
             self._state = CursorState.DONE
         except Exception:
             self._state = CursorState.ERROR
             raise
+
+    async def _execute_fb_numeric(
+        self,
+        query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        timeout: Optional[float],
+        async_execution: bool,
+        streaming: bool,
+    ) -> None:
+        Cursor._log_query(query)
+        timeout_controller = TimeoutController(timeout)
+        timeout_controller.raise_if_timeout()
+        param_list = parameters[0] if parameters else []
+        query_parameters = [
+            {"name": f"${i+1}", "value": _convert_parameter_value(value)}
+            for i, value in enumerate(param_list)
+        ]
+        query_params: Dict[str, Any] = {
+            "output_format": self._get_output_format(streaming),
+            "query_parameters": json.dumps(query_parameters),
+        }
+        if async_execution:
+            query_params["async"] = True
+        resp = await self._api_request(
+            query,
+            query_params,
+            timeout=timeout_controller.remaining(),
+        )
+        await self._raise_if_error(resp)
+        if async_execution:
+            await resp.aread()
+            self._parse_async_response(resp)
+        else:
+            await self._parse_response_headers(resp.headers)
+            await self._append_row_set_from_response(resp)
 
     async def _execute_single_query(
         self,
@@ -522,7 +570,7 @@ class CursorV2(Cursor):
         self,
         *args: Any,
         client: AsyncClientV2,
-        connection: Connection,
+        connection: "Connection",
         **kwargs: Any,
     ) -> None:
         assert isinstance(client, AsyncClientV2)
@@ -605,7 +653,7 @@ class CursorV1(Cursor):
         self,
         *args: Any,
         client: AsyncClientV1,
-        connection: Connection,
+        connection: "Connection",
         **kwargs: Any,
     ) -> None:
         assert isinstance(client, AsyncClientV1)

@@ -479,3 +479,103 @@ async def test_select_struct(
             )
         finally:
             await c.execute(cleanup_struct_query)
+
+
+async def test_fb_numeric_paramstyle_all_types(
+    engine_name, database_name, auth, account_name, api_endpoint
+):
+    """Test fb_numeric paramstyle: insert/select all supported types, and parameter count errors."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        paramstyle="fb_numeric",
+    ) as connection:
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_all_types"')
+            await c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_all_types" ('
+                "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, a ARRAY(INT), dec DECIMAL(38, 3)"
+                ") PRIMARY INDEX i"
+            )
+            params = [
+                1,  # i INT
+                1.123,  # f FLOAT
+                "text",  # s STRING
+                None,  # sn STRING NULL
+                date(2022, 1, 1),  # d DATE
+                datetime(2022, 1, 1, 1, 1, 1),  # dt DATETIME
+                True,  # b BOOL
+                [1, 2, 3],  # a ARRAY(INT)
+                Decimal("123.456"),  # dec DECIMAL(38, 3)
+            ]
+            await c.execute(
+                'INSERT INTO "test_fb_numeric_all_types" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                params,
+            )
+            await c.execute(
+                'SELECT * FROM "test_fb_numeric_all_types" WHERE i = $1', [1]
+            )
+            result = await c.fetchall()
+            # None is returned as None, arrays as lists, decimals as Decimal
+            assert result == [params]
+
+
+async def test_fb_numeric_paramstyle_not_enough_params(
+    engine_name, database_name, auth, account_name, api_endpoint
+):
+    """Test fb_numeric paramstyle: not enough parameters supplied."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        paramstyle="fb_numeric",
+    ) as connection:
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params"')
+            await c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_params" (i INT, s STRING) PRIMARY INDEX i'
+            )
+            # Only one param for two placeholders
+            try:
+                await c.execute(
+                    'INSERT INTO "test_fb_numeric_params" VALUES ($1, $2)', [1]
+                )
+            except Exception as e:
+                assert (
+                    "parameter" in str(e).lower()
+                    or "argument" in str(e).lower()
+                    or "missing" in str(e).lower()
+                )
+            else:
+                assert False, "Expected error for not enough parameters"
+
+
+async def test_fb_numeric_paramstyle_too_many_params(
+    engine_name, database_name, auth, account_name, api_endpoint
+):
+    """Test fb_numeric paramstyle: too many parameters supplied (should succeed)."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        paramstyle="fb_numeric",
+    ) as connection:
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params2"')
+            await c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_params2" (i INT, s STRING) PRIMARY INDEX i'
+            )
+            # Three params for two placeholders: should succeed, extra param ignored
+            await c.execute(
+                'INSERT INTO "test_fb_numeric_params2" VALUES ($1, $2)', [1, "foo", 123]
+            )
+            await c.execute('SELECT * FROM "test_fb_numeric_params2" WHERE i = $1', [1])
+            result = await c.fetchall()
+            assert result == [[1, "foo"]]

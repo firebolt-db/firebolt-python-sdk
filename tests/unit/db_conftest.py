@@ -1,9 +1,11 @@
 import json
+import re
 from dataclasses import asdict
 from datetime import date, datetime
 from decimal import Decimal
 from json import dumps as jdumps
 from typing import Any, Callable, Dict, List, Tuple
+from urllib.parse import parse_qs
 
 from httpx import URL, Request, codes
 from pytest import fixture
@@ -820,5 +822,181 @@ def streaming_error_query_callback(streaming_error_query_response) -> Callable:
         assert request.method == "POST"
         assert f"output_format={JSON_LINES_OUTPUT_FORMAT}" in str(request.url)
         return Response(status_code=codes.OK, content=streaming_error_query_response)
+
+    return do_query
+
+
+@fixture
+def fb_numeric_test_parameters() -> List[List[Any]]:
+    """Test parameters covering all supported types for fb_numeric paramstyle."""
+    return [
+        # Basic types
+        [42, "string", 3.14, True, False, None],
+        # Edge cases
+        [0, "", 0.0, -1, -3.14],
+        # Complex types that should be converted to strings
+        [datetime(2023, 1, 1), date(2023, 1, 1)],
+        # Single parameter
+        [1],
+        # Empty parameters
+        [],
+    ]
+
+
+@fixture
+def fb_numeric_expected_query_params() -> List[List[Dict[str, Any]]]:
+    """Expected query_parameters JSON for corresponding test parameters."""
+    return [
+        # Basic types
+        [
+            {"name": "$1", "value": 42},
+            {"name": "$2", "value": "string"},
+            {"name": "$3", "value": 3.14},
+            {"name": "$4", "value": True},
+            {"name": "$5", "value": False},
+            {"name": "$6", "value": None},
+        ],
+        # Edge cases
+        [
+            {"name": "$1", "value": 0},
+            {"name": "$2", "value": ""},
+            {"name": "$3", "value": 0.0},
+            {"name": "$4", "value": -1},
+            {"name": "$5", "value": -3.14},
+        ],
+        # Complex types (converted to strings in sync, kept as-is in async)
+        [
+            {"name": "$1", "value": "2023-01-01 00:00:00"},  # sync behavior
+            {"name": "$2", "value": "2023-01-01"},  # sync behavior
+        ],
+        # Single parameter
+        [
+            {"name": "$1", "value": 1},
+        ],
+        # Empty parameters
+        [],
+    ]
+
+
+@fixture
+def fb_numeric_query_url(engine_url: str, db_name: str) -> re.Pattern:
+    """Regex pattern for fb_numeric queries that matches base URL regardless of query parameters."""
+    base_url = f"https://{engine_url}"
+    return re.compile(rf"^{re.escape(base_url)}.*")
+
+
+@fixture
+def fb_numeric_query_url_exact(engine_url: str, db_name: str) -> URL:
+    """Exact URL for fb_numeric queries."""
+    return URL(f"https://{engine_url}").copy_merge_params(
+        {"database": db_name, "output_format": "JSON_Compact"}
+    )
+
+
+@fixture
+def fb_numeric_callback_factory(
+    query_description: List[Column],
+    query_data: List[List[ColType]],
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    """Factory for creating fb_numeric query callbacks that validate parameters."""
+
+    def create_callback(
+        expected_query_params: List[Dict[str, Any]],
+        expected_query: str = None,
+        is_async: bool = False,
+    ) -> Callable:
+        def do_query(request: Request, **kwargs) -> Response:
+            assert request.method == "POST"
+
+            # Validate query parameters in URL
+            qs = parse_qs(request.url.query)
+            query_params_raw = qs.get(b"query_parameters", [])
+
+            if query_params_raw:
+                query_params_str = query_params_raw[0]
+                if isinstance(query_params_str, bytes):
+                    query_params_str = query_params_str.decode()
+                actual_query_params = json.loads(query_params_str)
+                assert actual_query_params == expected_query_params, (
+                    f"Expected query_parameters: {expected_query_params}, "
+                    f"got: {actual_query_params}"
+                )
+            else:
+                assert (
+                    expected_query_params == []
+                ), f"Expected empty query_parameters, but URL has: {dict(qs)}"
+
+            # Validate query content if provided
+            if expected_query:
+                body = request.content.decode() if request.content else ""
+                assert expected_query in body or expected_query == body
+
+            # Return appropriate response
+            if is_async:
+                return Response(
+                    status_code=codes.OK,
+                    json={
+                        "query_id": "test-async-token-123",
+                        "statistics": query_statistics,
+                    },
+                )
+            else:
+                query_response = {
+                    "meta": [
+                        {"name": col.name, "type": col.type_code}
+                        for col in query_description
+                    ],
+                    "data": query_data,
+                    "rows": len(query_data),
+                    "statistics": query_statistics,
+                }
+                return Response(status_code=codes.OK, json=query_response)
+
+        return do_query
+
+    return create_callback
+
+
+@fixture
+def fb_numeric_simple_callback(
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    """Simple callback for fb_numeric queries that just returns success."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.method == "POST"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+        return Response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
+def fb_numeric_async_callback(async_token: str) -> Callable:
+    """Callback for fb_numeric async queries."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.method == "POST"
+
+        # Validate async=True parameter
+        qs = parse_qs(request.url.query)
+        async_param = qs.get(b"async", [])
+        assert async_param == [b"true"], f"Expected async=true, got: {async_param}"
+
+        return Response(
+            status_code=codes.OK,
+            json={
+                "token": async_token,
+                "message": "Query submitted successfully",
+                "monitorSql": "SELECT 1",
+            },
+        )
 
     return do_query

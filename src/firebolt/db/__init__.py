@@ -16,6 +16,7 @@ from firebolt.common._types import (
     Timestamp,
     TimestampFromTicks,
 )
+from firebolt.common.constants import PARAMSTYLE_DEFAULT
 from firebolt.db.connection import Connection, connect
 from firebolt.db.cursor import Cursor
 from firebolt.utils.exception import (
@@ -34,4 +35,10 @@ from firebolt.utils.exception import (
 apilevel = "2.0"
 # threads may only share the module and connections, cursors should not be shared
 threadsafety = 2
-paramstyle = "qmark"
+paramstyle = PARAMSTYLE_DEFAULT
+"""
+The parameter style for SQL queries. Supported values:
+- 'qmark': Use ? as parameter placeholders (default, client-side substitution)
+- 'native': Alias for 'qmark'
+- 'fb_numeric': Use $1, $2, ... as placeholders (server-side, sent as query_parameters)
+"""

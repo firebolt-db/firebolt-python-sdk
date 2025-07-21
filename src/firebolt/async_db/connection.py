@@ -22,7 +22,10 @@ from firebolt.common.base_connection import (
     _parse_async_query_info_results,
 )
 from firebolt.common.cache import _firebolt_system_engine_cache
-from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.constants import (
+    DEFAULT_TIMEOUT_SECONDS,
+    PARAMSTYLE_DEFAULT,
+)
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -71,6 +74,7 @@ class Connection(BaseConnection):
         "_is_closed",
         "client_class",
         "cursor_type",
+        "paramstyle",
     )
 
     def __init__(
@@ -81,6 +85,7 @@ class Connection(BaseConnection):
         cursor_type: Type[Cursor],
         api_endpoint: str,
         init_parameters: Optional[Dict[str, Any]] = None,
+        paramstyle: Optional[str] = PARAMSTYLE_DEFAULT,
     ):
         super().__init__(cursor_type)
         self.api_endpoint = api_endpoint
@@ -90,12 +95,17 @@ class Connection(BaseConnection):
         self.init_parameters = init_parameters or {}
         if database:
             self.init_parameters["database"] = database
+        self.paramstyle = paramstyle
 
     def cursor(self, **kwargs: Any) -> Cursor:
         if self.closed:
             raise ConnectionClosedError("Unable to create cursor: connection closed.")
 
-        c = self.cursor_type(client=self._client, connection=self, **kwargs)
+        if self.paramstyle is None:
+            self.paramstyle = PARAMSTYLE_DEFAULT
+        c = self.cursor_type(
+            client=self._client, connection=self, paramstyle=self.paramstyle, **kwargs
+        )
         self._cursors.append(c)
         return c
 
@@ -218,7 +228,10 @@ async def connect(
     disable_cache: bool = False,
     url: Optional[str] = None,
     additional_parameters: Dict[str, Any] = {},
+    paramstyle: Optional[str] = None,
 ) -> Connection:
+    if paramstyle is None:
+        paramstyle = PARAMSTYLE_DEFAULT
     # auth parameter is optional in function signature
     # but is required to connect.
     # PEP 249 recommends making it kwargs.
@@ -244,6 +257,7 @@ async def connect(
             user_agent_header=user_agent_header,
             database=database,
             connection_url=url,
+            paramstyle=paramstyle,
         )
     elif auth_version == FireboltAuthVersion.V2:
         assert account_name is not None
@@ -254,6 +268,7 @@ async def connect(
             database=database,
             engine_name=engine_name,
             api_endpoint=api_endpoint,
+            paramstyle=paramstyle,
         )
     elif auth_version == FireboltAuthVersion.V1:
         return await connect_v1(
@@ -264,6 +279,7 @@ async def connect(
             engine_name=engine_name,
             engine_url=engine_url,
             api_endpoint=api_endpoint,
+            paramstyle=paramstyle,
         )
     else:
         raise ConfigurationError(f"Unsupported auth type: {type(auth)}")
@@ -276,6 +292,7 @@ async def connect_v2(
     database: Optional[str] = None,
     engine_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
+    paramstyle: Optional[str] = None,
 ) -> Connection:
     """Connect to Firebolt.
 
@@ -322,6 +339,7 @@ async def connect_v2(
         CursorV2,
         api_endpoint,
         system_engine_params,
+        paramstyle=paramstyle,
     ) as system_engine_connection:
 
         cursor = system_engine_connection.cursor()
@@ -338,6 +356,7 @@ async def connect_v2(
             CursorV2,
             api_endpoint,
             cursor.parameters,
+            paramstyle=paramstyle,
         )
 
 
@@ -349,6 +368,7 @@ async def connect_v1(
     engine_name: Optional[str] = None,
     engine_url: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
+    paramstyle: Optional[str] = None,
 ) -> Connection:
     # These parameters are optional in function signature
     # but are required to connect.
@@ -396,7 +416,14 @@ async def connect_v1(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
-    return Connection(engine_url, database, client, CursorV1, api_endpoint)
+    return Connection(
+        engine_url,
+        database,
+        client,
+        CursorV1,
+        api_endpoint,
+        paramstyle=paramstyle or PARAMSTYLE_DEFAULT,
+    )
 
 
 def connect_core(
@@ -404,6 +431,7 @@ def connect_core(
     user_agent_header: str,
     database: Optional[str] = None,
     connection_url: Optional[str] = None,
+    paramstyle: Optional[str] = None,
 ) -> Connection:
     """Connect to Firebolt Core.
 
@@ -441,4 +469,5 @@ def connect_core(
         client=client,
         cursor_type=CursorV2,
         api_endpoint=verified_url,
+        paramstyle=paramstyle,
     )
