@@ -2,6 +2,7 @@ from typing import Callable
 
 from pytest import fixture
 
+import firebolt.db
 from firebolt.client.auth import Auth
 from firebolt.db import Connection, Cursor, connect
 
@@ -49,3 +50,12 @@ def system_connection(
 @fixture
 def cursor(connection: Connection) -> Cursor:
     return connection.cursor()
+
+
+@fixture
+def fb_numeric_paramstyle():
+    """Fixture that sets paramstyle to fb_numeric and resets it after the test."""
+    original_paramstyle = firebolt.db.paramstyle
+    firebolt.db.paramstyle = "fb_numeric"
+    yield
+    firebolt.db.paramstyle = original_paramstyle

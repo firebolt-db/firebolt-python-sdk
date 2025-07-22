@@ -282,8 +282,9 @@ class BaseCursor:
 
         query_params: Dict[str, Any] = {
             "output_format": self._get_output_format(streaming),
-            "query_parameters": json.dumps(query_parameters),
         }
+        if query_parameters:
+            query_params["query_parameters"] = json.dumps(query_parameters)
         if async_execution:
             query_params["async"] = True
         return query_params

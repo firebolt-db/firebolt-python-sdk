@@ -1005,6 +1005,7 @@ async def test_fb_numeric_parameter_formatting(
     fb_numeric_callback_factory: Callable,
     test_params: List[Any],
     expected_query_params: List[Dict[str, Any]],
+    fb_numeric_paramstyle,
 ):
     """Test that fb_numeric paramstyle formats parameters correctly for various types."""
     test_query = f"SELECT * FROM test WHERE col IN ({', '.join(f'${i+1}' for i in range(len(test_params)))})"
@@ -1012,7 +1013,6 @@ async def test_fb_numeric_parameter_formatting(
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
     httpx_mock.add_callback(callback, url=fb_numeric_query_url)
 
-    cursor.paramstyle = "fb_numeric"
     await cursor.execute(test_query, test_params)
 
 
@@ -1034,8 +1034,14 @@ async def test_fb_numeric_complex_types_converted_to_strings_async(
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
     httpx_mock.add_callback(callback, url=fb_numeric_query_url)
 
-    cursor.paramstyle = "fb_numeric"
-    await cursor.execute(test_query, test_params)
+    import firebolt.async_db as async_db
+
+    original_paramstyle = async_db.paramstyle
+    try:
+        async_db.paramstyle = "fb_numeric"
+        await cursor.execute(test_query, test_params)
+    finally:
+        async_db.paramstyle = original_paramstyle
 
 
 async def test_fb_numeric_no_client_side_substitution(
@@ -1055,8 +1061,14 @@ async def test_fb_numeric_no_client_side_substitution(
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
     httpx_mock.add_callback(callback, url=fb_numeric_query_url)
 
-    cursor.paramstyle = "fb_numeric"
-    await cursor.execute(test_query, test_params)
+    import firebolt.async_db as async_db
+
+    original_paramstyle = async_db.paramstyle
+    try:
+        async_db.paramstyle = "fb_numeric"
+        await cursor.execute(test_query, test_params)
+    finally:
+        async_db.paramstyle = original_paramstyle
 
 
 async def test_fb_numeric_executemany(
@@ -1283,6 +1295,7 @@ async def test_fb_numeric_additional_types_unified_behavior(
     fb_numeric_callback_factory: Callable,
     test_params: List[Any],
     expected_query_params: List[Dict[str, Any]],
+    fb_numeric_paramstyle,
 ):
     """Test that fb_numeric paramstyle handles additional types consistently in async mode (same as sync)."""
     test_query = f"SELECT * FROM test WHERE col IN ({', '.join(f'${i+1}' for i in range(len(test_params)))})"
@@ -1290,7 +1303,6 @@ async def test_fb_numeric_additional_types_unified_behavior(
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
     httpx_mock.add_callback(callback, url=fb_numeric_query_url)
 
-    cursor.paramstyle = "fb_numeric"
     await cursor.execute(test_query, test_params)
 
 
@@ -1299,6 +1311,7 @@ async def test_fb_numeric_mixed_basic_and_complex_types(
     httpx_mock: HTTPXMock,
     fb_numeric_query_url: re.Pattern,
     fb_numeric_callback_factory: Callable,
+    fb_numeric_paramstyle,
 ):
     """Test that fb_numeric paramstyle works with mixed basic and complex types in async mode."""
     # Mix of basic types (preserved) and complex types (converted to strings)
@@ -1317,7 +1330,6 @@ async def test_fb_numeric_mixed_basic_and_complex_types(
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
     httpx_mock.add_callback(callback, url=fb_numeric_query_url)
 
-    cursor.paramstyle = "fb_numeric"
     await cursor.execute(test_query, test_params)
 
 
@@ -1326,6 +1338,7 @@ async def test_fb_numeric_large_parameter_count_async(
     httpx_mock: HTTPXMock,
     fb_numeric_query_url: re.Pattern,
     fb_numeric_callback_factory: Callable,
+    fb_numeric_paramstyle,
 ):
     """Test that fb_numeric paramstyle handles a large number of parameters in async mode."""
     # Test with 50 parameters
@@ -1338,7 +1351,6 @@ async def test_fb_numeric_large_parameter_count_async(
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
     httpx_mock.add_callback(callback, url=fb_numeric_query_url)
 
-    cursor.paramstyle = "fb_numeric"
     await cursor.execute(test_query, test_params)
 
 
@@ -1347,6 +1359,7 @@ async def test_fb_numeric_special_float_values_async(
     httpx_mock: HTTPXMock,
     fb_numeric_query_url: re.Pattern,
     fb_numeric_callback_factory: Callable,
+    fb_numeric_paramstyle,
 ):
     """Test that fb_numeric paramstyle handles special float values in async mode."""
     test_params = [
@@ -1367,12 +1380,17 @@ async def test_fb_numeric_special_float_values_async(
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
     httpx_mock.add_callback(callback, url=fb_numeric_query_url)
 
-    cursor.paramstyle = "fb_numeric"
     await cursor.execute(test_query, test_params)
 
 
 async def test_unsupported_paramstyle_raises(cursor: Cursor) -> None:
     """Test that unsupported paramstyles raise ProgrammingError."""
-    cursor.paramstyle = "not_a_style"
-    with raises(ProgrammingError):
-        await cursor.execute("SELECT 1")
+    import firebolt.async_db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "not_a_style"
+        with raises(ProgrammingError):
+            await cursor.execute("SELECT 1")
+    finally:
+        db.paramstyle = original_paramstyle

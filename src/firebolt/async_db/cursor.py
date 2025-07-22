@@ -21,7 +21,6 @@ from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
-    PARAMSTYLE_DEFAULT,
     PARAMSTYLE_SUPPORTED,
     RESET_SESSION_HEADER,
     UPDATE_ENDPOINT_HEADER,
@@ -83,11 +82,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         *args: Any,
         client: AsyncClient,
         connection: "Connection",
-        paramstyle: str = PARAMSTYLE_DEFAULT,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.paramstyle = paramstyle
         self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
@@ -220,7 +217,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         await self._close_rowset_and_reset()
         self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
-        paramstyle = self.paramstyle or PARAMSTYLE_DEFAULT
+        # Import paramstyle from module level
+        from firebolt.async_db import paramstyle
+
         if paramstyle not in PARAMSTYLE_SUPPORTED:
             raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
         try:

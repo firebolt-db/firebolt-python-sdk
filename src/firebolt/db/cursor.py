@@ -29,7 +29,6 @@ from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
-    PARAMSTYLE_DEFAULT,
     PARAMSTYLE_SUPPORTED,
     RESET_SESSION_HEADER,
     UPDATE_ENDPOINT_HEADER,
@@ -89,11 +88,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         *args: Any,
         client: Client,
         connection: "Connection",
-        paramstyle: str = PARAMSTYLE_DEFAULT,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.paramstyle = paramstyle
         self._client = client
         self.connection = connection
         self.engine_url = connection.engine_url
@@ -226,7 +223,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         self._close_rowset_and_reset()
         self._row_set = StreamingRowSet() if streaming else InMemoryRowSet()
-        paramstyle = self.paramstyle or PARAMSTYLE_DEFAULT
+        # Import paramstyle from module level
+        from firebolt.db import paramstyle
+
         if paramstyle not in PARAMSTYLE_SUPPORTED:
             raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
         try:
