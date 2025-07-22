@@ -138,7 +138,7 @@ def test_drop_create(connection: Connection) -> None:
         test_query(
             c,
             'CREATE FACT TABLE "test_drop_create_tb"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int)) primary index id",
+            "d date, dt datetime, b bool, a array(int))d",
         )
 
         # Dimension table
@@ -181,7 +181,7 @@ def test_insert(connection: Connection) -> None:
         c.execute('DROP TABLE IF EXISTS "test_insert_tb"')
         c.execute(
             'CREATE FACT TABLE "test_insert_tb"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int)) primary index id"
+            "d date, dt datetime, b bool, a array(int))d"
         )
 
         test_empty_query(
@@ -243,7 +243,7 @@ def test_parameterized_query(connection: Connection) -> None:
         c.execute(
             'CREATE FACT TABLE "test_tb_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
-            "dec decimal(38, 3), ss string) primary index i",
+            "dec decimal(38, 3), ss string)",
         )
 
         params = [
@@ -284,9 +284,7 @@ def test_multi_statement_query(connection: Connection) -> None:
 
     with connection.cursor() as c:
         c.execute('DROP TABLE IF EXISTS "test_tb_multi_statement"')
-        c.execute(
-            'CREATE FACT TABLE "test_tb_multi_statement"(i int, s string) primary index i'
-        )
+        c.execute('CREATE FACT TABLE "test_tb_multi_statement"(i int, s string)')
 
         c.execute(
             "INSERT INTO \"test_tb_multi_statement\" values (1, 'a'), (2, 'b');"
@@ -439,9 +437,7 @@ def test_bytea_roundtrip(
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
         c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip"')
-        c.execute(
-            'CREATE FACT TABLE "test_bytea_roundtrip"(id int, b bytea) primary index id'
-        )
+        c.execute('CREATE FACT TABLE "test_bytea_roundtrip"(id int, b bytea)d')
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
@@ -579,7 +575,7 @@ def test_fb_numeric_paramstyle_all_types(
             c.execute(
                 'CREATE FACT TABLE "test_fb_numeric_all_types_sync" ('
                 "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, a ARRAY(INT), dec DECIMAL(38, 3)"
-                ") PRIMARY INDEX i"
+                ")"
             )
             params = [
                 1,  # i INT
@@ -605,7 +601,7 @@ def test_fb_numeric_paramstyle_all_types(
 
 
 def test_fb_numeric_paramstyle_not_enough_params(
-    engine_name, database_name, auth, account_name, api_endpoint
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
 ):
     """Test fb_numeric paramstyle: not enough parameters supplied."""
     with connect(
@@ -616,23 +612,12 @@ def test_fb_numeric_paramstyle_not_enough_params(
         api_endpoint=api_endpoint,
     ) as connection:
         with connection.cursor() as c:
-            c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params_sync"')
-            c.execute(
-                'CREATE FACT TABLE "test_fb_numeric_params_sync" (i INT, s STRING) PRIMARY INDEX i'
+            with raises(FireboltStructuredError) as exc_info:
+                c.execute("SELECT $1, $2", [1])
+            assert (
+                "query referenced positional parameter $2, but it was not set"
+                in str(exc_info.value).lower()
             )
-            # Only one param for two placeholders
-            try:
-                c.execute(
-                    'INSERT INTO "test_fb_numeric_params_sync" VALUES ($1, $2)', [1]
-                )
-            except Exception as e:
-                assert (
-                    "parameter" in str(e).lower()
-                    or "argument" in str(e).lower()
-                    or "missing" in str(e).lower()
-                )
-            else:
-                assert False, "Expected error for not enough parameters"
 
 
 def test_fb_numeric_paramstyle_too_many_params(
@@ -649,7 +634,7 @@ def test_fb_numeric_paramstyle_too_many_params(
         with connection.cursor() as c:
             c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params2_sync"')
             c.execute(
-                'CREATE FACT TABLE "test_fb_numeric_params2_sync" (i INT, s STRING) PRIMARY INDEX i'
+                'CREATE FACT TABLE "test_fb_numeric_params2_sync" (i INT, s STRING)'
             )
             # Three params for two placeholders: should succeed, extra param ignored
             c.execute(
@@ -659,3 +644,24 @@ def test_fb_numeric_paramstyle_too_many_params(
             c.execute('SELECT * FROM "test_fb_numeric_params2_sync" WHERE i = $1', [1])
             result = c.fetchall()
             assert result == [[1, "foo"]]
+
+
+def test_fb_numeric_paramstyle_incorrect_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        c = connection.cursor()
+        with raises(FireboltStructuredError) as exc_info:
+            c.execute(
+                "SELECT $34, $72",
+                [1, "foo"],
+            )
+        assert "Query referenced positional parameter $34, but it was not set" in str(
+            exc_info.value
+        )

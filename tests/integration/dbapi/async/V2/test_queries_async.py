@@ -134,7 +134,7 @@ async def test_drop_create(connection: Connection) -> None:
         await test_query(
             c,
             'CREATE FACT TABLE "test_drop_create_async"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int)) primary index id",
+            "d date, dt datetime, b bool, a array(int))d",
         )
 
         # Dimension table
@@ -177,7 +177,7 @@ async def test_insert(connection: Connection) -> None:
         await c.execute('DROP TABLE IF EXISTS "test_insert_async_tb"')
         await c.execute(
             'CREATE FACT TABLE "test_insert_async_tb"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int)) primary index id"
+            "d date, dt datetime, b bool, a array(int))d"
         )
 
         await test_empty_query(
@@ -226,7 +226,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         await c.execute(
             'CREATE FACT TABLE "test_tb_async_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
-            "dec decimal(38, 3), ss string) primary index i",
+            "dec decimal(38, 3), ss string)",
         )
 
         params = [
@@ -284,8 +284,7 @@ async def test_multi_statement_query(connection: Connection) -> None:
     async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_tb_async_multi_statement"')
         await c.execute(
-            'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)'
-            " primary index i"
+            'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)' ""
         )
 
         await c.execute(
@@ -352,9 +351,7 @@ async def test_bytea_roundtrip(
     """Inserted and than selected bytea value doesn't get corrupted."""
     async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip_2"')
-        await c.execute(
-            'CREATE FACT TABLE "test_bytea_roundtrip_2"(id int, b bytea) primary index id'
-        )
+        await c.execute('CREATE FACT TABLE "test_bytea_roundtrip_2"(id int, b bytea)d')
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
@@ -500,7 +497,7 @@ async def test_fb_numeric_paramstyle_all_types(
                 "a_int ARRAY(INT), dec DECIMAL(38, 3), "
                 "a_str ARRAY(STRING), a_nested ARRAY(ARRAY(INT)), "
                 "by BYTEA"
-                ") PRIMARY INDEX i"
+                ")"
             )
             params = [
                 1,  # i INT
@@ -541,23 +538,12 @@ async def test_fb_numeric_paramstyle_not_enough_params(
         api_endpoint=api_endpoint,
     ) as connection:
         async with connection.cursor() as c:
-            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params"')
-            await c.execute(
-                'CREATE FACT TABLE "test_fb_numeric_params" (i INT, s STRING) PRIMARY INDEX i'
+            with raises(FireboltStructuredError) as exc_info:
+                await c.execute("SELECT $1, $2", [1])
+            assert (
+                "query referenced positional parameter $2, but it was not set"
+                in str(exc_info.value).lower()
             )
-            # Only one param for two placeholders
-            try:
-                await c.execute(
-                    'INSERT INTO "test_fb_numeric_params" VALUES ($1, $2)', [1]
-                )
-            except Exception as e:
-                assert (
-                    "parameter" in str(e).lower()
-                    or "argument" in str(e).lower()
-                    or "missing" in str(e).lower()
-                )
-            else:
-                assert False, "Expected error for not enough parameters"
 
 
 async def test_fb_numeric_paramstyle_too_many_params(
@@ -574,7 +560,7 @@ async def test_fb_numeric_paramstyle_too_many_params(
         async with connection.cursor() as c:
             await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params2"')
             await c.execute(
-                'CREATE FACT TABLE "test_fb_numeric_params2" (i INT, s STRING) PRIMARY INDEX i'
+                'CREATE FACT TABLE "test_fb_numeric_params2" (i INT, s STRING)'
             )
             # Three params for two placeholders: should succeed, extra param ignored
             await c.execute(
@@ -584,3 +570,24 @@ async def test_fb_numeric_paramstyle_too_many_params(
             await c.execute('SELECT * FROM "test_fb_numeric_params2" WHERE i = $1', [1])
             result = await c.fetchall()
             assert result == [[1, "foo"]]
+
+
+async def test_fb_numeric_paramstyle_incorrect_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        c = connection.cursor()
+        with raises(FireboltStructuredError) as exc_info:
+            await c.execute(
+                "SELECT $34, $72",
+                [1, "foo"],
+            )
+        assert "Query referenced positional parameter $34, but it was not set" in str(
+            exc_info.value
+        )
