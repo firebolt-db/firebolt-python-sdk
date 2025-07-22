@@ -87,7 +87,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self,
         *args: Any,
         client: Client,
-        connection: "Connection",
+        connection: Connection,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -519,7 +519,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
 class CursorV2(Cursor):
     def __init__(
-        self, *args: Any, client: Client, connection: "Connection", **kwargs: Any
+        self, *args: Any, client: Client, connection: Connection, **kwargs: Any
     ) -> None:
         assert isinstance(client, ClientV2)  # Type check
         super().__init__(
@@ -599,7 +599,7 @@ class CursorV2(Cursor):
 
 class CursorV1(Cursor):
     def __init__(
-        self, *args: Any, client: ClientV1, connection: "Connection", **kwargs: Any
+        self, *args: Any, client: ClientV1, connection: Connection, **kwargs: Any
     ) -> None:
         assert isinstance(client, ClientV1)  # Type check
         super().__init__(

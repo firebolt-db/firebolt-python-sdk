@@ -138,7 +138,7 @@ def test_drop_create(connection: Connection) -> None:
         test_query(
             c,
             'CREATE FACT TABLE "test_drop_create_tb"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int))d",
+            "d date, dt datetime, b bool, a array(int)) primary index id",
         )
 
         # Dimension table
@@ -181,7 +181,7 @@ def test_insert(connection: Connection) -> None:
         c.execute('DROP TABLE IF EXISTS "test_insert_tb"')
         c.execute(
             'CREATE FACT TABLE "test_insert_tb"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int))d"
+            "d date, dt datetime, b bool, a array(int)) primary index id"
         )
 
         test_empty_query(
@@ -243,7 +243,7 @@ def test_parameterized_query(connection: Connection) -> None:
         c.execute(
             'CREATE FACT TABLE "test_tb_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
-            "dec decimal(38, 3), ss string)",
+            "dec decimal(38, 3), ss string) primary index i",
         )
 
         params = [
@@ -284,7 +284,9 @@ def test_multi_statement_query(connection: Connection) -> None:
 
     with connection.cursor() as c:
         c.execute('DROP TABLE IF EXISTS "test_tb_multi_statement"')
-        c.execute('CREATE FACT TABLE "test_tb_multi_statement"(i int, s string)')
+        c.execute(
+            'CREATE FACT TABLE "test_tb_multi_statement"(i int, s string) primary index i'
+        )
 
         c.execute(
             "INSERT INTO \"test_tb_multi_statement\" values (1, 'a'), (2, 'b');"
@@ -437,7 +439,9 @@ def test_bytea_roundtrip(
     """Inserted and than selected bytea value doesn't get corrupted."""
     with connection.cursor() as c:
         c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip"')
-        c.execute('CREATE FACT TABLE "test_bytea_roundtrip"(id int, b bytea)d')
+        c.execute(
+            'CREATE FACT TABLE "test_bytea_roundtrip"(id int, b bytea) primary index id'
+        )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 

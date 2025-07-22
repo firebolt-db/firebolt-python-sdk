@@ -81,7 +81,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self,
         *args: Any,
         client: AsyncClient,
-        connection: "Connection",
+        connection: Connection,
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -559,7 +559,7 @@ class CursorV2(Cursor):
         self,
         *args: Any,
         client: AsyncClientV2,
-        connection: "Connection",
+        connection: Connection,
         **kwargs: Any,
     ) -> None:
         assert isinstance(client, AsyncClientV2)
@@ -642,7 +642,7 @@ class CursorV1(Cursor):
         self,
         *args: Any,
         client: AsyncClientV1,
-        connection: "Connection",
+        connection: Connection,
         **kwargs: Any,
     ) -> None:
         assert isinstance(client, AsyncClientV1)

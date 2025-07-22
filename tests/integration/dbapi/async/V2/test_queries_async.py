@@ -134,7 +134,7 @@ async def test_drop_create(connection: Connection) -> None:
         await test_query(
             c,
             'CREATE FACT TABLE "test_drop_create_async"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int))d",
+            "d date, dt datetime, b bool, a array(int))",
         )
 
         # Dimension table
@@ -177,7 +177,7 @@ async def test_insert(connection: Connection) -> None:
         await c.execute('DROP TABLE IF EXISTS "test_insert_async_tb"')
         await c.execute(
             'CREATE FACT TABLE "test_insert_async_tb"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int))d"
+            "d date, dt datetime, b bool, a array(int)) primary index id"
         )
 
         await test_empty_query(
@@ -226,7 +226,7 @@ async def test_parameterized_query(connection: Connection) -> None:
         await c.execute(
             'CREATE FACT TABLE "test_tb_async_parameterized"(i int, f float, s string, sn'
             " string null, d date, dt datetime, b bool, a array(int), "
-            "dec decimal(38, 3), ss string)",
+            "dec decimal(38, 3), ss string) primary index i",
         )
 
         params = [
@@ -284,7 +284,9 @@ async def test_multi_statement_query(connection: Connection) -> None:
     async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_tb_async_multi_statement"')
         await c.execute(
-            'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)' ""
+            'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)'
+            ""
+            " primary index i"
         )
 
         await c.execute(
@@ -351,7 +353,9 @@ async def test_bytea_roundtrip(
     """Inserted and than selected bytea value doesn't get corrupted."""
     async with connection.cursor() as c:
         await c.execute('DROP TABLE IF EXISTS "test_bytea_roundtrip_2"')
-        await c.execute('CREATE FACT TABLE "test_bytea_roundtrip_2"(id int, b bytea)d')
+        await c.execute(
+            'CREATE FACT TABLE "test_bytea_roundtrip_2"(id int, b bytea) primary index id'
+        )
 
         data = "bytea_123\n\tヽ༼ຈل͜ຈ༽ﾉ"
 
