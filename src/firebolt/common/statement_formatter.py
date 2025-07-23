@@ -62,6 +62,34 @@ class StatementFormatter:
 
         raise DataError(f"unsupported parameter type {type(value)}")
 
+    def convert_parameter_for_serialization(
+        self, value: ParameterType
+    ) -> Union[int, float, bool, None, str, List]:
+        """
+        Convert parameter values for fb_numeric paramstyle to JSON-serializable
+        format. This is used for server-side parameter substitution.
+
+        Basic types (int, float, bool, None) are preserved as-is.
+        All other types are converted to strings for JSON serialization.
+
+        Args:
+            value: The parameter value to convert
+
+        Returns:
+            JSON-serializable value (int, float, bool, None, or string)
+        """
+        if isinstance(value, (int, float, bool)) or value is None:
+            return value
+
+        if isinstance(value, Decimal):
+            return str(value)
+        elif isinstance(value, bytes):
+            return value.decode("utf-8")
+        elif isinstance(value, list):
+            return [self.convert_parameter_for_serialization(item) for item in value]
+        else:
+            return str(value)
+
     def format_statement(
         self, statement: Statement, parameters: Sequence[ParameterType]
     ) -> str:

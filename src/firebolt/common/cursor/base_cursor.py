@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import logging
 import re
-from decimal import Decimal
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
@@ -26,34 +25,6 @@ from firebolt.utils.exception import ConfigurationError, FireboltError
 from firebolt.utils.util import fix_url_schema
 
 logger = logging.getLogger(__name__)
-
-
-def _convert_parameter_value(value: Any) -> Any:
-    """
-    Convert parameter values for fb_numeric paramstyle to JSON-serializable format.
-
-    This ensures consistent behavior between sync and async cursors.
-    Basic types (int, float, bool, None) are preserved as-is.
-    All other types are converted to strings for JSON serialization.
-
-    Args:
-        value: The parameter value to convert
-
-    Returns:
-        JSON-serializable value (int, float, bool, None, or string)
-    """
-    if isinstance(value, (int, float, bool)) or value is None:
-        return value
-
-    # Handle special cases for better string representation
-    if isinstance(value, Decimal):
-        return str(value)
-    elif isinstance(value, bytes):
-        return value.decode("utf-8")
-    elif isinstance(value, list):
-        return [_convert_parameter_value(item) for item in value]
-    else:
-        return str(value)
 
 
 def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
@@ -276,7 +247,10 @@ class BaseCursor:
         """
         param_list = parameters[0] if parameters else []
         query_parameters = [
-            {"name": f"${i+1}", "value": _convert_parameter_value(value)}
+            {
+                "name": f"${i+1}",
+                "value": self._formatter.convert_parameter_for_serialization(value),
+            }
             for i, value in enumerate(param_list)
         ]
 
