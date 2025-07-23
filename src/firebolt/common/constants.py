@@ -19,6 +19,12 @@ class CursorState(Enum):
     CLOSED = 4
 
 
+class ParameterStyle(Enum):
+    QMARK = "qmark"  # ? as parameter placeholders (default, client-side)
+    NATIVE = "native"  # Alias for 'qmark'
+    FB_NUMERIC = "fb_numeric"  # $1, $2, ... as placeholders (server-side)
+
+
 # Parameters that should be set using USE instead of SET
 USE_PARAMETER_LIST = ["database", "engine"]
 # parameters that can only be set by the backend
@@ -28,5 +34,3 @@ IMMUTABLE_PARAMETER_LIST = USE_PARAMETER_LIST + DISALLOWED_PARAMETER_LIST
 UPDATE_ENDPOINT_HEADER = "Firebolt-Update-Endpoint"
 UPDATE_PARAMETERS_HEADER = "Firebolt-Update-Parameters"
 RESET_SESSION_HEADER = "Firebolt-Reset-Session"
-PARAMSTYLE_DEFAULT = "qmark"
-PARAMSTYLE_SUPPORTED = ["qmark", "native", "fb_numeric"]

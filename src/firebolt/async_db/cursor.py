@@ -21,11 +21,11 @@ from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
-    PARAMSTYLE_SUPPORTED,
     RESET_SESSION_HEADER,
     UPDATE_ENDPOINT_HEADER,
     UPDATE_PARAMETERS_HEADER,
     CursorState,
+    ParameterStyle,
 )
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
@@ -220,10 +220,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         # Import paramstyle from module level
         from firebolt.async_db import paramstyle
 
-        if paramstyle not in PARAMSTYLE_SUPPORTED:
+        try:
+            parameter_style = ParameterStyle(paramstyle)
+        except ValueError:
             raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
         try:
-            if paramstyle == "fb_numeric":
+            if parameter_style == ParameterStyle.FB_NUMERIC:
                 await self._execute_fb_numeric(
                     raw_query, parameters, timeout, async_execution, streaming
                 )
