@@ -134,7 +134,7 @@ async def test_drop_create(connection: Connection) -> None:
         await test_query(
             c,
             'CREATE FACT TABLE "test_drop_create_async"(id int, sn string null, f float,'
-            "d date, dt datetime, b bool, a array(int))",
+            "d date, dt datetime, b bool, a array(int)) primary index id",
         )
 
         # Dimension table
@@ -285,7 +285,6 @@ async def test_multi_statement_query(connection: Connection) -> None:
         await c.execute('DROP TABLE IF EXISTS "test_tb_async_multi_statement"')
         await c.execute(
             'CREATE FACT TABLE "test_tb_async_multi_statement"(i int, s string)'
-            ""
             " primary index i"
         )
 
