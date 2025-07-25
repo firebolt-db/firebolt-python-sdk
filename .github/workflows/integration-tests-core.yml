@@ -45,16 +45,16 @@ jobs:
   run-core-integration-tests:
     runs-on: ${{ inputs.os_name }}
     steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          repository: 'firebolt-db/firebolt-python-sdk'
+
       - name: Setup Firebolt Core
         id: setup-core
         uses: firebolt-db/action-setup-core@main
         with:
           tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
-
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          repository: 'firebolt-db/firebolt-python-sdk'
 
       - name: Set up Python
         uses: actions/setup-python@v5
