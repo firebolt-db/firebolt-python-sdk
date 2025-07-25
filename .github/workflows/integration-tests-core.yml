@@ -107,7 +107,7 @@ jobs:
         continue-on-error: true
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
-          test-type: integration
+          test-type: core
           allure-dir: allure-results
           pages-branch: gh-pages
           repository-name: python-sdk
@@ -118,7 +118,7 @@ jobs:
         continue-on-error: true
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
-          test-type: integration_https
+          test-type: core_https
           allure-dir: allure-results-https
           pages-branch: gh-pages
           repository-name: python-sdk
