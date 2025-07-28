@@ -17,7 +17,7 @@ from tests.integration.dbapi.utils import assert_deep_eq
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
 LONG_SELECT = (
-    "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)"  # approx 6m runtime
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, 350000000000)"  # approx 6m runtime
 )
 
 
@@ -214,16 +214,16 @@ def test_insert(connection: Connection) -> None:
 def test_parameterized_query_with_special_chars(connection: Connection) -> None:
     """Query parameters are handled properly."""
     with connection.cursor() as c:
-        params = ["text with 'quote'", "text with \\slashes"]
+        parameters = ["text with 'quote'", "text with \\slashes"]
 
         c.execute(
             "SELECT ? as one, ? as two",
-            params,
+            parameters,
         )
 
         result = c.fetchall()
         assert result == [
-            [params[0], params[1]]
+            [parameters[0], parameters[1]]
         ], "Invalid data in table after parameterized insert"
 
 
