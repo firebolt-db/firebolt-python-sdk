@@ -25,6 +25,7 @@ from firebolt.common.constants import (
     UPDATE_ENDPOINT_HEADER,
     UPDATE_PARAMETERS_HEADER,
     CursorState,
+    ParameterStyle,
 )
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
@@ -216,26 +217,64 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         await self._close_rowset_and_reset()
         self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
-        queries: List[Union[SetParameter, str]] = (
-            [raw_query]
-            if skip_parsing
-            else self._formatter.split_format_sql(raw_query, parameters)
-        )
-        timeout_controller = TimeoutController(timeout)
+        # Import paramstyle from module level
+        from firebolt.async_db import paramstyle
 
-        if len(queries) > 1 and async_execution:
-            raise FireboltError(
-                "Server side async does not support multi-statement queries"
-            )
         try:
-            for query in queries:
-                await self._execute_single_query(
-                    query, timeout_controller, async_execution, streaming
+            parameter_style = ParameterStyle(paramstyle)
+        except ValueError:
+            raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
+        try:
+            if parameter_style == ParameterStyle.FB_NUMERIC:
+                await self._execute_fb_numeric(
+                    raw_query, parameters, timeout, async_execution, streaming
                 )
+            else:
+                queries: List[Union[SetParameter, str]] = (
+                    [raw_query]
+                    if skip_parsing
+                    else self._formatter.split_format_sql(raw_query, parameters)
+                )
+                timeout_controller = TimeoutController(timeout)
+                if len(queries) > 1 and async_execution:
+                    raise FireboltError(
+                        "Server side async does not support multi-statement queries"
+                    )
+                for query in queries:
+                    await self._execute_single_query(
+                        query, timeout_controller, async_execution, streaming
+                    )
             self._state = CursorState.DONE
         except Exception:
             self._state = CursorState.ERROR
             raise
+
+    async def _execute_fb_numeric(
+        self,
+        query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        timeout: Optional[float],
+        async_execution: bool,
+        streaming: bool,
+    ) -> None:
+        Cursor._log_query(query)
+        timeout_controller = TimeoutController(timeout)
+        timeout_controller.raise_if_timeout()
+        query_params = self._build_fb_numeric_query_params(
+            parameters, streaming, async_execution
+        )
+        resp = await self._api_request(
+            query,
+            query_params,
+            timeout=timeout_controller.remaining(),
+        )
+        await self._raise_if_error(resp)
+        if async_execution:
+            await resp.aread()
+            self._parse_async_response(resp)
+        else:
+            await self._parse_response_headers(resp.headers)
+            await self._append_row_set_from_response(resp)
 
     async def _execute_single_query(
         self,

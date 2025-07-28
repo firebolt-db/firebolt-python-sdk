@@ -396,7 +396,13 @@ async def connect_v1(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
-    return Connection(engine_url, database, client, CursorV1, api_endpoint)
+    return Connection(
+        engine_url,
+        database,
+        client,
+        CursorV1,
+        api_endpoint,
+    )
 
 
 def connect_core(

@@ -479,3 +479,118 @@ async def test_select_struct(
             )
         finally:
             await c.execute(cleanup_struct_query)
+
+
+async def test_fb_numeric_paramstyle_all_types(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: insert/select all supported types, and parameter count errors."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_all_types"')
+            await c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_all_types" ('
+                "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, "
+                "a_int ARRAY(INT), dec DECIMAL(38, 3), "
+                "a_str ARRAY(STRING), a_nested ARRAY(ARRAY(INT)), "
+                "by BYTEA"
+                ")"
+            )
+            params = [
+                1,  # i INT
+                1.123,  # f FLOAT
+                "text",  # s STRING
+                None,  # sn STRING NULL
+                date(2022, 1, 1),  # d DATE
+                datetime(2022, 1, 1, 1, 1, 1),  # dt DATETIME
+                True,  # b BOOL
+                [1, 2, 3],  # a_int ARRAY(INT)
+                Decimal("123.456"),  # dec DECIMAL(38, 3)
+                ["hello", "world", "test"],  # a_str ARRAY(STRING)
+                [[1, 2], [3, 4], [5]],  # a_nested ARRAY(ARRAY(INT))
+                Binary("test_bytea_data"),  # by BYTEA
+            ]
+            await c.execute(
+                'INSERT INTO "test_fb_numeric_all_types" VALUES '
+                "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+                params,
+            )
+            await c.execute(
+                'SELECT * FROM "test_fb_numeric_all_types" WHERE i = $1', [1]
+            )
+            result = await c.fetchall()
+            # None is returned as None, arrays as lists, decimals as Decimal, bytea as bytes
+            assert result == [params]
+
+
+async def test_fb_numeric_paramstyle_not_enough_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: not enough parameters supplied."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        async with connection.cursor() as c:
+            with raises(FireboltStructuredError) as exc_info:
+                await c.execute("SELECT $1, $2", [1])
+            assert (
+                "query referenced positional parameter $2, but it was not set"
+                in str(exc_info.value).lower()
+            )
+
+
+async def test_fb_numeric_paramstyle_too_many_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: too many parameters supplied (should succeed)."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params2"')
+            await c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_params2" (i INT, s STRING)'
+            )
+            # Three params for two placeholders: should succeed, extra param ignored
+            await c.execute(
+                'INSERT INTO "test_fb_numeric_params2" VALUES ($1, $2)',
+                [1, "foo", 123],
+            )
+            await c.execute('SELECT * FROM "test_fb_numeric_params2" WHERE i = $1', [1])
+            result = await c.fetchall()
+            assert result == [[1, "foo"]]
+
+
+async def test_fb_numeric_paramstyle_incorrect_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        c = connection.cursor()
+        with raises(FireboltStructuredError) as exc_info:
+            await c.execute(
+                "SELECT $34, $72",
+                [1, "foo"],
+            )
+        assert "Query referenced positional parameter $34, but it was not set" in str(
+            exc_info.value
+        )

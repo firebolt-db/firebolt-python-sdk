@@ -561,3 +561,111 @@ def test_select_struct(
             )
         finally:
             c.execute(cleanup_struct_query)
+
+
+def test_fb_numeric_paramstyle_all_types(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: insert/select all supported types, and parameter count errors."""
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with connection.cursor() as c:
+            c.execute('DROP TABLE IF EXISTS "test_fb_numeric_all_types_sync"')
+            c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_all_types_sync" ('
+                "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, a ARRAY(INT), dec DECIMAL(38, 3)"
+                ")"
+            )
+            params = [
+                1,  # i INT
+                1.123,  # f FLOAT
+                "text",  # s STRING
+                None,  # sn STRING NULL
+                date(2022, 1, 1),  # d DATE
+                datetime(2022, 1, 1, 1, 1, 1),  # dt DATETIME
+                True,  # b BOOL
+                [1, 2, 3],  # a ARRAY(INT)
+                Decimal("123.456"),  # dec DECIMAL(38, 3)
+            ]
+            c.execute(
+                'INSERT INTO "test_fb_numeric_all_types_sync" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                params,
+            )
+            c.execute(
+                'SELECT * FROM "test_fb_numeric_all_types_sync" WHERE i = $1', [1]
+            )
+            result = c.fetchall()
+            # None is returned as None, arrays as lists, decimals as Decimal
+            assert result == [params]
+
+
+def test_fb_numeric_paramstyle_not_enough_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: not enough parameters supplied."""
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with connection.cursor() as c:
+            with raises(FireboltStructuredError) as exc_info:
+                c.execute("SELECT $1, $2", [1])
+            assert (
+                "query referenced positional parameter $2, but it was not set"
+                in str(exc_info.value).lower()
+            )
+
+
+def test_fb_numeric_paramstyle_too_many_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: too many parameters supplied (should succeed)."""
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with connection.cursor() as c:
+            c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params2_sync"')
+            c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_params2_sync" (i INT, s STRING)'
+            )
+            # Three params for two placeholders: should succeed, extra param ignored
+            c.execute(
+                'INSERT INTO "test_fb_numeric_params2_sync" VALUES ($1, $2)',
+                [1, "foo", 123],
+            )
+            c.execute('SELECT * FROM "test_fb_numeric_params2_sync" WHERE i = $1', [1])
+            result = c.fetchall()
+            assert result == [[1, "foo"]]
+
+
+def test_fb_numeric_paramstyle_incorrect_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        c = connection.cursor()
+        with raises(FireboltStructuredError) as exc_info:
+            c.execute(
+                "SELECT $34, $72",
+                [1, "foo"],
+            )
+        assert "Query referenced positional parameter $34, but it was not set" in str(
+            exc_info.value
+        )
