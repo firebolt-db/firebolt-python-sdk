@@ -374,6 +374,7 @@ parameters equal in length to the number of placeholders in the statement.
 **QMARK style example (default):**
 
 ::
+
     # No need to set paramstyle, it defaults to "qmark"
 
     cursor.execute(
@@ -390,6 +391,7 @@ parameters equal in length to the number of placeholders in the statement.
         "INSERT INTO test_table2 VALUES (?, ?, ?)",
         (1, "hello", "2018-01-01"),
     )
+
 
 **fb_numeric style example (server-side substitution):**
 
