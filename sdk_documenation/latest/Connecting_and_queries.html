@@ -421,10 +421,18 @@ below are from the last SELECT query in <a class="reference internal" href="#ins
 placeholders and then pass values into those placeholders when the query is run. This
 protects against SQL injection attacks and also helps manage dynamic queries that are
 likely to change, such as filter UIs or access control.</p>
+<p>There are two supported styles for parameterized queries in the Firebolt Python SDK:</p>
+<ul class="simple">
+<li><p><strong>QMARK style</strong> (default): Use question marks <code class="docutils literal notranslate"><span class="pre">?</span></code> as placeholders. This is controlled by the <code class="docutils literal notranslate"><span class="pre">firebolt.db.paramstyle</span></code> variable set to <code class="docutils literal notranslate"><span class="pre">&quot;qmark&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;native&quot;</span></code>. Substitution is performed on the client side.</p></li>
+<li><p><strong>FB Numeric style</strong>: Use numbered placeholders <code class="docutils literal notranslate"><span class="pre">$1,</span> <span class="pre">$2,</span> <span class="pre">...</span></code>. This is enabled by setting <code class="docutils literal notranslate"><span class="pre">firebolt.db.paramstyle</span> <span class="pre">=</span> <span class="pre">&quot;fb_numeric&quot;</span></code> before connecting. Substitution is performed on the server side, providing additional protection against SQL injection.</p></li>
+</ul>
 <p>To run a parameterized query, use the <code class="docutils literal notranslate"><span class="pre">execute()</span></code> cursor method. Add placeholders to
-your statement using question marks <code class="docutils literal notranslate"><span class="pre">?</span></code>, and in the second argument pass a tuple of
-parameters equal in length to the  number of <code class="docutils literal notranslate"><span class="pre">?</span></code> in the statement.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+your statement using the appropriate style, and in the second argument pass a tuple of
+parameters equal in length to the number of placeholders in the statement.</p>
+<p><strong>QMARK style example (default):</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># No need to set paramstyle, it defaults to &quot;qmark&quot;</span>
+
+<span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    CREATE FACT TABLE IF NOT EXISTS test_table2 (</span>
 <span class="sd">        id INT,</span>
@@ -433,20 +441,38 @@ parameters equal in length to the  number of <code class="docutils literal notra
 <span class="sd">    )</span>
 <span class="sd">    PRIMARY INDEX id;&quot;&quot;&quot;</span>
 <span class="p">)</span>
+
+<span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="s2">&quot;INSERT INTO test_table2 VALUES (?, ?, ?)&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="s2">&quot;2018-01-01&quot;</span><span class="p">),</span>
+<span class="p">)</span>
 </pre></div>
 </div>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
-    <span class="s2">&quot;INSERT INTO test_table2 VALUES (?, ?, ?)&quot;</span><span class="p">,</span>
-    <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;apple&quot;</span><span class="p">,</span> <span class="s2">&quot;2018-01-01&quot;</span><span class="p">),</span>
+<p><strong>fb_numeric style example (server-side substitution):</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">firebolt.db</span>
+<span class="n">firebolt</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">paramstyle</span> <span class="o">=</span> <span class="s2">&quot;fb_numeric&quot;</span>
+
+<span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="s2">&quot;INSERT INTO test_table2 VALUES ($1, $2, $3)&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;world&quot;</span><span class="p">,</span> <span class="s2">&quot;2018-01-02&quot;</span><span class="p">),</span>
 <span class="p">)</span>
 
-<span class="n">cursor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<span class="c1"># paramstyle only needs to be set once, it will be used for all subsequent queries</span>
+
+<span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+    <span class="s2">&quot;INSERT INTO test_table2 VALUES ($1, $2, $3)&quot;</span><span class="p">,</span>
+    <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;!&quot;</span><span class="p">,</span> <span class="s2">&quot;2018-01-03&quot;</span><span class="p">),</span>
+<span class="p">)</span>
 </pre></div>
 </div>
 <p id="parameterized-query-executemany-example">If you need to run the same statement multiple times with different parameter inputs,
 you can use the <code class="docutils literal notranslate"><span class="pre">executemany()</span></code> cursor method. This allows multiple tuples to be passed
 as values in the second argument.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">firebolt.db</span>
+<span class="c1"># Explicitly set paramstyle to &quot;qmark&quot; for QMARK style in case it was changed</span>
+<span class="n">firebolt</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">paramstyle</span> <span class="o">=</span> <span class="s2">&quot;qmark&quot;</span>
+
+<span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span>
     <span class="s2">&quot;INSERT INTO test_table2 VALUES (?, ?, ?)&quot;</span><span class="p">,</span>
     <span class="p">(</span>
         <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;banana&quot;</span><span class="p">,</span> <span class="s2">&quot;2019-01-01&quot;</span><span class="p">),</span>
