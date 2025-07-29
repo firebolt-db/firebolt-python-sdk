@@ -14,7 +14,7 @@ executing queries using a library of Python classes and functions.
 Prerequisites
 ========================
 
-* Python version 3.8 or later along with the pip package installer. For more information,
+* Python version 3.9 or later along with the pip package installer. For more information,
   see the `Python <https://www.python.org/downloads/>`_ web page.
 
 * A Firebolt account and login credentials.
