@@ -12,12 +12,13 @@ from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 from firebolt.utils.exception import FireboltStructuredError
+from tests.integration.dbapi.conftest import LONG_SELECT_DEFAULT_V2
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
 LONG_SELECT = (
-    "SELECT checksum(*) FROM GENERATE_SERIES(1, 350000000000)"  # approx 6m runtime
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, {long_value})"  # approx 6m runtime
 )
 
 
@@ -106,13 +107,16 @@ def test_select_nan(connection: Connection) -> None:
 def test_long_query(
     connection: Connection,
     minimal_time: Callable[[float], None],
+    long_test_value: Callable[[int], int],
 ) -> None:
     """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
 
     minimal_time(350)
 
     with connection.cursor() as c:
-        c.execute(LONG_SELECT)
+        c.execute(
+            LONG_SELECT.format(long_value=long_test_value(LONG_SELECT_DEFAULT_V2))
+        )
         data = c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 

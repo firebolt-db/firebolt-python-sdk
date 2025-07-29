@@ -1,3 +1,4 @@
+import os
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from logging import getLogger
@@ -15,6 +16,19 @@ CREATE_TEST_TABLE = (
     'CREATE DIMENSION TABLE IF NOT EXISTS "test_tbl" (id int, name string)'
 )
 DROP_TEST_TABLE = 'DROP TABLE IF EXISTS "test_tbl" CASCADE'
+
+LONG_SELECT_DEFAULT_V1 = 250000000000
+LONG_SELECT_DEFAULT_V2 = 350000000000
+
+
+@fixture
+def long_test_value() -> int:
+    """Return the long test value from environment variable or 0 to use default."""
+
+    def long_test_value_with_default(default: int = 0) -> int:
+        return int(os.getenv("LONG_TEST_VALUE", default))
+
+    return long_test_value_with_default
 
 
 @fixture
