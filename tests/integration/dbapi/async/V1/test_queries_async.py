@@ -9,13 +9,14 @@ from pytest import fixture, mark, raises
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
+from tests.integration.dbapi.conftest import LONG_SELECT_DEFAULT_V1
 
 VALS_TO_INSERT_2 = ",".join(
     [f"({i}, {i-3}, '{val}')" for (i, val) in enumerate(range(4, 1000))]
 )
 LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT_2}'
 LONG_SELECT = (
-    "SELECT checksum(*) FROM GENERATE_SERIES(1, 250000000000)"  # approx 6m runtime
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, {long_value})"  # approx 6m runtime
 )
 
 CREATE_EXTERNAL_TABLE = """CREATE EXTERNAL TABLE IF NOT EXISTS "ex_lineitem" (
@@ -174,6 +175,7 @@ async def test_select_nan(connection: Connection) -> None:
 async def test_long_query(
     connection: Connection,
     minimal_time: Callable[[float], None],
+    long_test_value: int,
 ) -> None:
     """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
 
@@ -181,7 +183,9 @@ async def test_long_query(
     minimal_time(350)
 
     async with connection.cursor() as c:
-        await c.execute(LONG_SELECT)
+        await c.execute(
+            LONG_SELECT.format(long_value=long_test_value(LONG_SELECT_DEFAULT_V1))
+        )
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 

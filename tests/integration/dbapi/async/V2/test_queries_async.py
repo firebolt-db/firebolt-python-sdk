@@ -12,6 +12,7 @@ from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
 from firebolt.utils.exception import FireboltStructuredError
+from tests.integration.dbapi.conftest import LONG_SELECT_DEFAULT_V2
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(
@@ -19,7 +20,7 @@ VALS_TO_INSERT_2 = ",".join(
 )
 LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT_2}'
 LONG_SELECT = (
-    "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)"  # approx 6m runtime
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, {long_value})"  # approx 6m runtime
 )
 
 
@@ -102,13 +103,16 @@ async def test_select_nan(connection: Connection) -> None:
 async def test_long_query(
     connection: Connection,
     minimal_time: Callable[[float], None],
+    long_test_value: Callable[[int], int],
 ) -> None:
     """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
 
     minimal_time(350)
 
     async with connection.cursor() as c:
-        await c.execute(LONG_SELECT)
+        await c.execute(
+            LONG_SELECT.format(long_value=long_test_value(LONG_SELECT_DEFAULT_V2))
+        )
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 
@@ -265,16 +269,16 @@ async def test_parameterized_query(connection: Connection) -> None:
 async def test_parameterized_query_with_special_chars(connection: Connection) -> None:
     """Query parameters are handled properly."""
     async with connection.cursor() as c:
-        params = ["text with 'quote'", "text with \\slashes"]
+        parameters = ["text with 'quote'", "text with \\slashes"]
 
         await c.execute(
             "SELECT ? as one, ? as two",
-            params,
+            parameters,
         )
 
         result = await c.fetchall()
         assert result == [
-            [params[0], params[1]]
+            [parameters[0], parameters[1]]
         ], "Invalid data in table after parameterized insert"
 
 
