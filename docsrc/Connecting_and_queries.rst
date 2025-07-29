@@ -368,7 +368,7 @@ There are two supported styles for parameterized queries in the Firebolt Python 
 * **FB Numeric style**: Use numbered placeholders ``$1, $2, ...``. This is enabled by setting ``firebolt.db.paramstyle = "fb_numeric"`` before connecting. Substitution is performed on the server side, providing additional protection against SQL injection.
 
 To run a parameterized query, use the ``execute()`` cursor method. Add placeholders to
-your statement using the appropriate style, and in the second argument pass a tuple or list of
+your statement using the appropriate style, and in the second argument pass a tuple of
 parameters equal in length to the number of placeholders in the statement.
 
 **QMARK style example (default):**
