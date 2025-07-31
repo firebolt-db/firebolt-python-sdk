@@ -1,15 +1,7 @@
 import os
-from dataclasses import dataclass, field
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    Generic,
-    Optional,
-    Protocol,
-    Tuple,
-    TypeVar,
-)
+from typing import Any, Callable, Dict, Generic, Optional, Protocol, TypeVar
+
+from firebolt.utils.util import DatabaseInfo, EngineInfo
 
 T = TypeVar("T")
 
@@ -27,26 +19,6 @@ def noop_if_disabled(func: Callable) -> Callable:
             return func(self, *args, **kwargs)
 
     return wrapper
-
-@dataclass
-class EngineInfo:
-    """Class to hold engine information for caching."""
-    url: str
-    params: Dict[str, str]
-
-@dataclass
-class DatabaseInfo:
-    """Class to hold database information for caching."""
-    name: str
-
-@dataclass
-class ConnectionInfo:
-    """Class to hold connection information for caching."""
-    id: Optional[str] = None
-    expiry_time: Optional[int] = None
-    system_engine_url: Optional[str] = None
-    databases: Dict[str, DatabaseInfo] = field(default_factory=dict)
-    engines: Dict[str, EngineInfo] = field(default_factory=dict)
 
 
 class UtilCache(Generic[T]):
@@ -101,89 +73,46 @@ class UtilCache(Generic[T]):
         return key in self._cache
 
 
-class ConnectionInfoCache:
-    """
-    A wrapper around UtilCache to provide granular access to ConnectionInfo.
-    """
+class CacheController:
+    def __init__(self) -> None:
+        self._engine_cache = UtilCache[EngineInfo](cache_name="engine_info")
 
-    def __init__(self, cache_name: str = "") -> None:
-        self._cache = UtilCache[ConnectionInfo](cache_name)
+        self._system_engine_cache = UtilCache[EngineInfo](cache_name="system_engine")
 
-    def get(self, key: ReprCacheable) -> Optional[ConnectionInfo]:
-        return self._cache.get(key)
+        self._database_cache = UtilCache[DatabaseInfo](cache_name="database_info")
 
-    def set(self, key: ReprCacheable, value: ConnectionInfo) -> None:
-        self._cache.set(key, value)
+    @property
+    def engine_cache(self) -> UtilCache[EngineInfo]:
+        """Get the engine cache."""
+        return self._engine_cache
 
-    def delete(self, key: ReprCacheable) -> None:
-        self._cache.delete(key)
+    @property
+    def database_cache(self) -> UtilCache[DatabaseInfo]:
+        """Get the database cache."""
+        return self._database_cache
 
-    def clear(self) -> None:
-        self._cache.clear()
+    @property
+    def system_engine_cache(self) -> UtilCache[EngineInfo]:
+        """Get the system engine cache."""
+        return self._system_engine_cache
+
+    def enable(self) -> None:
+        """Enable the cache."""
+        self._engine_cache.enable()
+        self._system_engine_cache.enable()
+        self._database_cache.enable()
 
     def disable(self) -> None:
-        self._cache.disable()
-    
-    def enable(self) -> None:
-        self._cache.enable()
+        """Disable the cache."""
+        self._engine_cache.disable()
+        self._system_engine_cache.disable()
+        self._database_cache.disable()
 
-    def set_id(self, key: ReprCacheable, id: str) -> None:
-        conn_info = self.get(key) or ConnectionInfo(id=id)
-        conn_info.id = id
-        self.set(key, conn_info)
-
-    def get_id(self, key: ReprCacheable) -> Optional[str]:
-        conn_info = self.get(key)
-        return conn_info.id if conn_info else None
-
-    def get_system_engine_url(self, key: ReprCacheable) -> Optional[str]:
-        conn_info = self.get(key)
-        return conn_info.system_engine_url if conn_info else None
-
-    def set_system_engine_url(self, key: ReprCacheable, url: str) -> None:
-        conn_info = self.get(key) or ConnectionInfo()
-        conn_info.system_engine_url = url
-        self.set(key, conn_info)
-
-    def get_expiry_time(self, key: ReprCacheable) -> Optional[int]:
-        conn_info = self.get(key)
-        return conn_info.expiry_time if conn_info else None
-
-    def get_engines(self, key: ReprCacheable) -> Optional[Dict[str, EngineInfo]]:
-        conn_info = self.get(key)
-        return conn_info.engines if conn_info else None
-
-    def get_engine_by_name(
-        self, key: ReprCacheable, engine_name: str
-    ) -> Optional[EngineInfo]:
-        engines = self.get_engines(key)
-        return engines.get(engine_name) if engines else None
-
-    def add_engine(self, key: ReprCacheable, engine_name: str, engine: EngineInfo) -> None:
-        conn_info = self.get(key) or ConnectionInfo()
-        conn_info.engines[engine_name] = engine
-        self.set(key, conn_info)
-
-    def get_databases(self, key: ReprCacheable) -> Optional[Dict[str, DatabaseInfo]]:
-        conn_info = self.get(key)
-        return conn_info.databases if conn_info else None
-
-    def get_database_by_name(
-        self, key: ReprCacheable, db_name: str
-    ) -> Optional[DatabaseInfo]:
-        databases = self.get_databases(key)
-        return databases.get(db_name) if databases else None
-
-    def add_database(
-        self, key: ReprCacheable, db_name: str, database: DatabaseInfo
-    ) -> None:
-        conn_info = self.get(key) or ConnectionInfo()
-        conn_info.databases[db_name] = database
-        self.set(key, conn_info)
+    def clear(self) -> None:
+        """Clear all caches."""
+        self._engine_cache.clear()
+        self._system_engine_cache.clear()
+        self._database_cache.clear()
 
 
-# _firebolt_system_engine_cache = UtilCache[Tuple[str, Dict[str, str]]](
-#     cache_name="system_engine"
-# )
-
-_firebolt_cache = ConnectionInfoCache(cache_name="connection_info")
+_firebolt_cache = CacheController()

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Dict, Tuple
-
 from httpx import Timeout, codes
 
 from firebolt.client.auth import Auth
@@ -13,15 +11,15 @@ from firebolt.utils.exception import (
     InterfaceError,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-from firebolt.utils.util import parse_url_and_params
+from firebolt.utils.util import EngineInfo, parse_url_and_params
 
 
 async def _get_system_engine_url_and_params(
     auth: Auth,
     account_name: str,
     api_endpoint: str,
-) -> Tuple[str, Dict[str, str]]:
-    if result := _firebolt_cache.get_system_engine_url([account_name, api_endpoint]):
+) -> EngineInfo:
+    if result := _firebolt_cache.system_engine_cache.get([account_name, api_endpoint]):
         return result
     async with AsyncClientV2(
         auth=auth,
@@ -40,7 +38,7 @@ async def _get_system_engine_url_and_params(
                 f"{response.status_code} {response.content.decode()}"
             )
         result = parse_url_and_params(response.json()["engineUrl"])
-        _firebolt_cache.set_system_engine_url(
-            key=[account_name, api_endpoint], url=result
+        _firebolt_cache.system_engine_cache.set(
+            key=[account_name, api_endpoint], value=result
         )
         return result

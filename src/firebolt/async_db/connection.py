@@ -303,7 +303,7 @@ async def connect_v2(
 
     api_endpoint = fix_url_schema(api_endpoint)
 
-    system_engine_url, system_engine_params = await _get_system_engine_url_and_params(
+    system_engine_info = await _get_system_engine_url_and_params(
         auth, account_name, api_endpoint
     )
 
@@ -316,12 +316,12 @@ async def connect_v2(
     )
 
     async with Connection(
-        system_engine_url,
+        system_engine_info.url,
         None,
         client,
         CursorV2,
         api_endpoint,
-        system_engine_params,
+        system_engine_info.params,
     ) as system_engine_connection:
 
         cursor = system_engine_connection.cursor()

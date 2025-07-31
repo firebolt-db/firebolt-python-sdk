@@ -41,15 +41,17 @@ from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 logger = logging.getLogger(__name__)
 
 
-def prepare_ua_parameters(account_name: Optional[str], api_endpoint: str) -> List[Tuple[str, str]]:
+def prepare_ua_parameters(
+    account_name: Optional[str], api_endpoint: str
+) -> List[Tuple[str, str]]:
     ua_parameters = []
 
-    cached_id = _firebolt_cache.get_id([account_name, api_endpoint])
+    # cached_id = _firebolt_cache.get_id([account_name, api_endpoint])
     conn_uuid = uuid4().hex
     ua_parameters.append(("connId", conn_uuid))
-    if cached_id:
-        ua_parameters.append(("cachedConnId", cached_id + "-memory"))
-    _firebolt_cache.set_id([account_name, api_endpoint], conn_uuid)
+    # if cached_id:
+    #     ua_parameters.append(("cachedConnId", cached_id + "-memory"))
+    # _firebolt_cache.set_id([account_name, api_endpoint], conn_uuid)
 
     return ua_parameters
 
@@ -153,7 +155,7 @@ def connect_v2(
 
     api_endpoint = fix_url_schema(api_endpoint)
 
-    system_engine_url, system_engine_params = _get_system_engine_url_and_params(
+    system_engine_info = _get_system_engine_url_and_params(
         auth, account_name, api_endpoint
     )
 
@@ -166,12 +168,12 @@ def connect_v2(
     )
 
     with Connection(
-        system_engine_url,
+        system_engine_info.url,
         None,
         client,
         CursorV2,
         api_endpoint,
-        system_engine_params,
+        system_engine_info.params,
     ) as system_engine_connection:
 
         cursor = system_engine_connection.cursor()
