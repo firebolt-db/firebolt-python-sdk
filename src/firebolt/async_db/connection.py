@@ -21,7 +21,7 @@ from firebolt.common.base_connection import (
     BaseConnection,
     _parse_async_query_info_results,
 )
-from firebolt.common.cache import _firebolt_system_engine_cache
+from firebolt.common.cache import _firebolt_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -231,7 +231,7 @@ async def connect(
     user_clients = additional_parameters.get("user_clients", [])
     user_agent_header = get_user_agent_header(user_drivers, user_clients)
     if disable_cache:
-        _firebolt_system_engine_cache.disable()
+        _firebolt_cache.disable()
     # Use CORE if auth is FireboltCore
     # Use V2 if auth is ClientCredentials
     # Use V1 if auth is ServiceAccount or UsernamePassword

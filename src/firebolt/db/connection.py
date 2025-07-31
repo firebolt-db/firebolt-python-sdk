@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 from ssl import SSLContext
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from uuid import uuid4
 from warnings import warn
 
 from httpx import Timeout
@@ -20,7 +21,7 @@ from firebolt.common.base_connection import (
     BaseConnection,
     _parse_async_query_info_results,
 )
-from firebolt.common.cache import _firebolt_system_engine_cache
+from firebolt.common.cache import _firebolt_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url_and_params
@@ -38,6 +39,19 @@ from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
 logger = logging.getLogger(__name__)
+
+
+def prepare_ua_parameters(account_name: Optional[str], api_endpoint: str) -> List[Tuple[str, str]]:
+    ua_parameters = []
+
+    cached_id = _firebolt_cache.get_id([account_name, api_endpoint])
+    conn_uuid = uuid4().hex
+    ua_parameters.append(("connId", conn_uuid))
+    if cached_id:
+        ua_parameters.append(("cachedConnId", cached_id + "-memory"))
+    _firebolt_cache.set_id([account_name, api_endpoint], conn_uuid)
+
+    return ua_parameters
 
 
 def connect(
@@ -61,10 +75,13 @@ def connect(
     assert auth is not None
     user_drivers = additional_parameters.get("user_drivers", [])
     user_clients = additional_parameters.get("user_clients", [])
-    user_agent_header = get_user_agent_header(user_drivers, user_clients)
-    auth_version = auth.get_firebolt_version()
+    ua_parameters = []
     if disable_cache:
-        _firebolt_system_engine_cache.disable()
+        _firebolt_cache.disable()
+    else:
+        ua_parameters = prepare_ua_parameters(account_name, api_endpoint)
+    user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
+    auth_version = auth.get_firebolt_version()
     # Use CORE if auth is FireboltCore
     # Use V2 if auth is ClientCredentials
     # Use V1 if auth is ServiceAccount or UsernamePassword

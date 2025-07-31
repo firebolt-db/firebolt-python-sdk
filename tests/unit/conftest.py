@@ -8,7 +8,7 @@ from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
-from firebolt.common.cache import _firebolt_system_engine_cache
+from firebolt.common.cache import _firebolt_cache
 from firebolt.common.settings import Settings
 from firebolt.utils.exception import (
     DatabaseError,
@@ -43,7 +43,7 @@ def global_fake_fs(request) -> None:
 
 @fixture(autouse=True)
 def clear_cache() -> None:
-    _firebolt_system_engine_cache.clear()
+    _firebolt_cache.clear()
 
 
 @fixture

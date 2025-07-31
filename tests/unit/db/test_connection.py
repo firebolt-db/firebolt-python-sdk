@@ -10,7 +10,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
 from firebolt.common._types import ColType
-from firebolt.common.cache import _firebolt_system_engine_cache
+from firebolt.common.cache import _firebolt_cache
 from firebolt.db import Connection, connect
 from firebolt.db.cursor import CursorV2
 from firebolt.utils.exception import (
@@ -248,7 +248,7 @@ def test_connect_caching(
         assert system_engine_call_counter != 1, "System engine URL was cached"
 
     # Reset caches for the next test iteration
-    _firebolt_system_engine_cache.enable()
+    _firebolt_cache.enable()
 
 
 def test_connect_system_engine_404(

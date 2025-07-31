@@ -6,7 +6,7 @@ from httpx import Timeout, codes
 
 from firebolt.client import ClientV2
 from firebolt.client.auth import Auth
-from firebolt.common.cache import _firebolt_system_engine_cache
+from firebolt.common.cache import _firebolt_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
@@ -21,7 +21,7 @@ def _get_system_engine_url_and_params(
     account_name: str,
     api_endpoint: str,
 ) -> Tuple[str, Dict[str, str]]:
-    if result := _firebolt_system_engine_cache.get([account_name, api_endpoint]):
+    if result := _firebolt_cache.get_system_engine_url([account_name, api_endpoint]):
         return result
     with ClientV2(
         auth=auth,
@@ -40,7 +40,7 @@ def _get_system_engine_url_and_params(
                 f"{response.status_code} {response.content.decode()}"
             )
         result = parse_url_and_params(response.json()["engineUrl"])
-        _firebolt_system_engine_cache.set(
-            key=[account_name, api_endpoint], value=result
+        _firebolt_cache.set_system_engine_url(
+            key=[account_name, api_endpoint], url=result
         )
         return result
