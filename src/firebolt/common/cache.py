@@ -1,7 +1,7 @@
 import os
 from typing import Any, Callable, Dict, Generic, Optional, Protocol, TypeVar
 
-from firebolt.utils.util import DatabaseInfo, EngineInfo
+from firebolt.utils.util import ConnectionInfo
 
 T = TypeVar("T")
 
@@ -73,46 +73,4 @@ class UtilCache(Generic[T]):
         return key in self._cache
 
 
-class CacheController:
-    def __init__(self) -> None:
-        self._engine_cache = UtilCache[EngineInfo](cache_name="engine_info")
-
-        self._system_engine_cache = UtilCache[EngineInfo](cache_name="system_engine")
-
-        self._database_cache = UtilCache[DatabaseInfo](cache_name="database_info")
-
-    @property
-    def engine_cache(self) -> UtilCache[EngineInfo]:
-        """Get the engine cache."""
-        return self._engine_cache
-
-    @property
-    def database_cache(self) -> UtilCache[DatabaseInfo]:
-        """Get the database cache."""
-        return self._database_cache
-
-    @property
-    def system_engine_cache(self) -> UtilCache[EngineInfo]:
-        """Get the system engine cache."""
-        return self._system_engine_cache
-
-    def enable(self) -> None:
-        """Enable the cache."""
-        self._engine_cache.enable()
-        self._system_engine_cache.enable()
-        self._database_cache.enable()
-
-    def disable(self) -> None:
-        """Disable the cache."""
-        self._engine_cache.disable()
-        self._system_engine_cache.disable()
-        self._database_cache.disable()
-
-    def clear(self) -> None:
-        """Clear all caches."""
-        self._engine_cache.clear()
-        self._system_engine_cache.clear()
-        self._database_cache.clear()
-
-
-_firebolt_cache = CacheController()
+_firebolt_cache = UtilCache[ConnectionInfo](cache_name="connection_info")

@@ -11,7 +11,11 @@ from firebolt.utils.exception import (
     InterfaceError,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-from firebolt.utils.util import EngineInfo, parse_url_and_params
+from firebolt.utils.util import (
+    ConnectionInfo,
+    EngineInfo,
+    parse_url_and_params,
+)
 
 
 async def _get_system_engine_url_and_params(
@@ -19,7 +23,8 @@ async def _get_system_engine_url_and_params(
     account_name: str,
     api_endpoint: str,
 ) -> EngineInfo:
-    if result := _firebolt_cache.system_engine_cache.get([account_name, api_endpoint]):
+    cache = _firebolt_cache.get([account_name, api_endpoint])
+    if cache and (result := cache.system_engine):
         return result
     async with AsyncClientV2(
         auth=auth,
@@ -38,7 +43,8 @@ async def _get_system_engine_url_and_params(
                 f"{response.status_code} {response.content.decode()}"
             )
         result = parse_url_and_params(response.json()["engineUrl"])
-        _firebolt_cache.system_engine_cache.set(
-            key=[account_name, api_endpoint], value=result
-        )
+        if not cache:
+            cache = ConnectionInfo()
+        cache.system_engine = result
+        _firebolt_cache.set([account_name, api_endpoint], cache)
         return result

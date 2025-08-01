@@ -1,6 +1,7 @@
 from asyncio import run
 from re import Pattern
 from typing import Callable, List
+from unittest.mock import ANY as AnyValue
 from unittest.mock import patch
 
 from httpx import codes
@@ -420,7 +421,9 @@ async def test_connect_with_user_agent(
             },
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([("DriverA", "1.1")], [("MyConnector", "1.0")])
+        ut.assert_called_once_with(
+            [("DriverA", "1.1")], [("MyConnector", "1.0")], AnyValue
+        )
 
 
 async def test_connect_no_user_agent(
@@ -445,7 +448,7 @@ async def test_connect_no_user_agent(
             api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([], [])
+        ut.assert_called_once_with([], [], AnyValue)
 
 
 def test_from_asyncio(

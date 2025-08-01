@@ -1,4 +1,5 @@
 from typing import Callable, List, Optional, Tuple
+from unittest.mock import ANY as AnyValue
 from unittest.mock import patch
 
 from pyfakefs.fake_filesystem_unittest import Patcher
@@ -375,7 +376,7 @@ async def test_connect_with_user_agent(
             },
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_with([("DriverA", "1.1")], [("MyConnector", "1.0")])
+        ut.assert_called_with([("DriverA", "1.1")], [("MyConnector", "1.0")], AnyValue)
 
 
 async def test_connect_no_user_agent(
@@ -405,7 +406,7 @@ async def test_connect_no_user_agent(
             api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_with([], [])
+        ut.assert_called_with([], [], AnyValue)
 
 
 @mark.parametrize(

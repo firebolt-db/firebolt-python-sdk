@@ -39,7 +39,7 @@ class ConnectionInfo:
 
     id: Optional[str] = None
     expiry_time: Optional[int] = None
-    system_engine_url: Optional[str] = None
+    system_engine: Optional[EngineInfo] = None
     databases: Dict[str, DatabaseInfo] = field(default_factory=dict)
     engines: Dict[str, EngineInfo] = field(default_factory=dict)
 
