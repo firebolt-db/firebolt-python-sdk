@@ -598,3 +598,77 @@ async def test_fb_numeric_paramstyle_incorrect_params(
         assert "Query referenced positional parameter $34, but it was not set" in str(
             exc_info.value
         )
+
+
+async def test_engine_switch(
+    database_name: str,
+    connection_system_engine: Connection,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    engine_name: str,
+) -> None:
+    system_cursor = connection_system_engine.cursor()
+    await system_cursor.execute("SELECT current_engine()")
+    result = await system_cursor.fetchone()
+    assert (
+        result[0] == "system"
+    ), f"Incorrect setup - system engine cursor points at {result[0]}"
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        await cursor.execute("SELECT current_engine()")
+        result = await cursor.fetchone()
+        assert result[0] == engine_name, "Engine switch failed"
+        # Test switching back to system engine
+        await cursor.execute("USE ENGINE system")
+        await cursor.execute("SELECT current_engine()")
+        result = await cursor.fetchone()
+        assert result[0] == "system", "Switching back to system engine failed"
+
+
+async def test_database_switch(
+    database_name: str,
+    connection_system_engine_no_db: Connection,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    engine_name: str,
+) -> None:
+    system_cursor = connection_system_engine_no_db.cursor()
+    await system_cursor.execute("SELECT current_database()")
+    result = await system_cursor.fetchone()
+    assert (
+        result[0] == "account_db"
+    ), f"Incorrect setup - system engine cursor points at {result[0]}"
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        await cursor.execute("SELECT current_database()")
+        result = await cursor.fetchone()
+        assert result[0] == database_name, "Database switch failed"
+        try:
+            # Test switching back to system database
+            await system_cursor.execute(
+                f"CREATE DATABASE IF NOT EXISTS {database_name}_switch"
+            )
+            await cursor.execute(f"USE DATABASE {database_name}_switch")
+            await cursor.execute("SELECT current_database()")
+            result = await cursor.fetchone()
+            assert (
+                result[0] == f"{database_name}_switch"
+            ), "Switching back to switch database failed"
+        finally:
+            await system_cursor.execute(
+                f"DROP DATABASE IF EXISTS {database_name}_switch"
+            )

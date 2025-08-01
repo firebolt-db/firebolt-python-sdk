@@ -37,6 +37,8 @@ from firebolt.utils.firebolt_core import (
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import (
     ConnectionInfo,
+    DatabaseInfo,
+    EngineInfo,
     fix_url_schema,
     validate_engine_name_and_url_v1,
 )
@@ -357,10 +359,31 @@ async def connect_v2(
     ) as system_engine_connection:
 
         cursor = system_engine_connection.cursor()
+
+        # TODO: rework this, this is prototyping right now
         if database:
-            await cursor.execute(f'USE DATABASE "{database}"')
+            cache = _firebolt_cache.get([account_name, api_endpoint])
+            cache = cache if cache else ConnectionInfo()
+            if cache.databases.get(database):
+                # If database is cached, use it
+                cursor.database = database
+            else:
+                await cursor.execute(f'USE DATABASE "{database}"')
+                cache.databases[database] = DatabaseInfo(database)
+                _firebolt_cache.set([account_name, api_endpoint], cache)
         if engine_name:
-            await cursor.execute(f'USE ENGINE "{engine_name}"')
+            cache = _firebolt_cache.get([account_name, api_endpoint])
+            cache = cache if cache else ConnectionInfo()
+            if cache.engines.get(engine_name):
+                # If engine is cached, use it
+                cursor.engine_url = cache.engines[engine_name].url
+                cursor._update_set_parameters(cache.engines[engine_name].params)
+            else:
+                await cursor.execute(f'USE ENGINE "{engine_name}"')
+                cache.engines[engine_name] = EngineInfo(
+                    cursor.engine_url, cursor.parameters
+                )  # ??
+                _firebolt_cache.set([account_name, api_endpoint], cache)
         # Ensure cursors created from this connection are using the same starting
         # database and engine
         return Connection(
