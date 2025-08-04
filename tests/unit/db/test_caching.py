@@ -3,22 +3,22 @@ from typing import Callable
 from pytest import fixture, mark
 from pytest_httpx import HTTPXMock
 
-from firebolt.async_db import connect
 from firebolt.client.auth import Auth
+from firebolt.db import connect
 from firebolt.utils.cache import _firebolt_cache
 
 
 @fixture
-async def connection_test(
+def connection_test(
     api_endpoint: str,
     auth: Auth,
     account_name: str,
 ):
     """Fixture to create a connection factory for testing."""
 
-    async def factory(db_name: str, engine_name: str, caching: bool) -> Callable:
+    def factory(db_name: str, engine_name: str, caching: bool) -> Callable:
 
-        async with await connect(
+        with connect(
             database=db_name,
             engine_name=engine_name,
             auth=auth,
@@ -26,13 +26,13 @@ async def connection_test(
             api_endpoint=api_endpoint,
             disable_cache=not caching,
         ) as connection:
-            await connection.cursor().execute("select*")
+            connection.cursor().execute("select*")
 
     return factory
 
 
 @fixture(autouse=True)
-async def enable_cache():
+def enable_cache():
     _firebolt_cache.enable()
     _firebolt_cache.clear()
     yield
@@ -40,7 +40,7 @@ async def enable_cache():
 
 
 @mark.parametrize("cache_enabled", [True, False])
-async def test_connect_caching(
+def test_connect_caching(
     db_name: str,
     engine_name: str,
     auth_url: str,
@@ -92,7 +92,7 @@ async def test_connect_caching(
     httpx_mock.add_callback(query_callback, url=query_url)
 
     for _ in range(3):
-        await connection_test(db_name, engine_name, cache_enabled)
+        connection_test(db_name, engine_name, cache_enabled)
 
     if cache_enabled:
         assert system_engine_call_counter == 1, "System engine URL was not cached"
@@ -108,7 +108,7 @@ async def test_connect_caching(
 
 
 @mark.parametrize("cache_enabled", [True, False])
-async def test_connect_db_switching_caching(
+def test_connect_db_switching_caching(
     db_name: str,
     engine_name: str,
     auth_url: str,
@@ -171,17 +171,17 @@ async def test_connect_db_switching_caching(
     httpx_mock.add_callback(query_callback, url=query_url)
 
     # Connect to first database
-    await connection_test(db_name, engine_name, cache_enabled)
+    connection_test(db_name, engine_name, cache_enabled)
 
     first_db_calls = use_database_call_counter
 
     # Connect to second database
-    await connection_test(second_db_name, engine_name, cache_enabled)
+    connection_test(second_db_name, engine_name, cache_enabled)
 
     second_db_calls = use_database_call_counter - first_db_calls
 
     # Connect to first database again
-    await connection_test(db_name, engine_name, cache_enabled)
+    connection_test(db_name, engine_name, cache_enabled)
 
     third_db_calls = use_database_call_counter - first_db_calls - second_db_calls
 
@@ -205,7 +205,7 @@ async def test_connect_db_switching_caching(
 
 
 @mark.parametrize("cache_enabled", [True, False])
-async def test_connect_engine_switching_caching(
+def test_connect_engine_switching_caching(
     db_name: str,
     engine_name: str,
     auth_url: str,
@@ -269,17 +269,17 @@ async def test_connect_engine_switching_caching(
     httpx_mock.add_callback(query_callback, url=query_url)
 
     # Connect to first engine
-    await connection_test(db_name, engine_name, cache_enabled)
+    connection_test(db_name, engine_name, cache_enabled)
 
     first_engine_calls = use_engine_call_counter
 
     # Connect to second engine
-    await connection_test(db_name, second_engine_name, cache_enabled)
+    connection_test(db_name, second_engine_name, cache_enabled)
 
     second_engine_calls = use_engine_call_counter - first_engine_calls
 
     # Connect to first engine again
-    await connection_test(db_name, engine_name, cache_enabled)
+    connection_test(db_name, engine_name, cache_enabled)
 
     third_engine_calls = (
         use_engine_call_counter - first_engine_calls - second_engine_calls

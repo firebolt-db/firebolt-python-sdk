@@ -1,10 +1,18 @@
 import logging
-from dataclasses import dataclass, field
 from functools import lru_cache
 from os import environ
 from time import time
 from types import TracebackType
-from typing import TYPE_CHECKING, Callable, Dict, List, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TypeVar,
+)
 from urllib.parse import parse_qs, urljoin, urlparse
 
 from httpx import URL, Response, codes
@@ -16,32 +24,6 @@ from firebolt.utils.exception import (
 
 T = TypeVar("T")
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class EngineInfo:
-    """Class to hold engine information for caching."""
-
-    url: str
-    params: Dict[str, str]
-
-
-@dataclass
-class DatabaseInfo:
-    """Class to hold database information for caching."""
-
-    name: str
-
-
-@dataclass
-class ConnectionInfo:
-    """Class to hold connection information for caching."""
-
-    id: Optional[str] = None
-    expiry_time: Optional[int] = None
-    system_engine: Optional[EngineInfo] = None
-    databases: Dict[str, DatabaseInfo] = field(default_factory=dict)
-    engines: Dict[str, EngineInfo] = field(default_factory=dict)
 
 
 def cached_property(func: Callable[..., T]) -> T:
@@ -230,7 +212,7 @@ class Timer:
             logger.debug(log_message)
 
 
-def parse_url_and_params(url: str) -> EngineInfo:
+def parse_url_and_params(url: str) -> Tuple[str, Dict]:
     """Extract URL and query parameters separately from a URL."""
     url = fix_url_schema(url)
     parsed_url = urlparse(url)
@@ -246,7 +228,7 @@ def parse_url_and_params(url: str) -> EngineInfo:
         if len(values) > 1:
             raise ValueError(f"Multiple values found for key '{key}'")
         query_params_dict[key] = values[0]
-    return EngineInfo(url=result_url, params=query_params_dict)
+    return (result_url, query_params_dict)
 
 
 class _ExceptionGroup(Exception):

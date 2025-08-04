@@ -4,24 +4,21 @@ from httpx import Timeout, codes
 
 from firebolt.client import ClientV2
 from firebolt.client.auth import Auth
-from firebolt.common.cache import _firebolt_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.utils.cache import ConnectionInfo, EngineInfo, _firebolt_cache
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     InterfaceError,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-from firebolt.utils.util import (
-    ConnectionInfo,
-    EngineInfo,
-    parse_url_and_params,
-)
+from firebolt.utils.util import parse_url_and_params
 
 
 def _get_system_engine_url_and_params(
     auth: Auth,
     account_name: str,
     api_endpoint: str,
+    connection_id: str,
 ) -> EngineInfo:
     cache = _firebolt_cache.get([account_name, api_endpoint])
     if cache and (result := cache.system_engine):
@@ -42,9 +39,9 @@ def _get_system_engine_url_and_params(
                 f"Unable to retrieve system engine endpoint {url}: "
                 f"{response.status_code} {response.content.decode()}"
             )
-        result = parse_url_and_params(response.json()["engineUrl"])
+        url, params = parse_url_and_params(response.json()["engineUrl"])
         if not cache:
-            cache = ConnectionInfo()
-        cache.system_engine = result
-        _firebolt_cache.set([account_name, api_endpoint], cache)
-        return result
+            cache = ConnectionInfo(id=connection_id)
+            _firebolt_cache.set([account_name, api_endpoint], cache)
+        cache.system_engine = EngineInfo(url=url, params=params)
+        return cache.system_engine

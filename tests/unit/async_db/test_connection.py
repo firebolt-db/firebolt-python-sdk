@@ -9,7 +9,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db.connection import Connection, connect
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common._types import ColType
-from firebolt.common.cache import _firebolt_cache
+from firebolt.utils.cache import _firebolt_cache
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     ConfigurationError,

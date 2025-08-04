@@ -8,6 +8,7 @@ from sys import modules
 from typing import Dict, List, Optional, Tuple
 
 from firebolt import __version__
+from firebolt.utils.cache import ConnectionInfo, ReprCacheable, _firebolt_cache
 
 
 @dataclass
@@ -224,3 +225,15 @@ def get_user_agent_header(
     for name, version in versions.drivers:
         drivers[name] = version
     return format_as_user_agent(drivers, clients, additional_properties or [])
+
+
+def get_cache_tracking(cache_key: ReprCacheable, conn_id: str) -> List[Tuple[str, str]]:
+    ua_parameters = []
+    ua_parameters.append(("connId", conn_id))
+    cache = _firebolt_cache.get(cache_key)
+    if cache:
+        ua_parameters.append(("cachedConnId", cache.id + "-memory"))
+    else:
+        _firebolt_cache.set(cache_key, ConnectionInfo(id=conn_id))
+
+    return ua_parameters

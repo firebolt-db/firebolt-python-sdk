@@ -57,15 +57,14 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
-from firebolt.common.cache import _firebolt_cache
 from firebolt.utils.async_util import anext, async_islice
-from firebolt.utils.util import (
+from firebolt.utils.cache import (
     ConnectionInfo,
     DatabaseInfo,
     EngineInfo,
-    Timer,
-    raise_error_from_response,
+    _firebolt_cache,
 )
+from firebolt.utils.util import Timer, raise_error_from_response
 
 logger = logging.getLogger(__name__)
 
@@ -343,7 +342,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Switch the current database context with caching."""
         cache_key = [self._client.account_name, self.connection.api_endpoint]
         cache = _firebolt_cache.get(cache_key)
-        cache = cache if cache else ConnectionInfo()
+        cache = cache if cache else ConnectionInfo(id=self.connection.id)
         if cache.databases.get(database):
             # If database is cached, use it
             self.database = database
@@ -356,7 +355,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Switch the current engine context with caching."""
         cache_key = [self._client.account_name, self.connection.api_endpoint]
         cache = _firebolt_cache.get(cache_key)
-        cache = cache if cache else ConnectionInfo()
+        cache = cache if cache else ConnectionInfo(id=self.connection.id)
         if cache.engines.get(engine):
             # If engine is cached, use it
             self.engine_url = cache.engines[engine].url

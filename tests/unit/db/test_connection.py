@@ -11,9 +11,9 @@ from pytest_httpx import HTTPXMock
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
 from firebolt.common._types import ColType
-from firebolt.common.cache import _firebolt_cache
 from firebolt.db import Connection, connect
 from firebolt.db.cursor import CursorV2
+from firebolt.utils.cache import _firebolt_cache
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     ConfigurationError,

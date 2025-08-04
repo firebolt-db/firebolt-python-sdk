@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ssl import SSLContext
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
 from httpx import Timeout
@@ -22,8 +22,8 @@ from firebolt.common.base_connection import (
     BaseConnection,
     _parse_async_query_info_results,
 )
-from firebolt.common.cache import _firebolt_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.utils.cache import _firebolt_cache
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -34,28 +34,11 @@ from firebolt.utils.firebolt_core import (
     parse_firebolt_core_url,
     validate_firebolt_core_parameters,
 )
-from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import (
-    ConnectionInfo,
-    fix_url_schema,
-    validate_engine_name_and_url_v1,
+from firebolt.utils.usage_tracker import (
+    get_cache_tracking,
+    get_user_agent_header,
 )
-
-
-def prepare_ua_parameters(
-    account_name: Optional[str], api_endpoint: str
-) -> List[Tuple[str, str]]:
-    ua_parameters = []
-    conn_uuid = uuid4().hex
-    cache_key = [account_name, api_endpoint]
-    ua_parameters.append(("connId", conn_uuid))
-    cache = _firebolt_cache.get(cache_key)
-    if cache and cache.id:
-        ua_parameters.append(("cachedConnId", cache.id + "-memory"))
-    else:
-        _firebolt_cache.set(cache_key, ConnectionInfo(id=conn_uuid))
-
-    return ua_parameters
+from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
 
 
 class Connection(BaseConnection):
@@ -92,6 +75,7 @@ class Connection(BaseConnection):
         "_is_closed",
         "client_class",
         "cursor_type",
+        "id",
     )
 
     def __init__(
@@ -102,12 +86,14 @@ class Connection(BaseConnection):
         cursor_type: Type[Cursor],
         api_endpoint: str,
         init_parameters: Optional[Dict[str, Any]] = None,
+        id: str = uuid4().hex,
     ):
         super().__init__(cursor_type)
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
         self._cursors: List[Cursor] = []
         self._client = client
+        self.id = id
         self.init_parameters = init_parameters or {}
         if database:
             self.init_parameters["database"] = database
@@ -251,11 +237,12 @@ async def connect(
     assert auth is not None
     user_drivers = additional_parameters.get("user_drivers", [])
     user_clients = additional_parameters.get("user_clients", [])
+    connection_id = uuid4().hex
     ua_parameters = []
     if disable_cache:
         _firebolt_cache.disable()
     else:
-        ua_parameters = prepare_ua_parameters(account_name, api_endpoint)
+        ua_parameters = get_cache_tracking([account_name, api_endpoint], connection_id)
     user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
     # Use CORE if auth is FireboltCore
     # Use V2 if auth is ClientCredentials
@@ -279,6 +266,7 @@ async def connect(
             database=database,
             engine_name=engine_name,
             api_endpoint=api_endpoint,
+            connection_id=connection_id,
         )
     elif auth_version == FireboltAuthVersion.V1:
         return await connect_v1(
@@ -289,6 +277,7 @@ async def connect(
             engine_name=engine_name,
             engine_url=engine_url,
             api_endpoint=api_endpoint,
+            connection_id=connection_id,
         )
     else:
         raise ConfigurationError(f"Unsupported auth type: {type(auth)}")
@@ -297,6 +286,7 @@ async def connect(
 async def connect_v2(
     auth: Auth,
     user_agent_header: str,
+    connection_id: str,
     account_name: Optional[str] = None,
     database: Optional[str] = None,
     engine_name: Optional[str] = None,
@@ -327,7 +317,7 @@ async def connect_v2(
     assert account_name is not None
 
     system_engine_info = await _get_system_engine_url_and_params(
-        auth, account_name, api_endpoint
+        auth, account_name, api_endpoint, connection_id
     )
 
     client = AsyncClientV2(
@@ -345,6 +335,7 @@ async def connect_v2(
         CursorV2,
         api_endpoint,
         system_engine_info.params,
+        connection_id,
     ) as system_engine_connection:
 
         cursor = system_engine_connection.cursor()
@@ -362,12 +353,14 @@ async def connect_v2(
             CursorV2,
             api_endpoint,
             cursor.parameters,
+            connection_id,
         )
 
 
 async def connect_v1(
     auth: Auth,
     user_agent_header: str,
+    connection_id: str,
     database: Optional[str] = None,
     account_name: Optional[str] = None,
     engine_name: Optional[str] = None,
@@ -419,11 +412,7 @@ async def connect_v1(
         headers={"User-Agent": user_agent_header},
     )
     return Connection(
-        engine_url,
-        database,
-        client,
-        CursorV1,
-        api_endpoint,
+        engine_url, database, client, CursorV1, api_endpoint, id=connection_id
     )
 
 

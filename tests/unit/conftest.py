@@ -8,8 +8,8 @@ from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
-from firebolt.common.cache import _firebolt_cache
 from firebolt.common.settings import Settings
+from firebolt.utils.cache import _firebolt_cache
 from firebolt.utils.exception import (
     DatabaseError,
     DataError,

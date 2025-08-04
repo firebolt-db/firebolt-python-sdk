@@ -1,7 +1,6 @@
 import os
+from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Generic, Optional, Protocol, TypeVar
-
-from firebolt.utils.util import ConnectionInfo
 
 T = TypeVar("T")
 
@@ -9,6 +8,32 @@ T = TypeVar("T")
 class ReprCacheable(Protocol):
     def __repr__(self) -> str:
         ...
+
+
+@dataclass
+class EngineInfo:
+    """Class to hold engine information for caching."""
+
+    url: str
+    params: Dict[str, str]
+
+
+@dataclass
+class DatabaseInfo:
+    """Class to hold database information for caching."""
+
+    name: str
+
+
+@dataclass
+class ConnectionInfo:
+    """Class to hold connection information for caching."""
+
+    id: str
+    expiry_time: Optional[int] = None
+    system_engine: Optional[EngineInfo] = None
+    databases: Dict[str, DatabaseInfo] = field(default_factory=dict)
+    engines: Dict[str, EngineInfo] = field(default_factory=dict)
 
 
 def noop_if_disabled(func: Callable) -> Callable:
