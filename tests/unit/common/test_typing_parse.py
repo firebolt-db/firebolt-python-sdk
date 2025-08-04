@@ -53,6 +53,7 @@ def test_parse_struct_type_with_spaces() -> None:
         ((1,), None, TypeError),
         ([1], None, TypeError),
         (Exception(), None, TypeError),
+        ("123456789012345678", 123456789012345678, None),
     ],
 )
 def test_parse_value_int(value, expected, error) -> None:

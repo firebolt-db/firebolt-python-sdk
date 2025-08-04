@@ -276,10 +276,20 @@ def select_struct_response() -> List[ColType]:
 
 
 @fixture
-def long_value() -> str:
+def long_decimal_value() -> str:
     return "1234567890123456789012345678901234567.0"
 
 
 @fixture
-def long_value_sql(long_value: str) -> str:
-    return f"SELECT '{long_value}'::decimal(38, 1)"
+def long_value_decimal_sql(long_decimal_value: str) -> str:
+    return f"SELECT '{long_decimal_value}'::decimal(38, 1)"
+
+
+@fixture
+def long_bigint_value() -> str:
+    return "123456789012345678"
+
+
+@fixture
+def long_value_bigint_sql(long_bigint_value: str) -> str:
+    return f"SELECT '{long_bigint_value}'::bigint"

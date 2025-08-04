@@ -600,11 +600,25 @@ async def test_fb_numeric_paramstyle_incorrect_params(
         )
 
 
-async def test_select_quoted_long(
-    connection: Connection, long_value: str, long_value_sql: str
+async def test_select_quoted_decimal(
+    connection: Connection, long_decimal_value: str, long_value_decimal_sql: str
 ):
     async with connection.cursor() as c:
-        await c.execute(long_value_sql)
+        await c.execute(long_value_decimal_sql)
         result = await c.fetchall()
         assert len(result) == 1, "Invalid data length returned by fetchall"
-        assert result[0][0] == Decimal(long_value), "Invalid data returned by fetchall"
+        assert result[0][0] == Decimal(
+            long_decimal_value
+        ), "Invalid data returned by fetchall"
+
+
+async def test_select_quoted_bigint(
+    connection: Connection, long_bigint_value: str, long_value_bigint_sql: str
+):
+    async with connection.cursor() as c:
+        await c.execute(long_value_bigint_sql)
+        result = await c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == int(
+            long_bigint_value
+        ), "Invalid data returned by fetchall"

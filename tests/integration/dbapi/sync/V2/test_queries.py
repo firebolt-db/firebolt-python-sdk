@@ -675,11 +675,25 @@ def test_fb_numeric_paramstyle_incorrect_params(
         )
 
 
-def test_select_quoted_long(
-    connection: Connection, long_value: str, long_value_sql: str
+def test_select_quoted_decimal(
+    connection: Connection, long_decimal_value: str, long_value_decimal_sql: str
 ):
     with connection.cursor() as c:
-        c.execute(long_value_sql)
+        c.execute(long_value_decimal_sql)
         result = c.fetchall()
         assert len(result) == 1, "Invalid data length returned by fetchall"
-        assert result[0][0] == Decimal(long_value), "Invalid data returned by fetchall"
+        assert result[0][0] == Decimal(
+            long_decimal_value
+        ), "Invalid data returned by fetchall"
+
+
+def test_select_quoted_bigint(
+    connection: Connection, long_bigint_value: str, long_value_bigint_sql: str
+):
+    with connection.cursor() as c:
+        c.execute(long_value_bigint_sql)
+        result = c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == int(
+            long_bigint_value
+        ), "Invalid data returned by fetchall"
