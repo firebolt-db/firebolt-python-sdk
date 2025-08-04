@@ -220,6 +220,10 @@ def test_parse_value_datetime_errors() -> None:
         ("123.456", Decimal("123.456")),
         (123, Decimal("123")),
         (None, None),
+        (
+            "1234567890123456789012345678901234567.0",
+            Decimal("1234567890123456789012345678901234567.0"),
+        ),
     ],
 )
 def test_parse_decimal(value, expected) -> None:

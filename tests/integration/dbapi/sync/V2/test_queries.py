@@ -673,3 +673,13 @@ def test_fb_numeric_paramstyle_incorrect_params(
         assert "Query referenced positional parameter $34, but it was not set" in str(
             exc_info.value
         )
+
+
+def test_select_quoted_long(
+    connection: Connection, long_value: str, long_value_sql: str
+):
+    with connection.cursor() as c:
+        c.execute(long_value_sql)
+        result = c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == Decimal(long_value), "Invalid data returned by fetchall"
