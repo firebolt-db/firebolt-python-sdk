@@ -57,8 +57,15 @@ from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
+from firebolt.common.cache import _firebolt_cache
 from firebolt.utils.async_util import anext, async_islice
-from firebolt.utils.util import Timer, raise_error_from_response
+from firebolt.utils.util import (
+    ConnectionInfo,
+    DatabaseInfo,
+    EngineInfo,
+    Timer,
+    raise_error_from_response,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +338,33 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         else:
             await self._parse_response_headers(resp.headers)
             await self._append_row_set_from_response(resp)
+
+    async def use_database(self, database: str) -> None:
+        """Switch the current database context with caching."""
+        cache_key = [self._client.account_name, self.connection.api_endpoint]
+        cache = _firebolt_cache.get(cache_key)
+        cache = cache if cache else ConnectionInfo()
+        if cache.databases.get(database):
+            # If database is cached, use it
+            self.database = database
+        else:
+            await self.execute(f'USE DATABASE "{database}"')
+            cache.databases[database] = DatabaseInfo(database)
+            _firebolt_cache.set(cache_key, cache)
+
+    async def use_engine(self, engine: str) -> None:
+        """Switch the current engine context with caching."""
+        cache_key = [self._client.account_name, self.connection.api_endpoint]
+        cache = _firebolt_cache.get(cache_key)
+        cache = cache if cache else ConnectionInfo()
+        if cache.engines.get(engine):
+            # If engine is cached, use it
+            self.engine_url = cache.engines[engine].url
+            self._update_set_parameters(cache.engines[engine].params)
+        else:
+            await self.execute(f'USE ENGINE "{engine}"')
+            cache.engines[engine] = EngineInfo(self.engine_url, self.parameters)  # ??
+            _firebolt_cache.set(cache_key, cache)
 
     @check_not_closed
     async def execute(

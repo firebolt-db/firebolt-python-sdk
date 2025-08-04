@@ -37,8 +37,6 @@ from firebolt.utils.firebolt_core import (
 from firebolt.utils.usage_tracker import get_user_agent_header
 from firebolt.utils.util import (
     ConnectionInfo,
-    DatabaseInfo,
-    EngineInfo,
     fix_url_schema,
     validate_engine_name_and_url_v1,
 )
@@ -48,23 +46,16 @@ def prepare_ua_parameters(
     account_name: Optional[str], api_endpoint: str
 ) -> List[Tuple[str, str]]:
     ua_parameters = []
-
-    # cached_id = _firebolt_cache.get_id([account_name, api_endpoint])
     conn_uuid = uuid4().hex
+    cache_key = [account_name, api_endpoint]
     ua_parameters.append(("connId", conn_uuid))
-    prepare_cache_if_needed(account_name, api_endpoint, conn_uuid)
-    # if cached_id:
-    #     ua_parameters.append(("cachedConnId", cached_id + "-memory"))
-    # _firebolt_cache.set_id([account_name, api_endpoint], conn_uuid)
+    cache = _firebolt_cache.get(cache_key)
+    if cache and cache.id:
+        ua_parameters.append(("cachedConnId", cache.id + "-memory"))
+    else:
+        _firebolt_cache.set(cache_key, ConnectionInfo(id=conn_uuid))
 
     return ua_parameters
-
-
-def prepare_cache_if_needed(
-    account_name: Optional[str], api_endpoint: str, conn_id: str
-) -> None:
-    if not _firebolt_cache.get([account_name, api_endpoint]):
-        _firebolt_cache.set([account_name, api_endpoint], ConnectionInfo(conn_id))
 
 
 class Connection(BaseConnection):
@@ -266,8 +257,6 @@ async def connect(
     else:
         ua_parameters = prepare_ua_parameters(account_name, api_endpoint)
     user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
-    if disable_cache:
-        _firebolt_cache.disable()
     # Use CORE if auth is FireboltCore
     # Use V2 if auth is ClientCredentials
     # Use V1 if auth is ServiceAccount or UsernamePassword
@@ -360,30 +349,10 @@ async def connect_v2(
 
         cursor = system_engine_connection.cursor()
 
-        # TODO: rework this, this is prototyping right now
         if database:
-            cache = _firebolt_cache.get([account_name, api_endpoint])
-            cache = cache if cache else ConnectionInfo()
-            if cache.databases.get(database):
-                # If database is cached, use it
-                cursor.database = database
-            else:
-                await cursor.execute(f'USE DATABASE "{database}"')
-                cache.databases[database] = DatabaseInfo(database)
-                _firebolt_cache.set([account_name, api_endpoint], cache)
+            await cursor.use_database(database)
         if engine_name:
-            cache = _firebolt_cache.get([account_name, api_endpoint])
-            cache = cache if cache else ConnectionInfo()
-            if cache.engines.get(engine_name):
-                # If engine is cached, use it
-                cursor.engine_url = cache.engines[engine_name].url
-                cursor._update_set_parameters(cache.engines[engine_name].params)
-            else:
-                await cursor.execute(f'USE ENGINE "{engine_name}"')
-                cache.engines[engine_name] = EngineInfo(
-                    cursor.engine_url, cursor.parameters
-                )  # ??
-                _firebolt_cache.set([account_name, api_endpoint], cache)
+            await cursor.use_engine(engine_name)
         # Ensure cursors created from this connection are using the same starting
         # database and engine
         return Connection(

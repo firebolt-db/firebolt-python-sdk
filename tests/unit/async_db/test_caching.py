@@ -31,6 +31,14 @@ async def connection_test(
     return factory
 
 
+@fixture(autouse=True)
+async def enable_cache():
+    _firebolt_cache.enable()
+    _firebolt_cache.clear()
+    yield
+    _firebolt_cache.clear()
+
+
 @mark.parametrize("cache_enabled", [True, False])
 async def test_connect_caching(
     db_name: str,
