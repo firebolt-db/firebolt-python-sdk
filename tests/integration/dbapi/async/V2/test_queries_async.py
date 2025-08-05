@@ -673,7 +673,7 @@ async def test_database_switch(
                 f"DROP DATABASE IF EXISTS {database_name}_switch"
             )
 
-      
+
 async def test_select_quoted_decimal(
     connection: Connection, long_decimal_value: str, long_value_decimal_sql: str
 ):
