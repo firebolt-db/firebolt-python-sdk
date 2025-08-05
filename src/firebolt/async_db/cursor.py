@@ -58,12 +58,7 @@ if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
 
 from firebolt.utils.async_util import anext, async_islice
-from firebolt.utils.cache import (
-    ConnectionInfo,
-    DatabaseInfo,
-    EngineInfo,
-    _firebolt_cache,
-)
+from firebolt.utils.cache import ConnectionInfo, DatabaseInfo, EngineInfo
 from firebolt.utils.util import Timer, raise_error_from_response
 
 logger = logging.getLogger(__name__)
@@ -91,8 +86,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._client = client
         self.connection = connection
+        self._client: AsyncClient = client
         self.engine_url = connection.engine_url
         self._row_set: Optional[BaseAsyncRowSet] = None
         if connection.init_parameters:
@@ -340,8 +335,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     async def use_database(self, database: str) -> None:
         """Switch the current database context with caching."""
-        cache_key = [self._client.account_name, self.connection.api_endpoint]
-        cache = _firebolt_cache.get(cache_key)
+        cache = self.get_cache()
         cache = cache if cache else ConnectionInfo(id=self.connection.id)
         if cache.databases.get(database):
             # If database is cached, use it
@@ -349,12 +343,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         else:
             await self.execute(f'USE DATABASE "{database}"')
             cache.databases[database] = DatabaseInfo(database)
-            _firebolt_cache.set(cache_key, cache)
+            self.set_cache(cache)
 
     async def use_engine(self, engine: str) -> None:
         """Switch the current engine context with caching."""
-        cache_key = [self._client.account_name, self.connection.api_endpoint]
-        cache = _firebolt_cache.get(cache_key)
+        cache = self.get_cache()
         cache = cache if cache else ConnectionInfo(id=self.connection.id)
         if cache.engines.get(engine):
             # If engine is cached, use it
@@ -363,7 +356,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         else:
             await self.execute(f'USE ENGINE "{engine}"')
             cache.engines[engine] = EngineInfo(self.engine_url, self.parameters)  # ??
-            _firebolt_cache.set(cache_key, cache)
+            self.set_cache(cache)
 
     @check_not_closed
     async def execute(

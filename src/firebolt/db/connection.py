@@ -24,7 +24,7 @@ from firebolt.common.base_connection import (
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.db.util import _get_system_engine_url_and_params
-from firebolt.utils.cache import _firebolt_cache
+from firebolt.utils.cache import SecureCacheKey, _firebolt_cache
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -71,7 +71,10 @@ def connect(
     if disable_cache:
         _firebolt_cache.disable()
     else:
-        ua_parameters = get_cache_tracking([account_name, api_endpoint], connection_id)
+        cache_key = SecureCacheKey(
+            [auth.principal, auth.secret, account_name], auth.secret
+        )
+        ua_parameters = get_cache_tracking(cache_key, connection_id)
     user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
     auth_version = auth.get_firebolt_version()
     # Use CORE if auth is FireboltCore

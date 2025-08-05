@@ -27,6 +27,28 @@ class FireboltCore(Auth):
         self._token = ""
         self._expires = None
 
+    @property
+    def principal(self) -> str:
+        """Get the principal (username) associated with the token.
+
+        For FireboltCore, this returns an empty string since no auth is needed.
+
+        Returns:
+            str: Empty string (no principal needed)
+        """
+        return "core"
+
+    @property
+    def secret(self) -> str:
+        """Get the secret (password) associated with the token.
+
+        For FireboltCore, this returns an empty string since no auth is needed.
+
+        Returns:
+            str: Empty string (no secret needed)
+        """
+        return "core"
+
     def copy(self) -> "FireboltCore":
         """Make another auth object with same URL.
 

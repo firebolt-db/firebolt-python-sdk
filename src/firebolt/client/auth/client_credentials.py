@@ -53,6 +53,24 @@ class ClientCredentials(_RequestBasedAuth):
             self.client_id, self.client_secret, self._use_token_cache
         )
 
+    @property
+    def principal(self) -> str:
+        """Get the principal (username) associated with the token.
+
+        Returns:
+            str: Principal username
+        """
+        return self.client_id
+
+    @property
+    def secret(self) -> str:
+        """Get the secret (password) associated with the token.
+
+        Returns:
+            str: Secret
+        """
+        return self.client_secret
+
     def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
 

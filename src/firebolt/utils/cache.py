@@ -1,6 +1,15 @@
 import os
 from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Generic, Optional, Protocol, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Protocol,
+    TypeVar,
+)
 
 T = TypeVar("T")
 
@@ -96,6 +105,25 @@ class UtilCache(Generic[T]):
         if self.disabled:
             return False
         return key in self._cache
+
+
+class SecureCacheKey(ReprCacheable):
+    """A secure cache key that can be used for caching sensitive information."""
+
+    def __init__(self, key_elements: List[Optional[str]], encryption_key: str):
+        self.key = "#".join(str(e) for e in key_elements)
+        self.encryption_key = encryption_key
+
+    def __repr__(self) -> str:
+        return f"SecureCacheKey({self.key})"
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, SecureCacheKey):
+            return self.key == other.key
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.key)
 
 
 _firebolt_cache = UtilCache[ConnectionInfo](cache_name="connection_info")

@@ -50,12 +50,7 @@ from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
 from firebolt.common.row_set.synchronous.streaming import StreamingRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
-from firebolt.utils.cache import (
-    ConnectionInfo,
-    DatabaseInfo,
-    EngineInfo,
-    _firebolt_cache,
-)
+from firebolt.utils.cache import ConnectionInfo, DatabaseInfo, EngineInfo
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -97,7 +92,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._client = client
+        self._client: Client = client
         self.connection = connection
         self.engine_url = connection.engine_url
         self._row_set: Optional[BaseSyncRowSet] = None
@@ -346,8 +341,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     def use_database(self, database: str) -> None:
         """Switch the current database context with caching."""
-        cache_key = [self._client.account_name, self.connection.api_endpoint]
-        cache = _firebolt_cache.get(cache_key)
+        cache = self.get_cache()
         cache = cache if cache else ConnectionInfo(id=self.connection.id)
         if cache.databases.get(database):
             # If database is cached, use it
@@ -355,12 +349,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         else:
             self.execute(f'USE DATABASE "{database}"')
             cache.databases[database] = DatabaseInfo(database)
-            _firebolt_cache.set(cache_key, cache)
+            self.set_cache(cache)
 
     def use_engine(self, engine: str) -> None:
         """Switch the current engine context with caching."""
-        cache_key = [self._client.account_name, self.connection.api_endpoint]
-        cache = _firebolt_cache.get(cache_key)
+        cache = self.get_cache()
         cache = cache if cache else ConnectionInfo(id=self.connection.id)
         if cache.engines.get(engine):
             # If engine is cached, use it
@@ -369,7 +362,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         else:
             self.execute(f'USE ENGINE "{engine}"')
             cache.engines[engine] = EngineInfo(self.engine_url, self.parameters)  # ??
-            _firebolt_cache.set(cache_key, cache)
+            self.set_cache(cache)
 
     @check_not_closed
     def execute(
