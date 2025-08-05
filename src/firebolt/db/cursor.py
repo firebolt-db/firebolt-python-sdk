@@ -339,30 +339,40 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             self._parse_response_headers(resp.headers)
             self._append_row_set_from_response(resp)
 
-    def use_database(self, database: str) -> None:
+    def use_database(self, database: str, cache: bool = True) -> None:
         """Switch the current database context with caching."""
-        cache = self.get_cache()
-        cache = cache if cache else ConnectionInfo(id=self.connection.id)
-        if cache.databases.get(database):
-            # If database is cached, use it
-            self.database = database
+        if cache:
+            cache_obj = self.get_cache()
+            cache_obj = (
+                cache_obj if cache_obj else ConnectionInfo(id=self.connection.id)
+            )
+            if cache_obj.databases.get(database):
+                # If database is cached, use it
+                self.database = database
+            else:
+                self.execute(f'USE DATABASE "{database}"')
+                cache_obj.databases[database] = DatabaseInfo(database)
+                self.set_cache(cache_obj)
         else:
             self.execute(f'USE DATABASE "{database}"')
-            cache.databases[database] = DatabaseInfo(database)
-            self.set_cache(cache)
 
-    def use_engine(self, engine: str) -> None:
+    def use_engine(self, engine: str, cache: bool = True) -> None:
         """Switch the current engine context with caching."""
-        cache = self.get_cache()
-        cache = cache if cache else ConnectionInfo(id=self.connection.id)
-        if cache.engines.get(engine):
-            # If engine is cached, use it
-            self.engine_url = cache.engines[engine].url
-            self._update_set_parameters(cache.engines[engine].params)
+        if cache:
+            cache_obj = self.get_cache()
+            cache_obj = (
+                cache_obj if cache_obj else ConnectionInfo(id=self.connection.id)
+            )
+            if cache_obj.engines.get(engine):
+                # If engine is cached, use it
+                self.engine_url = cache_obj.engines[engine].url
+                self._update_set_parameters(cache_obj.engines[engine].params)
+            else:
+                self.execute(f'USE ENGINE "{engine}"')
+                cache_obj.engines[engine] = EngineInfo(self.engine_url, self.parameters)
+                self.set_cache(cache_obj)
         else:
             self.execute(f'USE ENGINE "{engine}"')
-            cache.engines[engine] = EngineInfo(self.engine_url, self.parameters)  # ??
-            self.set_cache(cache)
 
     @check_not_closed
     def execute(

@@ -23,7 +23,7 @@ from firebolt.common.base_connection import (
     _parse_async_query_info_results,
 )
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
-from firebolt.utils.cache import SecureCacheKey, _firebolt_cache
+from firebolt.utils.cache import SecureCacheKey
 from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
@@ -239,9 +239,7 @@ async def connect(
     user_clients = additional_parameters.get("user_clients", [])
     connection_id = uuid4().hex
     ua_parameters = []
-    if disable_cache:
-        _firebolt_cache.disable()
-    else:
+    if not disable_cache:
         cache_key = SecureCacheKey(
             [auth.principal, auth.secret, account_name], auth.secret
         )
@@ -270,6 +268,7 @@ async def connect(
             engine_name=engine_name,
             api_endpoint=api_endpoint,
             connection_id=connection_id,
+            disable_cache=disable_cache,
         )
     elif auth_version == FireboltAuthVersion.V1:
         return await connect_v1(
@@ -294,6 +293,7 @@ async def connect_v2(
     database: Optional[str] = None,
     engine_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
+    disable_cache: bool = False,
 ) -> Connection:
     """Connect to Firebolt.
 
@@ -320,7 +320,7 @@ async def connect_v2(
     assert account_name is not None
 
     system_engine_info = await _get_system_engine_url_and_params(
-        auth, account_name, api_endpoint, connection_id
+        auth, account_name, api_endpoint, connection_id, disable_cache
     )
 
     client = AsyncClientV2(
@@ -344,9 +344,9 @@ async def connect_v2(
         cursor = system_engine_connection.cursor()
 
         if database:
-            await cursor.use_database(database)
+            await cursor.use_database(database, cache=not disable_cache)
         if engine_name:
-            await cursor.use_engine(engine_name)
+            await cursor.use_engine(engine_name, cache=not disable_cache)
         # Ensure cursors created from this connection are using the same starting
         # database and engine
         return Connection(

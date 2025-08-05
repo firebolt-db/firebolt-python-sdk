@@ -24,11 +24,15 @@ async def _get_system_engine_url_and_params(
     account_name: str,
     api_endpoint: str,
     connection_id: str,
+    disable_cache: bool = False,
 ) -> EngineInfo:
     cache_key = SecureCacheKey([auth.principal, auth.secret, account_name], auth.secret)
-    cache = _firebolt_cache.get(cache_key)
-    if cache and (result := cache.system_engine):
-        return result
+
+    if not disable_cache:
+        cache = _firebolt_cache.get(cache_key)
+        if cache and (result := cache.system_engine):
+            return result
+
     async with AsyncClientV2(
         auth=auth,
         base_url=api_endpoint,
@@ -46,8 +50,12 @@ async def _get_system_engine_url_and_params(
                 f"{response.status_code} {response.content.decode()}"
             )
         url, params = parse_url_and_params(response.json()["engineUrl"])
-        if not cache:
-            cache = ConnectionInfo(id=connection_id)
-        cache.system_engine = EngineInfo(url=url, params=params)
-        _firebolt_cache.set(cache_key, cache)
-        return cache.system_engine
+
+        if not disable_cache:
+            if not cache:
+                cache = ConnectionInfo(id=connection_id)
+            cache.system_engine = EngineInfo(url=url, params=params)
+            _firebolt_cache.set(cache_key, cache)
+            return cache.system_engine
+
+        return EngineInfo(url=url, params=params)
