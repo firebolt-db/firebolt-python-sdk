@@ -45,7 +45,7 @@ class UsernamePassword(_RequestBasedAuth):
 
     @property
     def principal(self) -> str:
-        """Get the principal (username) associated with the token.
+        """Get the principal (username) associated with the auth.
 
         Returns:
             str: Principal username
@@ -54,7 +54,7 @@ class UsernamePassword(_RequestBasedAuth):
 
     @property
     def secret(self) -> str:
-        """Get the secret (password) associated with the token.
+        """Get the secret (password) associated with the auth.
 
         Returns:
             str: Secret password

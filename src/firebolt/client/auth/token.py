@@ -26,16 +26,16 @@ class Token(Auth):
 
     @property
     def principal(self) -> str:
-        """Get the principal (username) associated with the token.
+        """Get the principal (placeholder) associated with the auth.
 
         Returns:
-            str: Principal username
+            str: Principal (placeholder)
         """
         return "token_principal"
 
     @property
     def secret(self) -> str:
-        """Get the secret (password) associated with the token.
+        """Get the secret (token) associated with the auth.
 
         Returns:
             str: Secret, which is the token itself

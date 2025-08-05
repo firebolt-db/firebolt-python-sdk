@@ -45,19 +45,19 @@ class ServiceAccount(_RequestBasedAuth):
 
     @property
     def principal(self) -> str:
-        """Get the principal (username) associated with the token.
+        """Get the principal (client id) associated with the auth.
 
         Returns:
-            str: Principal username
+            str: client id
         """
         return self.client_id
 
     @property
     def secret(self) -> str:
-        """Get the secret (password) associated with the token.
+        """Get the secret (client secret) associated with the auth.
 
         Returns:
-            str: Secret, which is the client secret itself
+            str: client secret
         """
         return self.client_secret
 

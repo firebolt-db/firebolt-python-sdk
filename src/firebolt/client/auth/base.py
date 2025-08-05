@@ -68,19 +68,19 @@ class Auth(HttpxAuth):
     @property
     @abstractmethod
     def principal(self) -> str:
-        """Get the principal (username) associated with the token.
+        """Get the principal (username or id) associated with the token.
 
         Returns:
-            Optional[str]: Principal username if available, None otherwise
+            str: Principal string
         """
 
     @property
     @abstractmethod
     def secret(self) -> str:
-        """Get the secret (password) associated with the token.
+        """Get the secret (password or secret key) associated with the token.
 
         Returns:
-            Optional[str]: Secret if available, None otherwise
+            str: Secret string
         """
 
     @abstractmethod

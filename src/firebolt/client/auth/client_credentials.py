@@ -55,16 +55,16 @@ class ClientCredentials(_RequestBasedAuth):
 
     @property
     def principal(self) -> str:
-        """Get the principal (username) associated with the token.
+        """Get the principal (client id) associated with this auth.
 
         Returns:
-            str: Principal username
+            str: Principal client id
         """
         return self.client_id
 
     @property
     def secret(self) -> str:
-        """Get the secret (password) associated with the token.
+        """Get the secret (secret key) associated with this auth.
 
         Returns:
             str: Secret
