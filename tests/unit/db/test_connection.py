@@ -1,8 +1,8 @@
 import gc
 import warnings
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Generator, List, Optional, Tuple
 from unittest.mock import ANY as AnyValue
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises, warns
@@ -191,7 +191,7 @@ def test_connect_engine_failed(
 
 
 @mark.parametrize("cache_enabled", [True, False])
-def test_connect_caching(
+def test_connect_system_engine_caching(
     db_name: str,
     engine_name: str,
     auth_url: str,
@@ -208,6 +208,7 @@ def test_connect_caching(
     use_database_callback: Callable,
     use_engine_callback: Callable,
     query_callback: Callable,
+    enable_cache: Generator,
     cache_enabled: bool,
 ):
     system_engine_call_counter = 0
@@ -247,9 +248,6 @@ def test_connect_caching(
         assert system_engine_call_counter == 1, "System engine URL was not cached"
     else:
         assert system_engine_call_counter != 1, "System engine URL was cached"
-
-    # Reset caches for the next test iteration
-    _firebolt_cache.enable()
 
 
 def test_connect_system_engine_404(
@@ -425,6 +423,80 @@ def test_connect_no_user_agent(
         ) as connection:
             connection.cursor().execute("select*")
         ut.assert_called_with([], [], AnyValue)
+
+
+def test_connect_caching_headers(
+    engine_name: str,
+    account_name: str,
+    api_endpoint: str,
+    db_name: str,
+    auth: Auth,
+    httpx_mock: HTTPXMock,
+    query_callback: Callable,
+    query_url: str,
+    mock_connection_flow: Callable,
+    enable_cache: Generator,
+) -> None:
+    def do_connect():
+        with connect(
+            auth=auth,
+            database=db_name,
+            engine_name=engine_name,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as connection:
+            connection.cursor().execute("select*")
+
+    _firebolt_cache.clear()
+    mock_id = "12345"
+    mock_id2 = "67890"
+    mock_id3 = "54321"
+    with patch("firebolt.db.connection.get_user_agent_header") as ut:
+        ut.side_effect = [
+            f"connId:{mock_id}",
+            f"connId:{mock_id2}; cachedConnId:{mock_id}-memory",
+            f"connId:{mock_id3}",
+        ]
+        with patch("firebolt.db.connection.uuid4") as uuid4:
+            uuid4.side_effect = [
+                MagicMock(hex=mock_id),
+                MagicMock(hex=mock_id2),
+                MagicMock(hex=mock_id3),
+            ]
+            mock_connection_flow()
+            httpx_mock.add_callback(
+                query_callback,
+                url=query_url,
+                match_headers={"User-Agent": f"connId:{mock_id}"},
+            )
+            httpx_mock.add_callback(
+                query_callback,
+                url=query_url,
+                match_headers={
+                    "User-Agent": f"connId:{mock_id2}; cachedConnId:{mock_id}-memory"
+                },
+            )
+            httpx_mock.add_callback(
+                query_callback,
+                url=query_url,
+                match_headers={"User-Agent": f"connId:{mock_id3}"},
+            )
+
+            do_connect()
+            ut.assert_called_with(AnyValue, AnyValue, [("connId", mock_id)])
+
+            # Second call should use cached connection info
+            do_connect()
+            ut.assert_called_with(
+                AnyValue,
+                AnyValue,
+                [("connId", mock_id2), ("cachedConnId", f"{mock_id}-memory")],
+            )
+            _firebolt_cache.clear()
+
+            # Third call should have a new connection id
+            do_connect()
+            ut.assert_called_with(AnyValue, AnyValue, [("connId", mock_id3)])
 
 
 @mark.parametrize(

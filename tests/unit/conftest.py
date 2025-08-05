@@ -1,5 +1,5 @@
 import functools
-from typing import Callable
+from typing import Callable, Generator
 
 import httpx
 from httpx import Request
@@ -44,6 +44,19 @@ def global_fake_fs(request) -> None:
 @fixture(autouse=True)
 def clear_cache() -> None:
     _firebolt_cache.clear()
+
+
+@fixture(autouse=True)
+def disable_cache() -> None:
+    _firebolt_cache.disable()
+
+
+@fixture
+def enable_cache() -> Generator[None, None, None]:
+    """Fixture to enable cache for tests that require it."""
+    _firebolt_cache.enable()
+    yield
+    _firebolt_cache.disable()
 
 
 @fixture

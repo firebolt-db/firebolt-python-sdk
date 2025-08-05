@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Generator
 
 from httpx import URL
 from pytest import fixture, mark
@@ -7,6 +7,13 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db import connect
 from firebolt.client.auth import Auth
 from firebolt.utils.cache import _firebolt_cache
+
+
+@fixture(autouse=True)
+def use_cache(enable_cache) -> Generator[None, None, None]:
+    _firebolt_cache.clear()
+    yield  # This fixture is used to ensure cache is enabled for all tests by default
+    _firebolt_cache.clear()
 
 
 @fixture
@@ -30,14 +37,6 @@ async def connection_test(
             await connection.cursor().execute("select*")
 
     return factory
-
-
-@fixture(autouse=True)
-async def enable_cache():
-    _firebolt_cache.enable()
-    _firebolt_cache.clear()
-    yield
-    _firebolt_cache.clear()
 
 
 @mark.parametrize("cache_enabled", [True, False])
