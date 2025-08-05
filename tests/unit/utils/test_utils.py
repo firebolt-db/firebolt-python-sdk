@@ -50,9 +50,9 @@ def test_get_internal_error_code(status_code, content, expected_error_code):
     ],
 )
 def test_parse_url_and_params(url, expected_url, expected_params):
-    url, params = parse_url_and_params(url)
-    assert url == expected_url
-    assert params == expected_params
+    parsed_url, parsed_params = parse_url_and_params(url)
+    assert parsed_url == expected_url
+    assert parsed_params == expected_params
 
 
 @pytest.mark.parametrize(

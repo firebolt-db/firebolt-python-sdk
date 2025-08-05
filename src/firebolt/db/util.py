@@ -48,6 +48,6 @@ def _get_system_engine_url_and_params(
         url, params = parse_url_and_params(response.json()["engineUrl"])
         if not cache:
             cache = ConnectionInfo(id=connection_id)
-            _firebolt_cache.set(cache_key, cache)
         cache.system_engine = EngineInfo(url=url, params=params)
+        _firebolt_cache.set(cache_key, cache)
         return cache.system_engine

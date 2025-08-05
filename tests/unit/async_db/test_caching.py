@@ -1,5 +1,6 @@
 from typing import Callable
 
+from httpx import URL
 from pytest import fixture, mark
 from pytest_httpx import HTTPXMock
 
@@ -302,3 +303,104 @@ async def test_connect_engine_switching_caching(
 
     # Reset caches for the next test iteration
     _firebolt_cache.enable()
+
+
+@mark.parametrize("cache_enabled", [True, False])
+async def test_connect_db_different_accounts(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: URL,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    query_url: str,
+    use_database_callback: Callable,
+    use_engine_callback: Callable,
+    query_callback: Callable,
+    api_endpoint: str,
+    auth: Auth,
+    account_name: str,
+    cache_enabled: bool,
+):
+    """Test caching when switching between different databases."""
+    system_engine_call_counter = 0
+    use_database_call_counter = 0
+    use_engine_call_counter = 0
+
+    def system_engine_callback_counter(request, **kwargs):
+        nonlocal system_engine_call_counter
+        system_engine_call_counter += 1
+        return get_system_engine_callback(request, **kwargs)
+
+    def use_database_callback_counter(request, **kwargs):
+        nonlocal use_database_call_counter
+        use_database_call_counter += 1
+        return use_database_callback(request, **kwargs)
+
+    def use_engine_callback_counter(request, **kwargs):
+        nonlocal use_engine_call_counter
+        use_engine_call_counter += 1
+        return use_engine_callback(request, **kwargs)
+
+    get_system_engine_url_new_account = str(get_system_engine_url).replace(
+        account_name, account_name + "_second"
+    )
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(
+        system_engine_callback_counter, url=get_system_engine_url_new_account
+    )
+
+    httpx_mock.add_callback(
+        use_database_callback_counter,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+    )
+
+    httpx_mock.add_callback(
+        use_engine_callback_counter,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+    )
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    # First connection
+
+    async with await connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        disable_cache=not cache_enabled,
+    ) as connection:
+        await connection.cursor().execute("select*")
+
+    assert system_engine_call_counter == 1, "System engine URL was not called"
+    assert use_engine_call_counter == 1, "Use engine URL was not called"
+    assert use_database_call_counter == 1, "Use database URL was not called"
+
+    # Second connection against different account
+    async with await connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name + "_second",
+        api_endpoint=api_endpoint,
+        disable_cache=not cache_enabled,
+    ) as connection:
+        await connection.cursor().execute("select*")
+
+    # This should trigger additional calls to the system engine URL and engine/database
+    assert (
+        system_engine_call_counter == 2
+    ), "System engine URL was not called for second account"
+    assert (
+        use_engine_call_counter == 2
+    ), "Use engine URL was not called for second account"
+    assert (
+        use_database_call_counter == 2
+    ), "Use database URL was not called for second account"

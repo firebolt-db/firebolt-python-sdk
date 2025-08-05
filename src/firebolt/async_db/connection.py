@@ -35,7 +35,7 @@ from firebolt.utils.firebolt_core import (
     validate_firebolt_core_parameters,
 )
 from firebolt.utils.usage_tracker import (
-    get_cache_tracking,
+    get_cache_tracking_params,
     get_user_agent_header,
 )
 from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
@@ -245,7 +245,7 @@ async def connect(
         cache_key = SecureCacheKey(
             [auth.principal, auth.secret, account_name], auth.secret
         )
-        ua_parameters = get_cache_tracking(cache_key, connection_id)
+        ua_parameters = get_cache_tracking_params(cache_key, connection_id)
     user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
     # Use CORE if auth is FireboltCore
     # Use V2 if auth is ClientCredentials

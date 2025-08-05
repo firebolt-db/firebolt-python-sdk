@@ -212,7 +212,7 @@ class Timer:
             logger.debug(log_message)
 
 
-def parse_url_and_params(url: str) -> Tuple[str, Dict]:
+def parse_url_and_params(url: str) -> Tuple[str, Dict[str, str]]:
     """Extract URL and query parameters separately from a URL."""
     url = fix_url_schema(url)
     parsed_url = urlparse(url)
@@ -228,7 +228,7 @@ def parse_url_and_params(url: str) -> Tuple[str, Dict]:
         if len(values) > 1:
             raise ValueError(f"Multiple values found for key '{key}'")
         query_params_dict[key] = values[0]
-    return (result_url, query_params_dict)
+    return result_url, query_params_dict
 
 
 class _ExceptionGroup(Exception):

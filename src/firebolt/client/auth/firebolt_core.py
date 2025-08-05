@@ -29,23 +29,23 @@ class FireboltCore(Auth):
 
     @property
     def principal(self) -> str:
-        """Get the principal (username) associated with the token.
+        """Get the principal associated with the auth.
 
         For FireboltCore, this returns an empty string since no auth is needed.
 
         Returns:
-            str: Empty string (no principal needed)
+            str: Placeholder string for principal (no auth needed)
         """
         return "core"
 
     @property
     def secret(self) -> str:
-        """Get the secret (password) associated with the token.
+        """Get the secret associated with the auth.
 
         For FireboltCore, this returns an empty string since no auth is needed.
 
         Returns:
-            str: Empty string (no secret needed)
+            str: Placeholder string for secret (no auth needed)
         """
         return "core"
 

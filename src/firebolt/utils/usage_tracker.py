@@ -227,7 +227,9 @@ def get_user_agent_header(
     return format_as_user_agent(drivers, clients, additional_properties or [])
 
 
-def get_cache_tracking(cache_key: ReprCacheable, conn_id: str) -> List[Tuple[str, str]]:
+def get_cache_tracking_params(
+    cache_key: ReprCacheable, conn_id: str
+) -> List[Tuple[str, str]]:
     ua_parameters = []
     ua_parameters.append(("connId", conn_id))
     cache = _firebolt_cache.get(cache_key)
