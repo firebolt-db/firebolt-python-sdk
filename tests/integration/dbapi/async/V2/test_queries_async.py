@@ -672,3 +672,27 @@ async def test_database_switch(
             await system_cursor.execute(
                 f"DROP DATABASE IF EXISTS {database_name}_switch"
             )
+
+      
+async def test_select_quoted_decimal(
+    connection: Connection, long_decimal_value: str, long_value_decimal_sql: str
+):
+    async with connection.cursor() as c:
+        await c.execute(long_value_decimal_sql)
+        result = await c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == Decimal(
+            long_decimal_value
+        ), "Invalid data returned by fetchall"
+
+
+async def test_select_quoted_bigint(
+    connection: Connection, long_bigint_value: str, long_value_bigint_sql: str
+):
+    async with connection.cursor() as c:
+        await c.execute(long_value_bigint_sql)
+        result = await c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == int(
+            long_bigint_value
+        ), "Invalid data returned by fetchall"

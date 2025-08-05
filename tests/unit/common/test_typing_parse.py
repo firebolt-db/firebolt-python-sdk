@@ -53,6 +53,7 @@ def test_parse_struct_type_with_spaces() -> None:
         ((1,), None, TypeError),
         ([1], None, TypeError),
         (Exception(), None, TypeError),
+        ("123456789012345678", 123456789012345678, None),
     ],
 )
 def test_parse_value_int(value, expected, error) -> None:
@@ -220,6 +221,10 @@ def test_parse_value_datetime_errors() -> None:
         ("123.456", Decimal("123.456")),
         (123, Decimal("123")),
         (None, None),
+        (
+            "1234567890123456789012345678901234567.0",
+            Decimal("1234567890123456789012345678901234567.0"),
+        ),
     ],
 )
 def test_parse_decimal(value, expected) -> None:
