@@ -286,16 +286,18 @@ def test_cache_expiry_parametrized(
             assert cached_value is None
 
 
-def test_cache_expiry_multiple_entries(
-    cache, additional_cache_keys, sample_connection_info, fixed_time
-):
+def test_cache_expiry_multiple_entries(cache, additional_cache_keys, fixed_time):
     """Test that expiry works correctly with multiple cache entries."""
+    # Create separate ConnectionInfo objects to avoid shared state
+    connection_info_1 = ConnectionInfo(id="test_connection_1")
+    connection_info_2 = ConnectionInfo(id="test_connection_2")
+
     # Set multiple entries at different times
     with patch("time.time", return_value=fixed_time):
-        cache.set(additional_cache_keys["key1"], sample_connection_info)
+        cache.set(additional_cache_keys["key1"], connection_info_1)
 
     with patch("time.time", return_value=fixed_time + 1800):  # 30 minutes later
-        cache.set(additional_cache_keys["key2"], sample_connection_info)
+        cache.set(additional_cache_keys["key2"], connection_info_2)
 
     # Check expiry of first entry while second is still valid
     with patch("time.time", return_value=fixed_time + CACHE_EXPIRY_SECONDS):
