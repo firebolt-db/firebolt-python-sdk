@@ -1,4 +1,5 @@
 import os
+import time
 from dataclasses import dataclass, field
 from typing import (
     Any,
@@ -12,6 +13,9 @@ from typing import (
 )
 
 T = TypeVar("T")
+
+# Cache expiry configuration
+CACHE_EXPIRY_SECONDS = 3600  # 1 hour
 
 
 class ReprCacheable(Protocol):
@@ -79,11 +83,31 @@ class UtilCache(Generic[T]):
         if self.disabled:
             return None
         s_key = self.create_key(key)
-        return self._cache.get(s_key)
+        value = self._cache.get(s_key)
+
+        if value is not None and self._is_expired(value):
+            # Cache miss due to expiry - delete the expired item
+            del self._cache[s_key]
+            return None
+
+        return value
+
+    def _is_expired(self, value: T) -> bool:
+        """Check if a cached value has expired."""
+        # Only check expiry for ConnectionInfo objects that have expiry_time
+        if hasattr(value, "expiry_time") and value.expiry_time is not None:
+            current_time = int(time.time())
+            return current_time >= value.expiry_time
+        return False
 
     @noop_if_disabled
     def set(self, key: ReprCacheable, value: T) -> None:
         if not self.disabled:
+            # Set expiry_time for ConnectionInfo objects
+            if hasattr(value, "expiry_time"):
+                current_time = int(time.time())
+                value.expiry_time = current_time + CACHE_EXPIRY_SECONDS
+
             s_key = self.create_key(key)
             self._cache[s_key] = value
 

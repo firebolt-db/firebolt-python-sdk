@@ -1,4 +1,6 @@
+import time
 from typing import Callable, Generator
+from unittest.mock import patch
 
 from httpx import URL
 from pytest import fixture, mark
@@ -6,7 +8,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Auth
 from firebolt.db import connect
-from firebolt.utils.cache import _firebolt_cache
+from firebolt.utils.cache import CACHE_EXPIRY_SECONDS, _firebolt_cache
 
 
 @fixture(autouse=True)
@@ -403,3 +405,95 @@ def test_connect_db_different_accounts(
     assert (
         use_database_call_counter == 2
     ), "Use database URL was not called for second account"
+
+
+def test_calls_when_cache_expired(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    query_url: str,
+    use_database_callback: Callable,
+    use_engine_callback: Callable,
+    query_callback: Callable,
+    connection_test: Callable,
+):
+    """Test that expired cache entries trigger new backend requests."""
+    system_engine_call_counter = 0
+    use_database_call_counter = 0
+    use_engine_call_counter = 0
+
+    def system_engine_callback_counter(request, **kwargs):
+        nonlocal system_engine_call_counter
+        system_engine_call_counter += 1
+        return get_system_engine_callback(request, **kwargs)
+
+    def use_database_callback_counter(request, **kwargs):
+        nonlocal use_database_call_counter
+        use_database_call_counter += 1
+        return use_database_callback(request, **kwargs)
+
+    def use_engine_callback_counter(request, **kwargs):
+        nonlocal use_engine_call_counter
+        use_engine_call_counter += 1
+        return use_engine_callback(request, **kwargs)
+
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(
+        use_database_callback_counter,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+    )
+    httpx_mock.add_callback(
+        use_engine_callback_counter,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+    )
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    # First connection - should populate cache
+    connection_test(db_name, engine_name, True)  # cache_enabled=True
+
+    # Verify initial calls were made
+    assert system_engine_call_counter == 1, "System engine URL was not called initially"
+    assert use_database_call_counter == 1, "Use database URL was not called initially"
+    assert use_engine_call_counter == 1, "Use engine URL was not called initially"
+
+    # Second connection immediately - should use cache
+    connection_test(db_name, engine_name, True)
+
+    # Verify no additional calls were made (cache hit)
+    assert (
+        system_engine_call_counter == 1
+    ), "System engine URL was called when cache should hit"
+    assert (
+        use_database_call_counter == 1
+    ), "Use database URL was called when cache should hit"
+    assert (
+        use_engine_call_counter == 1
+    ), "Use engine URL was called when cache should hit"
+
+    # Mock time to simulate cache expiry (1 hour + 1 second past current time)
+    current_time = int(time.time())
+    expired_time = current_time + CACHE_EXPIRY_SECONDS + 1
+
+    with patch("firebolt.utils.cache.time.time", return_value=expired_time):
+        # Third connection after cache expiry - should trigger new backend calls
+        connection_test(db_name, engine_name, True)
+
+    # Verify additional calls were made due to cache expiry
+    assert (
+        system_engine_call_counter == 2
+    ), "System engine URL was not called after cache expiry"
+    assert (
+        use_database_call_counter == 2
+    ), "Use database URL was not called after cache expiry"
+    assert (
+        use_engine_call_counter == 2
+    ), "Use engine URL was not called after cache expiry"
