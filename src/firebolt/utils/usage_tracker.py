@@ -8,6 +8,7 @@ from sys import modules
 from typing import Dict, List, Optional, Tuple
 
 from firebolt import __version__
+from firebolt.utils.cache import ConnectionInfo, ReprCacheable, _firebolt_cache
 
 
 @dataclass
@@ -161,7 +162,11 @@ def detect_connectors(
     return connectors
 
 
-def format_as_user_agent(drivers: Dict[str, str], clients: Dict[str, str]) -> str:
+def format_as_user_agent(
+    drivers: Dict[str, str],
+    clients: Dict[str, str],
+    additional_properties: List[Tuple[str, str]],
+) -> str:
     """
     Return a representation of a stored tracking data as a user-agent header.
 
@@ -172,7 +177,12 @@ def format_as_user_agent(drivers: Dict[str, str], clients: Dict[str, str]) -> st
         String of the current detected connector stack.
     """
     py, sdk, os, ciso = get_sdk_properties()
-    sdk_format = f"PythonSDK/{sdk} (Python {py}; {os}; {ciso})"
+    formatted_properties = "; ".join(
+        [f"{key}:{value}" for key, value in (additional_properties)]
+    )
+    if formatted_properties:
+        formatted_properties = f"; {formatted_properties}"
+    sdk_format = f"PythonSDK/{sdk} (Python {py}; {os}; {ciso}{formatted_properties})"
     driver_format = "".join(
         [f" {connector}/{version}" for connector, version in drivers.items()]
     )
@@ -185,6 +195,7 @@ def format_as_user_agent(drivers: Dict[str, str], clients: Dict[str, str]) -> st
 def get_user_agent_header(
     user_drivers: Optional[List[Tuple[str, str]]] = None,
     user_clients: Optional[List[Tuple[str, str]]] = None,
+    additional_properties: Optional[List[Tuple[str, str]]] = None,
 ) -> str:
     """
     Return a user agent header with connector stack and system information.
@@ -213,4 +224,18 @@ def get_user_agent_header(
         clients[name] = version
     for name, version in versions.drivers:
         drivers[name] = version
-    return format_as_user_agent(drivers, clients)
+    return format_as_user_agent(drivers, clients, additional_properties or [])
+
+
+def get_cache_tracking_params(
+    cache_key: ReprCacheable, conn_id: str
+) -> List[Tuple[str, str]]:
+    ua_parameters = []
+    ua_parameters.append(("connId", conn_id))
+    cache = _firebolt_cache.get(cache_key)
+    if cache:
+        ua_parameters.append(("cachedConnId", cache.id + "-memory"))
+    else:
+        _firebolt_cache.set(cache_key, ConnectionInfo(id=conn_id))
+
+    return ua_parameters

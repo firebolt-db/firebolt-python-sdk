@@ -146,28 +146,50 @@ def test_detect_connectors(stack, map, expected):
 
 
 @mark.parametrize(
-    "drivers,clients,expected_string",
+    "drivers,clients,additional_parameters,expected_string",
     [
-        ([], [], "PythonSDK/2 (Python 1; Win; ciso)"),
+        ([], [], None, "PythonSDK/2 (Python 1; Win; ciso)"),
         (
             [("ConnectorA", "0.1.1")],
             [],
+            None,
             "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1",
         ),
         (
             (("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")),
             (),
+            None,
             "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
         ),
         (
             [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
             [],
+            None,
             "PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
         ),
         (
             [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
             [("ClientA", "1.0.1")],
+            None,
             "ClientA/1.0.1 PythonSDK/2 (Python 1; Win; ciso) ConnectorA/0.1.1 ConnectorB/0.2.0",
+        ),
+        (
+            [],
+            [],
+            [("connId", "12345"), ("cachedConnId", "67890-memory")],
+            "PythonSDK/2 (Python 1; Win; ciso; connId:12345; cachedConnId:67890-memory)",
+        ),
+        (
+            [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
+            [("ClientA", "1.0.1")],
+            [("connId", "12345")],
+            "ClientA/1.0.1 PythonSDK/2 (Python 1; Win; ciso; connId:12345) ConnectorA/0.1.1 ConnectorB/0.2.0",
+        ),
+        (
+            [("ConnectorA", "0.1.1"), ("ConnectorB", "0.2.0")],
+            [("ClientA", "1.0.1")],
+            [("connId", "12345"), ("cachedConnId", "67890-memory")],
+            "ClientA/1.0.1 PythonSDK/2 (Python 1; Win; ciso; connId:12345; cachedConnId:67890-memory) ConnectorA/0.1.1 ConnectorB/0.2.0",
         ),
     ],
 )
@@ -175,8 +197,11 @@ def test_detect_connectors(stack, map, expected):
     "firebolt.utils.usage_tracker.get_sdk_properties",
     MagicMock(return_value=("1", "2", "Win", "ciso")),
 )
-def test_user_agent(drivers, clients, expected_string):
-    assert get_user_agent_header(drivers, clients) == expected_string
+def test_user_agent(drivers, clients, additional_parameters, expected_string):
+    assert (
+        get_user_agent_header(drivers, clients, additional_parameters)
+        == expected_string
+    )
 
 
 @mark.parametrize(

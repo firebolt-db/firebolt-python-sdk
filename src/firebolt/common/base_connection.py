@@ -1,8 +1,19 @@
 from collections import namedtuple
-from typing import Any, List, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
+from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
+from firebolt.utils.cache import (
+    ConnectionInfo,
+    EngineInfo,
+    SecureCacheKey,
+    _firebolt_cache,
+)
 from firebolt.utils.exception import ConnectionClosedError, FireboltError
+from firebolt.utils.usage_tracker import (
+    get_cache_tracking_params,
+    get_user_agent_header,
+)
 
 ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
 ASYNC_QUERY_STATUS_SUCCESSFUL = "ENDED_SUCCESSFULLY"
@@ -75,3 +86,76 @@ class BaseConnection:
 
         if self.closed:
             raise ConnectionClosedError("Unable to commit: Connection closed.")
+
+
+def get_cached_system_engine_info(
+    auth: Auth,
+    account_name: str,
+    disable_cache: bool = False,
+) -> Tuple[SecureCacheKey, Optional[EngineInfo]]:
+    """
+    Common cache retrieval logic for system engine info.
+
+    Returns:
+        tuple: (cache_key, cached_engine_info_or_none)
+    """
+    cache_key = SecureCacheKey([auth.principal, auth.secret, account_name], auth.secret)
+
+    if disable_cache:
+        return cache_key, None
+
+    cache = _firebolt_cache.get(cache_key)
+    cached_result = cache.system_engine if cache else None
+
+    return cache_key, cached_result
+
+
+def set_cached_system_engine_info(
+    cache_key: SecureCacheKey,
+    connection_id: str,
+    url: str,
+    params: dict,
+    disable_cache: bool = False,
+) -> EngineInfo:
+    """
+    Common cache setting logic for system engine info.
+
+    Returns:
+        EngineInfo: The engine info that was cached (or created)
+    """
+
+    engine_info = EngineInfo(url=url, params=params)
+
+    if not disable_cache:
+        cache = _firebolt_cache.get(cache_key)
+        if not cache:
+            cache = ConnectionInfo(id=connection_id)
+        cache.system_engine = engine_info
+        _firebolt_cache.set(cache_key, cache)
+
+    return engine_info
+
+
+def get_user_agent_for_connection(
+    auth: Auth,
+    connection_id: str,
+    account_name: Optional[str] = None,
+    additional_parameters: Dict[str, Any] = {},
+    disable_cache: bool = False,
+) -> str:
+    """
+    Get the user agent string for the Firebolt connection.
+
+    Returns:
+        str: The user agent string.
+    """
+    user_drivers = additional_parameters.get("user_drivers", [])
+    user_clients = additional_parameters.get("user_clients", [])
+    ua_parameters = []
+    if not disable_cache:
+        cache_key = SecureCacheKey(
+            [auth.principal, auth.secret, account_name], auth.secret
+        )
+        ua_parameters = get_cache_tracking_params(cache_key, connection_id)
+    user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
+    return user_agent_header

@@ -24,12 +24,9 @@ def connection(
 ) -> Connection:
     if request.param == "core":
         kwargs = {
-            "engine_name": None,
             "database": "firebolt",
             "auth": core_auth,
             "url": core_url,
-            "account_name": None,
-            "api_endpoint": None,
         }
     else:
         kwargs = {

@@ -1,6 +1,7 @@
 from asyncio import run
 from re import Pattern
 from typing import Callable, List
+from unittest.mock import ANY as AnyValue
 from unittest.mock import patch
 
 from httpx import codes
@@ -401,7 +402,7 @@ async def test_connect_with_user_agent(
     query_url: str,
     access_token: str,
 ) -> None:
-    with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.common.base_connection.get_user_agent_header") as ut:
         ut.return_value = "MyConnector/1.0 DriverA/1.1"
         httpx_mock.add_callback(
             query_callback,
@@ -420,7 +421,9 @@ async def test_connect_with_user_agent(
             },
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([("DriverA", "1.1")], [("MyConnector", "1.0")])
+        ut.assert_called_once_with(
+            [("DriverA", "1.1")], [("MyConnector", "1.0")], AnyValue
+        )
 
 
 async def test_connect_no_user_agent(
@@ -432,7 +435,7 @@ async def test_connect_no_user_agent(
     query_url: str,
     access_token: str,
 ) -> None:
-    with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.common.base_connection.get_user_agent_header") as ut:
         ut.return_value = "Python/3.0"
         httpx_mock.add_callback(
             query_callback, url=query_url, match_headers={"User-Agent": "Python/3.0"}
@@ -445,7 +448,7 @@ async def test_connect_no_user_agent(
             api_endpoint=api_endpoint,
         ) as connection:
             await connection.cursor().execute("select*")
-        ut.assert_called_once_with([], [])
+        ut.assert_called_once_with([], [], AnyValue)
 
 
 def test_from_asyncio(

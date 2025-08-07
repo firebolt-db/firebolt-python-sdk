@@ -43,6 +43,24 @@ class ServiceAccount(_RequestBasedAuth):
         self.client_secret = client_secret
         super().__init__(use_token_cache)
 
+    @property
+    def principal(self) -> str:
+        """Get the principal (client id) associated with the auth.
+
+        Returns:
+            str: client id
+        """
+        return self.client_id
+
+    @property
+    def secret(self) -> str:
+        """Get the secret (client secret) associated with the auth.
+
+        Returns:
+            str: client secret
+        """
+        return self.client_secret
+
     def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
 

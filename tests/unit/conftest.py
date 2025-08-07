@@ -1,5 +1,5 @@
 import functools
-from typing import Callable
+from typing import Callable, Generator
 
 import httpx
 from httpx import Request
@@ -8,8 +8,8 @@ from pytest import fixture
 
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
-from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.settings import Settings
+from firebolt.utils.cache import _firebolt_cache
 from firebolt.utils.exception import (
     DatabaseError,
     DataError,
@@ -43,7 +43,20 @@ def global_fake_fs(request) -> None:
 
 @fixture(autouse=True)
 def clear_cache() -> None:
-    _firebolt_system_engine_cache.clear()
+    _firebolt_cache.clear()
+
+
+@fixture(autouse=True)
+def disable_cache() -> None:
+    _firebolt_cache.disable()
+
+
+@fixture
+def enable_cache() -> Generator[None, None, None]:
+    """Fixture to enable cache for tests that require it."""
+    _firebolt_cache.enable()
+    yield
+    _firebolt_cache.disable()
 
 
 @fixture

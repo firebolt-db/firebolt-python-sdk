@@ -65,6 +65,24 @@ class Auth(HttpxAuth):
         """
         return self._token
 
+    @property
+    @abstractmethod
+    def principal(self) -> str:
+        """Get the principal (username or id) associated with the token.
+
+        Returns:
+            str: Principal string
+        """
+
+    @property
+    @abstractmethod
+    def secret(self) -> str:
+        """Get the secret (password or secret key) associated with the token.
+
+        Returns:
+            str: Secret string
+        """
+
     @abstractmethod
     def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
