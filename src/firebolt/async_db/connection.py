@@ -5,10 +5,9 @@ from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
-from httpx import Timeout
+from httpx import Timeout, codes
 
 from firebolt.async_db.cursor import Cursor, CursorV1, CursorV2
-from firebolt.async_db.util import _get_system_engine_url_and_params
 from firebolt.client import DEFAULT_API_URL
 from firebolt.client.auth import Auth
 from firebolt.client.auth.base import FireboltAuthVersion
@@ -21,24 +20,33 @@ from firebolt.common.base_connection import (
     AsyncQueryInfo,
     BaseConnection,
     _parse_async_query_info_results,
+    get_cached_system_engine_info,
+    set_cached_system_engine_info,
 )
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
-from firebolt.utils.cache import SecureCacheKey
+from firebolt.utils.cache import EngineInfo, SecureCacheKey
 from firebolt.utils.exception import (
+    AccountNotFoundOrNoAccessError,
     ConfigurationError,
     ConnectionClosedError,
     FireboltError,
+    InterfaceError,
 )
 from firebolt.utils.firebolt_core import (
     get_core_certificate_context,
     parse_firebolt_core_url,
     validate_firebolt_core_parameters,
 )
+from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
 from firebolt.utils.usage_tracker import (
     get_cache_tracking_params,
     get_user_agent_header,
 )
-from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
+from firebolt.utils.util import (
+    fix_url_schema,
+    parse_url_and_params,
+    validate_engine_name_and_url_v1,
+)
 
 
 class Connection(BaseConnection):
@@ -462,3 +470,39 @@ def connect_core(
         cursor_type=CursorV2,
         api_endpoint=verified_url,
     )
+
+
+async def _get_system_engine_url_and_params(
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    connection_id: str,
+    disable_cache: bool = False,
+) -> EngineInfo:
+    cache_key, cached_result = get_cached_system_engine_info(
+        auth, account_name, disable_cache
+    )
+    if cached_result:
+        return cached_result
+
+    async with AsyncClientV2(
+        auth=auth,
+        base_url=api_endpoint,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
+    ) as client:
+        url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
+        response = await client.get(url=url)
+        if response.status_code == codes.NOT_FOUND:
+            raise AccountNotFoundOrNoAccessError(account_name)
+        if response.status_code != codes.OK:
+            raise InterfaceError(
+                f"Unable to retrieve system engine endpoint {url}: "
+                f"{response.status_code} {response.content.decode()}"
+            )
+        url, params = parse_url_and_params(response.json()["engineUrl"])
+
+        return set_cached_system_engine_info(
+            cache_key, connection_id, url, params, disable_cache
+        )

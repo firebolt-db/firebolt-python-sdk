@@ -1,7 +1,14 @@
 from collections import namedtuple
-from typing import Any, List, Type
+from typing import Any, List, Optional, Tuple, Type
 
+from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
+from firebolt.utils.cache import (
+    ConnectionInfo,
+    EngineInfo,
+    SecureCacheKey,
+    _firebolt_cache,
+)
 from firebolt.utils.exception import ConnectionClosedError, FireboltError
 
 ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
@@ -75,3 +82,51 @@ class BaseConnection:
 
         if self.closed:
             raise ConnectionClosedError("Unable to commit: Connection closed.")
+
+
+def get_cached_system_engine_info(
+    auth: Auth,
+    account_name: str,
+    disable_cache: bool = False,
+) -> Tuple[SecureCacheKey, Optional[EngineInfo]]:
+    """
+    Common cache retrieval logic for system engine info.
+
+    Returns:
+        tuple: (cache_key, cached_engine_info_or_none)
+    """
+    cache_key = SecureCacheKey([auth.principal, auth.secret, account_name], auth.secret)
+
+    if disable_cache:
+        return cache_key, None
+
+    cache = _firebolt_cache.get(cache_key)
+    cached_result = cache.system_engine if cache else None
+
+    return cache_key, cached_result
+
+
+def set_cached_system_engine_info(
+    cache_key: SecureCacheKey,
+    connection_id: str,
+    url: str,
+    params: dict,
+    disable_cache: bool = False,
+) -> EngineInfo:
+    """
+    Common cache setting logic for system engine info.
+
+    Returns:
+        EngineInfo: The engine info that was cached (or created)
+    """
+
+    engine_info = EngineInfo(url=url, params=params)
+
+    if not disable_cache:
+        cache = _firebolt_cache.get(cache_key)
+        if not cache:
+            cache = ConnectionInfo(id=connection_id)
+        cache.system_engine = engine_info
+        _firebolt_cache.set(cache_key, cache)
+
+    return engine_info
