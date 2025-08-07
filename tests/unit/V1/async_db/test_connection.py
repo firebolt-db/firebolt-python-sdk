@@ -402,7 +402,7 @@ async def test_connect_with_user_agent(
     query_url: str,
     access_token: str,
 ) -> None:
-    with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.common.base_connection.get_user_agent_header") as ut:
         ut.return_value = "MyConnector/1.0 DriverA/1.1"
         httpx_mock.add_callback(
             query_callback,
@@ -435,7 +435,7 @@ async def test_connect_no_user_agent(
     query_url: str,
     access_token: str,
 ) -> None:
-    with patch("firebolt.async_db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.common.base_connection.get_user_agent_header") as ut:
         ut.return_value = "Python/3.0"
         httpx_mock.add_callback(
             query_callback, url=query_url, match_headers={"User-Agent": "Python/3.0"}

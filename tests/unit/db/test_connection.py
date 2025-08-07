@@ -371,7 +371,7 @@ def test_connect_with_user_agent(
     query_url: str,
     mock_connection_flow: Callable,
 ) -> None:
-    with patch("firebolt.db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.common.base_connection.get_user_agent_header") as ut:
         ut.return_value = "MyConnector/1.0 DriverA/1.1"
         mock_connection_flow()
         httpx_mock.add_callback(
@@ -407,7 +407,7 @@ def test_connect_no_user_agent(
     query_url: str,
     mock_connection_flow: Callable,
 ) -> None:
-    with patch("firebolt.db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.common.base_connection.get_user_agent_header") as ut:
         ut.return_value = "Python/3.0"
         mock_connection_flow()
         httpx_mock.add_callback(
@@ -451,7 +451,7 @@ def test_connect_caching_headers(
     mock_id = "12345"
     mock_id2 = "67890"
     mock_id3 = "54321"
-    with patch("firebolt.db.connection.get_user_agent_header") as ut:
+    with patch("firebolt.common.base_connection.get_user_agent_header") as ut:
         ut.side_effect = [
             f"connId:{mock_id}",
             f"connId:{mock_id2}; cachedConnId:{mock_id}-memory",

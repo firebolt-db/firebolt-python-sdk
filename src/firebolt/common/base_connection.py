@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Any, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
@@ -10,6 +10,10 @@ from firebolt.utils.cache import (
     _firebolt_cache,
 )
 from firebolt.utils.exception import ConnectionClosedError, FireboltError
+from firebolt.utils.usage_tracker import (
+    get_cache_tracking_params,
+    get_user_agent_header,
+)
 
 ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
 ASYNC_QUERY_STATUS_SUCCESSFUL = "ENDED_SUCCESSFULLY"
@@ -130,3 +134,28 @@ def set_cached_system_engine_info(
         _firebolt_cache.set(cache_key, cache)
 
     return engine_info
+
+
+def get_user_agent_for_connection(
+    auth: Auth,
+    connection_id: str,
+    account_name: Optional[str] = None,
+    additional_parameters: Dict[str, Any] = {},
+    disable_cache: bool = False,
+) -> str:
+    """
+    Get the user agent string for the Firebolt connection.
+
+    Returns:
+        str: The user agent string.
+    """
+    user_drivers = additional_parameters.get("user_drivers", [])
+    user_clients = additional_parameters.get("user_clients", [])
+    ua_parameters = []
+    if not disable_cache:
+        cache_key = SecureCacheKey(
+            [auth.principal, auth.secret, account_name], auth.secret
+        )
+        ua_parameters = get_cache_tracking_params(cache_key, connection_id)
+    user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
+    return user_agent_header

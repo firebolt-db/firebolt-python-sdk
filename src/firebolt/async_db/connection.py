@@ -21,10 +21,11 @@ from firebolt.common.base_connection import (
     BaseConnection,
     _parse_async_query_info_results,
     get_cached_system_engine_info,
+    get_user_agent_for_connection,
     set_cached_system_engine_info,
 )
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
-from firebolt.utils.cache import EngineInfo, SecureCacheKey
+from firebolt.utils.cache import EngineInfo
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     ConfigurationError,
@@ -38,10 +39,6 @@ from firebolt.utils.firebolt_core import (
     validate_firebolt_core_parameters,
 )
 from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
-from firebolt.utils.usage_tracker import (
-    get_cache_tracking_params,
-    get_user_agent_header,
-)
 from firebolt.utils.util import (
     fix_url_schema,
     parse_url_and_params,
@@ -243,16 +240,10 @@ async def connect(
     api_endpoint = fix_url_schema(api_endpoint)
     # Type checks
     assert auth is not None
-    user_drivers = additional_parameters.get("user_drivers", [])
-    user_clients = additional_parameters.get("user_clients", [])
     connection_id = uuid4().hex
-    ua_parameters = []
-    if not disable_cache:
-        cache_key = SecureCacheKey(
-            [auth.principal, auth.secret, account_name], auth.secret
-        )
-        ua_parameters = get_cache_tracking_params(cache_key, connection_id)
-    user_agent_header = get_user_agent_header(user_drivers, user_clients, ua_parameters)
+    user_agent_header = get_user_agent_for_connection(
+        auth, connection_id, account_name, additional_parameters, disable_cache
+    )
     # Use CORE if auth is FireboltCore
     # Use V2 if auth is ClientCredentials
     # Use V1 if auth is ServiceAccount or UsernamePassword
