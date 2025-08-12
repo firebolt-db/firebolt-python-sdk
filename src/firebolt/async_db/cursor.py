@@ -336,24 +336,24 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     async def use_database(self, database: str, cache: bool = True) -> None:
         """Switch the current database context with caching."""
         if cache:
-            cache_obj = self.get_cache()
-            cache_obj = (
-                cache_obj if cache_obj else ConnectionInfo(id=self.connection.id)
+            cache_record = self.get_cache_record()
+            cache_record = (
+                cache_record if cache_record else ConnectionInfo(id=self.connection.id)
             )
-            if cache_obj.databases.get(database):
+            if cache_record.databases.get(database):
                 # If database is cached, use it
                 self.database = database
             else:
                 await self.execute(f'USE DATABASE "{database}"')
-                cache_obj.databases[database] = DatabaseInfo(database)
-                self.set_cache(cache_obj)
+                cache_record.databases[database] = DatabaseInfo(database)
+                self.set_cache_record(cache_record)
         else:
             await self.execute(f'USE DATABASE "{database}"')
 
     async def use_engine(self, engine: str, cache: bool = True) -> None:
         """Switch the current engine context with caching."""
         if cache:
-            cache_obj = self.get_cache()
+            cache_obj = self.get_cache_record()
             cache_obj = (
                 cache_obj if cache_obj else ConnectionInfo(id=self.connection.id)
             )
@@ -364,7 +364,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             else:
                 await self.execute(f'USE ENGINE "{engine}"')
                 cache_obj.engines[engine] = EngineInfo(self.engine_url, self.parameters)
-                self.set_cache(cache_obj)
+                self.set_cache_record(cache_obj)
         else:
             await self.execute(f'USE ENGINE "{engine}"')
 

@@ -326,7 +326,7 @@ class BaseCursor:
             return JSON_LINES_OUTPUT_FORMAT
         return JSON_OUTPUT_FORMAT
 
-    def get_cache(self) -> Optional[ConnectionInfo]:
+    def get_cache_record(self) -> Optional[ConnectionInfo]:
         if not self._client or not self._client.auth:
             return None
         assert isinstance(self._client.auth, Auth)  # Type check
@@ -338,10 +338,10 @@ class BaseCursor:
             ],
             self._client.auth.secret,
         )
-        cache = _firebolt_cache.get(cache_key)
-        return cache
+        record = _firebolt_cache.get(cache_key)
+        return record
 
-    def set_cache(self, cache: ConnectionInfo) -> None:
+    def set_cache_record(self, record: ConnectionInfo) -> None:
         if not self._client or not self._client.auth:
             return
         assert isinstance(self._client.auth, Auth)  # Type check
@@ -353,4 +353,4 @@ class BaseCursor:
             ],
             self._client.auth.secret,
         )
-        _firebolt_cache.set(cache_key, cache)
+        _firebolt_cache.set(cache_key, record)
