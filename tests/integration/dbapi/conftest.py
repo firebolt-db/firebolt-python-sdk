@@ -273,3 +273,23 @@ def select_struct_description() -> List[Column]:
 @fixture
 def select_struct_response() -> List[ColType]:
     return [[{"id": 1, "s": {"a": [1, 2], "b": datetime(2019, 7, 31, 1, 1, 1)}}]]
+
+
+@fixture
+def long_decimal_value() -> str:
+    return "1234567890123456789012345678901234567.0"
+
+
+@fixture
+def long_value_decimal_sql(long_decimal_value: str) -> str:
+    return f"SELECT '{long_decimal_value}'::decimal(38, 1)"
+
+
+@fixture
+def long_bigint_value() -> str:
+    return "123456789012345678"
+
+
+@fixture
+def long_value_bigint_sql(long_bigint_value: str) -> str:
+    return f"SELECT '{long_bigint_value}'::bigint"
