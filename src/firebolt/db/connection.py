@@ -4,9 +4,10 @@ import logging
 from ssl import SSLContext
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, Union
+from uuid import uuid4
 from warnings import warn
 
-from httpx import Timeout
+from httpx import Timeout, codes
 
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
@@ -19,23 +20,31 @@ from firebolt.common.base_connection import (
     AsyncQueryInfo,
     BaseConnection,
     _parse_async_query_info_results,
+    get_cached_system_engine_info,
+    get_user_agent_for_connection,
+    set_cached_system_engine_info,
 )
-from firebolt.common.cache import _firebolt_system_engine_cache
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
-from firebolt.db.util import _get_system_engine_url_and_params
+from firebolt.utils.cache import EngineInfo
 from firebolt.utils.exception import (
+    AccountNotFoundOrNoAccessError,
     ConfigurationError,
     ConnectionClosedError,
     FireboltError,
+    InterfaceError,
 )
 from firebolt.utils.firebolt_core import (
     get_core_certificate_context,
     parse_firebolt_core_url,
     validate_firebolt_core_parameters,
 )
-from firebolt.utils.usage_tracker import get_user_agent_header
-from firebolt.utils.util import fix_url_schema, validate_engine_name_and_url_v1
+from firebolt.utils.urls import GATEWAY_HOST_BY_ACCOUNT_NAME
+from firebolt.utils.util import (
+    fix_url_schema,
+    parse_url_and_params,
+    validate_engine_name_and_url_v1,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,14 +66,14 @@ def connect(
     if not auth:
         raise ConfigurationError("auth is required to connect.")
 
+    api_endpoint = fix_url_schema(api_endpoint)
     # Type checks
     assert auth is not None
-    user_drivers = additional_parameters.get("user_drivers", [])
-    user_clients = additional_parameters.get("user_clients", [])
-    user_agent_header = get_user_agent_header(user_drivers, user_clients)
+    connection_id = uuid4().hex
+    user_agent_header = get_user_agent_for_connection(
+        auth, connection_id, account_name, additional_parameters, disable_cache
+    )
     auth_version = auth.get_firebolt_version()
-    if disable_cache:
-        _firebolt_system_engine_cache.disable()
     # Use CORE if auth is FireboltCore
     # Use V2 if auth is ClientCredentials
     # Use V1 if auth is ServiceAccount or UsernamePassword
@@ -87,6 +96,8 @@ def connect(
             database=database,
             engine_name=engine_name,
             api_endpoint=api_endpoint,
+            connection_id=connection_id,
+            disable_cache=disable_cache,
         )
     elif auth_version == FireboltAuthVersion.V1:
         return connect_v1(
@@ -97,6 +108,7 @@ def connect(
             engine_name=engine_name,
             engine_url=engine_url,
             api_endpoint=api_endpoint,
+            connection_id=connection_id,
         )
     else:
         raise ConfigurationError(f"Unsupported auth type: {type(auth)}")
@@ -105,10 +117,12 @@ def connect(
 def connect_v2(
     auth: Auth,
     user_agent_header: str,
+    connection_id: str,
     account_name: Optional[str] = None,
     database: Optional[str] = None,
     engine_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
+    disable_cache: bool = False,
 ) -> Connection:
     """Connect to Firebolt.
 
@@ -134,10 +148,8 @@ def connect_v2(
     assert auth is not None
     assert account_name is not None
 
-    api_endpoint = fix_url_schema(api_endpoint)
-
-    system_engine_url, system_engine_params = _get_system_engine_url_and_params(
-        auth, account_name, api_endpoint
+    system_engine_info = _get_system_engine_url_and_params(
+        auth, account_name, api_endpoint, connection_id, disable_cache
     )
 
     client = ClientV2(
@@ -149,19 +161,20 @@ def connect_v2(
     )
 
     with Connection(
-        system_engine_url,
+        system_engine_info.url,
         None,
         client,
         CursorV2,
         api_endpoint,
-        system_engine_params,
+        system_engine_info.params,
+        connection_id,
     ) as system_engine_connection:
 
         cursor = system_engine_connection.cursor()
         if database:
-            cursor.execute(f'USE DATABASE "{database}"')
+            cursor.use_database(database, cache=not disable_cache)
         if engine_name:
-            cursor.execute(f'USE ENGINE "{engine_name}"')
+            cursor.use_engine(engine_name, cache=not disable_cache)
         # Ensure cursors created from this connection are using the same starting
         # database and engine
         return Connection(
@@ -171,6 +184,7 @@ def connect_v2(
             CursorV2,
             api_endpoint,
             cursor.parameters,
+            connection_id,
         )
 
 
@@ -201,6 +215,7 @@ class Connection(BaseConnection):
         "_is_closed",
         "client_class",
         "cursor_type",
+        "id",
     )
 
     def __init__(
@@ -211,12 +226,14 @@ class Connection(BaseConnection):
         cursor_type: Type[Cursor],
         api_endpoint: str = DEFAULT_API_URL,
         init_parameters: Optional[Dict[str, Any]] = None,
+        id: str = uuid4().hex,
     ):
         super().__init__(cursor_type)
         self.api_endpoint = api_endpoint
         self.engine_url = engine_url
         self._cursors: List[Cursor] = []
         self._client = client
+        self.id = id
         self.init_parameters = init_parameters or {}
         if database:
             self.init_parameters["database"] = database
@@ -348,6 +365,7 @@ class Connection(BaseConnection):
 def connect_v1(
     auth: Auth,
     user_agent_header: str,
+    connection_id: str,
     database: Optional[str] = None,
     account_name: Optional[str] = None,
     engine_name: Optional[str] = None,
@@ -361,8 +379,6 @@ def connect_v1(
         raise ConfigurationError("database name is required to connect.")
 
     validate_engine_name_and_url_v1(engine_name, engine_url)
-
-    api_endpoint = fix_url_schema(api_endpoint)
 
     # Override tcp keepalive settings for connection
     no_engine_client = ClientV1(
@@ -401,7 +417,9 @@ def connect_v1(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
     )
-    return Connection(engine_url, database, client, CursorV1, api_endpoint)
+    return Connection(
+        engine_url, database, client, CursorV1, api_endpoint, id=connection_id
+    )
 
 
 def connect_core(
@@ -448,3 +466,39 @@ def connect_core(
         cursor_type=CursorV2,
         api_endpoint=verified_url,
     )
+
+
+def _get_system_engine_url_and_params(
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    connection_id: str,
+    disable_cache: bool = False,
+) -> EngineInfo:
+    cache_key, cached_result = get_cached_system_engine_info(
+        auth, account_name, disable_cache
+    )
+    if cached_result:
+        return cached_result
+
+    with ClientV2(
+        auth=auth,
+        base_url=api_endpoint,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS),
+    ) as client:
+        url = GATEWAY_HOST_BY_ACCOUNT_NAME.format(account_name=account_name)
+        response = client.get(url=url)
+        if response.status_code == codes.NOT_FOUND:
+            raise AccountNotFoundOrNoAccessError(account_name)
+        if response.status_code != codes.OK:
+            raise InterfaceError(
+                f"Unable to retrieve system engine endpoint {url}: "
+                f"{response.status_code} {response.content.decode()}"
+            )
+        url, params = parse_url_and_params(response.json()["engineUrl"])
+
+        return set_cached_system_engine_info(
+            cache_key, connection_id, url, params, disable_cache
+        )

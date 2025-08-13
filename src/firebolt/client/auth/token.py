@@ -24,6 +24,24 @@ class Token(Auth):
         super().__init__(use_token_cache=False)
         self._token = token
 
+    @property
+    def principal(self) -> str:
+        """Get the principal (placeholder) associated with the auth.
+
+        Returns:
+            str: Principal (placeholder)
+        """
+        return "token_principal"
+
+    @property
+    def secret(self) -> str:
+        """Get the secret (token) associated with the auth.
+
+        Returns:
+            str: Secret, which is the token itself
+        """
+        return self._token or "token"
+
     def get_firebolt_version(self) -> FireboltAuthVersion:
         """Get Firebolt version from auth.
 
