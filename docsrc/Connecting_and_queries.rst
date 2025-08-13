@@ -362,12 +362,20 @@ placeholders and then pass values into those placeholders when the query is run.
 protects against SQL injection attacks and also helps manage dynamic queries that are
 likely to change, such as filter UIs or access control.
 
-To run a parameterized query, use the ``execute()`` cursor method. Add placeholders to
-your statement using question marks ``?``, and in the second argument pass a tuple of
-parameters equal in length to the  number of ``?`` in the statement.
+There are two supported styles for parameterized queries in the Firebolt Python SDK:
 
+* **QMARK style** (default): Use question marks ``?`` as placeholders. This is controlled by the ``firebolt.db.paramstyle`` variable set to ``"qmark"`` or ``"native"``. Substitution is performed on the client side.
+* **FB Numeric style**: Use numbered placeholders ``$1, $2, ...``. This is enabled by setting ``firebolt.db.paramstyle = "fb_numeric"`` before connecting. Substitution is performed on the server side, providing additional protection against SQL injection.
+
+To run a parameterized query, use the ``execute()`` cursor method. Add placeholders to
+your statement using the appropriate style, and in the second argument pass a tuple of
+parameters equal in length to the number of placeholders in the statement.
+
+**QMARK style example (default):**
 
 ::
+
+    # No need to set paramstyle, it defaults to "qmark"
 
     cursor.execute(
         """
@@ -379,15 +387,31 @@ parameters equal in length to the  number of ``?`` in the statement.
         PRIMARY INDEX id;"""
     )
 
+    cursor.execute(
+        "INSERT INTO test_table2 VALUES (?, ?, ?)",
+        (1, "hello", "2018-01-01"),
+    )
+
+
+**fb_numeric style example (server-side substitution):**
 
 ::
 
+    import firebolt.db
+    firebolt.db.paramstyle = "fb_numeric"
+
     cursor.execute(
-        "INSERT INTO test_table2 VALUES (?, ?, ?)",
-        (1, "apple", "2018-01-01"),
+        "INSERT INTO test_table2 VALUES ($1, $2, $3)",
+        (2, "world", "2018-01-02"),
+    )
+    
+    # paramstyle only needs to be set once, it will be used for all subsequent queries
+
+    cursor.execute(
+        "INSERT INTO test_table2 VALUES ($1, $2, $3)",
+        (3, "!", "2018-01-03"),
     )
 
-    cursor.close()
 
 .. _parameterized_query_executemany_example:
 
@@ -396,6 +420,10 @@ you can use the ``executemany()`` cursor method. This allows multiple tuples to 
 as values in the second argument.
 
 ::
+
+    import firebolt.db
+    # Explicitly set paramstyle to "qmark" for QMARK style in case it was changed
+    firebolt.db.paramstyle = "qmark"
 
     cursor.executemany(
         "INSERT INTO test_table2 VALUES (?, ?, ?)",

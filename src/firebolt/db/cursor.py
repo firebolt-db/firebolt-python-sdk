@@ -50,6 +50,7 @@ from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
 from firebolt.common.row_set.synchronous.streaming import StreamingRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
+from firebolt.utils.cache import ConnectionInfo, DatabaseInfo, EngineInfo
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -91,7 +92,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._client = client
+        self._client: Client = client
         self.connection = connection
         self.engine_url = connection.engine_url
         self._row_set: Optional[BaseSyncRowSet] = None
@@ -337,6 +338,41 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         else:
             self._parse_response_headers(resp.headers)
             self._append_row_set_from_response(resp)
+
+    def use_database(self, database: str, cache: bool = True) -> None:
+        """Switch the current database context with caching."""
+        if cache:
+            cache_record = self.get_cache_record()
+            cache_record = (
+                cache_record if cache_record else ConnectionInfo(id=self.connection.id)
+            )
+            if cache_record.databases.get(database):
+                # If database is cached, use it
+                self.database = database
+            else:
+                self.execute(f'USE DATABASE "{database}"')
+                cache_record.databases[database] = DatabaseInfo(database)
+                self.set_cache_record(cache_record)
+        else:
+            self.execute(f'USE DATABASE "{database}"')
+
+    def use_engine(self, engine: str, cache: bool = True) -> None:
+        """Switch the current engine context with caching."""
+        if cache:
+            cache_obj = self.get_cache_record()
+            cache_obj = (
+                cache_obj if cache_obj else ConnectionInfo(id=self.connection.id)
+            )
+            if cache_obj.engines.get(engine):
+                # If engine is cached, use it
+                self.engine_url = cache_obj.engines[engine].url
+                self._update_set_parameters(cache_obj.engines[engine].params)
+            else:
+                self.execute(f'USE ENGINE "{engine}"')
+                cache_obj.engines[engine] = EngineInfo(self.engine_url, self.parameters)
+                self.set_cache_record(cache_obj)
+        else:
+            self.execute(f'USE ENGINE "{engine}"')
 
     @check_not_closed
     def execute(
