@@ -1,3 +1,4 @@
+import os
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from logging import getLogger
@@ -15,6 +16,19 @@ CREATE_TEST_TABLE = (
     'CREATE DIMENSION TABLE IF NOT EXISTS "test_tbl" (id int, name string)'
 )
 DROP_TEST_TABLE = 'DROP TABLE IF EXISTS "test_tbl" CASCADE'
+
+LONG_SELECT_DEFAULT_V1 = 250000000000
+LONG_SELECT_DEFAULT_V2 = 350000000000
+
+
+@fixture
+def long_test_value() -> int:
+    """Return the long test value from environment variable or 0 to use default."""
+
+    def long_test_value_with_default(default: int = 0) -> int:
+        return int(os.getenv("LONG_TEST_VALUE", default))
+
+    return long_test_value_with_default
 
 
 @fixture
@@ -259,3 +273,23 @@ def select_struct_description() -> List[Column]:
 @fixture
 def select_struct_response() -> List[ColType]:
     return [[{"id": 1, "s": {"a": [1, 2], "b": datetime(2019, 7, 31, 1, 1, 1)}}]]
+
+
+@fixture
+def long_decimal_value() -> str:
+    return "1234567890123456789012345678901234567.0"
+
+
+@fixture
+def long_value_decimal_sql(long_decimal_value: str) -> str:
+    return f"SELECT '{long_decimal_value}'::decimal(38, 1)"
+
+
+@fixture
+def long_bigint_value() -> str:
+    return "123456789012345678"
+
+
+@fixture
+def long_value_bigint_sql(long_bigint_value: str) -> str:
+    return f"SELECT '{long_bigint_value}'::bigint"

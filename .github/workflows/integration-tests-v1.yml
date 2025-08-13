@@ -18,10 +18,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v2
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Install dependencies
         run: |
@@ -58,6 +58,7 @@ jobs:
           STOPPED_ENGINE_URL: ${{ steps.setup.outputs.stopped_engine_url }}
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: "firebolt"
+          LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V1 }}
         run: |
           pytest --last-failed -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=INFO tests/integration -k "not V2 and not core" --runslow
 

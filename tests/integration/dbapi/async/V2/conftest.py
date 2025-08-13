@@ -4,6 +4,7 @@ from typing import Any, Callable, Tuple
 
 from pytest import fixture
 
+import firebolt.async_db
 from firebolt.async_db import Connection, connect
 from firebolt.client.auth.base import Auth
 from firebolt.client.auth.client_credentials import ClientCredentials
@@ -23,12 +24,9 @@ async def connection(
 ) -> Connection:
     if request.param == "core":
         kwargs = {
-            "engine_name": None,
             "database": "firebolt",
             "auth": core_auth,
             "url": core_url,
-            "account_name": None,
-            "api_endpoint": None,
         }
     else:
         kwargs = {
@@ -164,3 +162,12 @@ async def mixed_case_db_and_engine(
     await system_cursor.execute(f'DROP DATABASE "{test_db_name}"')
     await system_cursor.execute(f'STOP ENGINE "{test_engine_name}"')
     await system_cursor.execute(f'DROP ENGINE "{test_engine_name}"')
+
+
+@fixture
+def fb_numeric_paramstyle():
+    """Fixture that sets paramstyle to fb_numeric and resets it after the test."""
+    original_paramstyle = firebolt.async_db.paramstyle
+    firebolt.async_db.paramstyle = "fb_numeric"
+    yield
+    firebolt.async_db.paramstyle = original_paramstyle

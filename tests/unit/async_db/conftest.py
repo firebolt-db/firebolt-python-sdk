@@ -1,5 +1,6 @@
 from pytest import fixture
 
+import firebolt.async_db
 from firebolt.async_db import Connection, Cursor, connect
 from firebolt.client.auth import Auth
 from tests.unit.db_conftest import *  # noqa
@@ -32,3 +33,12 @@ async def connection(
 @fixture
 async def cursor(connection: Connection) -> Cursor:
     return connection.cursor()
+
+
+@fixture
+def fb_numeric_paramstyle():
+    """Fixture that sets paramstyle to fb_numeric and resets it after the test."""
+    original_paramstyle = firebolt.async_db.paramstyle
+    firebolt.async_db.paramstyle = "fb_numeric"
+    yield
+    firebolt.async_db.paramstyle = original_paramstyle

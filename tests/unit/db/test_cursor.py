@@ -1,6 +1,11 @@
+import json
+import re
 import time
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Any, Callable, Dict, List
 from unittest.mock import patch
+from urllib.parse import parse_qs
 
 from httpx import URL, HTTPStatusError, Request, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
@@ -9,7 +14,7 @@ from pytest_httpx import HTTPXMock
 from firebolt.common.constants import CursorState
 from firebolt.common.row_set.types import Column
 from firebolt.db import Cursor
-from firebolt.db.cursor import ColType
+from firebolt.db.cursor import ColType, ProgrammingError
 from firebolt.utils.exception import (
     ConfigurationError,
     CursorClosedError,
@@ -938,3 +943,354 @@ def test_cursor_execute_stream_error(
         # Error is raised during streaming
         with raises(FireboltStructuredError):
             method()
+
+
+@mark.parametrize(
+    "test_params,expected_query_params",
+    [
+        # Basic types
+        (
+            [42, "string", 3.14, True, False, None],
+            [
+                {"name": "$1", "value": 42},
+                {"name": "$2", "value": "string"},
+                {"name": "$3", "value": 3.14},
+                {"name": "$4", "value": True},
+                {"name": "$5", "value": False},
+                {"name": "$6", "value": None},
+            ],
+        ),
+        # Edge cases for numeric types
+        (
+            [0, -1, 0.0, -3.14],
+            [
+                {"name": "$1", "value": 0},
+                {"name": "$2", "value": -1},
+                {"name": "$3", "value": 0.0},
+                {"name": "$4", "value": -3.14},
+            ],
+        ),
+        # String edge cases
+        (
+            ["", "multi\nline", "special'chars\"test"],
+            [
+                {"name": "$1", "value": ""},
+                {"name": "$2", "value": "multi\nline"},
+                {"name": "$3", "value": "special'chars\"test"},
+            ],
+        ),
+        # Single parameter
+        ([42], [{"name": "$1", "value": 42}]),
+        # Empty parameters
+        ([], []),
+    ],
+)
+def test_fb_numeric_parameter_formatting(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_callback_factory: Callable,
+    test_params: List[Any],
+    expected_query_params: List[Dict[str, Any]],
+    fb_numeric_paramstyle,
+):
+    """Test that fb_numeric paramstyle formats parameters correctly for various types."""
+    test_query = f"SELECT * FROM test WHERE col IN ({', '.join(f'${i+1}' for i in range(len(test_params)))})"
+
+    callback = fb_numeric_callback_factory(expected_query_params, test_query)
+    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+
+    cursor.execute(test_query, test_params)
+
+
+def test_fb_numeric_complex_types_converted_to_strings(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_callback_factory: Callable,
+    fb_numeric_paramstyle,
+):
+    """Test that fb_numeric paramstyle converts complex types to strings in sync mode."""
+    test_params = [datetime(2023, 1, 1, 12, 30), date(2023, 6, 15)]
+    expected_query_params = [
+        {"name": "$1", "value": "2023-01-01 12:30:00"},
+        {"name": "$2", "value": "2023-06-15"},
+    ]
+
+    test_query = "SELECT * FROM test WHERE created_at = $1 AND birth_date = $2"
+
+    callback = fb_numeric_callback_factory(expected_query_params, test_query)
+    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+
+    cursor.execute(test_query, test_params)
+
+
+def test_fb_numeric_no_client_side_substitution(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_callback_factory: Callable,
+):
+    """Test that fb_numeric paramstyle does not perform client-side parameter substitution."""
+    test_query = "SELECT * FROM test WHERE id = $1 AND name = $2 AND value = $1"
+    test_params = [42, "test"]
+    expected_query_params = [
+        {"name": "$1", "value": 42},
+        {"name": "$2", "value": "test"},
+    ]
+
+    callback = fb_numeric_callback_factory(expected_query_params, test_query)
+    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+
+    import firebolt.db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "fb_numeric"
+        cursor.execute(test_query, test_params)
+    finally:
+        db.paramstyle = original_paramstyle
+
+
+def test_fb_numeric_executemany(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_simple_callback: Callable,
+):
+    """Test that fb_numeric paramstyle works with executemany method."""
+    test_query = "INSERT INTO test (id, name) VALUES ($1, $2)"
+
+    # For executemany, only the first parameter set is used with fb_numeric
+    test_params_seq = [
+        [1, "first"],
+        [2, "second"],
+        [3, "third"],
+    ]
+
+    def validate_executemany_callback(request: Request, **kwargs) -> Response:
+        assert request.method == "POST"
+
+        # Should process multiple parameter sets sequentially
+        qs = parse_qs(request.url.query)
+        query_params_raw = qs.get(b"query_parameters", [])
+
+        if query_params_raw:
+            query_params_str = query_params_raw[0].decode()
+            actual_query_params = json.loads(query_params_str)
+            # Should have parameters from one of the parameter sets
+            assert len(actual_query_params) == 2
+            assert actual_query_params[0]["name"] == "$1"
+            assert actual_query_params[1]["name"] == "$2"
+
+        return fb_numeric_simple_callback(request, **kwargs)
+
+    httpx_mock.add_callback(validate_executemany_callback, url=fb_numeric_query_url)
+
+    import firebolt.db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "fb_numeric"
+        cursor.executemany(test_query, test_params_seq)
+    finally:
+        db.paramstyle = original_paramstyle
+
+
+def test_fb_numeric_with_cursor_set_parameters(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_simple_callback: Callable,
+):
+    """Test that fb_numeric paramstyle works correctly when cursor has pre-existing set parameters."""
+    import firebolt.db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "fb_numeric"
+
+        # Manually set a parameter in the cursor (simulating what would happen
+        # if SET was called in a different paramstyle mode)
+        cursor._set_parameters = {"my_param": "test_value"}
+
+        test_query = "SELECT * FROM test WHERE id = $1"
+        test_params = [42]
+
+        def validate_with_set_params_callback(request: Request, **kwargs):
+            assert request.method == "POST"
+
+            # Should include both set parameters and query parameters
+            qs = parse_qs(request.url.query)
+
+            # Check for set parameter
+            assert b"my_param" in qs
+            assert qs[b"my_param"] == [b"test_value"]
+
+            # Check for query parameters
+            query_params_raw = qs.get(b"query_parameters", [])
+            if query_params_raw:
+                query_params_str = query_params_raw[0].decode()
+                actual_query_params = json.loads(query_params_str)
+                expected = [{"name": "$1", "value": 42}]
+                assert actual_query_params == expected
+
+            return fb_numeric_simple_callback(request, **kwargs)
+
+        # Mock the SELECT query with set parameters
+        httpx_mock.add_callback(
+            validate_with_set_params_callback, url=fb_numeric_query_url
+        )
+
+        cursor.execute(test_query, test_params)
+    finally:
+        db.paramstyle = original_paramstyle
+
+
+@mark.parametrize(
+    "test_params,expected_query_params",
+    [
+        # Decimal types
+        (
+            [Decimal("123.45"), Decimal("0"), Decimal("-999.999")],
+            [
+                {"name": "$1", "value": "123.45"},
+                {"name": "$2", "value": "0"},
+                {"name": "$3", "value": "-999.999"},
+            ],
+        ),
+        # Bytes values
+        (
+            [b"hello", b"\x00\x01\x02", b""],
+            [
+                {"name": "$1", "value": "hello"},
+                {"name": "$2", "value": "\x00\x01\x02"},
+                {"name": "$3", "value": ""},
+            ],
+        ),
+        # List/Array values
+        (
+            [[1, 2, 3], ["a", "b"], [], [None, True, False]],
+            [
+                {"name": "$1", "value": [1, 2, 3]},
+                {"name": "$2", "value": ["a", "b"]},
+                {"name": "$3", "value": []},
+                {"name": "$4", "value": [None, True, False]},
+            ],
+        ),
+        # Mixed complex types
+        (
+            [Decimal("42.0"), b"binary", [1, "mixed"], {"key": "value"}],
+            [
+                {"name": "$1", "value": "42.0"},
+                {"name": "$2", "value": "binary"},
+                {"name": "$3", "value": [1, "mixed"]},
+                {"name": "$4", "value": "{'key': 'value'}"},
+            ],
+        ),
+        # Large numbers and edge cases
+        (
+            [2**63 - 1, -(2**63), float("inf"), float("-inf")],
+            [
+                {"name": "$1", "value": 9223372036854775807},
+                {"name": "$2", "value": -9223372036854775808},
+                {"name": "$3", "value": float("inf")},
+                {"name": "$4", "value": float("-inf")},
+            ],
+        ),
+    ],
+)
+def test_fb_numeric_additional_types(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_callback_factory: Callable,
+    test_params: List[Any],
+    expected_query_params: List[Dict[str, Any]],
+):
+    """Test that fb_numeric paramstyle handles additional SDK-supported types correctly."""
+    test_query = f"SELECT * FROM test WHERE col IN ({', '.join(f'${i+1}' for i in range(len(test_params)))})"
+
+    callback = fb_numeric_callback_factory(expected_query_params, test_query)
+    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+
+    import firebolt.db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "fb_numeric"
+        cursor.execute(test_query, test_params)
+    finally:
+        db.paramstyle = original_paramstyle
+
+
+def test_fb_numeric_nested_complex_structures(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_callback_factory: Callable,
+):
+    """Test that fb_numeric paramstyle handles deeply nested structures."""
+    test_params = [
+        {"nested": {"array": [1, 2, {"deep": True}]}},
+        # Here decimal is a part of the JSON so it should be converted to string
+        [{"mixed": Decimal("123.45")}, [1, [2, [3]]]],
+    ]
+    expected_query_params = [
+        {"name": "$1", "value": "{'nested': {'array': [1, 2, {'deep': True}]}}"},
+        {"name": "$2", "value": ["{'mixed': Decimal('123.45')}", [1, [2, [3]]]]},
+    ]
+
+    test_query = "SELECT * FROM test WHERE data = $1 AND metadata = $2"
+
+    callback = fb_numeric_callback_factory(expected_query_params, test_query)
+    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+
+    import firebolt.db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "fb_numeric"
+        cursor.execute(test_query, test_params)
+    finally:
+        db.paramstyle = original_paramstyle
+
+
+def test_fb_numeric_large_parameter_count(
+    cursor: Cursor,
+    httpx_mock: HTTPXMock,
+    fb_numeric_query_url: re.Pattern,
+    fb_numeric_callback_factory: Callable,
+):
+    """Test that fb_numeric paramstyle handles a large number of parameters."""
+    # Test with 50 parameters
+    test_params = list(range(50))
+    expected_query_params = [{"name": f"${i+1}", "value": i} for i in range(50)]
+
+    placeholders = ", ".join(f"${i+1}" for i in range(50))
+    test_query = f"SELECT * FROM test WHERE id IN ({placeholders})"
+
+    callback = fb_numeric_callback_factory(expected_query_params, test_query)
+    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+
+    import firebolt.db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "fb_numeric"
+        cursor.execute(test_query, test_params)
+    finally:
+        db.paramstyle = original_paramstyle
+
+
+def test_unsupported_paramstyle_raises(cursor):
+    """Test that unsupported paramstyles raise ProgrammingError."""
+    import firebolt.db as db
+
+    original_paramstyle = db.paramstyle
+    try:
+        db.paramstyle = "not_a_style"
+        with raises(ProgrammingError):
+            cursor.execute("SELECT 1")
+    finally:
+        db.paramstyle = original_paramstyle

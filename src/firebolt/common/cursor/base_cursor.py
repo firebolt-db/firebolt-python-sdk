@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import json
 import logging
 import re
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from httpx import URL, Response
 
-from firebolt.common._types import RawColType, SetParameter
+from firebolt.client.auth.base import Auth
+from firebolt.client.client import AsyncClient, Client
+from firebolt.common._types import ParameterType, RawColType, SetParameter
 from firebolt.common.constants import (
     DISALLOWED_PARAMETER_LIST,
     IMMUTABLE_PARAMETER_LIST,
@@ -20,6 +23,11 @@ from firebolt.common.cursor.decorators import check_not_closed
 from firebolt.common.row_set.base import BaseRowSet
 from firebolt.common.row_set.types import AsyncResponse, Column, Statistics
 from firebolt.common.statement_formatter import StatementFormatter
+from firebolt.utils.cache import (
+    ConnectionInfo,
+    SecureCacheKey,
+    _firebolt_cache,
+)
 from firebolt.utils.exception import ConfigurationError, FireboltError
 from firebolt.utils.util import fix_url_schema
 
@@ -88,7 +96,10 @@ class BaseCursor:
     streaming_row_set_type: Type = BaseRowSet
 
     def __init__(
-        self, *args: Any, formatter: StatementFormatter, **kwargs: Any
+        self,
+        *args: Any,
+        formatter: StatementFormatter,
+        **kwargs: Any,
     ) -> None:
         self._arraysize = self.default_arraysize
         # These fields initialized here for type annotations purpose
@@ -100,6 +111,7 @@ class BaseCursor:
         self.engine_url = ""
         self._query_id = ""  # not used
         self._query_token = ""
+        self._client: Optional[Union[Client, AsyncClient]] = None
         self._row_set: Optional[BaseRowSet] = None
         self._reset()
 
@@ -226,6 +238,42 @@ class BaseCursor:
         ):
             logger.debug(f"Running query: {query}")
 
+    def _build_fb_numeric_query_params(
+        self,
+        parameters: Sequence[Sequence[ParameterType]],
+        streaming: bool,
+        async_execution: bool,
+    ) -> Dict[str, Any]:
+        """
+        Build query parameters dictionary for fb_numeric paramstyle.
+
+        Args:
+            parameters: A sequence of parameter sequences. For fb_numeric,
+                       only the first parameter sequence is used.
+            streaming: Whether streaming is enabled
+            async_execution: Whether async execution is enabled
+
+        Returns:
+            Dictionary of query parameters to send with the request
+        """
+        param_list = parameters[0] if parameters else []
+        query_parameters = [
+            {
+                "name": f"${i+1}",
+                "value": self._formatter.convert_parameter_for_serialization(value),
+            }
+            for i, value in enumerate(param_list)
+        ]
+
+        query_params: Dict[str, Any] = {
+            "output_format": self._get_output_format(streaming),
+        }
+        if query_parameters:
+            query_params["query_parameters"] = json.dumps(query_parameters)
+        if async_execution:
+            query_params["async"] = True
+        return query_params
+
     @property
     def engine_name(self) -> str:
         """
@@ -277,3 +325,32 @@ class BaseCursor:
         if is_streaming:
             return JSON_LINES_OUTPUT_FORMAT
         return JSON_OUTPUT_FORMAT
+
+    def get_cache_record(self) -> Optional[ConnectionInfo]:
+        if not self._client or not self._client.auth:
+            return None
+        assert isinstance(self._client.auth, Auth)  # Type check
+        cache_key = SecureCacheKey(
+            [
+                self._client.auth.principal,
+                self._client.auth.secret,
+                self._client.account_name,
+            ],
+            self._client.auth.secret,
+        )
+        record = _firebolt_cache.get(cache_key)
+        return record
+
+    def set_cache_record(self, record: ConnectionInfo) -> None:
+        if not self._client or not self._client.auth:
+            return
+        assert isinstance(self._client.auth, Auth)  # Type check
+        cache_key = SecureCacheKey(
+            [
+                self._client.auth.principal,
+                self._client.auth.secret,
+                self._client.account_name,
+            ],
+            self._client.auth.secret,
+        )
+        _firebolt_cache.set(cache_key, record)

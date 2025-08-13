@@ -12,12 +12,13 @@ from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
 from firebolt.utils.exception import FireboltStructuredError
+from tests.integration.dbapi.conftest import LONG_SELECT_DEFAULT_V2
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT = ",".join([f"({i},'{val}')" for (i, val) in enumerate(range(1, 360))])
 LONG_INSERT = f"INSERT INTO test_tbl VALUES {VALS_TO_INSERT}"
 LONG_SELECT = (
-    "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)"  # approx 6m runtime
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, {long_value})"  # approx 6m runtime
 )
 
 
@@ -106,13 +107,16 @@ def test_select_nan(connection: Connection) -> None:
 def test_long_query(
     connection: Connection,
     minimal_time: Callable[[float], None],
+    long_test_value: Callable[[int], int],
 ) -> None:
     """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
 
     minimal_time(350)
 
     with connection.cursor() as c:
-        c.execute(LONG_SELECT)
+        c.execute(
+            LONG_SELECT.format(long_value=long_test_value(LONG_SELECT_DEFAULT_V2))
+        )
         data = c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 
@@ -214,16 +218,16 @@ def test_insert(connection: Connection) -> None:
 def test_parameterized_query_with_special_chars(connection: Connection) -> None:
     """Query parameters are handled properly."""
     with connection.cursor() as c:
-        params = ["text with 'quote'", "text with \\slashes"]
+        parameters = ["text with 'quote'", "text with \\slashes"]
 
         c.execute(
             "SELECT ? as one, ? as two",
-            params,
+            parameters,
         )
 
         result = c.fetchall()
         assert result == [
-            [params[0], params[1]]
+            [parameters[0], parameters[1]]
         ], "Invalid data in table after parameterized insert"
 
 
@@ -561,3 +565,135 @@ def test_select_struct(
             )
         finally:
             c.execute(cleanup_struct_query)
+
+
+def test_fb_numeric_paramstyle_all_types(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: insert/select all supported types, and parameter count errors."""
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with connection.cursor() as c:
+            c.execute('DROP TABLE IF EXISTS "test_fb_numeric_all_types_sync"')
+            c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_all_types_sync" ('
+                "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, a ARRAY(INT), dec DECIMAL(38, 3)"
+                ")"
+            )
+            params = [
+                1,  # i INT
+                1.123,  # f FLOAT
+                "text",  # s STRING
+                None,  # sn STRING NULL
+                date(2022, 1, 1),  # d DATE
+                datetime(2022, 1, 1, 1, 1, 1),  # dt DATETIME
+                True,  # b BOOL
+                [1, 2, 3],  # a ARRAY(INT)
+                Decimal("123.456"),  # dec DECIMAL(38, 3)
+            ]
+            c.execute(
+                'INSERT INTO "test_fb_numeric_all_types_sync" VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+                params,
+            )
+            c.execute(
+                'SELECT * FROM "test_fb_numeric_all_types_sync" WHERE i = $1', [1]
+            )
+            result = c.fetchall()
+            # None is returned as None, arrays as lists, decimals as Decimal
+            assert result == [params]
+
+
+def test_fb_numeric_paramstyle_not_enough_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: not enough parameters supplied."""
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with connection.cursor() as c:
+            with raises(FireboltStructuredError) as exc_info:
+                c.execute("SELECT $1, $2", [1])
+            assert (
+                "query referenced positional parameter $2, but it was not set"
+                in str(exc_info.value).lower()
+            )
+
+
+def test_fb_numeric_paramstyle_too_many_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: too many parameters supplied (should succeed)."""
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        with connection.cursor() as c:
+            c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params2_sync"')
+            c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_params2_sync" (i INT, s STRING)'
+            )
+            # Three params for two placeholders: should succeed, extra param ignored
+            c.execute(
+                'INSERT INTO "test_fb_numeric_params2_sync" VALUES ($1, $2)',
+                [1, "foo", 123],
+            )
+            c.execute('SELECT * FROM "test_fb_numeric_params2_sync" WHERE i = $1', [1])
+            result = c.fetchall()
+            assert result == [[1, "foo"]]
+
+
+def test_fb_numeric_paramstyle_incorrect_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    with connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        c = connection.cursor()
+        with raises(FireboltStructuredError) as exc_info:
+            c.execute(
+                "SELECT $34, $72",
+                [1, "foo"],
+            )
+        assert "Query referenced positional parameter $34, but it was not set" in str(
+            exc_info.value
+        )
+
+
+def test_select_quoted_decimal(
+    connection: Connection, long_decimal_value: str, long_value_decimal_sql: str
+):
+    with connection.cursor() as c:
+        c.execute(long_value_decimal_sql)
+        result = c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == Decimal(
+            long_decimal_value
+        ), "Invalid data returned by fetchall"
+
+
+def test_select_quoted_bigint(
+    connection: Connection, long_bigint_value: str, long_value_bigint_sql: str
+):
+    with connection.cursor() as c:
+        c.execute(long_value_bigint_sql)
+        result = c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == int(
+            long_bigint_value
+        ), "Invalid data returned by fetchall"

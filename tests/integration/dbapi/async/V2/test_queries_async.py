@@ -12,6 +12,7 @@ from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
 from firebolt.utils.exception import FireboltStructuredError
+from tests.integration.dbapi.conftest import LONG_SELECT_DEFAULT_V2
 from tests.integration.dbapi.utils import assert_deep_eq
 
 VALS_TO_INSERT_2 = ",".join(
@@ -19,7 +20,7 @@ VALS_TO_INSERT_2 = ",".join(
 )
 LONG_INSERT = f'INSERT INTO "test_tbl" VALUES {VALS_TO_INSERT_2}'
 LONG_SELECT = (
-    "SELECT checksum(*) FROM GENERATE_SERIES(1, 400000000000)"  # approx 6m runtime
+    "SELECT checksum(*) FROM GENERATE_SERIES(1, {long_value})"  # approx 6m runtime
 )
 
 
@@ -102,13 +103,16 @@ async def test_select_nan(connection: Connection) -> None:
 async def test_long_query(
     connection: Connection,
     minimal_time: Callable[[float], None],
+    long_test_value: Callable[[int], int],
 ) -> None:
     """AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly."""
 
     minimal_time(350)
 
     async with connection.cursor() as c:
-        await c.execute(LONG_SELECT)
+        await c.execute(
+            LONG_SELECT.format(long_value=long_test_value(LONG_SELECT_DEFAULT_V2))
+        )
         data = await c.fetchall()
         assert len(data) == 1, "Invalid data size returned by fetchall"
 
@@ -265,16 +269,16 @@ async def test_parameterized_query(connection: Connection) -> None:
 async def test_parameterized_query_with_special_chars(connection: Connection) -> None:
     """Query parameters are handled properly."""
     async with connection.cursor() as c:
-        params = ["text with 'quote'", "text with \\slashes"]
+        parameters = ["text with 'quote'", "text with \\slashes"]
 
         await c.execute(
             "SELECT ? as one, ? as two",
-            params,
+            parameters,
         )
 
         result = await c.fetchall()
         assert result == [
-            [params[0], params[1]]
+            [parameters[0], parameters[1]]
         ], "Invalid data in table after parameterized insert"
 
 
@@ -479,3 +483,216 @@ async def test_select_struct(
             )
         finally:
             await c.execute(cleanup_struct_query)
+
+
+async def test_fb_numeric_paramstyle_all_types(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: insert/select all supported types, and parameter count errors."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_all_types"')
+            await c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_all_types" ('
+                "i INT, f FLOAT, s STRING, sn STRING NULL, d DATE, dt DATETIME, b BOOL, "
+                "a_int ARRAY(INT), dec DECIMAL(38, 3), "
+                "a_str ARRAY(STRING), a_nested ARRAY(ARRAY(INT)), "
+                "by BYTEA"
+                ")"
+            )
+            params = [
+                1,  # i INT
+                1.123,  # f FLOAT
+                "text",  # s STRING
+                None,  # sn STRING NULL
+                date(2022, 1, 1),  # d DATE
+                datetime(2022, 1, 1, 1, 1, 1),  # dt DATETIME
+                True,  # b BOOL
+                [1, 2, 3],  # a_int ARRAY(INT)
+                Decimal("123.456"),  # dec DECIMAL(38, 3)
+                ["hello", "world", "test"],  # a_str ARRAY(STRING)
+                [[1, 2], [3, 4], [5]],  # a_nested ARRAY(ARRAY(INT))
+                Binary("test_bytea_data"),  # by BYTEA
+            ]
+            await c.execute(
+                'INSERT INTO "test_fb_numeric_all_types" VALUES '
+                "($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)",
+                params,
+            )
+            await c.execute(
+                'SELECT * FROM "test_fb_numeric_all_types" WHERE i = $1', [1]
+            )
+            result = await c.fetchall()
+            # None is returned as None, arrays as lists, decimals as Decimal, bytea as bytes
+            assert result == [params]
+
+
+async def test_fb_numeric_paramstyle_not_enough_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: not enough parameters supplied."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        async with connection.cursor() as c:
+            with raises(FireboltStructuredError) as exc_info:
+                await c.execute("SELECT $1, $2", [1])
+            assert (
+                "query referenced positional parameter $2, but it was not set"
+                in str(exc_info.value).lower()
+            )
+
+
+async def test_fb_numeric_paramstyle_too_many_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    """Test fb_numeric paramstyle: too many parameters supplied (should succeed)."""
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_fb_numeric_params2"')
+            await c.execute(
+                'CREATE FACT TABLE "test_fb_numeric_params2" (i INT, s STRING)'
+            )
+            # Three params for two placeholders: should succeed, extra param ignored
+            await c.execute(
+                'INSERT INTO "test_fb_numeric_params2" VALUES ($1, $2)',
+                [1, "foo", 123],
+            )
+            await c.execute('SELECT * FROM "test_fb_numeric_params2" WHERE i = $1', [1])
+            result = await c.fetchall()
+            assert result == [[1, "foo"]]
+
+
+async def test_fb_numeric_paramstyle_incorrect_params(
+    engine_name, database_name, auth, account_name, api_endpoint, fb_numeric_paramstyle
+):
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        c = connection.cursor()
+        with raises(FireboltStructuredError) as exc_info:
+            await c.execute(
+                "SELECT $34, $72",
+                [1, "foo"],
+            )
+        assert "Query referenced positional parameter $34, but it was not set" in str(
+            exc_info.value
+        )
+
+
+async def test_engine_switch(
+    database_name: str,
+    connection_system_engine: Connection,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    engine_name: str,
+) -> None:
+    system_cursor = connection_system_engine.cursor()
+    await system_cursor.execute("SELECT current_engine()")
+    result = await system_cursor.fetchone()
+    assert (
+        result[0] == "system"
+    ), f"Incorrect setup - system engine cursor points at {result[0]}"
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        await cursor.execute("SELECT current_engine()")
+        result = await cursor.fetchone()
+        assert result[0] == engine_name, "Engine switch failed"
+        # Test switching back to system engine
+        await cursor.execute("USE ENGINE system")
+        await cursor.execute("SELECT current_engine()")
+        result = await cursor.fetchone()
+        assert result[0] == "system", "Switching back to system engine failed"
+
+
+async def test_database_switch(
+    database_name: str,
+    connection_system_engine_no_db: Connection,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    engine_name: str,
+) -> None:
+    system_cursor = connection_system_engine_no_db.cursor()
+    await system_cursor.execute("SELECT current_database()")
+    result = await system_cursor.fetchone()
+    assert (
+        result[0] == "account_db"
+    ), f"Incorrect setup - system engine cursor points at {result[0]}"
+    async with await connect(
+        engine_name=engine_name,
+        database=database_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        await cursor.execute("SELECT current_database()")
+        result = await cursor.fetchone()
+        assert result[0] == database_name, "Database switch failed"
+        try:
+            # Test switching back to system database
+            await system_cursor.execute(
+                f"CREATE DATABASE IF NOT EXISTS {database_name}_switch"
+            )
+            await cursor.execute(f"USE DATABASE {database_name}_switch")
+            await cursor.execute("SELECT current_database()")
+            result = await cursor.fetchone()
+            assert (
+                result[0] == f"{database_name}_switch"
+            ), "Switching back to switch database failed"
+        finally:
+            await system_cursor.execute(
+                f"DROP DATABASE IF EXISTS {database_name}_switch"
+            )
+
+
+async def test_select_quoted_decimal(
+    connection: Connection, long_decimal_value: str, long_value_decimal_sql: str
+):
+    async with connection.cursor() as c:
+        await c.execute(long_value_decimal_sql)
+        result = await c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == Decimal(
+            long_decimal_value
+        ), "Invalid data returned by fetchall"
+
+
+async def test_select_quoted_bigint(
+    connection: Connection, long_bigint_value: str, long_value_bigint_sql: str
+):
+    async with connection.cursor() as c:
+        await c.execute(long_value_bigint_sql)
+        result = await c.fetchall()
+        assert len(result) == 1, "Invalid data length returned by fetchall"
+        assert result[0][0] == int(
+            long_bigint_value
+        ), "Invalid data returned by fetchall"

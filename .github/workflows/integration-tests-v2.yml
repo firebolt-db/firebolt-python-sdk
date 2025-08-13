@@ -27,10 +27,10 @@ jobs:
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.9
         uses: actions/setup-python@v5
         with:
-          python-version: 3.8
+          python-version: 3.9
 
       - name: Install dependencies
         run: |
@@ -56,6 +56,7 @@ jobs:
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
           API_ENDPOINT: "api.staging.firebolt.io"
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT }}
+          LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V2 }}
         run: |
           pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1 and not core" --runslow  --alluredir=allure-results
 

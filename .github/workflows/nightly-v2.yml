@@ -36,7 +36,7 @@ jobs:
       max-parallel: 2
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
-        python-version: ['3.8', '3.9', '3.10']
+        python-version: ['3.9', '3.10', '3.11']
     steps:
       - name: Check out code
         uses: actions/checkout@v2
@@ -74,6 +74,7 @@ jobs:
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT }}
           API_ENDPOINT: "api.staging.firebolt.io"
+          LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V2 }}
         run: |
           pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V1 and not core"
 

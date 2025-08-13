@@ -33,6 +33,7 @@ from firebolt.common.constants import (
     UPDATE_ENDPOINT_HEADER,
     UPDATE_PARAMETERS_HEADER,
     CursorState,
+    ParameterStyle,
 )
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
@@ -49,6 +50,7 @@ from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
 from firebolt.common.row_set.synchronous.streaming import StreamingRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
+from firebolt.utils.cache import ConnectionInfo, DatabaseInfo, EngineInfo
 from firebolt.utils.exception import (
     EngineNotRunningError,
     FireboltDatabaseError,
@@ -90,7 +92,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         **kwargs: Any,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self._client = client
+        self._client: Client = client
         self.connection = connection
         self.engine_url = connection.engine_url
         self._row_set: Optional[BaseSyncRowSet] = None
@@ -222,26 +224,64 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         self._close_rowset_and_reset()
         self._row_set = StreamingRowSet() if streaming else InMemoryRowSet()
-        queries: List[Union[SetParameter, str]] = (
-            [raw_query]
-            if skip_parsing
-            else self._formatter.split_format_sql(raw_query, parameters)
-        )
-        timeout_controller = TimeoutController(timeout)
+        # Import paramstyle from module level
+        from firebolt.db import paramstyle
 
-        if len(queries) > 1 and async_execution:
-            raise FireboltError(
-                "Server side async does not support multi-statement queries"
-            )
         try:
-            for query in queries:
-                self._execute_single_query(
-                    query, timeout_controller, async_execution, streaming
+            parameter_style = ParameterStyle(paramstyle)
+        except ValueError:
+            raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
+        try:
+            if parameter_style == ParameterStyle.FB_NUMERIC:
+                self._execute_fb_numeric(
+                    raw_query, parameters, timeout, async_execution, streaming
                 )
+            else:
+                queries: List[Union[SetParameter, str]] = (
+                    [raw_query]
+                    if skip_parsing
+                    else self._formatter.split_format_sql(raw_query, parameters)
+                )
+                timeout_controller = TimeoutController(timeout)
+                if len(queries) > 1 and async_execution:
+                    raise FireboltError(
+                        "Server side async does not support multi-statement queries"
+                    )
+                for query in queries:
+                    self._execute_single_query(
+                        query, timeout_controller, async_execution, streaming
+                    )
             self._state = CursorState.DONE
         except Exception:
             self._state = CursorState.ERROR
             raise
+
+    def _execute_fb_numeric(
+        self,
+        query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        timeout: Optional[float],
+        async_execution: bool,
+        streaming: bool,
+    ) -> None:
+        Cursor._log_query(query)
+        timeout_controller = TimeoutController(timeout)
+        timeout_controller.raise_if_timeout()
+        query_params = self._build_fb_numeric_query_params(
+            parameters, streaming, async_execution
+        )
+        resp = self._api_request(
+            query,
+            query_params,
+            timeout=timeout_controller.remaining(),
+        )
+        self._raise_if_error(resp)
+        if async_execution:
+            resp.read()
+            self._parse_async_response(resp)
+        else:
+            self._parse_response_headers(resp.headers)
+            self._append_row_set_from_response(resp)
 
     def _execute_single_query(
         self,
@@ -298,6 +338,41 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         else:
             self._parse_response_headers(resp.headers)
             self._append_row_set_from_response(resp)
+
+    def use_database(self, database: str, cache: bool = True) -> None:
+        """Switch the current database context with caching."""
+        if cache:
+            cache_record = self.get_cache_record()
+            cache_record = (
+                cache_record if cache_record else ConnectionInfo(id=self.connection.id)
+            )
+            if cache_record.databases.get(database):
+                # If database is cached, use it
+                self.database = database
+            else:
+                self.execute(f'USE DATABASE "{database}"')
+                cache_record.databases[database] = DatabaseInfo(database)
+                self.set_cache_record(cache_record)
+        else:
+            self.execute(f'USE DATABASE "{database}"')
+
+    def use_engine(self, engine: str, cache: bool = True) -> None:
+        """Switch the current engine context with caching."""
+        if cache:
+            cache_obj = self.get_cache_record()
+            cache_obj = (
+                cache_obj if cache_obj else ConnectionInfo(id=self.connection.id)
+            )
+            if cache_obj.engines.get(engine):
+                # If engine is cached, use it
+                self.engine_url = cache_obj.engines[engine].url
+                self._update_set_parameters(cache_obj.engines[engine].params)
+            else:
+                self.execute(f'USE ENGINE "{engine}"')
+                cache_obj.engines[engine] = EngineInfo(self.engine_url, self.parameters)
+                self.set_cache_record(cache_obj)
+        else:
+            self.execute(f'USE ENGINE "{engine}"')
 
     @check_not_closed
     def execute(
