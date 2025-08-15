@@ -102,7 +102,7 @@ jobs:
             path: gh-pages
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@v1
+        uses: firebolt-db/action-allure-report@@keep-files
         if: always()
         continue-on-error: true
         with:
