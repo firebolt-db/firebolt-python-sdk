@@ -1,6 +1,11 @@
+import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
+from json import JSONDecodeError
+from json import dumps as json_dumps
+from json import loads as json_loads
+from os import makedirs, path
 from typing import (
     Any,
     Callable,
@@ -12,10 +17,21 @@ from typing import (
     TypeVar,
 )
 
+from appdirs import user_data_dir
+
+from firebolt.utils.file_operations import (
+    FernetEncrypter,
+    generate_encrypted_file_name,
+    generate_salt,
+)
+
 T = TypeVar("T")
 
 # Cache expiry configuration
 CACHE_EXPIRY_SECONDS = 3600  # 1 hour
+APPNAME = "firebolt"
+
+logger = logging.getLogger(__name__)
 
 
 class ReprCacheable(Protocol):
@@ -47,6 +63,22 @@ class ConnectionInfo:
     system_engine: Optional[EngineInfo] = None
     databases: Dict[str, DatabaseInfo] = field(default_factory=dict)
     engines: Dict[str, EngineInfo] = field(default_factory=dict)
+    token: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        """
+        Post-initialization processing to convert dicts to dataclasses.
+        """
+        if self.system_engine and isinstance(self.system_engine, dict):
+            self.system_engine = EngineInfo(**self.system_engine)
+        self.databases = {
+            k: DatabaseInfo(**v)
+            for k, v in self.databases.items()
+            if isinstance(v, dict)
+        }
+        self.engines = {
+            k: EngineInfo(**v) for k, v in self.engines.items() if isinstance(v, dict)
+        }
 
 
 def noop_if_disabled(func: Callable) -> Callable:
@@ -150,4 +182,118 @@ class SecureCacheKey(ReprCacheable):
         return hash(self.key)
 
 
-_firebolt_cache = UtilCache[ConnectionInfo](cache_name="connection_info")
+class FileBasedCache(UtilCache[ConnectionInfo]):
+    """
+    File-based cache that persists to disk with encryption.
+    Extends UtilCache to provide persistent storage using encrypted files.
+    """
+
+    def __init__(self, cache_name: str = ""):
+        super().__init__(cache_name)
+        self._data_dir = user_data_dir(appname=APPNAME)  # TODO: change to new dir
+        makedirs(self._data_dir, exist_ok=True)
+
+    def _get_file_path(self, key: SecureCacheKey) -> str:
+        """Get the file path for a cache key."""
+        cache_key = self.create_key(key)
+        encrypted_filename = generate_encrypted_file_name(cache_key, key.encryption_key)
+        return path.join(self._data_dir, encrypted_filename)
+
+    def _read_data_json(self, file_path: str, encrypter: FernetEncrypter) -> dict:
+        """Read and decrypt JSON data from file."""
+        if not path.exists(file_path):
+            return {}
+
+        try:
+            with open(file_path, "r") as f:
+                encrypted_data = f.read()
+
+            decrypted_data = encrypter.decrypt(encrypted_data)
+            if decrypted_data is None:
+                logger.debug("Decryption failed for %s", file_path)
+                return {}
+
+            return json_loads(decrypted_data) if decrypted_data else {}
+        except (JSONDecodeError, IOError) as e:
+            logger.debug(
+                "Failed to read or decode data from %s error: %s", file_path, e
+            )
+            return {}
+
+    def _write_data_json(
+        self, file_path: str, data: dict, encrypter: FernetEncrypter
+    ) -> None:
+        """Encrypt and write JSON data to file."""
+        try:
+            json_str = json_dumps(data)
+            logger.debug("Writing data to %s", file_path)
+            encrypted_data = encrypter.encrypt(json_str)
+            with open(file_path, "w") as f:
+                f.write(encrypted_data)
+        except (IOError, OSError) as e:
+            # Silently proceed if we can't write to disk
+            logger.debug("Failed to write data to %s error: %s", file_path, e)
+
+    def get(self, key: SecureCacheKey) -> Optional[ConnectionInfo]:
+        """Get value from cache, checking both memory and disk."""
+        if self.disabled:
+            return None
+
+        # First try memory cache
+        memory_result = super().get(key)
+        if memory_result is not None:
+            logger.debug("Cache hit in memory")
+            return memory_result
+
+        # If not in memory, try to load from disk
+        file_path = self._get_file_path(key)
+        encrypter = FernetEncrypter(generate_salt(), key.encryption_key)
+        raw_data = self._read_data_json(file_path, encrypter)
+        if not raw_data:
+            return None
+        logger.debug("Cache hit on disk")
+        data = ConnectionInfo(**raw_data)
+
+        # Add to memory cache and return
+        super().set(key, data)
+        return data
+
+    def set(self, key: SecureCacheKey, value: ConnectionInfo) -> None:
+        """Set value in both memory and disk cache."""
+        if self.disabled:
+            return
+
+        logger.debug("Setting value in cache")
+        # First set in memory
+        super().set(key, value)
+
+        file_path = self._get_file_path(key)
+        encrypter = FernetEncrypter(generate_salt(), key.encryption_key)
+        data = asdict(value)
+
+        self._write_data_json(file_path, data, encrypter)
+
+    def delete(self, key: SecureCacheKey) -> None:
+        """Delete value from both memory and disk cache."""
+        if self.disabled:
+            return
+
+        # Delete from memory
+        super().delete(key)
+
+        # Delete from disk
+        file_path = self._get_file_path(key)
+        try:
+            if path.exists(file_path):
+                os.remove(file_path)
+        except OSError:
+            logger.debug("Failed to delete file %s", file_path)
+            # Silently proceed if we can't delete the file
+
+    def clear(self) -> None:
+        # Clear memory only, as deleting every file is not safe
+        logger.debug("Clearing memory cache")
+        super().clear()
+
+
+_firebolt_cache = FileBasedCache(cache_name="connection_info")

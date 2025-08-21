@@ -8,8 +8,12 @@ from anyio import Lock
 from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
-from firebolt.utils.token_storage import TokenSecureStorage
-from firebolt.utils.util import Timer, cached_property, get_internal_error_code
+from firebolt.utils.cache import (
+    ConnectionInfo,
+    SecureCacheKey,
+    _firebolt_cache,
+)
+from firebolt.utils.util import Timer, get_internal_error_code
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +42,7 @@ class Auth(HttpxAuth):
 
     __slots__ = (
         "_token",
+        "_account_name",
         "_expires",
         "_use_token_cache",
     )
@@ -47,7 +52,8 @@ class Auth(HttpxAuth):
 
     def __init__(self, use_token_cache: bool = True):
         self._use_token_cache = use_token_cache
-        self._token: Optional[str] = self._get_cached_token()
+        self._account_name: Optional[str] = None
+        self._token: Optional[str] = None
         self._expires: Optional[int] = None
         self._lock = Lock()
 
@@ -103,36 +109,49 @@ class Auth(HttpxAuth):
         """
         return self._expires is not None and self._expires <= int(time())
 
-    @cached_property
-    def _token_storage(self) -> Optional[TokenSecureStorage]:
-        """Token filesystem cache storage.
-
-        This is evaluated lazily, only if caching is enabled.
-
-        Returns:
-            Optional[TokenSecureStorage]: Token filesystem cache storage if any
-        """
-        return None
-
     def _get_cached_token(self) -> Optional[str]:
-        """If caching is enabled, get token from filesystem cache.
+        """If caching is enabled, get token from cache.
 
         If caching is disabled, None is returned.
 
         Returns:
             Optional[str]: Token if any, and if caching is enabled; None otherwise
         """
-        if not self._use_token_cache or not self._token_storage:
+        if not self._use_token_cache:
             return None
-        return self._token_storage.get_cached_token()
+
+        cache_key = SecureCacheKey(
+            [self.principal, self.secret, self._account_name], self.secret
+        )
+        connection_info = _firebolt_cache.get(cache_key)
+
+        if connection_info and connection_info.token:
+            return connection_info.token
+
+        return None
 
     def _cache_token(self) -> None:
-        """If caching isenabled, cache token to filesystem."""
-        if not self._use_token_cache or not self._token_storage:
+        """If caching is enabled, cache token."""
+        if not self._use_token_cache:
             return
-        # Only cache if token and expiration are retrieved
-        if self._token and self._expires:
-            self._token_storage.cache_token(self._token, self._expires)
+        # Only cache if token is retrieved
+        if self._token:
+            cache_key = SecureCacheKey(
+                [self.principal, self.secret, self._account_name], self.secret
+            )
+
+            # Get existing connection info or create new one
+            connection_info = _firebolt_cache.get(cache_key)
+            if connection_info is None:
+                connection_info = ConnectionInfo(
+                    id="NONE"
+                )  # This is triggered first so there will be no id
+
+            # Update token information
+            connection_info.token = self._token
+
+            # Cache it
+            _firebolt_cache.set(cache_key, connection_info)
 
     @abstractmethod
     def get_new_token_generator(self) -> Generator[Request, Response, None]:
