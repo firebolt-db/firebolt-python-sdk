@@ -1,10 +1,6 @@
-from typing import Optional
-
 from firebolt.client.auth.base import AuthRequest, FireboltAuthVersion
 from firebolt.client.auth.request_auth_base import _RequestBasedAuth
-from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
-from firebolt.utils.util import cached_property
 
 
 class ClientCredentials(_RequestBasedAuth):
@@ -78,17 +74,6 @@ class ClientCredentials(_RequestBasedAuth):
             FireboltAuthVersion: V2 for Client Credentials authentication
         """
         return FireboltAuthVersion.V2
-
-    @cached_property
-    def _token_storage(self) -> Optional[TokenSecureStorage]:
-        """Token filesystem cache storage.
-
-        This is evaluated lazily, only if caching is enabled
-
-        Returns:
-            TokenSecureStorage: Token filesystem cache storage
-        """
-        return TokenSecureStorage(username=self.client_id, password=self.client_secret)
 
     def _make_auth_request(self) -> AuthRequest:
         """Get new token using username and password.
