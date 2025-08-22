@@ -355,25 +355,25 @@ def test_cache_disable_enable_behavior(
 
 def test_helper_functions():
     """Test the backward compatibility helper functions."""
-    from tests.unit.test_cache_helpers import cache_token, get_cached_token
     from firebolt.utils.cache import _firebolt_cache
-    
+    from tests.unit.test_cache_helpers import cache_token, get_cached_token
+
     _firebolt_cache.enable()
     _firebolt_cache.clear()
-    
+
     # Test caching and retrieving tokens
     principal = "test_user"
     secret = "test_secret"
     token = "test_token"
     account_name = "test_account"
-    
+
     # Cache token
     cache_token(principal, secret, token, 9999, account_name)
-    
+
     # Retrieve token
     cached_token = get_cached_token(principal, secret, account_name)
     assert cached_token == token
-    
+
     # Test with None account name
     cache_token(principal, secret, token, 9999, None)
     cached_token_none = get_cached_token(principal, secret, None)
@@ -385,31 +385,32 @@ def test_connection_info_post_init():
     # Test with dictionary inputs that should be converted to dataclasses
     engine_dict = {"url": "http://test.com", "params": {"key": "value"}}
     db_dict = {"name": "test_db"}
-    
+
     connection_info = ConnectionInfo(
         id="test",
         system_engine=engine_dict,
         databases={"db1": db_dict},
-        engines={"engine1": engine_dict}
+        engines={"engine1": engine_dict},
     )
-    
+
     # Should convert dicts to dataclasses
-    from firebolt.utils.cache import EngineInfo, DatabaseInfo
+    from firebolt.utils.cache import DatabaseInfo, EngineInfo
+
     assert isinstance(connection_info.system_engine, EngineInfo)
     assert isinstance(connection_info.databases["db1"], DatabaseInfo)
     assert isinstance(connection_info.engines["engine1"], EngineInfo)
-    
+
     # Test with already converted dataclass objects
     engine_obj = EngineInfo(url="http://test.com", params={"key": "value"})
     db_obj = DatabaseInfo(name="test_db")
-    
+
     connection_info2 = ConnectionInfo(
         id="test2",
         system_engine=engine_obj,
         databases={"db1": db_obj},
-        engines={"engine1": engine_obj}
+        engines={"engine1": engine_obj},
     )
-    
+
     # Should remain as dataclasses
     assert connection_info2.system_engine is engine_obj
     assert connection_info2.databases["db1"] is db_obj
