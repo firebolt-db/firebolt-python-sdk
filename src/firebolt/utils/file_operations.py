@@ -1,15 +1,11 @@
-from base64 import b64decode, urlsafe_b64encode
+from base64 import b64decode, b64encode, urlsafe_b64encode
 from hashlib import sha256
 from typing import Optional
 
 from cryptography.fernet import Fernet, InvalidToken
 from cryptography.hazmat.backends import default_backend  # type: ignore
-from cryptography.hazmat.primitives import hashes, padding  # type: ignore
-from cryptography.hazmat.primitives.ciphers import (  # type: ignore
-    Cipher,
-    algorithms,
-    modes,
-)
+from cryptography.hazmat.primitives import hashes  # type: ignore
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM  # type: ignore
 from cryptography.hazmat.primitives.kdf.pbkdf2 import (
     PBKDF2HMAC,  # type: ignore
 )
@@ -76,39 +72,29 @@ def generate_salt() -> str:
 
 
 def generate_encrypted_file_name(cache_key: str, encryption_key: str) -> str:
-    """Generate encrypted file name from cache key using AES encryption.
+    """Generate encrypted file name from cache key using AES-GCM encryption.
+
+    This implementation matches the Java EncryptionService to ensure compatibility.
 
     Args:
         cache_key (str): The cache key to encrypt
         encryption_key (str): The encryption key
 
     Returns:
-        str: Base64URL encoded AES encrypted filename ending in .txt
+        str: Base64 encoded AES-GCM encrypted filename
     """
-    # Derive a 256-bit key from the encryption_key using PBKDF2
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        salt=b"firebolt_cache_salt",  # Fixed salt for deterministic key derivation
-        length=32,  # 256 bits
-        iterations=10000,
-        backend=default_backend(),
-    )
-    aes_key = kdf.derive(encryption_key.encode("utf-8"))
+    # Derive AES key using SHA-256
+    key_hash = sha256(encryption_key.encode("utf-8")).digest()
+    aes_key = key_hash[:32]  # Use first 32 bytes for AES-256
 
-    # Pad the cache_key to be a multiple of 16 bytes (AES block size)
-    padder = padding.PKCS7(128).padder()
-    padded_data = padder.update(cache_key.encode("utf-8"))
-    padded_data += padder.finalize()
+    # Generate deterministic nonce
+    nonce_input = (encryption_key + encryption_key).encode("utf-8")
+    nonce_hash = sha256(nonce_input).digest()
+    nonce = nonce_hash[:12]  # AES-GCM nonce should be 12 bytes
 
-    # Use a fixed IV for deterministic encryption
-    # (same input always produces same output)
-    # This is acceptable for cache file names where we need deterministic results
-    iv = sha256(cache_key.encode("utf-8")).digest()[:16]
+    # Encrypt using AES-GCM
+    aesgcm = AESGCM(aes_key)
+    encrypted_data = aesgcm.encrypt(nonce, cache_key.encode("utf-8"), None)
 
-    # Encrypt the padded cache_key
-    cipher = Cipher(algorithms.AES(aes_key), modes.CBC(iv), backend=default_backend())
-    encryptor = cipher.encryptor()
-    encrypted_data = encryptor.update(padded_data) + encryptor.finalize()
-
-    # Base64URL encode the encrypted data and add .txt extension
-    return urlsafe_b64encode(encrypted_data).decode("ascii").rstrip("=") + ".txt"
+    # Base64 encode
+    return b64encode(encrypted_data).decode("ascii")
