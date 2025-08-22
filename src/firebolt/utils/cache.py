@@ -71,14 +71,24 @@ class ConnectionInfo:
         """
         if self.system_engine and isinstance(self.system_engine, dict):
             self.system_engine = EngineInfo(**self.system_engine)
-        self.databases = {
-            k: DatabaseInfo(**v)
-            for k, v in self.databases.items()
-            if isinstance(v, dict)
-        }
-        self.engines = {
-            k: EngineInfo(**v) for k, v in self.engines.items() if isinstance(v, dict)
-        }
+
+        # Convert dict values to dataclasses, keep existing dataclass objects
+        new_databases = {}
+        for k, db in self.databases.items():
+            if isinstance(db, dict):
+                new_databases[k] = DatabaseInfo(**db)
+            else:
+                new_databases[k] = db
+        self.databases = new_databases
+
+        # Convert dict values to dataclasses, keep existing dataclass objects
+        new_engines = {}
+        for k, engine in self.engines.items():
+            if isinstance(engine, dict):
+                new_engines[k] = EngineInfo(**engine)
+            else:
+                new_engines[k] = engine
+        self.engines = new_engines
 
 
 def noop_if_disabled(func: Callable) -> Callable:
