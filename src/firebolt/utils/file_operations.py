@@ -74,14 +74,14 @@ def generate_salt() -> str:
 def generate_encrypted_file_name(cache_key: str, encryption_key: str) -> str:
     """Generate encrypted file name from cache key using AES-GCM encryption.
 
-    This implementation matches the Java EncryptionService to ensure compatibility.
+    This implementation matches the Java FilenameGenerator to ensure compatibility.
 
     Args:
         cache_key (str): The cache key to encrypt
         encryption_key (str): The encryption key
 
     Returns:
-        str: Base64 encoded AES-GCM encrypted filename
+        str: Double base64 encoded AES-GCM encrypted filename ending in .txt
     """
     # Derive AES key using SHA-256
     key_hash = sha256(encryption_key.encode("utf-8")).digest()
@@ -96,5 +96,11 @@ def generate_encrypted_file_name(cache_key: str, encryption_key: str) -> str:
     aesgcm = AESGCM(aes_key)
     encrypted_data = aesgcm.encrypt(nonce, cache_key.encode("utf-8"), None)
 
-    # Base64 encode
-    return b64encode(encrypted_data).decode("ascii")
+    first_base64 = b64encode(encrypted_data).decode("ascii")
+
+    # URL-safe base64 encode without padding (matches Java FilenameGenerator)
+    second_base64 = (
+        urlsafe_b64encode(first_base64.encode("ascii")).decode("ascii").rstrip("=")
+    )
+
+    return second_base64 + ".txt"
