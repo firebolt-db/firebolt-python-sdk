@@ -6,7 +6,8 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.service.manager import ResourceManager
-from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.utils.cache import _firebolt_cache
+from tests.unit.test_cache_helpers import get_cached_token
 
 
 def test_rm_credentials(
@@ -38,6 +39,7 @@ def test_rm_token_cache(
     account_name: str,
     access_token: str,
     mock_system_engine_connection_flow: Callable,
+    enable_cache: Callable,
 ) -> None:
     """Credentials, that are passed to rm are cached properly."""
     url = "https://url"
@@ -55,10 +57,15 @@ def test_rm_token_cache(
         )
         rm._client.get(url)
 
-        ts = TokenSecureStorage(auth.client_id, auth.client_secret)
-        assert ts.get_cached_token() == access_token, "Invalid token value cached"
+        # Verify token was cached using the new cache system
+        cached_token = get_cached_token(
+            auth.client_id, auth.client_secret, account_name
+        )
+        assert cached_token == access_token, "Invalid token value cached"
 
     # Do the same, but with use_token_cache=False
+    _firebolt_cache.clear()  # Clear cache before testing disabled cache
+
     with Patcher():
         rm = ResourceManager(
             auth=ClientCredentials(
@@ -69,7 +76,8 @@ def test_rm_token_cache(
         )
         rm._client.get(url)
 
-        ts = TokenSecureStorage(auth.client_id, auth.client_secret)
-        assert (
-            ts.get_cached_token() is None
-        ), "Token is cached even though caching is disabled"
+        # Verify token was not cached when caching is disabled
+        cached_token = get_cached_token(
+            auth.client_id, auth.client_secret, account_name
+        )
+        assert cached_token is None, "Token is cached even though caching is disabled"

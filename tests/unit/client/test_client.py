@@ -8,9 +8,9 @@ from pytest_httpx import HTTPXMock
 from firebolt.client import ClientV2 as Client
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
-from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from tests.unit.conftest import Response
+from tests.unit.test_cache_helpers import cache_token
 
 
 def test_client_retry(
@@ -99,17 +99,20 @@ def test_refresh_with_hooks(
     client_id: str,
     client_secret: str,
     access_token: str,
+    enable_cache: Callable,
 ) -> None:
     """
     When hooks are used, the invalid token, fetched from cache, is refreshed
     """
 
-    tss = TokenSecureStorage(client_id, client_secret)
-    tss.cache_token(access_token, 2**32)
+    cache_token(client_id, client_secret, access_token, 2**32, account_name)
+
+    auth = ClientCredentials(client_id, client_secret)
+    auth.account = account_name
 
     client = Client(
         account_name=account_name,
-        auth=ClientCredentials(client_id, client_secret),
+        auth=auth,
         event_hooks={
             "response": [raise_on_4xx_5xx],
         },
