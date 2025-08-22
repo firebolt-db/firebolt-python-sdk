@@ -143,12 +143,13 @@ class UtilCache(Generic[T]):
         return False
 
     @noop_if_disabled
-    def set(self, key: ReprCacheable, value: T) -> None:
+    def set(self, key: ReprCacheable, value: T, preserve_expiry: bool = False) -> None:
         if not self.disabled:
             # Set expiry_time for ConnectionInfo objects
             if hasattr(value, "expiry_time"):
-                current_time = int(time.time())
-                value.expiry_time = current_time + CACHE_EXPIRY_SECONDS
+                if not preserve_expiry or value.expiry_time is None:
+                    current_time = int(time.time())
+                    value.expiry_time = current_time + CACHE_EXPIRY_SECONDS
 
             s_key = self.create_key(key)
             self._cache[s_key] = value
@@ -275,11 +276,23 @@ class FileBasedCache:
         raw_data = self._read_data_json(file_path, encrypter)
         if not raw_data:
             return None
+
         logger.debug("Cache hit on disk")
         data = ConnectionInfo(**raw_data)
 
-        # Add to memory cache and return
-        self.memory_cache.set(key, data)
+        # Check if the loaded data is expired
+        if self.memory_cache._is_expired(data):
+            # Data is expired, delete the file and return None
+            try:
+                if path.exists(file_path):
+                    os.remove(file_path)
+                    logger.debug("Deleted expired file %s", file_path)
+            except OSError:
+                logger.debug("Failed to delete expired file %s", file_path)
+            return None
+
+        # Data is not expired, add to memory cache preserving original expiry time
+        self.memory_cache.set(key, data, preserve_expiry=True)
         return data
 
     def set(self, key: SecureCacheKey, value: ConnectionInfo) -> None:
