@@ -1,15 +1,19 @@
+import json
+import os
 import time
 from typing import Generator
-from unittest.mock import patch
+from unittest.mock import mock_open, patch
 
 from pytest import fixture, mark
 
 from firebolt.utils.cache import (
     CACHE_EXPIRY_SECONDS,
     ConnectionInfo,
+    FileBasedCache,
     SecureCacheKey,
     UtilCache,
 )
+from firebolt.utils.file_operations import FernetEncrypter, generate_salt
 
 
 @fixture
@@ -76,6 +80,26 @@ def fixed_time():
 def test_string():
     """Provide a test string for non-ConnectionInfo cache tests."""
     return "test_value"
+
+
+@fixture
+def file_based_cache() -> Generator[FileBasedCache, None, None]:
+    """Create a fresh FileBasedCache instance for testing."""
+    memory_cache = UtilCache[ConnectionInfo](cache_name="test_memory_cache")
+    memory_cache.enable()
+    cache = FileBasedCache(memory_cache, cache_name="test_file_cache")
+    cache.enable()
+    yield cache
+    cache.clear()
+
+
+@fixture
+def encrypter_with_key():
+    """Create a FernetEncrypter instance for testing."""
+    from firebolt.utils.file_operations import FernetEncrypter, generate_salt
+
+    salt = generate_salt()
+    return FernetEncrypter(salt, "test_encryption_key")
 
 
 def test_cache_set_and_get(cache, sample_cache_key, sample_connection_info):
@@ -415,3 +439,124 @@ def test_connection_info_post_init():
     assert connection_info2.system_engine is engine_obj
     assert connection_info2.databases["db1"] is db_obj
     assert connection_info2.engines["engine1"] is engine_obj
+
+
+@mark.nofakefs
+def test_file_based_cache_read_data_json_file_not_exists(
+    file_based_cache, encrypter_with_key
+):
+    """Test _read_data_json returns empty dict when file doesn't exist."""
+    # Test with a non-existent file path
+    result = file_based_cache._read_data_json(
+        "/path/to/nonexistent/file.txt", encrypter_with_key
+    )
+    assert result == {}
+
+
+def test_file_based_cache_read_data_json_valid_data(
+    file_based_cache, encrypter_with_key
+):
+    """Test _read_data_json successfully reads and decrypts valid JSON data."""
+    # Create test data
+    test_data = {"id": "test_connection", "token": "test_token"}
+    test_file_path = "/test_cache/valid_data.txt"
+
+    # Create directory and file with encrypted JSON data
+    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
+    json_str = json.dumps(test_data)
+    encrypted_data = encrypter_with_key.encrypt(json_str)
+
+    with open(test_file_path, "w") as f:
+        f.write(encrypted_data)
+
+    # Test reading the valid encrypted data
+    result = file_based_cache._read_data_json(test_file_path, encrypter_with_key)
+    assert result == test_data
+    assert result["id"] == "test_connection"
+    assert result["token"] == "test_token"
+
+
+def test_file_based_cache_read_data_json_decryption_failure(file_based_cache):
+    """Test _read_data_json returns empty dict when decryption fails."""
+    # Create encrypters with different keys
+    salt = generate_salt()
+    encrypter1 = FernetEncrypter(salt, "test_key_1")
+    encrypter2 = FernetEncrypter(salt, "test_key_2")  # Different key
+
+    test_file_path = "/test_cache/decryption_test.txt"
+
+    # Create directory and file with data encrypted by encrypter1
+    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
+    encrypted_data = encrypter1.encrypt('{"test": "data"}')
+
+    with open(test_file_path, "w") as f:
+        f.write(encrypted_data)
+
+    # Try to decrypt with encrypter2 (should fail)
+    result = file_based_cache._read_data_json(test_file_path, encrypter2)
+    assert result == {}
+
+
+def test_file_based_cache_read_data_json_invalid_json(
+    file_based_cache, encrypter_with_key
+):
+    """Test _read_data_json returns empty dict when JSON is invalid."""
+    test_file_path = "/test_cache/invalid_json.txt"
+
+    # Create directory and file with encrypted invalid JSON
+    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
+    invalid_json = "invalid json data {{"
+    encrypted_data = encrypter_with_key.encrypt(invalid_json)
+
+    with open(test_file_path, "w") as f:
+        f.write(encrypted_data)
+
+    # Test reading the invalid JSON
+    result = file_based_cache._read_data_json(test_file_path, encrypter_with_key)
+    assert result == {}
+
+
+@mark.nofakefs
+def test_file_based_cache_read_data_json_io_error(file_based_cache, encrypter_with_key):
+    """Test _read_data_json returns empty dict when IOError occurs."""
+    # Mock open to raise IOError
+    with patch("builtins.open", mock_open()) as mock_file:
+        mock_file.side_effect = IOError("File read error")
+
+        result = file_based_cache._read_data_json("test_file.txt", encrypter_with_key)
+        assert result == {}
+
+
+def test_file_based_cache_read_data_json_empty_encrypted_data(
+    file_based_cache, encrypter_with_key
+):
+    """Test _read_data_json handles empty encrypted data."""
+    test_file_path = "/test_cache/empty_data.txt"
+
+    # Create directory and file with empty encrypted data
+    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
+    encrypted_empty = encrypter_with_key.encrypt("")
+
+    with open(test_file_path, "w") as f:
+        f.write(encrypted_empty)
+
+    # Test reading empty decrypted data
+    result = file_based_cache._read_data_json(test_file_path, encrypter_with_key)
+    assert result == {}
+
+
+def test_file_based_cache_read_data_json_invalid_encrypted_format(
+    file_based_cache, encrypter_with_key
+):
+    """Test _read_data_json handles invalid encrypted data format."""
+    test_file_path = "/test_cache/invalid_encrypted.txt"
+
+    # Create directory and file with invalid encrypted data format
+    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
+
+    with open(test_file_path, "w") as f:
+        f.write("not_encrypted_data_at_all")
+
+    # Test reading invalid encrypted format
+    result = file_based_cache._read_data_json(test_file_path, encrypter_with_key)
+    assert result == {}
