@@ -8,7 +8,11 @@ from sys import modules
 from typing import Dict, List, Optional, Tuple
 
 from firebolt import __version__
-from firebolt.utils.cache import ConnectionInfo, ReprCacheable, _firebolt_cache
+from firebolt.utils.cache import (
+    ConnectionInfo,
+    SecureCacheKey,
+    _firebolt_cache,
+)
 
 
 @dataclass
@@ -228,7 +232,7 @@ def get_user_agent_header(
 
 
 def get_cache_tracking_params(
-    cache_key: ReprCacheable, conn_id: str
+    cache_key: SecureCacheKey, conn_id: str
 ) -> List[Tuple[str, str]]:
     ua_parameters = []
     ua_parameters.append(("connId", conn_id))

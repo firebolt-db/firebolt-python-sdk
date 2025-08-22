@@ -192,20 +192,34 @@ class SecureCacheKey(ReprCacheable):
         return hash(self.key)
 
 
-class FileBasedCache(UtilCache[ConnectionInfo]):
+class FileBasedCache:
     """
     File-based cache that persists to disk with encryption.
-    Extends UtilCache to provide persistent storage using encrypted files.
+    Uses composition to combine in-memory caching with persistent storage
+    using encrypted files.
     """
 
-    def __init__(self, cache_name: str = ""):
-        super().__init__(cache_name)
+    def __init__(self, memory_cache: UtilCache[ConnectionInfo], cache_name: str = ""):
+        self.memory_cache = memory_cache
         self._data_dir = user_data_dir(appname=APPNAME)  # TODO: change to new dir
         makedirs(self._data_dir, exist_ok=True)
+        # FileBasedCache has its own disabled state, independent of memory cache
+        cache_env_var = f"FIREBOLT_SDK_DISABLE_CACHE_${cache_name}"
+        self.disabled = os.getenv("FIREBOLT_SDK_DISABLE_CACHE", False) or os.getenv(
+            cache_env_var, False
+        )
+
+    def disable(self) -> None:
+        """Disable the file-based cache."""
+        self.disabled = True
+
+    def enable(self) -> None:
+        """Enable the file-based cache."""
+        self.disabled = False
 
     def _get_file_path(self, key: SecureCacheKey) -> str:
         """Get the file path for a cache key."""
-        cache_key = self.create_key(key)
+        cache_key = self.memory_cache.create_key(key)
         encrypted_filename = generate_encrypted_file_name(cache_key, key.encryption_key)
         return path.join(self._data_dir, encrypted_filename)
 
@@ -250,7 +264,7 @@ class FileBasedCache(UtilCache[ConnectionInfo]):
             return None
 
         # First try memory cache
-        memory_result = super().get(key)
+        memory_result = self.memory_cache.get(key)
         if memory_result is not None:
             logger.debug("Cache hit in memory")
             return memory_result
@@ -265,7 +279,7 @@ class FileBasedCache(UtilCache[ConnectionInfo]):
         data = ConnectionInfo(**raw_data)
 
         # Add to memory cache and return
-        super().set(key, data)
+        self.memory_cache.set(key, data)
         return data
 
     def set(self, key: SecureCacheKey, value: ConnectionInfo) -> None:
@@ -275,7 +289,7 @@ class FileBasedCache(UtilCache[ConnectionInfo]):
 
         logger.debug("Setting value in cache")
         # First set in memory
-        super().set(key, value)
+        self.memory_cache.set(key, value)
 
         file_path = self._get_file_path(key)
         encrypter = FernetEncrypter(generate_salt(), key.encryption_key)
@@ -289,7 +303,7 @@ class FileBasedCache(UtilCache[ConnectionInfo]):
             return
 
         # Delete from memory
-        super().delete(key)
+        self.memory_cache.delete(key)
 
         # Delete from disk
         file_path = self._get_file_path(key)
@@ -303,7 +317,9 @@ class FileBasedCache(UtilCache[ConnectionInfo]):
     def clear(self) -> None:
         # Clear memory only, as deleting every file is not safe
         logger.debug("Clearing memory cache")
-        super().clear()
+        self.memory_cache.clear()
 
 
-_firebolt_cache = FileBasedCache(cache_name="connection_info")
+_firebolt_cache = FileBasedCache(
+    UtilCache[ConnectionInfo](cache_name="memory_cache"), cache_name="file_cache"
+)
