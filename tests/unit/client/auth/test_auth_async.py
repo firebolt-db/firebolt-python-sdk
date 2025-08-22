@@ -88,7 +88,7 @@ async def test_auth_adds_header(access_token: str) -> None:
 
 
 @mark.nofakefs
-async def test_auth_token_storage(
+async def test_auth_token_caching(
     httpx_mock: HTTPXMock,
     client_id: str,
     client_secret: str,
