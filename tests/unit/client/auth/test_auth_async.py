@@ -1,13 +1,14 @@
 from types import MethodType
-from unittest.mock import PropertyMock, patch
+from typing import Generator
 
 from httpx import Request, codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark
 from pytest_httpx import HTTPXMock
 
-from firebolt.client import Auth
-from firebolt.utils.token_storage import TokenSecureStorage
+from firebolt.client.auth import Auth, ClientCredentials
+from firebolt.utils.cache import _firebolt_cache
+from tests.unit.test_cache_helpers import get_cached_token
 from tests.unit.util import async_execute_generator_requests
 
 
@@ -91,7 +92,8 @@ async def test_auth_token_storage(
     httpx_mock: HTTPXMock,
     client_id: str,
     client_secret: str,
-    access_token,
+    access_token: str,
+    enable_cache: Generator,
 ) -> None:
     # Mock auth flow
     def set_token(token: str) -> callable:
@@ -104,33 +106,32 @@ async def test_auth_token_storage(
 
     url = "https://host"
     httpx_mock.add_response(status_code=codes.OK, url=url, is_reusable=True)
-    with Patcher(), patch(
-        "firebolt.client.auth.base.Auth._token_storage",
-        new_callable=PropertyMock,
-        return_value=TokenSecureStorage(client_id, client_secret),
-    ):
-        auth = Auth(use_token_cache=True)
+
+    # Test with caching enabled
+    with Patcher():
+        auth = ClientCredentials(client_id, client_secret, use_token_cache=True)
         # Get token
         auth.get_new_token_generator = MethodType(set_token(access_token), auth)
         await async_execute_generator_requests(
             auth.async_auth_flow(Request("GET", url))
         )
 
-        st = TokenSecureStorage(client_id, client_secret)
-        assert st.get_cached_token() == access_token, "Invalid token value cached"
+        # Verify token was cached using the new cache system
+        cached_token = get_cached_token(client_id, client_secret, None)
+        assert cached_token == access_token, "Invalid token value cached"
 
-    with Patcher(), patch(
-        "firebolt.client.auth.base.Auth._token_storage",
-        new_callable=PropertyMock,
-        return_value=TokenSecureStorage(client_id, client_secret),
-    ):
-        auth = Auth(use_token_cache=False)
+    # Clear cache before second test
+    _firebolt_cache.clear()
+
+    # Test with caching disabled
+    with Patcher():
+        auth = ClientCredentials(client_id, client_secret, use_token_cache=False)
         # Get token
         auth.get_new_token_generator = MethodType(set_token(access_token), auth)
         await async_execute_generator_requests(
             auth.async_auth_flow(Request("GET", url))
         )
-        st = TokenSecureStorage(client_id, client_secret)
-        assert (
-            st.get_cached_token() is None
-        ), "Token cached even though caching is disabled"
+
+        # Verify token was not cached
+        cached_token = get_cached_token(client_id, client_secret, None)
+        assert cached_token is None, "Token cached even though caching is disabled"

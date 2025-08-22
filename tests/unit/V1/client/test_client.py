@@ -10,9 +10,9 @@ from firebolt.client import DEFAULT_API_URL
 from firebolt.client import ClientV1 as Client
 from firebolt.client.auth import Token, UsernamePassword
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
-from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_URL
 from firebolt.utils.util import fix_url_schema
+from tests.unit.test_cache_helpers import cache_token
 
 
 def test_client_retry(
@@ -130,16 +130,19 @@ def test_refresh_with_hooks(
     test_username: str,
     test_password: str,
     test_token: str,
+    enable_cache: Callable,
 ) -> None:
     """
     When hooks are used, the invalid token, fetched from cache, is refreshed
     """
 
-    tss = TokenSecureStorage(test_username, test_password)
-    tss.cache_token(test_token, 2**32)
+    cache_token(test_username, test_password, test_token, 2**32)
+    auth = UsernamePassword(test_username, test_password)
+    # Simulate what connect() would do
+    auth.account = None
 
     client = Client(
-        auth=UsernamePassword(test_username, test_password),
+        auth=auth,
         event_hooks={
             "response": [raise_on_4xx_5xx],
         },
