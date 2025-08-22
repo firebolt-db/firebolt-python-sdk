@@ -299,8 +299,7 @@ async def connect(
     if not auth:
         raise ConfigurationError("auth is required to connect.")
 
-    if account_name:
-        auth._account_name = account_name
+    auth.account = account_name
 
     api_endpoint = fix_url_schema(api_endpoint)
     # Type checks

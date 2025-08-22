@@ -2,7 +2,7 @@ import logging
 from abc import abstractmethod
 from enum import IntEnum
 from time import time
-from typing import AsyncGenerator, Generator, Optional
+from typing import AsyncGenerator, Generator, Optional, Tuple
 
 from anyio import Lock
 from httpx import Auth as HttpxAuth
@@ -57,6 +57,17 @@ class Auth(HttpxAuth):
         self._expires: Optional[int] = None
         self._lock = Lock()
 
+    @property
+    def account(self) -> Optional[str]:
+        return self._account_name
+
+    @account.setter
+    def account(self, value: str) -> None:
+        self._account_name = value
+        # Now we have all the elements to fetch the cached token
+        if not self._token:
+            self._token, self._expires = self._get_cached_token()
+
     def copy(self) -> "Auth":
         """Make another auth object with same credentials.
 
@@ -109,7 +120,7 @@ class Auth(HttpxAuth):
         """
         return self._expires is not None and self._expires <= int(time())
 
-    def _get_cached_token(self) -> Optional[str]:
+    def _get_cached_token(self) -> Tuple[Optional[str], Optional[int]]:
         """If caching is enabled, get token from cache.
 
         If caching is disabled, None is returned.
@@ -118,7 +129,7 @@ class Auth(HttpxAuth):
             Optional[str]: Token if any, and if caching is enabled; None otherwise
         """
         if not self._use_token_cache:
-            return None
+            return (None, None)
 
         cache_key = SecureCacheKey(
             [self.principal, self.secret, self._account_name], self.secret
@@ -126,9 +137,9 @@ class Auth(HttpxAuth):
         connection_info = _firebolt_cache.get(cache_key)
 
         if connection_info and connection_info.token:
-            return connection_info.token
+            return (connection_info.token, connection_info.expiry_time)
 
-        return None
+        return (None, None)
 
     def _cache_token(self) -> None:
         """If caching is enabled, cache token."""
