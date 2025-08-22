@@ -560,3 +560,370 @@ def test_file_based_cache_read_data_json_invalid_encrypted_format(
     # Test reading invalid encrypted format
     result = file_based_cache._read_data_json(test_file_path, encrypter_with_key)
     assert result == {}
+
+
+def test_file_based_cache_delete_method(file_based_cache, encrypter_with_key):
+    """Test FileBasedCache delete method removes data from both memory and file."""
+    # Create test data
+    sample_key = SecureCacheKey(["delete", "test"], "test_secret")
+    sample_data = ConnectionInfo(id="test_delete_connection", token="test_token")
+
+    # Set data in cache (both memory and file)
+    file_based_cache.set(sample_key, sample_data)
+
+    # Verify data exists in memory cache
+    memory_result = file_based_cache.memory_cache.get(sample_key)
+    assert memory_result is not None
+    assert memory_result.id == "test_delete_connection"
+
+    # Verify file exists on disk
+    file_path = file_based_cache._get_file_path(sample_key)
+    assert os.path.exists(file_path)
+
+    # Delete the data
+    file_based_cache.delete(sample_key)
+
+    # Verify data is removed from memory cache
+    memory_result_after_delete = file_based_cache.memory_cache.get(sample_key)
+    assert memory_result_after_delete is None
+
+    # Verify file is removed from disk
+    assert not os.path.exists(file_path)
+
+    # Verify get returns None
+    cache_result = file_based_cache.get(sample_key)
+    assert cache_result is None
+
+
+@mark.nofakefs
+def test_file_based_cache_delete_method_file_removal_failure(
+    file_based_cache, encrypter_with_key
+):
+    """Test FileBasedCache delete method handles file removal failures gracefully."""
+    sample_key = SecureCacheKey(["delete", "failure"], "test_secret")
+    sample_data = ConnectionInfo(id="test_connection", token="test_token")
+
+    # Set data in memory cache only (no file operations due to @mark.nofakefs)
+    file_based_cache.memory_cache.set(sample_key, sample_data)
+
+    # Mock path.exists to return True and os.remove to raise OSError
+    with patch("firebolt.utils.cache.path.exists", return_value=True), patch(
+        "firebolt.utils.cache.os.remove"
+    ) as mock_remove:
+        mock_remove.side_effect = OSError("Permission denied")
+
+        # Delete should not raise an exception despite file removal failure
+        file_based_cache.delete(sample_key)
+
+        # Verify data is still removed from memory cache
+        memory_result = file_based_cache.memory_cache.get(sample_key)
+        assert memory_result is None
+
+
+def test_file_based_cache_get_from_file_when_not_in_memory(
+    file_based_cache, encrypter_with_key
+):
+    """Test FileBasedCache get method retrieves data from file when not in memory."""
+    # Create test data
+    sample_key = SecureCacheKey(["file", "only"], "test_secret")
+    sample_data = ConnectionInfo(
+        id="test_file_connection",
+        token="test_file_token",
+        expiry_time=int(time.time()) + 3600,  # Valid for 1 hour
+    )
+
+    # First set data in cache (both memory and file)
+    file_based_cache.set(sample_key, sample_data)
+
+    # Verify data exists
+    initial_result = file_based_cache.get(sample_key)
+    assert initial_result is not None
+    assert initial_result.id == "test_file_connection"
+
+    # Clear memory cache but keep file
+    file_based_cache.memory_cache.clear()
+
+    # Verify memory cache is empty
+    memory_result = file_based_cache.memory_cache.get(sample_key)
+    assert memory_result is None
+
+    # Verify file still exists
+    file_path = file_based_cache._get_file_path(sample_key)
+    assert os.path.exists(file_path)
+
+    # Get should retrieve from file and reload into memory
+    file_result = file_based_cache.get(sample_key)
+    assert file_result is not None
+    assert file_result.id == "test_file_connection"
+    assert file_result.token == "test_file_token"
+
+    # Verify data is now back in memory cache
+    memory_result_after_load = file_based_cache.memory_cache.get(sample_key)
+    assert memory_result_after_load is not None
+    assert memory_result_after_load.id == "test_file_connection"
+
+
+def test_file_based_cache_get_from_corrupted_file(file_based_cache, encrypter_with_key):
+    """Test FileBasedCache get method handles corrupted file gracefully."""
+    sample_key = SecureCacheKey(["corrupted", "file"], "test_secret")
+
+    # Create corrupted file manually
+    file_path = file_based_cache._get_file_path(sample_key)
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    with open(file_path, "w") as f:
+        f.write("corrupted_data_that_cannot_be_decrypted")
+
+    # Verify file exists
+    assert os.path.exists(file_path)
+
+    # Get should return None due to decryption failure
+    result = file_based_cache.get(sample_key)
+    assert result is None
+
+    # Verify nothing is loaded into memory cache
+    memory_result = file_based_cache.memory_cache.get(sample_key)
+    assert memory_result is None
+
+
+def test_file_based_cache_disabled_behavior(file_based_cache, encrypter_with_key):
+    """Test FileBasedCache methods when cache is disabled."""
+    sample_key = SecureCacheKey(["disabled", "test"], "test_secret")
+    sample_data = ConnectionInfo(id="test_connection", token="test_token")
+
+    # Disable the cache
+    file_based_cache.disable()
+
+    # Set should do nothing when disabled
+    file_based_cache.set(sample_key, sample_data)
+
+    # Get should return None when disabled
+    result = file_based_cache.get(sample_key)
+    assert result is None
+
+    # Enable cache, set data, then disable again
+    file_based_cache.enable()
+    file_based_cache.set(sample_key, sample_data)
+
+    # Verify data is set
+    enabled_result = file_based_cache.get(sample_key)
+    assert enabled_result is not None
+
+    # Disable and verify get returns None
+    file_based_cache.disable()
+    disabled_result = file_based_cache.get(sample_key)
+    assert disabled_result is None
+
+    # Delete should do nothing when disabled
+    file_based_cache.delete(sample_key)  # Should not raise exception
+
+
+def test_file_based_cache_preserves_expiry_from_file(
+    file_based_cache, encrypter_with_key, fixed_time
+):
+    """Test that FileBasedCache preserves original expiry time when loading from file."""
+    sample_key = SecureCacheKey(["preserve", "expiry"], "test_secret")
+
+    # Create data and set it at an earlier time
+    sample_data = ConnectionInfo(id="test_connection")
+
+    # Set data at fixed_time - this will give it expiry of fixed_time + CACHE_EXPIRY_SECONDS
+    with patch("time.time", return_value=fixed_time):
+        file_based_cache.set(sample_key, sample_data)
+
+        # Verify the expiry time that was set
+        memory_result = file_based_cache.memory_cache.get(sample_key)
+        expected_expiry = fixed_time + CACHE_EXPIRY_SECONDS
+        assert memory_result.expiry_time == expected_expiry
+
+        # Clear memory cache to force file load on next get
+        file_based_cache.memory_cache.clear()
+
+        # Get data from file (should preserve the original expiry time from file)
+        result = file_based_cache.get(sample_key)
+
+        assert result is not None
+        assert (
+            result.expiry_time == expected_expiry
+        )  # Should preserve original expiry from file
+        assert result.id == "test_connection"
+
+        # Verify it's also in memory cache with preserved expiry
+        memory_result_after_load = file_based_cache.memory_cache.get(sample_key)
+        assert memory_result_after_load is not None
+        assert memory_result_after_load.expiry_time == expected_expiry
+
+
+def test_file_based_cache_deletes_expired_file_on_get(
+    file_based_cache, encrypter_with_key, fixed_time
+):
+    """Test that FileBasedCache deletes expired files on get and returns cache miss."""
+    sample_key = SecureCacheKey(["expired", "file"], "test_secret")
+    sample_data = ConnectionInfo(id="test_connection")
+
+    # Set data at an early time so it gets an early expiry
+    early_time = fixed_time - 7200  # 2 hours before
+    with patch("time.time", return_value=early_time):
+        file_based_cache.set(sample_key, sample_data)
+
+        # Verify the expiry time that was set (should be early_time + CACHE_EXPIRY_SECONDS)
+        memory_result = file_based_cache.memory_cache.get(sample_key)
+        expected_expiry = early_time + CACHE_EXPIRY_SECONDS
+        assert memory_result.expiry_time == expected_expiry
+
+    # Verify file was created
+    file_path = file_based_cache._get_file_path(sample_key)
+    assert os.path.exists(file_path)
+
+    # Clear memory cache to force file load
+    file_based_cache.memory_cache.clear()
+
+    # Now try to get at a time when the data should be expired
+    # The data expires at early_time + CACHE_EXPIRY_SECONDS
+    # Let's try to get it after that expiry time
+    expired_check_time = early_time + CACHE_EXPIRY_SECONDS + 1
+    with patch("time.time", return_value=expired_check_time):
+        result = file_based_cache.get(sample_key)
+
+        # Should return None due to expiry
+        assert result is None
+
+        # File should be deleted
+        assert not os.path.exists(file_path)
+
+        # Memory cache should not contain the data
+        memory_result = file_based_cache.memory_cache.get(sample_key)
+        assert memory_result is None
+
+
+def test_file_based_cache_expiry_edge_case_exactly_expired(
+    file_based_cache, encrypter_with_key, fixed_time
+):
+    """Test behavior when data expires exactly at the current time."""
+    sample_key = SecureCacheKey(["edge", "case"], "test_secret")
+    sample_data = ConnectionInfo(id="test_connection")
+
+    # Set data such that it will expire exactly at fixed_time
+    set_time = fixed_time - CACHE_EXPIRY_SECONDS
+    with patch("time.time", return_value=set_time):
+        file_based_cache.set(sample_key, sample_data)
+
+        # Verify the expiry time that was set
+        memory_result = file_based_cache.memory_cache.get(sample_key)
+        expected_expiry = set_time + CACHE_EXPIRY_SECONDS  # This equals fixed_time
+        assert memory_result.expiry_time == expected_expiry == fixed_time
+
+    file_path = file_based_cache._get_file_path(sample_key)
+    assert os.path.exists(file_path)
+
+    # Clear memory cache
+    file_based_cache.memory_cache.clear()
+
+    # Try to get exactly at expiry time (should be considered expired)
+    with patch("time.time", return_value=fixed_time):
+        result = file_based_cache.get(sample_key)
+
+        # Should return None as data is expired (>= check in _is_expired)
+        assert result is None
+
+        # File should be deleted
+        assert not os.path.exists(file_path)
+
+
+def test_file_based_cache_non_expired_file_loads_correctly(
+    file_based_cache, encrypter_with_key, fixed_time
+):
+    """Test that non-expired data from file loads correctly with preserved expiry."""
+    sample_key = SecureCacheKey(["non", "expired"], "test_secret")
+
+    sample_data = ConnectionInfo(id="test_connection", token="test_token")
+
+    # Set data at an earlier time so it's not expired yet
+    set_time = fixed_time - 900  # 15 minutes before
+    with patch("time.time", return_value=set_time):
+        file_based_cache.set(sample_key, sample_data)
+
+        # Verify expiry time
+        memory_result = file_based_cache.memory_cache.get(sample_key)
+        expected_expiry = set_time + CACHE_EXPIRY_SECONDS
+        assert memory_result.expiry_time == expected_expiry
+
+    # Clear memory cache to force file load
+    file_based_cache.memory_cache.clear()
+
+    # Get data at fixed_time (data should not be expired since expected_expiry > fixed_time)
+    with patch("time.time", return_value=fixed_time):
+        # Ensure the data is not expired
+        assert expected_expiry > fixed_time, "Data should not be expired for this test"
+
+        result = file_based_cache.get(sample_key)
+
+        # Should successfully load data
+        assert result is not None
+        assert result.id == "test_connection"
+        assert result.token == "test_token"
+        assert result.expiry_time == expected_expiry  # Preserved original expiry
+
+        # Verify file still exists (not deleted)
+        file_path = file_based_cache._get_file_path(sample_key)
+        assert os.path.exists(file_path)
+
+        # Verify it's in memory cache with preserved expiry
+        memory_result = file_based_cache.memory_cache.get(sample_key)
+        assert memory_result is not None
+        assert memory_result.expiry_time == expected_expiry
+
+
+def test_memory_cache_set_preserve_expiry_parameter(
+    cache, sample_cache_key, fixed_time
+):
+    """Test UtilCache.set preserve_expiry parameter functionality."""
+    # Create connection info with specific expiry time
+    original_expiry = fixed_time + 1800
+    sample_data = ConnectionInfo(id="test_connection", expiry_time=original_expiry)
+
+    with patch("time.time", return_value=fixed_time):
+        # Test preserve_expiry=True
+        cache.set(sample_cache_key, sample_data, preserve_expiry=True)
+
+        result = cache.get(sample_cache_key)
+        assert result is not None
+        assert result.expiry_time == original_expiry  # Should preserve original
+
+        cache.clear()
+
+        # Test preserve_expiry=False (default behavior)
+        cache.set(sample_cache_key, sample_data, preserve_expiry=False)
+
+        result = cache.get(sample_cache_key)
+        assert result is not None
+        expected_new_expiry = fixed_time + CACHE_EXPIRY_SECONDS
+        assert result.expiry_time == expected_new_expiry  # Should get new expiry
+
+        cache.clear()
+
+        # Test default behavior (preserve_expiry not specified)
+        cache.set(sample_cache_key, sample_data)
+
+        result = cache.get(sample_cache_key)
+        assert result is not None
+        assert result.expiry_time == expected_new_expiry  # Should get new expiry
+
+
+def test_memory_cache_set_preserve_expiry_with_none_expiry(
+    cache, sample_cache_key, fixed_time
+):
+    """Test UtilCache.set preserve_expiry when original expiry_time is None."""
+    # Create connection info with None expiry time
+    sample_data = ConnectionInfo(id="test_connection", expiry_time=None)
+
+    with patch("time.time", return_value=fixed_time):
+        # Even with preserve_expiry=True, None expiry should get new expiry
+        cache.set(sample_cache_key, sample_data, preserve_expiry=True)
+
+        result = cache.get(sample_cache_key)
+        assert result is not None
+        expected_expiry = fixed_time + CACHE_EXPIRY_SECONDS
+        assert (
+            result.expiry_time == expected_expiry
+        )  # Should get new expiry despite preserve=True
