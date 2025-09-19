@@ -202,14 +202,19 @@ class Auth(HttpxAuth):
             finally:
                 # token gets updated only after flow.send is called
                 # so unlock only after that
-                if self._lock.locked():
-                    try:
-                        self._lock.release()
-                    except RuntimeError:
-                        # This task does not own the lock, can't release
-                        logging.warning(
-                            "Tried to release a lock not owned by the current task"
-                        )
+                self._release_lock()
+
+    def _release_lock(self) -> None:
+        """Release the lock if held."""
+        if self._lock.locked():
+            try:
+                self._lock.release()
+            except RuntimeError as e:
+                # Check the error string since RuntimeError is very generic
+                if "a Lock you don't own" not in str(e):
+                    raise
+                # This task does not own the lock, can't release
+                logging.warning("Tried to release a lock not owned by the current task")
 
     def sync_auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         """
