@@ -36,7 +36,7 @@ def test_account_no_user(
     api_endpoint: str,
 ) -> None:
     """Connection properly reacts to invalid account error."""
-    with raises(AccountNotFoundOrNoAccessError) as exc_info:
+    with raises((AccountNotFoundOrNoAccessError, FireboltStructuredError)) as exc_info:
         with connect(
             database=database_name,
             auth=auth_no_user,
@@ -50,6 +50,10 @@ def test_account_no_user(
 
     assert str(exc_info.value).startswith(
         f"Account '{account_name}' does not exist"
+    ) or (
+        # Caching on the backend may cause this error instead
+        f"Database '{database_name}' does not exist or not authorized."
+        in str(exc_info.value)
     ), "Invalid account error message."
 
 
