@@ -16,7 +16,7 @@ def test_auth_refresh_on_expiration(
 ) -> None:
     """Auth refreshes the token on expiration."""
     url = "https://host"
-    httpx_mock.add_response(status_code=codes.OK, url=url)
+    httpx_mock.add_response(status_code=codes.OK, url=url, is_reusable=True)
 
     # Mock auth flow
     def set_token(token: str) -> callable:
@@ -45,7 +45,7 @@ def test_auth_uses_same_token_if_valid(
 ) -> None:
     """Auth reuses the token until it's expired."""
     url = "https://host"
-    httpx_mock.add_response(status_code=codes.OK, url=url)
+    httpx_mock.add_response(status_code=codes.OK, url=url, is_reusable=True)
 
     # Mock auth flow
     def set_token(token: str) -> callable:
@@ -100,7 +100,7 @@ def test_auth_token_storage(
         return inner
 
     url = "https://host"
-    httpx_mock.add_response(status_code=codes.OK, url=url)
+    httpx_mock.add_response(status_code=codes.OK, url=url, is_reusable=True)
     with Patcher(), patch(
         "firebolt.client.auth.base.Auth._token_storage",
         new_callable=PropertyMock,

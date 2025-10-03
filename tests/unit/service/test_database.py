@@ -126,7 +126,9 @@ def test_database_delete_busy_engine(
     mock_database: Database,
 ):
     httpx_mock.add_callback(
-        get_engine_callback_stopping, url=system_engine_no_db_query_url
+        get_engine_callback_stopping,
+        url=system_engine_no_db_query_url,
+        is_reusable=True,
     )
 
     mock_database._service = resource_manager.engines

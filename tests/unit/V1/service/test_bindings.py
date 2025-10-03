@@ -25,10 +25,22 @@ def test_get_many_bindings(
     settings: Settings,
     mock_engine: Engine,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(bindings_callback, url=bindings_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        bindings_callback,
+        url=bindings_url,
+        is_reusable=True,
+    )
 
     resource_manager = ResourceManager(settings=settings)
     bindings = resource_manager.bindings.get_many(engine_id=mock_engine.engine_id)
@@ -51,9 +63,17 @@ def test_create_binding(
     mock_engine: Engine,
     mock_database: Database,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
     httpx_mock.add_response(url=bindings_url, method="GET", json={"edges": []})
     httpx_mock.add_response(
         url=create_binding_url, method="POST", json={"binding": binding.model_dict()}
@@ -83,11 +103,27 @@ def test_create_binding_existing_db(
     mock_engine: Engine,
     mock_database: Database,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(bindings_callback, url=bindings_url)
-    httpx_mock.add_callback(database_callback, url=database_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        bindings_callback,
+        url=bindings_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        database_callback,
+        url=database_url,
+        is_reusable=True,
+    )
 
     resource_manager = ResourceManager(settings=settings)
     with raises(AlreadyBoundError):
@@ -111,10 +147,22 @@ def test_get_engines_bound_to_db(
     mock_database: Database,
     engines_by_id_url: str,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(bindings_database_callback, url=database_bindings_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        bindings_database_callback,
+        url=database_bindings_url,
+        is_reusable=True,
+    )
     httpx_mock.add_response(
         url=engines_by_id_url,
         method="POST",

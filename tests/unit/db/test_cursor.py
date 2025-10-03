@@ -48,7 +48,7 @@ def test_cursor_state(
     def error_query_callback(*args, **kwargs):
         raise Exception()
 
-    httpx_mock.add_callback(error_query_callback, url=query_url)
+    httpx_mock.add_callback(error_query_callback, url=query_url, is_reusable=True)
 
     cursor._reset()
     with raises(Exception):
@@ -219,7 +219,7 @@ def test_cursor_execute_error(
         def http_error(*args, **kwargs):
             raise StreamError("httpx error")
 
-        httpx_mock.add_callback(http_error, url=query_url)
+        httpx_mock.add_callback(http_error, url=query_url, is_reusable=True)
         with raises(StreamError) as excinfo:
             query()
 
@@ -273,7 +273,7 @@ def test_cursor_execute_error(
         assert cursor._state == CursorState.ERROR
         assert error_message in str(excinfo)
 
-        httpx_mock.reset(True)
+        httpx_mock.reset()
 
 
 def test_cursor_fetchone(
@@ -440,7 +440,11 @@ def test_cursor_set_statements(
     cursor: Cursor,
 ):
     """cursor correctly parses and processes set statements."""
-    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&a=b",
+        is_reusable=True,
+    )
 
     assert len(cursor._set_parameters) == 0
 
@@ -460,7 +464,11 @@ def test_cursor_set_statements(
 
     assert len(cursor._set_parameters) == 0
 
-    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&param1=1")
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=1",
+        is_reusable=True,
+    )
 
     rc = cursor.execute("set param1=1")
     assert rc == -1, "Invalid row count returned"
@@ -475,7 +483,9 @@ def test_cursor_set_statements(
     )
 
     httpx_mock.add_callback(
-        select_one_query_callback, url=f"{set_query_url}&param1=1&param2=0"
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=1&param2=0",
+        is_reusable=True,
     )
 
     rc = cursor.execute("set param2=0")
@@ -515,11 +525,17 @@ def test_cursor_set_parameters_sent(
         v = encode_param(v)
         params += f"&{p}={v}"
         httpx_mock.add_callback(
-            select_one_query_callback, url=f"{set_query_url}{params}"
+            select_one_query_callback,
+            url=f"{set_query_url}{params}",
+            is_reusable=True,
         )
         cursor.execute(f"set {p} = {v}")
 
-    httpx_mock.add_callback(query_with_params_callback, url=f"{query_url}{params}")
+    httpx_mock.add_callback(
+        query_with_params_callback,
+        url=f"{query_url}{params}",
+        is_reusable=True,
+    )
     cursor.execute("select 1")
 
 
@@ -553,7 +569,7 @@ def test_cursor_iterate(
 ):
     """Cursor is able to execute query, all fields are populated properly."""
 
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(query_callback, url=query_url, is_reusable=True)
 
     with raises(QueryNotRunError):
         for res in cursor:
@@ -581,14 +597,20 @@ def test_server_side_header_database(
     db_name_updated: str,
     cursor: Cursor,
 ):
-    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    httpx_mock.add_callback(
+        query_callback_with_headers, url=query_url, is_reusable=True
+    )
     assert cursor.database == db_name
     cursor.execute(f"USE DATABASE = '{db_name_updated}'")
     assert cursor.database == db_name_updated
 
-    httpx_mock.reset(True)
+    httpx_mock.reset()
     # Check updated database is used in the next query
-    httpx_mock.add_callback(query_callback_with_headers, url=query_url_updated)
+    httpx_mock.add_callback(
+        query_callback_with_headers,
+        url=query_url_updated,
+        is_reusable=True,
+    )
     cursor.execute("select 1")
     assert cursor.database == db_name_updated
 
@@ -646,15 +668,21 @@ def test_cursor_use_engine_no_parameters(
         headers = {"Firebolt-Update-Endpoint": f"https://{query_updated_url}"}
         return Response(status_code=codes.OK, json=query_response, headers=headers)
 
-    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    httpx_mock.add_callback(
+        query_callback_with_headers, url=query_url, is_reusable=True
+    )
     assert cursor.engine_url == "https://" + query_url.host
     cursor.execute("USE ENGINE = 'my_dummy_engine'")
     assert cursor.engine_url == f"https://{query_updated_url}"
 
-    httpx_mock.reset(True)
+    httpx_mock.reset()
     # Check updated engine is used in the next query
     new_url = query_url.copy_with(host=query_updated_url)
-    httpx_mock.add_callback(query_callback_with_headers, url=new_url)
+    httpx_mock.add_callback(
+        query_callback_with_headers,
+        url=new_url,
+        is_reusable=True,
+    )
     cursor.execute("select 1")
     assert cursor.engine_url == f"https://{query_updated_url}"
 
@@ -684,7 +712,9 @@ def test_cursor_use_engine_with_parameters(
         headers = header
         return Response(status_code=codes.OK, json=query_response, headers=headers)
 
-    httpx_mock.add_callback(query_callback_with_headers, url=query_url)
+    httpx_mock.add_callback(
+        query_callback_with_headers, url=query_url, is_reusable=True
+    )
     assert cursor.engine_url == "https://" + query_url.host
     cursor.execute("USE ENGINE = 'my_dummy_engine'")
     assert cursor.engine_url == f"https://{query_updated_url}"
@@ -692,12 +722,16 @@ def test_cursor_use_engine_with_parameters(
     assert list(cursor.parameters.keys()) == ["database", "engine"]
     assert cursor.engine_name == "my_dummy_engine"
 
-    httpx_mock.reset(True)
+    httpx_mock.reset()
     # Check new parameters are used in the URL
     new_url = query_url.copy_with(host=query_updated_url).copy_merge_params(
         {"param1": "1", "param2": "2", "engine": "my_dummy_engine"}
     )
-    httpx_mock.add_callback(query_callback_with_headers, url=new_url)
+    httpx_mock.add_callback(
+        query_callback_with_headers,
+        url=new_url,
+        is_reusable=True,
+    )
     cursor.execute("select 1")
     assert cursor.engine_url == f"https://{query_updated_url}"
 
@@ -721,7 +755,11 @@ def test_cursor_reset_session(
         headers = {"Firebolt-Reset-Session": "any_value_here"}
         return Response(status_code=codes.OK, json=query_response, headers=headers)
 
-    httpx_mock.add_callback(select_one_query_callback, url=f"{set_query_url}&a=b")
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&a=b",
+        is_reusable=True,
+    )
 
     assert len(cursor._set_parameters) == 0
 
@@ -732,10 +770,11 @@ def test_cursor_reset_session(
         and cursor._set_parameters["a"] == "b"
     )
 
-    httpx_mock.reset(True)
+    httpx_mock.reset()
     httpx_mock.add_callback(
         query_callback_with_headers,
         url=f"{set_query_url}&a=b&output_format=JSON_Compact",
+        is_reusable=True,
     )
     cursor.execute("SELECT 1")
     assert len(cursor._set_parameters) == 0
@@ -770,7 +809,7 @@ def test_cursor_timeout(
     assert long_executed is True, "long query was executed"
     assert fast_executed is False, "fast query was not executed"
 
-    httpx_mock.reset(False)
+    httpx_mock.reset()
 
 
 def verify_async_fetch_not_allowed(cursor: Cursor):
@@ -789,7 +828,11 @@ def test_cursor_execute_async(
     cursor: Cursor,
     async_token: str,
 ):
-    httpx_mock.add_callback(async_query_callback, url=async_query_url)
+    httpx_mock.add_callback(
+        async_query_callback,
+        url=async_query_url,
+        is_reusable=True,
+    )
     cursor.execute_async("SELECT 2")
     verify_async_fetch_not_allowed(cursor)
     assert cursor.async_query_token == async_token
@@ -811,7 +854,11 @@ def test_cursor_execute_async_parametrised_query(
     cursor: Cursor,
     async_token: str,
 ):
-    httpx_mock.add_callback(async_query_callback, url=async_query_url)
+    httpx_mock.add_callback(
+        async_query_callback,
+        url=async_query_url,
+        is_reusable=True,
+    )
     cursor.execute_async("SELECT 2 WHERE x = ?", [1])
     verify_async_fetch_not_allowed(cursor)
     assert cursor.async_query_token == async_token
@@ -825,7 +872,11 @@ def test_cursor_execute_async_skip_parsing(
     cursor: Cursor,
     async_token: str,
 ):
-    httpx_mock.add_callback(async_query_callback, url=async_query_url)
+    httpx_mock.add_callback(
+        async_query_callback,
+        url=async_query_url,
+        is_reusable=True,
+    )
     cursor.execute_async("SELECT 2; SELECT 3", skip_parsing=True)
     verify_async_fetch_not_allowed(cursor)
     assert cursor.async_query_token == async_token
@@ -862,7 +913,11 @@ def test_cursor_execute_stream(
     python_query_description: List[Column],
     python_query_data: List[List[ColType]],
 ):
-    httpx_mock.add_callback(streaming_query_callback, url=streaming_query_url)
+    httpx_mock.add_callback(
+        streaming_query_callback,
+        url=streaming_query_url,
+        is_reusable=True,
+    )
     cursor.execute_stream("select * from large_table")
     assert (
         cursor.rowcount == -1
@@ -884,7 +939,11 @@ def test_cursor_execute_stream(
     ), f"Invalid rowcount value after streaming finished for execute with streaming."
 
     # Query with empty output
-    httpx_mock.add_callback(streaming_insert_query_callback, url=streaming_query_url)
+    httpx_mock.add_callback(
+        streaming_insert_query_callback,
+        url=streaming_query_url,
+        is_reusable=True,
+    )
     cursor.execute_stream("insert into t values (1, 2)")
     assert (
         cursor.rowcount == -1
@@ -909,14 +968,18 @@ def test_cursor_execute_stream_error(
     def http_error(*args, **kwargs):
         raise StreamError("httpx streaming error")
 
-    httpx_mock.add_callback(http_error, url=streaming_query_url)
+    httpx_mock.add_callback(
+        http_error,
+        url=streaming_query_url,
+        is_reusable=True,
+    )
     with raises(StreamError) as excinfo:
         cursor.execute_stream("select * from large_table")
 
     assert cursor._state == CursorState.ERROR
     assert str(excinfo.value) == "httpx streaming error"
 
-    httpx_mock.reset(True)
+    httpx_mock.reset()
 
     # Test HTTP status error
     httpx_mock.add_callback(
@@ -931,10 +994,14 @@ def test_cursor_execute_stream_error(
     assert cursor._state == CursorState.ERROR
     assert "Bad Request" in str(excinfo.value)
 
-    httpx_mock.reset(True)
+    httpx_mock.reset()
 
     # Test in-body error (ErrorRecord)
-    httpx_mock.add_callback(streaming_error_query_callback, url=streaming_query_url)
+    httpx_mock.add_callback(
+        streaming_error_query_callback,
+        url=streaming_query_url,
+        is_reusable=True,
+    )
 
     for method in (cursor.fetchone, cursor.fetchmany, cursor.fetchall):
         # Execution works fine
@@ -998,7 +1065,11 @@ def test_fb_numeric_parameter_formatting(
     test_query = f"SELECT * FROM test WHERE col IN ({', '.join(f'${i+1}' for i in range(len(test_params)))})"
 
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
-    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+    httpx_mock.add_callback(
+        callback,
+        url=fb_numeric_query_url,
+        is_reusable=True,
+    )
 
     cursor.execute(test_query, test_params)
 
@@ -1020,7 +1091,11 @@ def test_fb_numeric_complex_types_converted_to_strings(
     test_query = "SELECT * FROM test WHERE created_at = $1 AND birth_date = $2"
 
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
-    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+    httpx_mock.add_callback(
+        callback,
+        url=fb_numeric_query_url,
+        is_reusable=True,
+    )
 
     cursor.execute(test_query, test_params)
 
@@ -1040,7 +1115,11 @@ def test_fb_numeric_no_client_side_substitution(
     ]
 
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
-    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+    httpx_mock.add_callback(
+        callback,
+        url=fb_numeric_query_url,
+        is_reusable=True,
+    )
 
     import firebolt.db as db
 
@@ -1085,7 +1164,11 @@ def test_fb_numeric_executemany(
 
         return fb_numeric_simple_callback(request, **kwargs)
 
-    httpx_mock.add_callback(validate_executemany_callback, url=fb_numeric_query_url)
+    httpx_mock.add_callback(
+        validate_executemany_callback,
+        url=fb_numeric_query_url,
+        is_reusable=True,
+    )
 
     import firebolt.db as db
 
@@ -1139,7 +1222,9 @@ def test_fb_numeric_with_cursor_set_parameters(
 
         # Mock the SELECT query with set parameters
         httpx_mock.add_callback(
-            validate_with_set_params_callback, url=fb_numeric_query_url
+            validate_with_set_params_callback,
+            url=fb_numeric_query_url,
+            is_reusable=True,
         )
 
         cursor.execute(test_query, test_params)
@@ -1212,7 +1297,11 @@ def test_fb_numeric_additional_types(
     test_query = f"SELECT * FROM test WHERE col IN ({', '.join(f'${i+1}' for i in range(len(test_params)))})"
 
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
-    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+    httpx_mock.add_callback(
+        callback,
+        url=fb_numeric_query_url,
+        is_reusable=True,
+    )
 
     import firebolt.db as db
 
@@ -1244,7 +1333,11 @@ def test_fb_numeric_nested_complex_structures(
     test_query = "SELECT * FROM test WHERE data = $1 AND metadata = $2"
 
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
-    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+    httpx_mock.add_callback(
+        callback,
+        url=fb_numeric_query_url,
+        is_reusable=True,
+    )
 
     import firebolt.db as db
 
@@ -1271,7 +1364,11 @@ def test_fb_numeric_large_parameter_count(
     test_query = f"SELECT * FROM test WHERE id IN ({placeholders})"
 
     callback = fb_numeric_callback_factory(expected_query_params, test_query)
-    httpx_mock.add_callback(callback, url=fb_numeric_query_url)
+    httpx_mock.add_callback(
+        callback,
+        url=fb_numeric_query_url,
+        is_reusable=True,
+    )
 
     import firebolt.db as db
 
