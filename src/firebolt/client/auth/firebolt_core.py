@@ -65,7 +65,7 @@ class FireboltCore(Auth):
         """
         return FireboltAuthVersion.CORE
 
-    def get_new_token_generator(self) -> Generator:
+    def get_new_token_generator(self) -> Generator[Request, Response, None]:
         """FireboltCore doesn't need token authentication.
 
         Yields:
