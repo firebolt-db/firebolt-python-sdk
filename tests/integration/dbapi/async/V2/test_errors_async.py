@@ -38,7 +38,7 @@ async def test_account_no_user(
     """Connection properly reacts to account that doesn't have
     a user attached to it."""
 
-    with raises(AccountNotFoundOrNoAccessError) as exc_info:
+    with raises((AccountNotFoundOrNoAccessError, FireboltStructuredError)) as exc_info:
         async with await connect(
             database=database_name,
             auth=auth_no_user,
@@ -50,8 +50,12 @@ async def test_account_no_user(
         ) as connection:
             await connection.cursor().execute("show tables")
 
-    assert f"'{account_name}' does not exist" in str(
-        exc_info.value
+    assert str(exc_info.value).startswith(
+        f"Account '{account_name}' does not exist"
+    ) or (
+        # Caching on the backend may cause this error instead
+        f"Database '{database_name}' does not exist or not authorized."
+        in str(exc_info.value)
     ), "Invalid account error message."
 
 
