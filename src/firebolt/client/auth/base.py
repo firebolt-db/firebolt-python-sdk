@@ -1,14 +1,17 @@
+import logging
 from abc import abstractmethod
 from enum import IntEnum
 from time import time
 from typing import AsyncGenerator, Generator, Optional
 
-from anyio import Lock, get_current_task
+from anyio import Lock
 from httpx import Auth as HttpxAuth
 from httpx import Request, Response, codes
 
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.util import Timer, cached_property, get_internal_error_code
+
+logger = logging.getLogger(__name__)
 
 
 class FireboltAuthVersion(IntEnum):
@@ -199,12 +202,19 @@ class Auth(HttpxAuth):
             finally:
                 # token gets updated only after flow.send is called
                 # so unlock only after that
-                # TODO: FIR-38687 Fix support for anyio 4.5.0+
-                if (
-                    self._lock.locked()
-                    and self._lock._owner_task == get_current_task()  # type: ignore
-                ):
-                    self._lock.release()
+                self._release_lock()
+
+    def _release_lock(self) -> None:
+        """Release the lock if held."""
+        if self._lock.locked():
+            try:
+                self._lock.release()
+            except RuntimeError as e:
+                # Check the error string since RuntimeError is very generic
+                if "a Lock you don't own" not in str(e):
+                    raise
+                # This task does not own the lock, can't release
+                logging.warning("Tried to release a lock not owned by the current task")
 
     def sync_auth_flow(self, request: Request) -> Generator[Request, Response, None]:
         """
