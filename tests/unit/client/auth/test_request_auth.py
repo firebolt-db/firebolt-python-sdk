@@ -42,7 +42,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, client_id: str, client_secre
             execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
 
         assert str(excinfo.value) == "httpx", "Invalid authentication error message"
-        httpx_mock.reset(True)
+        httpx_mock.reset()
 
         # HTTP error
         httpx_mock.add_response(status_code=codes.UNAUTHORIZED)
@@ -52,7 +52,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, client_id: str, client_secre
         assert (
             "Please verify the provided credentials" in errmsg
         ), "Invalid authorization error message"
-        httpx_mock.reset(True)
+        httpx_mock.reset()
 
         # HTTP error
         httpx_mock.add_response(status_code=codes.BAD_REQUEST)
@@ -61,7 +61,7 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, client_id: str, client_secre
 
         errmsg = str(excinfo.value)
         assert "Bad Request" in errmsg, "Invalid authentication error message"
-        httpx_mock.reset(True)
+        httpx_mock.reset()
 
         # Firebolt api error
         httpx_mock.add_response(
@@ -70,4 +70,4 @@ def test_auth_error_handling(httpx_mock: HTTPXMock, client_id: str, client_secre
         with pytest.raises(AuthenticationError) as excinfo:
             execute_generator_requests(auth.get_new_token_generator(), api_endpoint)
 
-        httpx_mock.reset(True)
+        httpx_mock.reset()

@@ -25,4 +25,4 @@ def test_is_engine_running_system(
     # This is a dummy check, V2 engines are always considered running
     assert cursor.is_engine_running("dummy") is True
 
-    httpx_mock.reset(False)
+    httpx_mock.reset()

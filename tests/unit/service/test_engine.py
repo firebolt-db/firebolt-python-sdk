@@ -27,7 +27,9 @@ def test_engine_create(
             )
         return get_objects_from_db_callback([mock_engine])(request)
 
-    httpx_mock.add_callback(create_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(
+        create_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
 
     for value in (1.0, False, int):
         with raises(TypeError):
@@ -54,7 +56,9 @@ def test_engine_not_found(
     system_engine_no_db_query_url: str,
 ):
     httpx_mock.add_callback(
-        get_engine_not_found_callback, url=system_engine_no_db_query_url
+        get_engine_not_found_callback,
+        url=system_engine_no_db_query_url,
+        is_reusable=True,
     )
 
     with raises(EngineNotFoundError):
@@ -71,8 +75,12 @@ def test_get_connection(
     mock_connection_flow: Callable,
     mock_query: Callable,
 ):
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(database_get_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
+    httpx_mock.add_callback(
+        database_get_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
     mock_connection_flow()
     mock_query()
 
@@ -82,7 +90,7 @@ def test_get_connection(
         connection.cursor().execute("select 1")
 
     # Some endpoints from connection flow are not used in this test
-    httpx_mock.reset(False)
+    httpx_mock.reset()
 
 
 def test_attach_to_database(
@@ -95,10 +103,16 @@ def test_attach_to_database(
     attach_engine_to_db_callback: Callable,
     system_engine_no_db_query_url: str,
 ):
-    httpx_mock.add_callback(database_get_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
     httpx_mock.add_callback(
-        attach_engine_to_db_callback, url=system_engine_no_db_query_url
+        database_get_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
+    httpx_mock.add_callback(
+        attach_engine_to_db_callback,
+        url=system_engine_no_db_query_url,
+        is_reusable=True,
     )
 
     database = resource_manager.databases.get("database")
@@ -120,9 +134,15 @@ def test_engine_update(
     system_engine_no_db_query_url: str,
     updated_engine_scale: int,
 ):
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(update_engine_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
+    httpx_mock.add_callback(
+        update_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
 
     mock_engine._service = resource_manager.engines
     mock_engine.update(scale=updated_engine_scale)
@@ -143,9 +163,15 @@ def test_engine_update_auto_stop_zero(
     system_engine_no_db_query_url: str,
     updated_auto_stop: int,
 ):
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(update_engine_callback, url=system_engine_no_db_query_url)
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
+    httpx_mock.add_callback(
+        update_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
 
     mock_engine.auto_stop = updated_auto_stop + 100
     # auto_stop = 0 is not considered an empty parameter value
@@ -162,7 +188,9 @@ def test_engine_get_by_name(
     system_engine_no_db_query_url: str,
     mock_engine: Engine,
 ):
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
 
     engine = resource_manager.engines.get_by_name(mock_engine.name)
 
@@ -184,7 +212,9 @@ def test_engine_new_status(
     mock_engine.current_status = engine_status
     get_engine_callback = get_objects_from_db_callback([mock_engine])
 
-    httpx_mock.add_callback(get_engine_callback, url=system_engine_no_db_query_url)
+    httpx_mock.add_callback(
+        get_engine_callback, url=system_engine_no_db_query_url, is_reusable=True
+    )
 
     engine = resource_manager.engines.get_by_name(mock_engine.name)
 

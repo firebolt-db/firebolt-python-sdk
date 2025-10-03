@@ -77,9 +77,14 @@ async def test_client_different_auths(
     httpx_mock.add_callback(
         check_credentials_callback,
         url=f"https://{DEFAULT_API_URL}{AUTH_URL}",
+        is_reusable=True,
     )
 
-    httpx_mock.add_callback(check_token_callback, url="https://url")
+    httpx_mock.add_callback(
+        check_token_callback,
+        url="https://url",
+        is_reusable=True,
+    )
 
     async with AsyncClient(
         auth=UsernamePassword(test_username, test_password)
@@ -113,8 +118,12 @@ async def test_client_account_id(
     auth_callback: Callable,
     api_endpoint: str,
 ):
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
 
     async with AsyncClient(
         auth=UsernamePassword(test_username, test_password),
@@ -154,8 +163,12 @@ async def test_concurent_auth_lock(
             json={"expires_in": 2**32, "access_token": test_token},
         )
 
-    httpx_mock.add_callback(check_token_callback, url=compile(f"{url}/."))
-    httpx_mock.add_callback(check_credentials, url=auth_url)
+    httpx_mock.add_callback(
+        check_token_callback,
+        url=compile(f"{url}/."),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(check_credentials, url=auth_url, is_reusable=True)
 
     async with AsyncClient(
         auth=UsernamePassword(test_username, test_password, False),
@@ -199,9 +212,13 @@ async def test_true_concurent_requests(
         await sleep(0.1 * random.random())
         return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
 
-    httpx_mock.add_callback(check_token_callback_with_queue, url=compile(f"{url}/."))
+    httpx_mock.add_callback(
+        check_token_callback_with_queue,
+        url=compile(f"{url}/."),
+        is_reusable=True,
+    )
 
     urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
     async with AsyncClient(

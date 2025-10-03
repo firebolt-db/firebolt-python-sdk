@@ -466,8 +466,12 @@ def mock_system_engine_connection_flow(
     get_system_engine_callback: Callable,
 ) -> Callable:
     def inner() -> None:
-        httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-        httpx_mock.add_callback(get_system_engine_callback, url=get_system_engine_url)
+        httpx_mock.add_callback(
+            check_credentials_callback, url=auth_url, is_reusable=True
+        )
+        httpx_mock.add_callback(
+            get_system_engine_callback, url=get_system_engine_url, is_reusable=True
+        )
 
     return inner
 
@@ -490,11 +494,13 @@ def mock_connection_flow(
             use_database_callback,
             url=system_engine_no_db_query_url,
             match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+            is_reusable=True,
         )
         httpx_mock.add_callback(
             use_engine_callback,
             url=system_engine_query_url,
             match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+            is_reusable=True,
         )
 
     return inner
@@ -507,7 +513,7 @@ def mock_query(
     query_callback: Callable,
 ) -> Callable:
     def inner() -> None:
-        httpx_mock.add_callback(query_callback, url=query_url)
+        httpx_mock.add_callback(query_callback, url=query_url, is_reusable=True)
 
     return inner
 
@@ -519,7 +525,7 @@ def mock_insert_query(
     insert_query_callback: Callable,
 ) -> Callable:
     def inner() -> None:
-        httpx_mock.add_callback(insert_query_callback, url=query_url)
+        httpx_mock.add_callback(insert_query_callback, url=query_url, is_reusable=True)
 
     return inner
 

@@ -73,9 +73,14 @@ async def test_client_different_auths(
     httpx_mock.add_callback(
         check_credentials_callback,
         url=f"https://{auth_endpoint}{AUTH_SERVICE_ACCOUNT_URL}",
+        is_reusable=True,
     )
 
-    httpx_mock.add_callback(check_token_callback, url="https://url")
+    httpx_mock.add_callback(
+        check_token_callback,
+        url="https://url",
+        is_reusable=True,
+    )
 
     async with AsyncClient(
         account_name=account_name, auth=auth, api_endpoint=api_endpoint
@@ -124,8 +129,12 @@ async def test_concurent_auth_lock(
             json={"expires_in": 2**32, "access_token": access_token},
         )
 
-    httpx_mock.add_callback(check_token_callback, url=compile(f"{url}/."))
-    httpx_mock.add_callback(check_credentials, url=auth_url)
+    httpx_mock.add_callback(
+        check_token_callback,
+        url=compile(f"{url}/."),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(check_credentials, url=auth_url, is_reusable=True)
 
     async with AsyncClient(
         auth=ClientCredentials(client_id, client_secret),
@@ -171,9 +180,13 @@ async def test_true_concurent_requests(
         await sleep(0.1 * random.random())
         return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
 
-    httpx_mock.add_callback(check_token_callback_with_queue, url=compile(f"{url}/."))
+    httpx_mock.add_callback(
+        check_token_callback_with_queue,
+        url=compile(f"{url}/."),
+        is_reusable=True,
+    )
 
     urls = [f"{url}/{i}" for i in range(CONCURENT_COUNT)]
     async with AsyncClient(
@@ -205,7 +218,7 @@ async def test_client_clone(
     check_credentials_callback: Callable,
     check_token_callback: Callable,
 ):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
 
     url = "https://base_url"
     path = "/path"
@@ -217,7 +230,11 @@ async def test_client_clone(
         assert [request.headers[k] == v for k, v in headers.items()]
         return Response(status_code=codes.OK, headers={"content-length": "0"})
 
-    httpx_mock.add_callback(validate_client_callback, url=url + path)
+    httpx_mock.add_callback(
+        validate_client_callback,
+        url=url + path,
+        is_reusable=True,
+    )
 
     async with AsyncClient(
         auth=ClientCredentials(client_id, client_secret, use_token_cache=False),

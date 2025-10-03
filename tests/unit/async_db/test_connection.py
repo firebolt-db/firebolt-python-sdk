@@ -128,6 +128,7 @@ async def test_connect_database_failed(
         use_database_failed_callback,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
     with raises(FireboltError):
         async with await connect(
@@ -140,7 +141,7 @@ async def test_connect_database_failed(
             pass
 
     # Account id endpoint was not used since we didn't get to that point
-    httpx_mock.reset(False)
+    httpx_mock.reset()
 
 
 @mark.parametrize("cache_enabled", [True, False])
@@ -171,20 +172,30 @@ async def test_connect_system_engine_caching(
         system_engine_call_counter += 1
         return get_system_engine_callback(request, **kwargs)
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
     httpx_mock.add_callback(
         use_database_callback,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     httpx_mock.add_callback(
         use_engine_callback,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     for _ in range(3):
         async with await connect(
@@ -225,12 +236,14 @@ async def test_connect_engine_failed(
         use_database_callback,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     httpx_mock.add_callback(
         use_engine_failed_callback,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
     with raises(FireboltError):
         async with await connect(
@@ -243,7 +256,7 @@ async def test_connect_engine_failed(
             pass
 
     # Account id endpoint was not used since we didn't get to that point
-    httpx_mock.reset(False)
+    httpx_mock.reset()
 
 
 async def test_connect_system_engine_404(
@@ -257,8 +270,12 @@ async def test_connect_system_engine_404(
     get_system_engine_url: str,
     get_system_engine_404_callback: Callable,
 ):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(get_system_engine_404_callback, url=get_system_engine_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        get_system_engine_404_callback,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
     with raises(AccountNotFoundOrNoAccessError):
         async with await connect(
             database=db_name,
@@ -517,6 +534,7 @@ async def test_is_async_query_running_success(
         async_query_status_running_callback,
         url=query_url,
         match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+        is_reusable=True,
     )
 
     async with await connect(
@@ -552,6 +570,7 @@ async def test_async_query_status_unexpected_result(
         async_query_status_running_callback,
         url=query_url,
         match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+        is_reusable=True,
     )
 
     async with await connect(
@@ -593,6 +612,7 @@ async def test_async_query_status_no_id_or_status(
             async_query_status_running_callback,
             url=query_url,
             match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+            is_reusable=True,
         )
         async with await connect(
             database=db_name,
@@ -635,12 +655,14 @@ async def test_async_query_cancellation(
         async_query_status_running_callback,
         url=query_url,
         match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+        is_reusable=True,
     )
 
     httpx_mock.add_callback(
         query_callback,
         url=query_url,
         match_content=f"CANCEL QUERY WHERE query_id='{query_id}'".encode("utf-8"),
+        is_reusable=True,
     )
 
     async with await connect(
@@ -676,6 +698,7 @@ async def test_get_async_query_info(
         async_query_callback,
         url=query_url,
         match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+        is_reusable=True,
     )
 
     async with await connect(
@@ -723,6 +746,7 @@ async def test_multiple_results_for_async_token(
         async_query_callback,
         url=query_url,
         match_content="CALL fb_GetAsyncStatus('token')".encode("utf-8"),
+        is_reusable=True,
     )
 
     async with await connect(

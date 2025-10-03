@@ -21,9 +21,17 @@ def test_engine_start_stop(
     engine_callback: Callable,
     account_engine_url: str,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     httpx_mock.add_callback(engine_callback, url=f"{account_engine_url}", method="GET")
     httpx_mock.add_callback(
@@ -59,11 +67,23 @@ def test_engine_get_many(
     account_id_url: Pattern,
 ):
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
     filters = "?page.first=5000&filter.name_contains=test"
-    httpx_mock.add_callback(many_engines_callback, url=engine_url + filters)
+    httpx_mock.add_callback(
+        many_engines_callback,
+        url=engine_url + filters,
+        is_reusable=True,
+    )
 
     manager = ResourceManager(settings=settings)
     engines = manager.engines.get_many(name_contains="test")
@@ -87,12 +107,28 @@ def test_engine_get_many_with_region(
     region_url: str,
 ):
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(region_callback, url=region_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        region_callback,
+        url=region_url,
+        is_reusable=True,
+    )
     filters = "?page.first=5000&filter.name_contains=test&filter.compute_region_id_region_id_eq=mock_region_id_1"
-    httpx_mock.add_callback(many_engines_callback, url=engine_url + filters)
+    httpx_mock.add_callback(
+        many_engines_callback,
+        url=engine_url + filters,
+        is_reusable=True,
+    )
 
     manager = ResourceManager(settings=settings)
     engines = manager.engines.get_many(name_contains="test", region_eq="mock_region_1")

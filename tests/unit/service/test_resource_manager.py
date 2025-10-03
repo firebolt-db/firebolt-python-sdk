@@ -21,7 +21,7 @@ def test_rm_credentials(
     url = "https://url"
 
     mock_system_engine_connection_flow()
-    httpx_mock.add_callback(check_token_callback, url=url)
+    httpx_mock.add_callback(check_token_callback, url=url, is_reusable=True)
 
     rm = ResourceManager(
         auth=auth, account_name=account_name, api_endpoint=api_endpoint
@@ -43,7 +43,7 @@ def test_rm_token_cache(
     url = "https://url"
 
     mock_system_engine_connection_flow()
-    httpx_mock.add_callback(check_token_callback, url=url)
+    httpx_mock.add_callback(check_token_callback, url=url, is_reusable=True)
 
     with Patcher():
         rm = ResourceManager(
