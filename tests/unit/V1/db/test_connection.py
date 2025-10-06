@@ -63,8 +63,12 @@ def test_cursor_initialized(
     python_query_data: List[List[ColType]],
 ) -> None:
     """Connection initialized its cursors properly."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     for url in (engine_url, f"https://{engine_url}"):
         with connect(
@@ -123,10 +127,22 @@ def test_connect_engine_name(
             auth=UsernamePassword("u", "p"),
         )
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        get_engine_url_by_id_callback,
+        url=get_engine_url_by_id_url,
+        is_reusable=True,
+    )
 
     # Mock engine id lookup error
     httpx_mock.add_response(
@@ -181,9 +197,17 @@ def test_connect_default_engine(
     python_query_data: List[List[ColType]],
     account_id: str,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
     engine_by_db_url = f"{engine_by_db_url}?database_name={db_name}"
 
     httpx_mock.add_response(
@@ -249,9 +273,17 @@ def test_connection_token_caching(
     account_id_callback: Callable,
     account_id_url: str,
 ) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     with Patcher():
         with connect(
@@ -297,9 +329,17 @@ def test_connect_with_auth(
     account_id_callback: Callable,
     account_id_url: str,
 ) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     for auth in (
         UsernamePassword(
@@ -331,8 +371,12 @@ def test_connect_account_name(
     account_id_url: Pattern,
     account_id_callback: Callable,
 ):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     with raises(AccountNotFoundError):
         with connect(

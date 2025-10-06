@@ -24,11 +24,23 @@ def test_database_create(
     db_name: str,
     db_description: str,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(region_callback, url=region_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        region_callback,
+        url=region_url,
+        is_reusable=True,
+    )
     httpx_mock.add_callback(create_databases_callback, url=databases_url, method="POST")
 
     manager = ResourceManager(settings=settings)
@@ -54,12 +66,28 @@ def test_database_get_by_name(
     mock_database: Database,
 ):
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(database_get_by_name_callback, url=database_get_by_name_url)
-    httpx_mock.add_callback(database_get_callback, url=database_get_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        database_get_by_name_callback,
+        url=database_get_by_name_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        database_get_callback,
+        url=database_get_url,
+        is_reusable=True,
+    )
 
     manager = ResourceManager(settings=settings)
     database = manager.databases.get_by_name(name=mock_database.name)
@@ -83,14 +111,23 @@ def test_database_get_many(
     mock_database: Database,
 ):
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(auth_callback, url=auth_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
     httpx_mock.add_callback(
         databases_get_callback,
         url=compile(databases_url + "?[a-zA-Z0-9=&]*"),
         method="GET",
+        is_reusable=True,
     )
 
     manager = ResourceManager(settings=settings)
@@ -117,9 +154,17 @@ def test_database_update(
     database_url: str,
     mock_database: Database,
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     httpx_mock.add_callback(database_update_callback, url=database_url, method="PATCH")
 

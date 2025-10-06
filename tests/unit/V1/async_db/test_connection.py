@@ -63,8 +63,12 @@ async def test_cursor_initialized(
     python_query_data: List[List[ColType]],
 ) -> None:
     """Connection initialized its cursors properly."""
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     for url in (engine_url, f"https://{engine_url}"):
         async with (
@@ -112,7 +116,11 @@ async def test_connect_access_token(
     python_query_data: List[List[ColType]],
     access_token: str,
 ):
-    httpx_mock.add_callback(check_token_callback, url=query_url)
+    httpx_mock.add_callback(
+        check_token_callback,
+        url=query_url,
+        is_reusable=True,
+    )
     async with (
         await connect(
             engine_url=engine_url,
@@ -162,10 +170,22 @@ async def test_connect_engine_name(
         ):
             pass
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
-    httpx_mock.add_callback(get_engine_url_by_id_callback, url=get_engine_url_by_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        get_engine_url_by_id_callback,
+        url=get_engine_url_by_id_url,
+        is_reusable=True,
+    )
 
     # Mock engine id lookup error
     httpx_mock.add_response(
@@ -225,9 +245,17 @@ async def test_connect_default_engine(
     engine_by_db_url: str,
     python_query_data: List[List[ColType]],
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
     engine_by_db_url = f"{engine_by_db_url}?database_name={db_name}"
 
     httpx_mock.add_response(
@@ -276,9 +304,17 @@ async def test_connection_token_caching(
     account_id_callback: Callable,
     account_id_url: str,
 ) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     with Patcher():
         async with await connect(
@@ -336,9 +372,17 @@ async def test_connect_with_auth(
     account_id_callback: Callable,
     account_id_url: str,
 ) -> None:
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     for auth in (
         UsernamePassword(
@@ -370,8 +414,12 @@ async def test_connect_account_name(
     account_id_url: Pattern,
     account_id_callback: Callable,
 ):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     with raises(AccountNotFoundError):
         async with await connect(
@@ -479,6 +527,10 @@ def test_from_asyncio(
             await cursor.fetchmany(1)
             await cursor.fetchall()
 
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
     run(async_flow())

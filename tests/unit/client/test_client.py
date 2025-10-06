@@ -70,9 +70,14 @@ def test_client_different_auths(
     httpx_mock.add_callback(
         check_credentials_callback,
         url=f"https://{auth_endpoint}{AUTH_SERVICE_ACCOUNT_URL}",
+        is_reusable=True,
     )
 
-    httpx_mock.add_callback(check_token_callback, url="https://url")
+    httpx_mock.add_callback(
+        check_token_callback,
+        url="https://url",
+        is_reusable=True,
+    )
 
     Client(account_name=account_name, auth=auth, api_endpoint=api_endpoint).get(
         "https://url"
@@ -142,7 +147,7 @@ def test_client_clone(
     check_credentials_callback: Callable,
     check_token_callback: Callable,
 ):
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
 
     url = "https://base_url"
     path = "/path"
@@ -154,7 +159,11 @@ def test_client_clone(
         assert [request.headers[k] == v for k, v in headers.items()]
         return Response(status_code=codes.OK, headers={"content-length": "0"})
 
-    httpx_mock.add_callback(validate_client_callback, url=url + path)
+    httpx_mock.add_callback(
+        validate_client_callback,
+        url=url + path,
+        is_reusable=True,
+    )
 
     with Client(
         auth=ClientCredentials(client_id, client_secret, use_token_cache=False),

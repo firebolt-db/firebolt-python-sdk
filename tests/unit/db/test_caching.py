@@ -78,20 +78,30 @@ def test_connect_caching(
         use_engine_call_counter += 1
         return use_engine_callback(request, **kwargs)
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
     httpx_mock.add_callback(
         use_database_callback_counter,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     httpx_mock.add_callback(
         use_engine_callback_counter,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     for _ in range(3):
         connection_test(db_name, engine_name, cache_enabled)
@@ -148,14 +158,19 @@ def test_connect_db_switching_caching(
         use_engine_call_counter += 1
         return use_engine_callback(request, **kwargs)
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
 
     # First database
     httpx_mock.add_callback(
         use_database_callback_counter,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     # Second database
@@ -163,14 +178,20 @@ def test_connect_db_switching_caching(
         use_database_callback_counter,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{second_db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     httpx_mock.add_callback(
         use_engine_callback_counter,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     # Connect to first database
     connection_test(db_name, engine_name, cache_enabled)
@@ -245,13 +266,18 @@ def test_connect_engine_switching_caching(
         use_engine_call_counter += 1
         return use_engine_callback(request, **kwargs)
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
 
     httpx_mock.add_callback(
         use_database_callback_counter,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     # First engine
@@ -259,6 +285,7 @@ def test_connect_engine_switching_caching(
         use_engine_callback_counter,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     # Second engine
@@ -266,9 +293,14 @@ def test_connect_engine_switching_caching(
         use_engine_callback_counter,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{second_engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     # Connect to first engine
     connection_test(db_name, engine_name, cache_enabled)
@@ -349,24 +381,36 @@ def test_connect_db_different_accounts(
     get_system_engine_url_new_account = str(get_system_engine_url).replace(
         account_name, account_name + "_second"
     )
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
     httpx_mock.add_callback(
-        system_engine_callback_counter, url=get_system_engine_url_new_account
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url_new_account,
+        is_reusable=True,
     )
 
     httpx_mock.add_callback(
         use_database_callback_counter,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
 
     httpx_mock.add_callback(
         use_engine_callback_counter,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     # First connection
 
@@ -443,19 +487,29 @@ def test_calls_when_cache_expired(
         use_engine_call_counter += 1
         return use_engine_callback(request, **kwargs)
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(system_engine_callback_counter, url=get_system_engine_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
     httpx_mock.add_callback(
         use_database_callback_counter,
         url=system_engine_no_db_query_url,
         match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
     httpx_mock.add_callback(
         use_engine_callback_counter,
         url=system_engine_query_url,
         match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
     )
-    httpx_mock.add_callback(query_callback, url=query_url)
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
 
     # First connection - should populate cache
     connection_test(db_name, engine_name, True)  # cache_enabled=True

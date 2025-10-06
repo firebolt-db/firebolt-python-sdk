@@ -29,10 +29,22 @@ def test_rm_credentials(
     """Credentials, that are passed to rm are processed properly."""
     url = "https://url"
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(check_token_callback, url=url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        check_token_callback,
+        url=url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     rm = ResourceManager(settings)
     rm._client.get(url)
@@ -74,10 +86,22 @@ def test_rm_token_cache(
     """Credentials, that are passed to rm are processed properly."""
     url = "https://url"
 
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(check_token_callback, url=url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        check_token_callback,
+        url=url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     with Patcher():
         local_settings = Settings(
@@ -117,8 +141,12 @@ def test_rm_invalid_account_name(
     account_id_callback: Callable,
 ) -> None:
     """Resource manager raises an error on invalid account name."""
-    httpx_mock.add_callback(check_credentials_callback, url=auth_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     local_settings = Settings(
         auth=auth,

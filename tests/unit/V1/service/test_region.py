@@ -21,10 +21,22 @@ def test_region(
     settings: Settings,
     mock_regions: List[Region],
 ):
-    httpx_mock.add_callback(auth_callback, url=auth_url)
-    httpx_mock.add_callback(provider_callback, url=provider_url)
-    httpx_mock.add_callback(region_callback, url=region_url)
-    httpx_mock.add_callback(account_id_callback, url=account_id_url)
+    httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        provider_callback,
+        url=provider_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        region_callback,
+        url=region_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        account_id_callback,
+        url=account_id_url,
+        is_reusable=True,
+    )
 
     manager = ResourceManager(settings=settings)
     assert manager.regions.regions == mock_regions
