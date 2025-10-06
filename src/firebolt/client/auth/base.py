@@ -62,7 +62,7 @@ class Auth(HttpxAuth):
         return self._account_name
 
     @account.setter
-    def account(self, value: str) -> None:
+    def account(self, value: Optional[str]) -> None:
         self._account_name = value
         # Now we have all the elements to fetch the cached token
         if not self._token:
