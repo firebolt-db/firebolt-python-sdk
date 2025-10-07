@@ -19,6 +19,7 @@ from httpx import URL, Response, codes
 
 from firebolt.utils.exception import (
     ConfigurationError,
+    FireboltError,
     FireboltStructuredError,
 )
 
@@ -171,6 +172,10 @@ def raise_error_from_response(resp: Response) -> None:
         resp (Response): HTTP response
     """
     to_raise = None
+    # If error is Text - raise as is
+    if "text/plain" in resp.headers.get("Content-Type", ""):
+        raise FireboltError(resp.text)
+    # If error is Json - parse it and raise
     try:
         decoded = resp.json()
         if "errors" in decoded and len(decoded["errors"]) > 0:
@@ -186,6 +191,7 @@ def raise_error_from_response(resp: Response) -> None:
         raise to_raise
 
     # Raise status error if no error info was found in the body
+    # This error does not contain the response body
     resp.raise_for_status()
 
 
