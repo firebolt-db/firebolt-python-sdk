@@ -1391,3 +1391,26 @@ def test_unsupported_paramstyle_raises(cursor):
             cursor.execute("SELECT 1")
     finally:
         db.paramstyle = original_paramstyle
+
+
+def test_cursor_plaintext_error(
+    httpx_mock: HTTPXMock,
+    cursor: Cursor,
+    query_url: str,
+):
+    """Test handling of plaintext error responses from the server."""
+    httpx_mock.add_callback(
+        lambda *args, **kwargs: Response(
+            status_code=codes.NOT_FOUND,
+            text="Plaintext error message",
+            headers={"Content-Type": "text/plain"},
+        ),
+        url=query_url,
+    )
+    with raises(FireboltError) as excinfo:
+        cursor.execute("select * from t")
+
+    assert cursor._state == CursorState.ERROR
+    assert "Plaintext error message" in str(
+        excinfo.value
+    ), "Invalid error message for plaintext error response"
