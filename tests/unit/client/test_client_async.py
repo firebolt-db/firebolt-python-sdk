@@ -177,7 +177,7 @@ async def test_true_concurent_requests(
     async def mock_send_handling_redirects(self, *args: Any, **kwargs: Any) -> Response:
         # simulate network delay so the context switches
         # random delay to make sure that requests are not executed in order
-        await sleep(0.1 * random.random())
+        await sleep(random.random())
         return await AsyncClient._send_handling_redirects(self, *args, **kwargs)
 
     httpx_mock.add_callback(auth_callback, url=auth_url, is_reusable=True)
