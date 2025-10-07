@@ -11,7 +11,7 @@ from firebolt.client.auth import Auth
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
 from firebolt.db import Binary, Connection, Cursor, OperationalError, connect
-from firebolt.utils.exception import FireboltStructuredError
+from firebolt.utils.exception import FireboltError, FireboltStructuredError
 from tests.integration.dbapi.conftest import LONG_SELECT_DEFAULT_V2
 from tests.integration.dbapi.utils import assert_deep_eq
 
@@ -341,7 +341,7 @@ def test_multi_statement_query(connection: Connection) -> None:
 def test_set_invalid_parameter(connection: Connection):
     with connection.cursor() as c:
         assert len(c._set_parameters) == 0
-        with raises((OperationalError, FireboltStructuredError)) as e:
+        with raises((OperationalError, FireboltError)) as e:
             c.execute("set some_invalid_parameter = 1")
         assert "Unknown setting" in str(e.value) or "query param not allowed" in str(
             e.value
