@@ -18,7 +18,6 @@ from httpx import (
     codes,
 )
 from sqlparse import parse as parse_sql  # type: ignore
-from sqlparse.tokens import Token as TokenType  # type: ignore
 
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
@@ -472,21 +471,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 "bulk_insert does not support multi-statement queries"
             )
 
-        first_token = None
-        for token in statements[0].tokens:
-            if not token.is_whitespace:
-                first_token = token
-                break
-
-        if (
-            not first_token
-            or first_token.ttype != TokenType.Keyword
-            or first_token.value.upper() != "INSERT"
-        ):
-            token_val = first_token.value if first_token else "unknown"
+        statement_type = statements[0].get_type()
+        if statement_type != "INSERT":
             raise ProgrammingError(
                 f"bulk_insert is only supported for INSERT statements. "
-                f"Got query starting with: {token_val}"
+                f"Got {statement_type} statement"
             )
 
     async def _executemany_bulk_insert(
