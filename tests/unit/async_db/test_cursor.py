@@ -1,3 +1,4 @@
+import json
 import re
 import time
 from datetime import date, datetime
@@ -1505,3 +1506,133 @@ async def test_unsupported_paramstyle_raises(cursor: Cursor) -> None:
             await cursor.execute("SELECT 1")
     finally:
         db.paramstyle = original_paramstyle
+
+
+async def test_executemany_bulk_insert_qmark(
+    httpx_mock: HTTPXMock,
+    cursor: Cursor,
+    query_url: str,
+    python_query_data: List[List[ColType]],
+):
+    """executemany with bulk_insert=True concatenates INSERT queries with QMARK style."""
+
+    def bulk_insert_callback(request):
+        assert request.url.params.get("merge_prepared_statement_batches") == "true"
+
+        query = request.content.decode()
+        assert query.count("INSERT INTO") == 3
+        assert "; " in query
+
+        return Response(
+            status_code=200,
+            content=json.dumps(
+                {
+                    "data": [],
+                    "rows": 0,
+                    "statistics": {},
+                }
+            ),
+            headers={},
+        )
+
+    httpx_mock.add_callback(bulk_insert_callback, url=query_url)
+
+    result = await cursor.executemany(
+        "INSERT INTO test_table VALUES (?, ?)",
+        [(1, "a"), (2, "b"), (3, "c")],
+        bulk_insert=True,
+    )
+    assert result == 0
+
+
+async def test_executemany_bulk_insert_fb_numeric(
+    httpx_mock: HTTPXMock,
+    cursor: Cursor,
+    query_url: str,
+):
+    """executemany with bulk_insert=True and FB_NUMERIC style."""
+    import firebolt.async_db as db_module
+
+    original_paramstyle = db_module.paramstyle
+
+    try:
+        db_module.paramstyle = "fb_numeric"
+
+        def bulk_insert_callback(request):
+            assert request.url.params.get("merge_prepared_statement_batches") == "true"
+
+            query = request.content.decode()
+            assert query.count("INSERT INTO") == 3
+            assert "; " in query
+
+            query_params = json.loads(request.url.params.get("query_parameters", "[]"))
+            assert len(query_params) == 6
+            assert query_params[0]["name"] == "$1"
+            assert query_params[5]["name"] == "$6"
+
+            return Response(
+                status_code=200,
+                content=json.dumps(
+                    {
+                        "data": [],
+                        "rows": 0,
+                        "statistics": {},
+                    }
+                ),
+                headers={},
+            )
+
+        httpx_mock.add_callback(bulk_insert_callback, url=query_url)
+
+        result = await cursor.executemany(
+            "INSERT INTO test_table VALUES ($1, $2)",
+            [(1, "a"), (2, "b"), (3, "c")],
+            bulk_insert=True,
+        )
+        assert result == 0
+    finally:
+        db_module.paramstyle = original_paramstyle
+
+
+async def test_executemany_bulk_insert_non_insert_fails(cursor: Cursor):
+    """executemany with bulk_insert=True fails for non-INSERT queries."""
+    with raises(ProgrammingError, match="bulk_insert is only supported for INSERT"):
+        await cursor.executemany(
+            "SELECT * FROM test_table",
+            [()],
+            bulk_insert=True,
+        )
+
+    with raises(ProgrammingError, match="bulk_insert is only supported for INSERT"):
+        await cursor.executemany(
+            "UPDATE test_table SET col = ?",
+            [(1,)],
+            bulk_insert=True,
+        )
+
+    with raises(ProgrammingError, match="bulk_insert is only supported for INSERT"):
+        await cursor.executemany(
+            "DELETE FROM test_table WHERE id = ?",
+            [(1,)],
+            bulk_insert=True,
+        )
+
+
+async def test_executemany_bulk_insert_multi_statement_fails(cursor: Cursor):
+    """executemany with bulk_insert=True fails for multi-statement queries."""
+    with raises(ProgrammingError, match="does not support multi-statement"):
+        await cursor.executemany(
+            "INSERT INTO t1 VALUES (?); INSERT INTO t2 VALUES (?)",
+            [(1,), (2,)],
+            bulk_insert=True,
+        )
+
+
+async def test_executemany_bulk_insert_empty_params_fails(cursor: Cursor):
+    """executemany with bulk_insert=True fails with empty parameters."""
+    with raises(ProgrammingError, match="requires at least one parameter set"):
+        await cursor.executemany(
+            "INSERT INTO test_table VALUES (?)",
+            [],
+            bulk_insert=True,
+        )
