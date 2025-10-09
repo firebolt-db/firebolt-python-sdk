@@ -1527,6 +1527,7 @@ async def test_executemany_bulk_insert_qmark(
             status_code=200,
             content=json.dumps(
                 {
+                    "meta": [],
                     "data": [],
                     "rows": 0,
                     "statistics": {},
@@ -1576,6 +1577,7 @@ async def test_executemany_bulk_insert_fb_numeric(
                 status_code=200,
                 content=json.dumps(
                     {
+                        "meta": [],
                         "data": [],
                         "rows": 0,
                         "statistics": {},
