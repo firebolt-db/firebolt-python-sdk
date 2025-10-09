@@ -1535,7 +1535,9 @@ async def test_executemany_bulk_insert_qmark(
             headers={},
         )
 
-    httpx_mock.add_callback(bulk_insert_callback, url=query_url)
+    base_url = query_url.split("?")[0]
+    url_pattern = re.compile(re.escape(base_url))
+    httpx_mock.add_callback(bulk_insert_callback, url=url_pattern)
 
     result = await cursor.executemany(
         "INSERT INTO test_table VALUES (?, ?)",
@@ -1582,7 +1584,9 @@ async def test_executemany_bulk_insert_fb_numeric(
                 headers={},
             )
 
-        httpx_mock.add_callback(bulk_insert_callback, url=query_url)
+        base_url = query_url.split("?")[0]
+        url_pattern = re.compile(re.escape(base_url))
+        httpx_mock.add_callback(bulk_insert_callback, url=url_pattern)
 
         result = await cursor.executemany(
             "INSERT INTO test_table VALUES ($1, $2)",
