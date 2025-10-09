@@ -1530,7 +1530,11 @@ async def test_executemany_bulk_insert_qmark(
                     "meta": [],
                     "data": [],
                     "rows": 0,
-                    "statistics": {},
+                    "statistics": {
+                        "elapsed": 0.0,
+                        "rows_read": 0,
+                        "bytes_read": 0,
+                    },
                 }
             ),
             headers={},
@@ -1580,7 +1584,11 @@ async def test_executemany_bulk_insert_fb_numeric(
                         "meta": [],
                         "data": [],
                         "rows": 0,
-                        "statistics": {},
+                        "statistics": {
+                            "elapsed": 0.0,
+                            "rows_read": 0,
+                            "bytes_read": 0,
+                        },
                     }
                 ),
                 headers={},
