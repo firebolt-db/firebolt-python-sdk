@@ -437,6 +437,59 @@ as values in the second argument.
     cursor.close()
 
 
+Bulk insert for improved performance
+--------------------------------------
+
+For inserting large amounts of data more efficiently, you can use the ``bulk_insert`` parameter
+with ``executemany()``. This concatenates multiple INSERT statements into a single batch request,
+which can significantly improve performance when inserting many rows.
+
+**Note:** The ``bulk_insert`` parameter only works with INSERT statements. Using it with other
+statement types (SELECT, UPDATE, DELETE, etc.) will raise an error.
+
+Example with QMARK parameter style::
+
+    import firebolt.db
+    # Explicitly set paramstyle to "qmark" for QMARK style
+    firebolt.db.paramstyle = "qmark"
+
+    cursor.executemany(
+        "INSERT INTO test_table VALUES (?, ?, ?)",
+        (
+            (1, "apple", "2019-01-01"),
+            (2, "banana", "2020-01-01"),
+            (3, "carrot", "2021-01-01"),
+            (4, "donut", "2022-01-01"),
+            (5, "eggplant", "2023-01-01")
+        ),
+        bulk_insert=True  # Enable bulk insert for better performance (important-comment)
+    )
+
+Example with FB_NUMERIC parameter style::
+
+    import firebolt.db
+    # Set paramstyle to "fb_numeric" for server-side parameter substitution
+    firebolt.db.paramstyle = "fb_numeric"
+
+    cursor.executemany(
+        "INSERT INTO test_table VALUES ($1, $2, $3)",
+        (
+            (1, "apple", "2019-01-01"),
+            (2, "banana", "2020-01-01"),
+            (3, "carrot", "2021-01-01"),
+            (4, "donut", "2022-01-01"),
+            (5, "eggplant", "2023-01-01")
+        ),
+        bulk_insert=True  # Enable bulk insert for better performance (important-comment)
+    )
+
+    cursor.close()
+
+When ``bulk_insert=True``, the SDK concatenates all INSERT statements into a single batch
+and sends them to the server with the ``merge_prepared_statement_batches=true`` parameter,
+allowing for optimized batch processing.
+
+
 Setting session parameters
 --------------------------------------
 
