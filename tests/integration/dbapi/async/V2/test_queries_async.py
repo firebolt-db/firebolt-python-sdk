@@ -282,25 +282,34 @@ async def test_parameterized_query_with_special_chars(connection: Connection) ->
         ], "Invalid data in table after parameterized insert"
 
 
-async def test_executemany_bulk_insert(connection: Connection) -> None:
+@mark.parametrize("paramstyle", ["qmark", "fb_numeric"])
+async def test_executemany_bulk_insert(connection: Connection, paramstyle: str) -> None:
     """executemany with bulk_insert=True inserts data correctly."""
-    async with connection.cursor() as c:
-        await c.execute('DROP TABLE IF EXISTS "test_bulk_insert_async"')
-        await c.execute(
-            'CREATE FACT TABLE "test_bulk_insert_async"(id int, name string) primary index id'
-        )
+    import firebolt.async_db as db_module
 
-        import firebolt.async_db as db_module
+    original_paramstyle = db_module.paramstyle
 
-        original_paramstyle = db_module.paramstyle
-        db_module.paramstyle = "qmark"
+    try:
+        db_module.paramstyle = paramstyle
 
-        try:
-            await c.executemany(
-                'INSERT INTO "test_bulk_insert_async" VALUES (?, ?)',
-                [(1, "alice"), (2, "bob"), (3, "charlie")],
-                bulk_insert=True,
+        async with connection.cursor() as c:
+            await c.execute('DROP TABLE IF EXISTS "test_bulk_insert_async"')
+            await c.execute(
+                'CREATE FACT TABLE "test_bulk_insert_async"(id int, name string) primary index id'
             )
+
+            if paramstyle == "qmark":
+                await c.executemany(
+                    'INSERT INTO "test_bulk_insert_async" VALUES (?, ?)',
+                    [(1, "alice"), (2, "bob"), (3, "charlie")],
+                    bulk_insert=True,
+                )
+            else:
+                await c.executemany(
+                    'INSERT INTO "test_bulk_insert_async" VALUES ($1, $2)',
+                    [(1, "alice"), (2, "bob"), (3, "charlie")],
+                    bulk_insert=True,
+                )
 
             await c.execute('SELECT * FROM "test_bulk_insert_async" ORDER BY id')
             data = await c.fetchall()
@@ -308,30 +317,10 @@ async def test_executemany_bulk_insert(connection: Connection) -> None:
             assert data[0] == [1, "alice"]
             assert data[1] == [2, "bob"]
             assert data[2] == [3, "charlie"]
-        finally:
-            db_module.paramstyle = original_paramstyle
 
-        await c.execute('DELETE FROM "test_bulk_insert_async"')
-
-        db_module.paramstyle = "fb_numeric"
-
-        try:
-            await c.executemany(
-                'INSERT INTO "test_bulk_insert_async" VALUES ($1, $2)',
-                [(4, "david"), (5, "eve"), (6, "frank")],
-                bulk_insert=True,
-            )
-
-            await c.execute('SELECT * FROM "test_bulk_insert_async" ORDER BY id')
-            data = await c.fetchall()
-            assert len(data) == 3
-            assert data[0] == [4, "david"]
-            assert data[1] == [5, "eve"]
-            assert data[2] == [6, "frank"]
-        finally:
-            db_module.paramstyle = original_paramstyle
-
-        await c.execute('DROP TABLE "test_bulk_insert_async"')
+            await c.execute('DROP TABLE "test_bulk_insert_async"')
+    finally:
+        db_module.paramstyle = original_paramstyle
 
 
 async def test_multi_statement_query(connection: Connection) -> None:

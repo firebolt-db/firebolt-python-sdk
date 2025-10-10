@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 import re
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
 
 from httpx import URL, Response
 
 from firebolt.client.auth.base import Auth
 from firebolt.client.client import AsyncClient, Client
-from firebolt.common._types import RawColType, SetParameter
+from firebolt.common._types import ParameterType, RawColType, SetParameter
 from firebolt.common.constants import (
     DISALLOWED_PARAMETER_LIST,
     IMMUTABLE_PARAMETER_LIST,
@@ -27,7 +27,11 @@ from firebolt.utils.cache import (
     SecureCacheKey,
     _firebolt_cache,
 )
-from firebolt.utils.exception import ConfigurationError, FireboltError
+from firebolt.utils.exception import (
+    ConfigurationError,
+    FireboltError,
+    ProgrammingError,
+)
 from firebolt.utils.util import fix_url_schema
 
 logger = logging.getLogger(__name__)
@@ -236,7 +240,6 @@ class BaseCursor:
             "aws_key_id|credentials", query, flags=re.IGNORECASE
         ):
             logger.debug(f"Running query: {query}")
-
     @property
     def engine_name(self) -> str:
         """
@@ -317,3 +320,44 @@ class BaseCursor:
             self._client.auth.secret,
         )
         _firebolt_cache.set(cache_key, record)
+
+    def _validate_bulk_insert_query(self, query: str) -> None:
+        """Validate that query is an INSERT statement for bulk_insert."""
+        query_normalized = query.lstrip().lower()
+
+        if not query_normalized.startswith("insert"):
+            raise ConfigurationError(
+                "bulk_insert is only supported for INSERT statements"
+            )
+
+        if ";" in query.strip().rstrip(";"):
+            raise ProgrammingError(
+                "bulk_insert does not support multi-statement queries"
+            )
+
+    def _prepare_bulk_insert(
+        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
+    ) -> tuple[str, Sequence[Sequence[ParameterType]]]:
+        """Execute multiple INSERT queries as a single batch."""
+        self._validate_bulk_insert_query(query)
+
+        if not parameters_seq:
+            raise ProgrammingError("bulk_insert requires at least one parameter set")
+
+        # For bulk insert, we need to create unique parameter names for each INSERT
+        # Example: ($1, $2); ($3, $4); ($5, $6) instead of ($1, $2); ($1, $2); ($1, $2)
+        queries = []
+        param_offset = 0
+        for param_set in parameters_seq:
+            # Replace parameter placeholders with unique numbers
+            modified_query = query
+            for i in range(len(param_set)):
+                old_param = f"${i + 1}"
+                new_param = f"${param_offset + i + 1}"
+                modified_query = modified_query.replace(old_param, new_param)
+            queries.append(modified_query)
+            param_offset += len(param_set)
+
+        combined_query = "; ".join(queries)
+        parameters = [param for param_set in parameters_seq for param in param_set]
+        return combined_query, [parameters]

@@ -283,25 +283,34 @@ def test_parameterized_query(connection: Connection) -> None:
         )
 
 
-def test_executemany_bulk_insert(connection: Connection) -> None:
+@mark.parametrize("paramstyle", ["qmark", "fb_numeric"])
+def test_executemany_bulk_insert(connection: Connection, paramstyle: str) -> None:
     """executemany with bulk_insert=True inserts data correctly."""
-    with connection.cursor() as c:
-        c.execute('DROP TABLE IF EXISTS "test_bulk_insert"')
-        c.execute(
-            'CREATE FACT TABLE "test_bulk_insert"(id int, name string) primary index id'
-        )
+    import firebolt.db as db_module
 
-        import firebolt.db as db_module
+    original_paramstyle = db_module.paramstyle
 
-        original_paramstyle = db_module.paramstyle
-        db_module.paramstyle = "qmark"
+    try:
+        db_module.paramstyle = paramstyle
 
-        try:
-            c.executemany(
-                'INSERT INTO "test_bulk_insert" VALUES (?, ?)',
-                [(1, "alice"), (2, "bob"), (3, "charlie")],
-                bulk_insert=True,
+        with connection.cursor() as c:
+            c.execute('DROP TABLE IF EXISTS "test_bulk_insert"')
+            c.execute(
+                'CREATE FACT TABLE "test_bulk_insert"(id int, name string) primary index id'
             )
+
+            if paramstyle == "qmark":
+                c.executemany(
+                    'INSERT INTO "test_bulk_insert" VALUES (?, ?)',
+                    [(1, "alice"), (2, "bob"), (3, "charlie")],
+                    bulk_insert=True,
+                )
+            else:
+                c.executemany(
+                    'INSERT INTO "test_bulk_insert" VALUES ($1, $2)',
+                    [(1, "alice"), (2, "bob"), (3, "charlie")],
+                    bulk_insert=True,
+                )
 
             c.execute('SELECT * FROM "test_bulk_insert" ORDER BY id')
             data = c.fetchall()
@@ -309,30 +318,10 @@ def test_executemany_bulk_insert(connection: Connection) -> None:
             assert data[0] == [1, "alice"]
             assert data[1] == [2, "bob"]
             assert data[2] == [3, "charlie"]
-        finally:
-            db_module.paramstyle = original_paramstyle
 
-        c.execute('DELETE FROM "test_bulk_insert"')
-
-        db_module.paramstyle = "fb_numeric"
-
-        try:
-            c.executemany(
-                'INSERT INTO "test_bulk_insert" VALUES ($1, $2)',
-                [(4, "david"), (5, "eve"), (6, "frank")],
-                bulk_insert=True,
-            )
-
-            c.execute('SELECT * FROM "test_bulk_insert" ORDER BY id')
-            data = c.fetchall()
-            assert len(data) == 3
-            assert data[0] == [4, "david"]
-            assert data[1] == [5, "eve"]
-            assert data[2] == [6, "frank"]
-        finally:
-            db_module.paramstyle = original_paramstyle
-
-        c.execute('DROP TABLE "test_bulk_insert"')
+            c.execute('DROP TABLE "test_bulk_insert"')
+    finally:
+        db_module.paramstyle = original_paramstyle
 
 
 def test_multi_statement_query(connection: Connection) -> None:
