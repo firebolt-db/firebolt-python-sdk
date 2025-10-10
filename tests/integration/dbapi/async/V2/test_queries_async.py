@@ -6,6 +6,7 @@ from typing import Callable, List, Tuple
 
 from pytest import mark, raises
 
+import firebolt.async_db
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.connection import connect
 from firebolt.client.auth.base import Auth
@@ -285,12 +286,10 @@ async def test_parameterized_query_with_special_chars(connection: Connection) ->
 @mark.parametrize("paramstyle", ["qmark", "fb_numeric"])
 async def test_executemany_bulk_insert(connection: Connection, paramstyle: str) -> None:
     """executemany with bulk_insert=True inserts data correctly."""
-    import firebolt.async_db as db_module
-
-    original_paramstyle = db_module.paramstyle
+    original_paramstyle = firebolt.async_db.paramstyle
 
     try:
-        db_module.paramstyle = paramstyle
+        firebolt.async_db.paramstyle = paramstyle
 
         async with connection.cursor() as c:
             await c.execute('DROP TABLE IF EXISTS "test_bulk_insert_async"')
@@ -320,7 +319,7 @@ async def test_executemany_bulk_insert(connection: Connection, paramstyle: str) 
 
             await c.execute('DROP TABLE "test_bulk_insert_async"')
     finally:
-        db_module.paramstyle = original_paramstyle
+        firebolt.async_db.paramstyle = original_paramstyle
 
 
 async def test_multi_statement_query(connection: Connection) -> None:

@@ -7,6 +7,7 @@ from typing import Any, Callable, List, Tuple
 
 from pytest import mark, raises
 
+import firebolt.db
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
@@ -286,12 +287,10 @@ def test_parameterized_query(connection: Connection) -> None:
 @mark.parametrize("paramstyle", ["qmark", "fb_numeric"])
 def test_executemany_bulk_insert(connection: Connection, paramstyle: str) -> None:
     """executemany with bulk_insert=True inserts data correctly."""
-    import firebolt.db as db_module
-
-    original_paramstyle = db_module.paramstyle
+    original_paramstyle = firebolt.db.paramstyle
 
     try:
-        db_module.paramstyle = paramstyle
+        firebolt.db.paramstyle = paramstyle
 
         with connection.cursor() as c:
             c.execute('DROP TABLE IF EXISTS "test_bulk_insert"')
@@ -321,7 +320,7 @@ def test_executemany_bulk_insert(connection: Connection, paramstyle: str) -> Non
 
             c.execute('DROP TABLE "test_bulk_insert"')
     finally:
-        db_module.paramstyle = original_paramstyle
+        firebolt.db.paramstyle = original_paramstyle
 
 
 def test_multi_statement_query(connection: Connection) -> None:
