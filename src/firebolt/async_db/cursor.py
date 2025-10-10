@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import logging
 import time
 import warnings
@@ -462,20 +461,16 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
     def _validate_bulk_insert_query(self, query: str) -> None:
         """Validate that query is an INSERT statement for bulk_insert."""
-        statements = parse_sql(query)
-        if not statements:
-            raise ProgrammingError("bulk_insert requires a valid INSERT statement")
+        query_normalized = query.lstrip().lower()
 
-        if len(statements) > 1:
+        if not query_normalized.startswith("insert"):
             raise ProgrammingError(
-                "bulk_insert does not support multi-statement queries"
+                "bulk_insert is only supported for INSERT statements"
             )
 
-        statement_type = statements[0].get_type()
-        if statement_type != "INSERT":
+        if ";" in query.strip().rstrip(";"):
             raise ProgrammingError(
-                f"bulk_insert is only supported for INSERT statements. "
-                f"Got {statement_type} statement"
+                "bulk_insert does not support multi-statement queries"
             )
 
     async def _executemany_bulk_insert(
@@ -497,37 +492,32 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         except ValueError:
             raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
 
+        concatenated_query = "; ".join([query] * len(parameters_seq))
+
         await self._close_rowset_and_reset()
         self._row_set = InMemoryAsyncRowSet()
 
         try:
             if parameter_style == ParameterStyle.FB_NUMERIC:
-                concatenated_query = "; ".join([query] * len(parameters_seq))
-
                 flattened_params: List[ParameterType] = []
                 for param_set in parameters_seq:
                     flattened_params.extend(param_set)
 
-                query_parameters = [
-                    {
-                        "name": f"${i+1}",
-                        "value": self._formatter.convert_parameter_for_serialization(
-                            value
-                        ),
-                    }
-                    for i, value in enumerate(flattened_params)
-                ]
-
-                query_params: Dict[str, Any] = {
-                    "output_format": self._get_output_format(False),
-                    "merge_prepared_statement_batches": "true",
-                }
-                if query_parameters:
-                    query_params["query_parameters"] = json.dumps(query_parameters)
-
                 Cursor._log_query(concatenated_query)
+                timeout_controller = TimeoutController(timeout_seconds)
+                timeout_controller.raise_if_timeout()
+
+                query_params = self._build_fb_numeric_query_params(
+                    [flattened_params],
+                    streaming=False,
+                    async_execution=False,
+                    extra_params={"merge_prepared_statement_batches": "true"},
+                )
+
                 resp = await self._api_request(
-                    concatenated_query, query_params, timeout=timeout_seconds
+                    concatenated_query,
+                    query_params,
+                    timeout=timeout_controller.remaining(),
                 )
                 await self._raise_if_error(resp)
                 await self._parse_response_headers(resp.headers)

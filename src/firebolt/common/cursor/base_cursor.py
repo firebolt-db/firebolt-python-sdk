@@ -243,6 +243,7 @@ class BaseCursor:
         parameters: Sequence[Sequence[ParameterType]],
         streaming: bool,
         async_execution: bool,
+        extra_params: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Build query parameters dictionary for fb_numeric paramstyle.
@@ -252,6 +253,7 @@ class BaseCursor:
                        only the first parameter sequence is used.
             streaming: Whether streaming is enabled
             async_execution: Whether async execution is enabled
+            extra_params: Optional additional query parameters to include
 
         Returns:
             Dictionary of query parameters to send with the request
@@ -272,6 +274,8 @@ class BaseCursor:
             query_params["query_parameters"] = json.dumps(query_parameters)
         if async_execution:
             query_params["async"] = True
+        if extra_params:
+            query_params.update(extra_params)
         return query_params
 
     @property
