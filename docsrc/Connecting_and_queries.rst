@@ -444,26 +444,9 @@ For inserting large amounts of data more efficiently, you can use the ``bulk_ins
 with ``executemany()``. This concatenates multiple INSERT statements into a single batch request,
 which can significantly improve performance when inserting many rows.
 
-**Note:** The ``bulk_insert`` parameter only works with INSERT statements. Using it with other
-statement types (SELECT, UPDATE, DELETE, etc.) will raise an error.
-
-Example with QMARK parameter style::
-
-    import firebolt.db
-    # Explicitly set paramstyle to "qmark" for QMARK style
-    firebolt.db.paramstyle = "qmark"
-
-    cursor.executemany(
-        "INSERT INTO test_table VALUES (?, ?, ?)",
-        (
-            (1, "apple", "2019-01-01"),
-            (2, "banana", "2020-01-01"),
-            (3, "carrot", "2021-01-01"),
-            (4, "donut", "2022-01-01"),
-            (5, "eggplant", "2023-01-01")
-        ),
-        bulk_insert=True  # Enable bulk insert for better performance (important-comment)
-    )
+**Note:** The ``bulk_insert`` parameter only works with INSERT statements and requires the
+``fb_numeric`` parameter style. Using it with other statement types or parameter styles will
+raise an error.
 
 Example with FB_NUMERIC parameter style::
 
