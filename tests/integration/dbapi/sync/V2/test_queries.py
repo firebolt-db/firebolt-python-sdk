@@ -7,7 +7,6 @@ from typing import Any, Callable, List, Tuple
 
 from pytest import mark, raises
 
-import firebolt.db
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
@@ -284,32 +283,21 @@ def test_parameterized_query(connection: Connection) -> None:
         )
 
 
-@mark.parametrize("paramstyle", ["qmark", "fb_numeric"])
-def test_executemany_bulk_insert(connection: Connection, paramstyle: str) -> None:
+def test_executemany_bulk_insert(
+    connection: Connection, fb_numeric_paramstyle: None
+) -> None:
     """executemany with bulk_insert=True inserts data correctly."""
-    original_paramstyle = firebolt.db.paramstyle
-
     try:
-        firebolt.db.paramstyle = paramstyle
-
         with connection.cursor() as c:
             c.execute('DROP TABLE IF EXISTS "test_bulk_insert"')
             c.execute(
                 'CREATE FACT TABLE "test_bulk_insert"(id int, name string) primary index id'
             )
-
-            if paramstyle == "qmark":
-                c.executemany(
-                    'INSERT INTO "test_bulk_insert" VALUES (?, ?)',
-                    [(1, "alice"), (2, "bob"), (3, "charlie")],
-                    bulk_insert=True,
-                )
-            else:
-                c.executemany(
-                    'INSERT INTO "test_bulk_insert" VALUES ($1, $2)',
-                    [(1, "alice"), (2, "bob"), (3, "charlie")],
-                    bulk_insert=True,
-                )
+            c.executemany(
+                'INSERT INTO "test_bulk_insert" VALUES ($1, $2)',
+                [(1, "alice"), (2, "bob"), (3, "charlie")],
+                bulk_insert=True,
+            )
 
             c.execute('SELECT * FROM "test_bulk_insert" ORDER BY id')
             data = c.fetchall()
@@ -317,10 +305,9 @@ def test_executemany_bulk_insert(connection: Connection, paramstyle: str) -> Non
             assert data[0] == [1, "alice"]
             assert data[1] == [2, "bob"]
             assert data[2] == [3, "charlie"]
-
-            c.execute('DROP TABLE "test_bulk_insert"')
     finally:
-        firebolt.db.paramstyle = original_paramstyle
+        with connection.cursor() as c:
+            c.execute('DROP TABLE IF EXISTS "test_bulk_insert"')
 
 
 def test_multi_statement_query(connection: Connection) -> None:

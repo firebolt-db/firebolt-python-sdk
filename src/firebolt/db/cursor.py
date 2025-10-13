@@ -24,7 +24,6 @@ from httpx import (
     TimeoutException,
     codes,
 )
-from sqlparse import parse as parse_sql  # type: ignore
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
@@ -56,6 +55,7 @@ from firebolt.common.row_set.synchronous.streaming import StreamingRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.cache import ConnectionInfo, DatabaseInfo, EngineInfo
 from firebolt.utils.exception import (
+    ConfigurationError,
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltError,
@@ -225,6 +225,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         timeout: Optional[float] = None,
         async_execution: bool = False,
         streaming: bool = False,
+        bulk_insert: bool = False,
     ) -> None:
         self._close_rowset_and_reset()
         self._row_set = StreamingRowSet() if streaming else InMemoryRowSet()
@@ -237,7 +238,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             )
 
             plan = statement_planner.create_execution_plan(
-                raw_query, parameters, skip_parsing, async_execution, streaming
+                raw_query, parameters, skip_parsing, async_execution, streaming, bulk_insert
             )
             self._execute_plan(plan, timeout)
             self._state = CursorState.DONE
@@ -424,103 +425,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         Returns:
             int: Query row count.
         """
-        if bulk_insert:
-            return self._executemany_bulk_insert(query, parameters_seq, timeout_seconds)
-        self._do_execute(query, parameters_seq, timeout=timeout_seconds)
-        return self.rowcount
-
-    def _validate_bulk_insert_query(self, query: str) -> None:
-        """Validate that query is an INSERT statement for bulk_insert."""
-        query_normalized = query.lstrip().lower()
-
-        if not query_normalized.startswith("insert"):
-            raise ProgrammingError(
-                "bulk_insert is only supported for INSERT statements"
-            )
-
-        if ";" in query.strip().rstrip(";"):
-            raise ProgrammingError(
-                "bulk_insert does not support multi-statement queries"
-            )
-
-    def _executemany_bulk_insert(
-        self,
-        query: str,
-        parameters_seq: Sequence[Sequence[ParameterType]],
-        timeout_seconds: Optional[float],
-    ) -> int:
-        """Execute multiple INSERT queries as a single batch."""
-        self._validate_bulk_insert_query(query)
-
-        if not parameters_seq:
-            raise ProgrammingError("bulk_insert requires at least one parameter set")
-
-        from firebolt.db import paramstyle
-
-        try:
-            parameter_style = ParameterStyle(paramstyle)
-        except ValueError:
-            raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
-
-        concatenated_query = "; ".join([query] * len(parameters_seq))
-
-        self._close_rowset_and_reset()
-        self._row_set = InMemoryRowSet()
-
-        try:
-            if parameter_style == ParameterStyle.FB_NUMERIC:
-                flattened_params: List[ParameterType] = []
-                for param_set in parameters_seq:
-                    flattened_params.extend(param_set)
-
-                Cursor._log_query(concatenated_query)
-                timeout_controller = TimeoutController(timeout_seconds)
-                timeout_controller.raise_if_timeout()
-
-                query_params = self._build_fb_numeric_query_params(
-                    [flattened_params],
-                    streaming=False,
-                    async_execution=False,
-                    extra_params={"merge_prepared_statement_batches": "true"},
-                )
-
-                resp = self._api_request(
-                    concatenated_query,
-                    query_params,
-                    timeout=timeout_controller.remaining(),
-                )
-                self._raise_if_error(resp)
-                self._parse_response_headers(resp.headers)
-                self._append_row_set_from_response(resp)
-            else:
-                formatted_queries = []
-                statements = parse_sql(query)
-                for param_set in parameters_seq:
-                    formatted_query = self._formatter.format_statement(
-                        statements[0], param_set
-                    )
-                    formatted_queries.append(formatted_query)
-
-                concatenated_query = "; ".join(formatted_queries)
-
-                query_params = {
-                    "output_format": self._get_output_format(False),
-                    "merge_prepared_statement_batches": "true",
-                }
-
-                Cursor._log_query(concatenated_query)
-                resp = self._api_request(
-                    concatenated_query, query_params, timeout=timeout_seconds
-                )
-                self._raise_if_error(resp)
-                self._parse_response_headers(resp.headers)
-                self._append_row_set_from_response(resp)
-
-            self._state = CursorState.DONE
-        except Exception:
-            self._state = CursorState.ERROR
-            raise
-
+        self._do_execute(
+            query, parameters_seq, timeout=timeout_seconds, bulk_insert=bulk_insert
+        )
         return self.rowcount
 
     @check_not_closed
