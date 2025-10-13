@@ -220,6 +220,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         await self._close_rowset_and_reset()
         self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
+
         # Import paramstyle from module level
         from firebolt.async_db import paramstyle
 
@@ -227,34 +228,48 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             parameter_style = ParameterStyle(paramstyle)
         except ValueError:
             raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
+
+        # Validate bulk_insert parameter early
+        if bulk_insert and parameter_style != ParameterStyle.FB_NUMERIC:
+            raise ConfigurationError("bulk_insert is only supported for fb_numeric")
+
         try:
+            # Handle FB_NUMERIC parameter style
             if parameter_style == ParameterStyle.FB_NUMERIC:
-                if bulk_insert:
-                    raw_query, parameters = self._prepare_bulk_insert(
-                        raw_query, parameters
-                    )
+                processed_query, processed_params = (
+                    self._prepare_bulk_insert(raw_query, parameters)
+                    if bulk_insert
+                    else (raw_query, parameters)
+                )
                 await self._execute_fb_numeric(
-                    raw_query, parameters, timeout, async_execution, streaming
+                    processed_query,
+                    processed_params,
+                    timeout,
+                    async_execution,
+                    streaming,
                 )
-            else:
-                if bulk_insert:
-                    raise ConfigurationError(
-                        "bulk_insert is only supported for fb_numeric"
-                    )
-                queries: List[Union[SetParameter, str]] = (
-                    [raw_query]
-                    if skip_parsing
-                    else self._formatter.split_format_sql(raw_query, parameters)
+                self._state = CursorState.DONE
+                return
+
+            # Handle other parameter styles
+            queries = (
+                [raw_query]
+                if skip_parsing
+                else self._formatter.split_format_sql(raw_query, parameters)
+            )
+
+            # Validate async execution with multi-statement queries early
+            if len(queries) > 1 and async_execution:
+                raise FireboltError(
+                    "Server side async does not support multi-statement queries"
                 )
-                timeout_controller = TimeoutController(timeout)
-                if len(queries) > 1 and async_execution:
-                    raise FireboltError(
-                        "Server side async does not support multi-statement queries"
-                    )
-                for query in queries:
-                    await self._execute_single_query(
-                        query, timeout_controller, async_execution, streaming
-                    )
+
+            timeout_controller = TimeoutController(timeout)
+            for query in queries:
+                await self._execute_single_query(
+                    query, timeout_controller, async_execution, streaming
+                )
+
             self._state = CursorState.DONE
         except Exception:
             self._state = CursorState.ERROR
