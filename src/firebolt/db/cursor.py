@@ -229,6 +229,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         self._close_rowset_and_reset()
         self._row_set = StreamingRowSet() if streaming else InMemoryRowSet()
+
         # Import paramstyle from module level
         from firebolt.db import paramstyle
 

@@ -223,6 +223,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     ) -> None:
         await self._close_rowset_and_reset()
         self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
+
         # Import paramstyle from module level
         from firebolt.async_db import paramstyle
 
