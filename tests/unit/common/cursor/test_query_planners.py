@@ -304,16 +304,6 @@ def test_query_planner_factory_unsupported_paramstyle(formatter):
         QueryPlannerFactory.create_planner("unsupported", formatter)
 
 
-def test_query_planner_factory_get_supported_paramstyles():
-    """Test getting supported parameter styles."""
-    supported = QueryPlannerFactory.get_supported_paramstyles()
-
-    assert isinstance(supported, list)
-    assert "fb_numeric" in supported
-    assert "qmark" in supported
-    assert len(supported) == 2
-
-
 # Edge cases and error conditions
 def test_fb_numeric_empty_parameters_list(formatter):
     """Test fb_numeric with empty parameters list."""
@@ -359,16 +349,3 @@ def test_execution_plan_immutability():
 
     assert plan.queries != plan2.queries
     assert plan.is_multi_statement != plan2.is_multi_statement
-
-
-def test_supported_paramstyles_immutability():
-    """Test that get_supported_paramstyles returns a copy."""
-    styles1 = QueryPlannerFactory.get_supported_paramstyles()
-    styles2 = QueryPlannerFactory.get_supported_paramstyles()
-
-    # Modify one list
-    styles1.append("test")
-
-    # Should not affect the other
-    assert "test" not in styles2
-    assert len(styles2) == 2

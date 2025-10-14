@@ -164,12 +164,3 @@ class QueryPlannerFactory:
             raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
 
         return planner_class(formatter)
-
-    @classmethod
-    def get_supported_paramstyles(cls) -> List[str]:
-        """Get list of supported parameter styles.
-
-        Returns:
-            List of supported paramstyle strings
-        """
-        return list(cls._PLANNER_CLASSES.keys())
