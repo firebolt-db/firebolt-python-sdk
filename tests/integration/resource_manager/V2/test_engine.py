@@ -27,29 +27,31 @@ def test_create_start_stop_engine(
         auto_stop=120,
     )
     assert engine.name == name
+    database = None
 
     try:
         database = rm.databases.create(name=name)
         assert database.name == name
 
-        try:
-            engine.attach_to_database(database)
-            assert engine.database == database
+        engine.attach_to_database(database)
+        assert engine.database == database
 
-            engine.start()
-            assert engine.current_status == EngineStatus.RUNNING
+        engine.start()
+        assert engine.current_status == EngineStatus.RUNNING
 
-            engine.stop()
-            assert engine.current_status in {
-                EngineStatus.STOPPING,
-                EngineStatus.STOPPED,
-            }
-        finally:
-            database.delete()
+        engine.stop()
+        assert engine.current_status in {
+            EngineStatus.STOPPING,
+            EngineStatus.STOPPED,
+        }
 
     finally:
-        engine.stop()
-        engine.delete()
+        # Engine needs to be deleted first
+        if engine:
+            engine.stop()
+            engine.delete()
+        if database:
+            database.delete()
 
 
 ParamValue = namedtuple("ParamValue", "set expected")
