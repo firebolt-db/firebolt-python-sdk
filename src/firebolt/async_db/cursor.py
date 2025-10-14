@@ -232,7 +232,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             plan = statement_planner.create_execution_plan(
                 raw_query, parameters, skip_parsing, async_execution, streaming
             )
-            await self._execute_plan(plan, timeout, async_execution, streaming)
+            await self._execute_plan(plan, timeout)
             self._state = CursorState.DONE
         except Exception:
             self._state = CursorState.ERROR
@@ -242,15 +242,13 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self,
         plan: ExecutionPlan,
         timeout: Optional[float],
-        async_execution: bool,
-        streaming: bool,
     ) -> None:
         """Execute an execution plan."""
         timeout_controller = TimeoutController(timeout)
 
         for query in plan.queries:
             if isinstance(query, SetParameter):
-                if async_execution:
+                if plan.async_execution:
                     raise FireboltError(
                         "Server side async does not support set statements, "
                         "please use execute to set this parameter"
@@ -264,8 +262,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                     query,
                     plan.query_params,
                     timeout_controller,
-                    async_execution,
-                    streaming,
+                    plan.async_execution,
+                    plan.streaming,
                 )
 
     async def _execute_single_query(

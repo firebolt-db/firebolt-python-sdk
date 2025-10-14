@@ -25,6 +25,8 @@ class ExecutionPlan:
     queries: List[Union[SetParameter, str]]
     query_params: Optional[Dict[str, Any]] = None
     is_multi_statement: bool = False
+    async_execution: bool = False
+    streaming: bool = False
 
 
 class BaseStatementPlanner(ABC):
@@ -69,7 +71,11 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
             parameters, streaming, async_execution
         )
         return ExecutionPlan(
-            queries=[raw_query], query_params=query_params, is_multi_statement=False
+            queries=[raw_query],
+            query_params=query_params,
+            is_multi_statement=False,
+            async_execution=async_execution,
+            streaming=streaming,
         )
 
     def _build_fb_numeric_query_params(
@@ -132,6 +138,8 @@ class QmarkStatementPlanner(BaseStatementPlanner):
             queries=queries,
             query_params=query_params,
             is_multi_statement=len(queries) > 1,
+            async_execution=async_execution,
+            streaming=streaming,
         )
 
 
