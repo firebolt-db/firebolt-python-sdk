@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Query planning handlers for different parameter styles."""
+"""Statement planning handlers for different parameter styles."""
 
 import json
 from abc import ABC, abstractmethod
@@ -27,11 +27,11 @@ class ExecutionPlan:
     is_multi_statement: bool = False
 
 
-class BaseQueryPlanner(ABC):
-    """Base class for query planning handlers."""
+class BaseStatementPlanner(ABC):
+    """Base class for statement planning handlers."""
 
     def __init__(self, formatter: StatementFormatter) -> None:
-        """Initialize query planner with required dependencies."""
+        """Initialize statement planner with required dependencies."""
         self.formatter = formatter
 
     @abstractmethod
@@ -43,7 +43,7 @@ class BaseQueryPlanner(ABC):
         async_execution: bool = False,
         streaming: bool = False,
     ) -> ExecutionPlan:
-        """Create an execution plan for the given query and parameters."""
+        """Create an execution plan for the given statement and parameters."""
 
     @staticmethod
     def _get_output_format(streaming: bool) -> str:
@@ -53,8 +53,8 @@ class BaseQueryPlanner(ABC):
         return JSON_OUTPUT_FORMAT
 
 
-class FbNumericQueryPlanner(BaseQueryPlanner):
-    """Query planner for fb_numeric parameter style."""
+class FbNumericStatementPlanner(BaseStatementPlanner):
+    """Statement planner for fb_numeric parameter style."""
 
     def create_execution_plan(
         self,
@@ -98,8 +98,8 @@ class FbNumericQueryPlanner(BaseQueryPlanner):
         return query_params
 
 
-class QmarkQueryPlanner(BaseQueryPlanner):
-    """Query planner for qmark parameter style."""
+class QmarkStatementPlanner(BaseStatementPlanner):
+    """Statement planner for qmark parameter style."""
 
     def create_execution_plan(
         self,
@@ -135,26 +135,26 @@ class QmarkQueryPlanner(BaseQueryPlanner):
         )
 
 
-class QueryPlannerFactory:
-    """Factory for creating query planner instances based on paramstyle."""
+class StatementPlannerFactory:
+    """Factory for creating statement planner instances based on paramstyle."""
 
     _PLANNER_CLASSES = {
-        "fb_numeric": FbNumericQueryPlanner,
-        "qmark": QmarkQueryPlanner,
+        "fb_numeric": FbNumericStatementPlanner,
+        "qmark": QmarkStatementPlanner,
     }
 
     @classmethod
     def create_planner(
         cls, paramstyle: str, formatter: StatementFormatter
-    ) -> BaseQueryPlanner:
-        """Create a query planner instance for the given paramstyle.
+    ) -> BaseStatementPlanner:
+        """Create a statement planner instance for the given paramstyle.
 
         Args:
             paramstyle: The parameter style ('fb_numeric' or 'qmark')
-            formatter: StatementFormatter instance for query processing
+            formatter: StatementFormatter instance for statement processing
 
         Returns:
-            Appropriate query planner instance
+            Appropriate statement planner instance
 
         Raises:
             ProgrammingError: If paramstyle is not supported

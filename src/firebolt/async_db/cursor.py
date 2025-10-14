@@ -37,9 +37,9 @@ from firebolt.common.cursor.decorators import (
     check_not_closed,
     check_query_executed,
 )
-from firebolt.common.cursor.query_planners import (
+from firebolt.common.cursor.statement_planners import (
     ExecutionPlan,
-    QueryPlannerFactory,
+    StatementPlannerFactory,
 )
 from firebolt.common.row_set.asynchronous.base import BaseAsyncRowSet
 from firebolt.common.row_set.asynchronous.in_memory import InMemoryAsyncRowSet
@@ -225,9 +225,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         from firebolt.async_db import paramstyle
 
         try:
-            planner = QueryPlannerFactory.create_planner(paramstyle, self._formatter)
+            statement_planner = StatementPlannerFactory.create_planner(
+                paramstyle, self._formatter
+            )
 
-            plan = planner.create_execution_plan(
+            plan = statement_planner.create_execution_plan(
                 raw_query, parameters, skip_parsing, async_execution, streaming
             )
             await self._execute_plan(plan, timeout, async_execution, streaming)

@@ -1,4 +1,4 @@
-"""Unit tests for query planners using plain functions and fixtures."""
+"""Unit tests for statement planners using plain functions and fixtures."""
 
 import json
 from unittest.mock import Mock
@@ -10,12 +10,12 @@ from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
 )
-from firebolt.common.cursor.query_planners import (
-    BaseQueryPlanner,
+from firebolt.common.cursor.statement_planners import (
+    BaseStatementPlanner,
     ExecutionPlan,
-    FbNumericQueryPlanner,
-    QmarkQueryPlanner,
-    QueryPlannerFactory,
+    FbNumericStatementPlanner,
+    QmarkStatementPlanner,
+    StatementPlannerFactory,
 )
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import FireboltError, ProgrammingError
@@ -30,14 +30,14 @@ def formatter():
 
 @pytest.fixture
 def fb_numeric_planner(formatter):
-    """Create FbNumericQueryPlanner for tests."""
-    return FbNumericQueryPlanner(formatter)
+    """Create FbNumericStatementPlanner for tests."""
+    return FbNumericStatementPlanner(formatter)
 
 
 @pytest.fixture
 def qmark_planner(formatter):
-    """Create QmarkQueryPlanner for tests."""
-    return QmarkQueryPlanner(formatter)
+    """Create QmarkStatementPlanner for tests."""
+    return QmarkStatementPlanner(formatter)
 
 
 # ExecutionPlan tests
@@ -61,7 +61,7 @@ def test_execution_plan_defaults():
     assert plan.is_multi_statement is False
 
 
-# BaseQueryPlanner tests
+# BaseStatementPlanner tests
 @pytest.mark.parametrize(
     "streaming,expected_format",
     [
@@ -71,13 +71,13 @@ def test_execution_plan_defaults():
 )
 def test_get_output_format(streaming, expected_format):
     """Test output format selection."""
-    assert BaseQueryPlanner._get_output_format(streaming) == expected_format
+    assert BaseStatementPlanner._get_output_format(streaming) == expected_format
 
 
-# FbNumericQueryPlanner tests
+# FbNumericStatementPlanner tests
 def test_fb_numeric_planner_initialization(formatter):
     """Test planner initialization."""
-    planner = FbNumericQueryPlanner(formatter)
+    planner = FbNumericStatementPlanner(formatter)
     assert planner.formatter == formatter
 
 
@@ -170,16 +170,16 @@ def test_fb_numeric_complex_parameters(fb_numeric_planner):
     assert abs(query_params[4]["value"] - 3.14) < 0.001
 
 
-# QmarkQueryPlanner tests
+# QmarkStatementPlanner tests
 def test_qmark_planner_initialization(formatter):
     """Test planner initialization."""
-    planner = QmarkQueryPlanner(formatter)
+    planner = QmarkStatementPlanner(formatter)
     assert planner.formatter == formatter
 
 
 def test_qmark_planner_initialization(formatter):
     """Test planner initialization."""
-    planner = QmarkQueryPlanner(formatter)
+    planner = QmarkStatementPlanner(formatter)
     assert planner.formatter == formatter
 
 
@@ -280,34 +280,34 @@ def test_qmark_set_parameter_handling(qmark_planner):
     assert plan.queries[1] == "SELECT 1"
 
 
-# QueryPlannerFactory tests
+# StatementPlannerFactory tests
 @pytest.mark.parametrize(
     "paramstyle,expected_class",
     [
-        ("fb_numeric", FbNumericQueryPlanner),
-        ("qmark", QmarkQueryPlanner),
+        ("fb_numeric", FbNumericStatementPlanner),
+        ("qmark", QmarkStatementPlanner),
     ],
 )
-def test_query_planner_factory_creates_correct_planners(
+def test_statement_planner_factory_creates_correct_planners(
     formatter, paramstyle, expected_class
 ):
     """Test that factory creates correct planner types."""
-    planner = QueryPlannerFactory.create_planner(paramstyle, formatter)
+    planner = StatementPlannerFactory.create_planner(paramstyle, formatter)
 
     assert isinstance(planner, expected_class)
     assert planner.formatter == formatter
 
 
-def test_query_planner_factory_unsupported_paramstyle(formatter):
+def test_statement_planner_factory_unsupported_paramstyle(formatter):
     """Test error for unsupported paramstyle."""
     with pytest.raises(ProgrammingError, match="Unsupported paramstyle: unsupported"):
-        QueryPlannerFactory.create_planner("unsupported", formatter)
+        StatementPlannerFactory.create_planner("unsupported", formatter)
 
 
 # Edge cases and error conditions
 def test_fb_numeric_empty_parameters_list(formatter):
     """Test fb_numeric with empty parameters list."""
-    planner = FbNumericQueryPlanner(formatter)
+    planner = FbNumericStatementPlanner(formatter)
     plan = planner.create_execution_plan("SELECT 1", [])
 
     assert "query_parameters" not in plan.query_params
@@ -316,7 +316,7 @@ def test_fb_numeric_empty_parameters_list(formatter):
 
 def test_fb_numeric_none_parameters(formatter):
     """Test fb_numeric with None in parameters."""
-    planner = FbNumericQueryPlanner(formatter)
+    planner = FbNumericStatementPlanner(formatter)
     plan = planner.create_execution_plan("SELECT $1, $2", [[None, "test"]])
 
     query_params = json.loads(plan.query_params["query_parameters"])
@@ -326,7 +326,7 @@ def test_fb_numeric_none_parameters(formatter):
 
 def test_qmark_empty_query(formatter):
     """Test qmark with empty query."""
-    planner = QmarkQueryPlanner(formatter)
+    planner = QmarkStatementPlanner(formatter)
     plan = planner.create_execution_plan("", [[]])
 
     assert plan.query_params is not None
@@ -337,7 +337,7 @@ def test_qmark_empty_query(formatter):
 def test_factory_case_sensitivity(formatter, invalid_paramstyle):
     """Test factory case sensitivity."""
     with pytest.raises(ProgrammingError):
-        QueryPlannerFactory.create_planner(invalid_paramstyle, formatter)
+        StatementPlannerFactory.create_planner(invalid_paramstyle, formatter)
 
 
 def test_execution_plan_immutability():
