@@ -469,8 +469,7 @@ Example with FB_NUMERIC parameter style::
     cursor.close()
 
 When ``bulk_insert=True``, the SDK concatenates all INSERT statements into a single batch
-and sends them to the server with the ``merge_prepared_statement_batches=true`` parameter,
-allowing for optimized batch processing.
+and sends them to the server for optimized batch processing.
 
 
 Setting session parameters

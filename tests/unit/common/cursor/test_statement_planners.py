@@ -12,6 +12,7 @@ from firebolt.common.constants import (
 )
 from firebolt.common.cursor.statement_planners import (
     BaseStatementPlanner,
+    BulkInsertMixin,
     ExecutionPlan,
     FbNumericStatementPlanner,
     QmarkStatementPlanner,
@@ -302,6 +303,41 @@ def test_statement_planner_factory_unsupported_paramstyle(formatter):
     """Test error for unsupported paramstyle."""
     with pytest.raises(ProgrammingError, match="Unsupported paramstyle: unsupported"):
         StatementPlannerFactory.create_planner("unsupported", formatter)
+
+
+@pytest.mark.parametrize(
+    "paramstyle,expected_class",
+    [
+        ("fb_numeric", "FbNumericBulkStatementPlanner"),
+        ("qmark", "QmarkBulkStatementPlanner"),
+    ],
+)
+def test_statement_planner_factory_creates_correct_bulk_planners(
+    formatter, paramstyle, expected_class
+):
+    """Test that factory creates correct bulk planner types."""
+    planner = StatementPlannerFactory.create_planner(
+        paramstyle, formatter, bulk_insert=True
+    )
+
+    assert planner.__class__.__name__ == expected_class
+    assert planner.formatter == formatter
+
+
+def test_statement_planner_factory_bulk_planner_inheritance(formatter):
+    """Test that bulk planners inherit from regular planners."""
+    fb_bulk_planner = StatementPlannerFactory.create_planner(
+        "fb_numeric", formatter, bulk_insert=True
+    )
+    qmark_bulk_planner = StatementPlannerFactory.create_planner(
+        "qmark", formatter, bulk_insert=True
+    )
+
+    # Check that bulk planners inherit from their regular counterparts and the mixin
+    assert isinstance(fb_bulk_planner, FbNumericStatementPlanner)
+    assert isinstance(fb_bulk_planner, BulkInsertMixin)
+    assert isinstance(qmark_bulk_planner, QmarkStatementPlanner)
+    assert isinstance(qmark_bulk_planner, BulkInsertMixin)
 
 
 # Edge cases and error conditions

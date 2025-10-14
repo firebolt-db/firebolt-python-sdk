@@ -12,7 +12,11 @@ from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
 )
-from firebolt.utils.exception import ConfigurationError, FireboltError, ProgrammingError
+from firebolt.utils.exception import (
+    ConfigurationError,
+    FireboltError,
+    ProgrammingError,
+)
 
 if TYPE_CHECKING:
     from firebolt.common.statement_formatter import StatementFormatter
@@ -27,6 +31,69 @@ class ExecutionPlan:
     is_multi_statement: bool = False
     async_execution: bool = False
     streaming: bool = False
+
+
+class BulkInsertMixin:
+    """Mixin class for bulk insert functionality."""
+
+    def create_execution_plan(
+        self,
+        raw_query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        skip_parsing: bool = False,
+        async_execution: bool = False,
+        streaming: bool = False,
+    ) -> ExecutionPlan:
+        """Create execution plan for bulk insert operations."""
+        return self._create_bulk_execution_plan(
+            raw_query, parameters, async_execution, streaming
+        )
+
+    def _validate_bulk_insert_query(self, query: str) -> None:
+        """Validate that query is an INSERT statement for bulk_insert."""
+        query_normalized = query.lstrip().lower()
+        if not query_normalized.startswith("insert"):
+            raise ConfigurationError(
+                "bulk_insert is only supported for INSERT statements"
+            )
+        if ";" in query.strip().rstrip(";"):
+            raise ProgrammingError(
+                "bulk_insert does not support multi-statement queries"
+            )
+
+    def _create_bulk_execution_plan(
+        self,
+        raw_query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        async_execution: bool,
+        streaming: bool,
+    ) -> ExecutionPlan:
+        """
+        Create bulk execution plan by delegating to
+        parameter-style specific methods.
+        """
+        # Validate bulk_insert requirements
+        self._validate_bulk_insert_query(raw_query)
+        if not parameters:
+            raise ProgrammingError("bulk_insert requires at least one parameter set")
+
+        # Call the parameter-style specific bulk creation method
+        return self._create_bulk_plan_impl(
+            raw_query, parameters, async_execution, streaming
+        )
+
+    def _create_bulk_plan_impl(
+        self,
+        raw_query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        async_execution: bool,
+        streaming: bool,
+    ) -> ExecutionPlan:
+        """
+        Override in subclasses to provide parameter-style
+        specific bulk implementation.
+        """
+        raise NotImplementedError("Subclass must implement _create_bulk_plan_impl")
 
 
 class BaseStatementPlanner(ABC):
@@ -44,7 +111,6 @@ class BaseStatementPlanner(ABC):
         skip_parsing: bool = False,
         async_execution: bool = False,
         streaming: bool = False,
-        bulk_insert: bool = False,
     ) -> ExecutionPlan:
         """Create an execution plan for the given statement and parameters."""
 
@@ -66,32 +132,14 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
         skip_parsing: bool = False,
         async_execution: bool = False,
         streaming: bool = False,
-        bulk_insert: bool = False,
     ) -> ExecutionPlan:
         """Create execution plan for fb_numeric parameter style."""
-        if bulk_insert:
-            # Validate bulk_insert requirements
-            query_normalized = raw_query.lstrip().lower()
-            if not query_normalized.startswith("insert"):
-                raise ConfigurationError("bulk_insert is only supported for INSERT statements")
-            if ";" in raw_query.strip().rstrip(";"):
-                raise ConfigurationError("bulk_insert does not support multi-statement queries")
-            if not parameters:
-                raise ConfigurationError("bulk_insert requires at least one parameter set")
-            
-            # Prepare bulk insert query and parameters
-            processed_query, processed_params = self._prepare_bulk_insert(raw_query, parameters)
-            query_params = self._build_fb_numeric_query_params(
-                processed_params, streaming, async_execution, {"merge_prepared_statement_batches": "true"}
-            )
-        else:
-            processed_query = raw_query
-            query_params = self._build_fb_numeric_query_params(
-                parameters, streaming, async_execution
-            )
-            
+        query_params = self._build_fb_numeric_query_params(
+            parameters, streaming, async_execution
+        )
+
         return ExecutionPlan(
-            queries=[processed_query],
+            queries=[raw_query],
             query_params=query_params,
             is_multi_statement=False,
             async_execution=async_execution,
@@ -126,13 +174,40 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
             query_params.update(extra_params)
         return query_params
 
-    def _prepare_bulk_insert(
+
+class FbNumericBulkStatementPlanner(BulkInsertMixin, FbNumericStatementPlanner):
+    """Statement planner for fb_numeric parameter style with bulk insert support."""
+
+    def _create_bulk_plan_impl(
+        self,
+        raw_query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        async_execution: bool,
+        streaming: bool,
+    ) -> ExecutionPlan:
+        """Create bulk insert execution plan for fb_numeric parameter style."""
+        # Prepare bulk insert query and parameters for fb_numeric
+        processed_query, processed_params = self._prepare_fb_numeric_bulk_insert(
+            raw_query, parameters
+        )
+
+        # Build query parameters for bulk insert
+        query_params = self._build_fb_numeric_query_params(
+            processed_params, streaming, async_execution
+        )
+
+        return ExecutionPlan(
+            queries=[processed_query],
+            query_params=query_params,
+            is_multi_statement=False,
+            async_execution=async_execution,
+            streaming=streaming,
+        )
+
+    def _prepare_fb_numeric_bulk_insert(
         self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
     ) -> tuple[str, Sequence[Sequence[ParameterType]]]:
-        """Execute multiple INSERT queries as a single batch."""
-        if not parameters_seq:
-            raise ProgrammingError("bulk_insert requires at least one parameter set")
-
+        """Prepare multiple INSERT queries as a single batch for fb_numeric style."""
         # For bulk insert, we need to create unique parameter names for each INSERT
         # Example: ($1, $2); ($3, $4); ($5, $6) instead of ($1, $2); ($1, $2); ($1, $2)
         queries = []
@@ -148,8 +223,10 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
             param_offset += len(param_set)
 
         combined_query = "; ".join(queries)
-        parameters = [param for param_set in parameters_seq for param in param_set]
-        return combined_query, [parameters]
+        flattened_parameters = [
+            param for param_set in parameters_seq for param in param_set
+        ]
+        return combined_query, [flattened_parameters]
 
 
 class QmarkStatementPlanner(BaseStatementPlanner):
@@ -162,13 +239,8 @@ class QmarkStatementPlanner(BaseStatementPlanner):
         skip_parsing: bool = False,
         async_execution: bool = False,
         streaming: bool = False,
-        bulk_insert: bool = False,
     ) -> ExecutionPlan:
         """Create execution plan for qmark parameter style."""
-        # Validate bulk_insert is not used with qmark
-        if bulk_insert:
-            raise ConfigurationError("bulk_insert is only supported for fb_numeric")
-            
         queries: List[Union[SetParameter, str]] = (
             [raw_query]
             if skip_parsing
@@ -196,6 +268,48 @@ class QmarkStatementPlanner(BaseStatementPlanner):
         )
 
 
+class QmarkBulkStatementPlanner(BulkInsertMixin, QmarkStatementPlanner):
+    """Statement planner for qmark parameter style with bulk insert support."""
+
+    def _create_bulk_plan_impl(
+        self,
+        raw_query: str,
+        parameters: Sequence[Sequence[ParameterType]],
+        async_execution: bool,
+        streaming: bool,
+    ) -> ExecutionPlan:
+        """Create bulk insert execution plan for qmark parameter style."""
+        # Import needed modules
+        from sqlparse import parse as parse_sql  # type: ignore
+
+        # Prepare bulk insert query for qmark style
+        statements = parse_sql(raw_query)
+        if not statements:
+            raise ProgrammingError("Invalid SQL query for bulk insert")
+
+        formatted_queries = []
+        for param_set in parameters:
+            formatted_query = self.formatter.format_statement(statements[0], param_set)
+            formatted_queries.append(formatted_query)
+
+        combined_query = "; ".join(formatted_queries)
+
+        # Build query parameters for bulk insert
+        query_params: Dict[str, Any] = {
+            "output_format": self._get_output_format(streaming),
+        }
+        if async_execution:
+            query_params["async"] = True
+
+        return ExecutionPlan(
+            queries=[combined_query],
+            query_params=query_params,
+            is_multi_statement=False,
+            async_execution=async_execution,
+            streaming=streaming,
+        )
+
+
 class StatementPlannerFactory:
     """Factory for creating statement planner instances based on paramstyle."""
 
@@ -204,15 +318,21 @@ class StatementPlannerFactory:
         "qmark": QmarkStatementPlanner,
     }
 
+    _BULK_PLANNER_CLASSES = {
+        "fb_numeric": FbNumericBulkStatementPlanner,
+        "qmark": QmarkBulkStatementPlanner,
+    }
+
     @classmethod
     def create_planner(
-        cls, paramstyle: str, formatter: StatementFormatter
+        cls, paramstyle: str, formatter: StatementFormatter, bulk_insert: bool = False
     ) -> BaseStatementPlanner:
         """Create a statement planner instance for the given paramstyle.
 
         Args:
             paramstyle: The parameter style ('fb_numeric' or 'qmark')
             formatter: StatementFormatter instance for statement processing
+            bulk_insert: Whether to create a bulk-capable planner
 
         Returns:
             Appropriate statement planner instance
@@ -220,7 +340,11 @@ class StatementPlannerFactory:
         Raises:
             ProgrammingError: If paramstyle is not supported
         """
-        planner_class = cls._PLANNER_CLASSES.get(paramstyle)
+        planner_classes = (
+            cls._BULK_PLANNER_CLASSES if bulk_insert else cls._PLANNER_CLASSES
+        )
+        planner_class = planner_classes.get(paramstyle)
+
         if planner_class is None:
             raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
 

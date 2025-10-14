@@ -1508,18 +1508,46 @@ async def test_unsupported_paramstyle_raises(cursor: Cursor) -> None:
         db.paramstyle = original_paramstyle
 
 
-async def test_executemany_bulk_insert_qmark_fails(
+async def test_executemany_bulk_insert_qmark_works(
+    httpx_mock: HTTPXMock,
     cursor: Cursor,
+    query_url: str,
 ):
-    """executemany with bulk_insert=True fails with qmark paramstyle."""
-    with raises(
-        ConfigurationError, match="bulk_insert is only supported for fb_numeric"
-    ):
-        await cursor.executemany(
-            "INSERT INTO test_table VALUES (?, ?)",
-            [(1, "a"), (2, "b"), (3, "c")],
-            bulk_insert=True,
+    """executemany with bulk_insert=True works with qmark paramstyle."""
+
+    def bulk_insert_callback(request):
+        query = request.content.decode()
+        # Should contain multiple INSERT statements
+        assert query.count("INSERT INTO") == 3
+        assert "; " in query
+
+        return Response(
+            status_code=200,
+            content=json.dumps(
+                {
+                    "meta": [],
+                    "data": [],
+                    "rows": 0,
+                    "statistics": {
+                        "elapsed": 0.0,
+                        "rows_read": 0,
+                        "bytes_read": 0,
+                    },
+                }
+            ),
+            headers={},
         )
+
+    base_url = str(query_url).split("?")[0]
+    url_pattern = re.compile(re.escape(base_url))
+    httpx_mock.add_callback(bulk_insert_callback, url=url_pattern)
+
+    result = await cursor.executemany(
+        "INSERT INTO test_table VALUES (?, ?)",
+        [(1, "a"), (2, "b"), (3, "c")],
+        bulk_insert=True,
+    )
+    assert result == 0
 
 
 async def test_executemany_bulk_insert_fb_numeric(

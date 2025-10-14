@@ -46,7 +46,6 @@ from firebolt.common.row_set.asynchronous.in_memory import InMemoryAsyncRowSet
 from firebolt.common.row_set.asynchronous.streaming import StreamingAsyncRowSet
 from firebolt.common.statement_formatter import create_statement_formatter
 from firebolt.utils.exception import (
-    ConfigurationError,
     EngineNotRunningError,
     FireboltDatabaseError,
     FireboltError,
@@ -229,11 +228,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         try:
             statement_planner = StatementPlannerFactory.create_planner(
-                paramstyle, self._formatter
+                paramstyle, self._formatter, bulk_insert
             )
 
             plan = statement_planner.create_execution_plan(
-                raw_query, parameters, skip_parsing, async_execution, streaming, bulk_insert
+                raw_query, parameters, skip_parsing, async_execution, streaming
             )
             await self._execute_plan(plan, timeout)
             self._state = CursorState.DONE
@@ -407,8 +406,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 cursor object until it's closed. They can also be removed with
                 `flush_parameters` method call.
             Bulk insert: When bulk_insert=True, multiple INSERT queries are
-                concatenated and sent as a single batch with
-                merge_prepared_statement_batches=true for improved performance.
+                concatenated and sent as a single batch for improved performance.
                 Only supported for INSERT statements.
 
         Args:
