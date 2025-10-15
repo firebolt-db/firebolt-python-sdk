@@ -234,11 +234,16 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         try:
             statement_planner = StatementPlannerFactory.create_planner(
-                paramstyle, self._formatter, bulk_insert
+                paramstyle, self._formatter
             )
 
             plan = statement_planner.create_execution_plan(
-                raw_query, parameters, skip_parsing, async_execution, streaming
+                raw_query,
+                parameters,
+                skip_parsing,
+                async_execution,
+                streaming,
+                bulk_insert,
             )
             self._execute_plan(plan, timeout)
             self._state = CursorState.DONE

@@ -218,6 +218,30 @@ class StatementFormatter:
             self.statement_to_set(st) or self.statement_to_sql(st) for st in statements
         ]
 
+    def format_bulk_insert(
+        self, query: str, parameters_seq: Sequence[Sequence[ParameterType]]
+    ) -> str:
+        """
+        Format bulk insert operations by creating multiple INSERT statements.
+
+        Args:
+            query: The base INSERT query template
+            parameters_seq: Sequence of parameter sets for each INSERT
+
+        Returns:
+            Combined SQL string with all INSERT statements
+        """
+        statements = parse_sql(query)
+        if not statements:
+            raise DataError("Invalid SQL query for bulk insert")
+
+        formatted_queries = []
+        for param_set in parameters_seq:
+            formatted_query = self.format_statement(statements[0], param_set)
+            formatted_queries.append(formatted_query)
+
+        return "; ".join(formatted_queries)
+
 
 def create_statement_formatter(version: int) -> StatementFormatter:
     if version == 1:
