@@ -43,6 +43,13 @@ def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
     return param_dict
 
 
+def _parse_remove_parameters(parameter_header: str) -> List[str]:
+    """Parse remove parameters header and return list of parameter names to remove."""
+    # parse key1,key2,key3 comma separated string into list
+    param_list = [item.strip() for item in parameter_header.split(",")]
+    return param_list
+
+
 def _parse_update_endpoint(
     new_engine_endpoint_header: str,
 ) -> Tuple[str, Dict[str, str]]:
@@ -223,6 +230,14 @@ class BaseCursor:
         self.parameters.update(immutable_parameters)
 
         self._set_parameters.update(user_parameters)
+
+    def _remove_set_parameters(self, parameter_names: List[str]) -> None:
+        """Remove parameters from both user and immutable parameter collections."""
+        for param_name in parameter_names:
+            # Remove from user parameters
+            self._set_parameters.pop(param_name, None)
+            # Remove from immutable parameters
+            self.parameters.pop(param_name, None)
 
     def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():

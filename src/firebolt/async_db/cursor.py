@@ -21,6 +21,7 @@ from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
+    REMOVE_PARAMETERS_HEADER,
     RESET_SESSION_HEADER,
     UPDATE_ENDPOINT_HEADER,
     UPDATE_PARAMETERS_HEADER,
@@ -29,6 +30,7 @@ from firebolt.common.constants import (
 )
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
+    _parse_remove_parameters,
     _parse_update_endpoint,
     _parse_update_parameters,
     _raise_if_internal_set_parameter,
@@ -190,6 +192,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if headers.get(UPDATE_PARAMETERS_HEADER):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
+
+        if headers.get(REMOVE_PARAMETERS_HEADER):
+            param_list = _parse_remove_parameters(headers.get(REMOVE_PARAMETERS_HEADER))
+            self._remove_set_parameters(param_list)
 
     async def _close_rowset_and_reset(self) -> None:
         """Reset cursor state."""
