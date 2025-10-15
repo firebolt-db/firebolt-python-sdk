@@ -196,14 +196,14 @@ To get started, follow the steps below:
         ) as connection:
             # Create a cursor
             cursor = connection.cursor()
-        
+
             # Execute a simple test query
             cursor.execute("SELECT 1")
 
 .. note::
 
-    Firebolt Core is assumed to be running locally on the default port (3473). For instructions 
-    on how to run Firebolt Core locally using Docker, refer to the 
+    Firebolt Core is assumed to be running locally on the default port (3473). For instructions
+    on how to run Firebolt Core locally using Docker, refer to the
     `official docs <https://docs.firebolt.io/firebolt-core/firebolt-core-get-started>`_.
 
 
@@ -404,7 +404,7 @@ parameters equal in length to the number of placeholders in the statement.
         "INSERT INTO test_table2 VALUES ($1, $2, $3)",
         (2, "world", "2018-01-02"),
     )
-    
+
     # paramstyle only needs to be set once, it will be used for all subsequent queries
 
     cursor.execute(
@@ -444,11 +444,30 @@ For inserting large amounts of data more efficiently, you can use the ``bulk_ins
 with ``executemany()``. This concatenates multiple INSERT statements into a single batch request,
 which can significantly improve performance when inserting many rows.
 
-**Note:** The ``bulk_insert`` parameter only works with INSERT statements and requires the
-``fb_numeric`` parameter style. Using it with other statement types or parameter styles will
+**Note:** The ``bulk_insert`` parameter only works with INSERT statements and supports both
+``fb_numeric`` and ``qmark`` parameter styles. Using it with other statement types will
 raise an error.
 
-Example with FB_NUMERIC parameter style::
+**Example with QMARK parameter style (default):**
+
+::
+
+    # Using the default qmark parameter style
+    cursor.executemany(
+        "INSERT INTO test_table VALUES (?, ?, ?)",
+        (
+            (1, "apple", "2019-01-01"),
+            (2, "banana", "2020-01-01"),
+            (3, "carrot", "2021-01-01"),
+            (4, "donut", "2022-01-01"),
+            (5, "eggplant", "2023-01-01")
+        ),
+        bulk_insert=True  # Enable bulk insert for better performance
+    )
+
+**Example with FB_NUMERIC parameter style:**
+
+::
 
     import firebolt.db
     # Set paramstyle to "fb_numeric" for server-side parameter substitution
@@ -463,10 +482,8 @@ Example with FB_NUMERIC parameter style::
             (4, "donut", "2022-01-01"),
             (5, "eggplant", "2023-01-01")
         ),
-        bulk_insert=True  # Enable bulk insert for better performance (important-comment)
+        bulk_insert=True  # Enable bulk insert for better performance
     )
-
-    cursor.close()
 
 When ``bulk_insert=True``, the SDK concatenates all INSERT statements into a single batch
 and sends them to the server for optimized batch processing.
@@ -766,7 +783,7 @@ of execute_async is -1, which is the rowcount for queries where it's not applica
     cursor.execute_async("INSERT INTO my_table VALUES (5, 'egg', '2022-01-01')")
     token = cursor.async_query_token
 
-Trying to access `async_query_token` before calling `execute_async` will raise an exception. 
+Trying to access `async_query_token` before calling `execute_async` will raise an exception.
 
 .. note::
     Multiple-statement queries are not supported for asynchronous queries. However, you can run each statement
@@ -781,9 +798,9 @@ Monitoring the query status
 To check the async query status you need to retrieve the token of the query. The token is a unique
 identifier for the query and can be used to fetch the query status. You can store this token
 outside of the current process and use it later to check the query status. :ref:`Connection <firebolt.db:Connection>` object
-has two methods to check the query status: :py:meth:`firebolt.db.connection.Connection.is_async_query_running` and 
-:py:meth:`firebolt.db.connection.Connection.is_async_query_successful`.`is_async_query_running` will return True 
-if the query is still running, and False otherwise. `is_async_query_successful` will return True if the query 
+has two methods to check the query status: :py:meth:`firebolt.db.connection.Connection.is_async_query_running` and
+:py:meth:`firebolt.db.connection.Connection.is_async_query_successful`.`is_async_query_running` will return True
+if the query is still running, and False otherwise. `is_async_query_successful` will return True if the query
 has finished successfully, None if query is still running and False if the query has failed.
 
 ::
@@ -814,7 +831,7 @@ will send a cancel request to the server and the query will be stopped.
 
     token = cursor.async_query_token
     connection.cancel_async_query(token)
-    
+
     # Verify that the query was cancelled
     running = connection.is_async_query_running(token)
     print(running) # False
