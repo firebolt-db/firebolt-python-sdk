@@ -1,4 +1,5 @@
 import math
+import time
 from datetime import date, datetime
 from decimal import Decimal
 from random import randint
@@ -7,6 +8,7 @@ from typing import Any, Callable, List, Tuple
 
 from pytest import mark, raises
 
+import firebolt.db
 from firebolt.client.auth import Auth
 from firebolt.common._types import ColType
 from firebolt.common.row_set.types import Column
@@ -283,31 +285,73 @@ def test_parameterized_query(connection: Connection) -> None:
         )
 
 
-def test_executemany_bulk_insert(
-    connection: Connection, fb_numeric_paramstyle: None
+@mark.parametrize(
+    "paramstyle,query,test_data",
+    [
+        (
+            "fb_numeric",
+            'INSERT INTO "test_tbl" VALUES ($1, $2)',
+            [(1, "alice"), (2, "bob"), (3, "charlie")],
+        ),
+        (
+            "qmark",
+            'INSERT INTO "test_tbl" VALUES (?, ?)',
+            [(4, "david"), (5, "eve"), (6, "frank")],
+        ),
+    ],
+)
+def test_executemany_bulk_insert_paramstyles(
+    connection: Connection,
+    paramstyle: str,
+    query: str,
+    test_data: List[Tuple],
+    create_drop_test_table_setup_teardown: Callable,
 ) -> None:
-    """executemany with bulk_insert=True inserts data correctly."""
-    try:
-        with connection.cursor() as c:
-            c.execute('DROP TABLE IF EXISTS "test_bulk_insert"')
-            c.execute(
-                'CREATE FACT TABLE "test_bulk_insert"(id int, name string) primary index id'
-            )
-            c.executemany(
-                'INSERT INTO "test_bulk_insert" VALUES ($1, $2)',
-                [(1, "alice"), (2, "bob"), (3, "charlie")],
-                bulk_insert=True,
-            )
+    """executemany with bulk_insert=True works correctly for both paramstyles."""
+    # Set the paramstyle for this test
+    original_paramstyle = firebolt.db.paramstyle
+    firebolt.db.paramstyle = paramstyle
+    # Generate a unique label for this test execution
+    unique_label = f"test_bulk_insert_{paramstyle}_{randint(100000, 999999)}"
+    table_name = "test_tbl"
 
-            c.execute('SELECT * FROM "test_bulk_insert" ORDER BY id')
-            data = c.fetchall()
-            assert len(data) == 3
-            assert data[0] == [1, "alice"]
-            assert data[1] == [2, "bob"]
-            assert data[2] == [3, "charlie"]
+    try:
+        c = connection.cursor()
+
+        # Can't do this for fb_numeric yet - FIR-49970
+        if paramstyle != "fb_numeric":
+            c.execute(f"SET query_label = '{unique_label}'")
+
+        # Execute bulk insert
+        c.executemany(
+            query,
+            test_data,
+            bulk_insert=True,
+        )
+
+        # Verify the data was inserted correctly
+        c.execute(f'SELECT * FROM "{table_name}" ORDER BY id')
+        data = c.fetchall()
+        assert len(data) == len(test_data)
+        for i, (expected_id, expected_name) in enumerate(test_data):
+            assert data[i] == [expected_id, expected_name]
+
+        # Verify that only one INSERT query was executed with our unique label
+        # Can't do this for fb_numeric yet - FIR-49970
+        if paramstyle != "fb_numeric":
+            # Wait a moment to ensure query history is updated
+            time.sleep(10)
+            c.execute(
+                "SELECT COUNT(*) FROM information_schema.engine_query_history "
+                f"WHERE query_label = '{unique_label}' AND query_text LIKE 'INSERT INTO%'"
+                " AND status = 'ENDED_SUCCESSFULLY'"
+            )
+            query_count = c.fetchone()[0]
+            assert (
+                query_count == 1
+            ), f"Expected 1 INSERT query with label '{unique_label}', but found {query_count}"
     finally:
-        with connection.cursor() as c:
-            c.execute('DROP TABLE IF EXISTS "test_bulk_insert"')
+        firebolt.db.paramstyle = original_paramstyle
 
 
 def test_multi_statement_query(connection: Connection) -> None:

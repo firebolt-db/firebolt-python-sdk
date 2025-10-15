@@ -12,9 +12,7 @@ from firebolt.db import ARRAY, DECIMAL, Connection
 
 LOGGER = getLogger(__name__)
 
-CREATE_TEST_TABLE = (
-    'CREATE DIMENSION TABLE IF NOT EXISTS "test_tbl" (id int, name string)'
-)
+CREATE_TEST_TABLE = 'CREATE TABLE IF NOT EXISTS "test_tbl" (id int, name string)'
 DROP_TEST_TABLE = 'DROP TABLE IF EXISTS "test_tbl" CASCADE'
 
 LONG_SELECT_DEFAULT_V1 = 250000000000
@@ -59,7 +57,7 @@ def create_drop_test_table_setup_teardown(connection: Connection) -> None:
 
 @fixture
 async def create_drop_test_table_setup_teardown_async(connection: Connection) -> None:
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute(CREATE_TEST_TABLE)
         yield c
         await c.execute(DROP_TEST_TABLE)
