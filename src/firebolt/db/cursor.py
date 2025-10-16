@@ -103,6 +103,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
+        # Inherit transaction_id from connection if it exists
+        if connection.transaction_id:
+            self._set_parameters["transaction_id"] = connection.transaction_id
+
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""
         if codes.is_error(resp.status_code):

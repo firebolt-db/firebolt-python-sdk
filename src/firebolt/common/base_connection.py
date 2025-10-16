@@ -75,6 +75,7 @@ class BaseConnection:
         self._is_closed = False
         self._autocommit = True  # Default autocommit mode
         self._in_transaction = False
+        self._transaction_id: Optional[str] = None
 
     def _remove_cursor(self, cursor: Any) -> None:
         # This way it's atomic
@@ -115,6 +116,11 @@ class BaseConnection:
         """`True` if currently in a transaction; `False` otherwise."""
         return self._in_transaction
 
+    @property
+    def transaction_id(self) -> Optional[str]:
+        """`transaction_id` parameter from the server, if in transaction."""
+        return self._transaction_id
+
     def commit(self) -> None:
         """Commit the current transaction. To be implemented by subclasses."""
         raise NotImplementedError("commit must be implemented by subclasses")
@@ -146,11 +152,19 @@ class BaseConnection:
 
     def _on_transaction_id_received(self, transaction_id: str) -> None:
         """Called when a transaction_id parameter is received from the server."""
+        self._transaction_id = transaction_id
         self._set_transaction_state(True)
+        # Propagate transaction_id parameter to all cursors from this connection
+        for cursor in self._cursors:
+            cursor._set_transaction_id(transaction_id)
 
     def _on_transaction_id_removed(self) -> None:
         """Called when transaction_id parameter is removed by the server."""
+        self._transaction_id = None
         self._set_transaction_state(False)
+        # Remove transaction_id parameter from all cursors from this connection
+        for cursor in self._cursors:
+            cursor._remove_transaction_id()
 
 
 def get_cached_system_engine_info(

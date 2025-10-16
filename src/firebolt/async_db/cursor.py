@@ -97,6 +97,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
+        # Inherit transaction_id from connection if it exists
+        if connection.transaction_id:
+            self._set_parameters["transaction_id"] = connection.transaction_id
+
     async def _api_request(
         self,
         query: str = "",

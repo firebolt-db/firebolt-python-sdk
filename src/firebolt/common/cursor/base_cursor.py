@@ -382,6 +382,14 @@ class BaseCursor:
         """Synchronize transaction state from connection."""
         self._in_transaction = in_transaction
 
+    def _set_transaction_id(self, transaction_id: str) -> None:
+        """Set the transaction_id parameter on this cursor."""
+        self._set_parameters["transaction_id"] = transaction_id
+
+    def _remove_transaction_id(self) -> None:
+        """Remove the transaction_id parameter from this cursor."""
+        self._set_parameters.pop("transaction_id", None)
+
     def _handle_transaction_parameters(self, parameters: Dict[str, Any]) -> None:
         """Handle transaction-related parameters from server headers."""
         if "transaction_id" in parameters:
