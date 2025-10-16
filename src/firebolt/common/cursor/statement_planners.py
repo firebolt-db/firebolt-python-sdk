@@ -75,7 +75,7 @@ class BaseStatementPlanner(ABC):
         """
         if bulk_insert:
             return self._create_bulk_execution_plan(
-                raw_query, parameters, async_execution, streaming
+                raw_query, parameters, async_execution
             )
         else:
             return self._create_standard_execution_plan(
@@ -99,7 +99,6 @@ class BaseStatementPlanner(ABC):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         async_execution: bool,
-        streaming: bool,
     ) -> ExecutionPlan:
         """Create bulk execution plan using formatter logic."""
         # Validate bulk_insert requirements
@@ -107,9 +106,7 @@ class BaseStatementPlanner(ABC):
         if not parameters:
             raise ProgrammingError("bulk_insert requires at least one parameter set")
 
-        return self._create_bulk_plan_impl(
-            raw_query, parameters, async_execution, streaming
-        )
+        return self._create_bulk_plan_impl(raw_query, parameters, async_execution)
 
     @abstractmethod
     def _create_standard_execution_plan(
@@ -128,7 +125,6 @@ class BaseStatementPlanner(ABC):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         async_execution: bool,
-        streaming: bool,
     ) -> ExecutionPlan:
         """Create parameter-style specific bulk execution plan."""
 
@@ -169,7 +165,6 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         async_execution: bool,
-        streaming: bool,
     ) -> ExecutionPlan:
         """Create bulk insert execution plan for fb_numeric parameter style."""
         # Prepare bulk insert query and parameters for fb_numeric
@@ -179,7 +174,7 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
 
         # Build query parameters for bulk insert
         query_params = self._build_fb_numeric_query_params(
-            processed_params, streaming, async_execution
+            processed_params, streaming=False, async_execution=async_execution
         )
 
         return ExecutionPlan(
@@ -187,7 +182,7 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
             query_params=query_params,
             is_multi_statement=False,
             async_execution=async_execution,
-            streaming=streaming,
+            streaming=False,
         )
 
     def _build_fb_numeric_query_params(
@@ -286,7 +281,6 @@ class QmarkStatementPlanner(BaseStatementPlanner):
         raw_query: str,
         parameters: Sequence[Sequence[ParameterType]],
         async_execution: bool,
-        streaming: bool,
     ) -> ExecutionPlan:
         """Create bulk insert execution plan for qmark parameter style."""
         # Use formatter's bulk insert method to create combined query
@@ -294,7 +288,7 @@ class QmarkStatementPlanner(BaseStatementPlanner):
 
         # Build query parameters for bulk insert
         query_params: Dict[str, Any] = {
-            "output_format": self._get_output_format(streaming),
+            "output_format": self._get_output_format(False),
         }
         if async_execution:
             query_params["async"] = True
@@ -304,7 +298,7 @@ class QmarkStatementPlanner(BaseStatementPlanner):
             query_params=query_params,
             is_multi_statement=False,
             async_execution=async_execution,
-            streaming=streaming,
+            streaming=False,
         )
 
 
