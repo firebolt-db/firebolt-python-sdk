@@ -98,6 +98,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self.connection = connection
         self.engine_url = connection.engine_url
         self._row_set: Optional[BaseSyncRowSet] = None
+        # Inherit transaction state from connection
+        self._in_transaction = connection.in_transaction
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
@@ -198,6 +200,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if headers.get(UPDATE_PARAMETERS_HEADER):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
+            self._handle_transaction_parameters(param_dict)
 
         if headers.get(REMOVE_PARAMETERS_HEADER):
             param_list = _parse_remove_parameters(headers.get(REMOVE_PARAMETERS_HEADER))

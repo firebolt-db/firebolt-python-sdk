@@ -17,6 +17,7 @@ from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
+    NotSupportedError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
@@ -278,11 +279,12 @@ async def test_connect_default_engine(
 
 
 async def test_connection_commit(connection: Connection):
-    # nothing happens
-    connection.commit()
+    # async connection commit() should raise NotSupportedError suggesting acommit()
+    with raises(NotSupportedError, match="Use acommit\\(\\) for async connections"):
+        connection.commit()
 
     await connection.aclose()
-    with raises(ConnectionClosedError):
+    with raises(NotSupportedError, match="Use acommit\\(\\) for async connections"):
         connection.commit()
 
 

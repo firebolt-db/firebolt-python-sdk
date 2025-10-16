@@ -18,6 +18,7 @@ from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
+    NotSupportedError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
@@ -247,8 +248,9 @@ def test_connection_no_warnings(client: Client):
 
 
 def test_connection_commit(connection: Connection):
-    # nothing happens
-    connection.commit()
+    # commit with no transaction should raise NotSupportedError
+    with raises(NotSupportedError):
+        connection.commit()
 
     connection.close()
     with raises(ConnectionClosedError):

@@ -23,7 +23,7 @@ def get_core_certificate_context() -> Union[SSLContext, bool]:
         ctx.minimum_version = TLSVersion.TLSv1_2
     elif sys.version_info >= (3, 10):
         # Can import truststore only if python is 3.10 or higher
-        import truststore
+        import truststore  # type: ignore[import-not-found]
 
         ctx = truststore.SSLContext(PROTOCOL_TLS_CLIENT)
     else:

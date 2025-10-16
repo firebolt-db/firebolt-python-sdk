@@ -9,7 +9,7 @@ from httpx import URL, HTTPStatusError, Request, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.async_db import Cursor
+from firebolt.async_db import Connection, Cursor
 from firebolt.common._types import ColType
 from firebolt.common.constants import CursorState
 from firebolt.common.row_set.types import Column
@@ -1505,3 +1505,115 @@ async def test_unsupported_paramstyle_raises(cursor: Cursor) -> None:
             await cursor.execute("SELECT 1")
     finally:
         db.paramstyle = original_paramstyle
+
+
+# Transaction tests
+
+
+async def test_cursor_inherits_transaction_state(connection: Connection) -> None:
+    """Test that cursor inherits transaction state from connection."""
+    cursor = connection.cursor()
+
+    # Initially no transaction
+    assert cursor._in_transaction is False
+
+    # Simulate transaction start
+    connection._set_transaction_state(True)
+
+    # Create new cursor - should inherit transaction state
+    new_cursor = connection.cursor()
+    assert new_cursor._in_transaction is True
+
+    await cursor.aclose()
+    await new_cursor.aclose()
+
+
+@mark.parametrize(
+    "header_name,header_value,sql_command,expected_transaction_state",
+    [
+        (
+            "Firebolt-Update-Parameters",
+            "transaction_id=tx_123",
+            "BEGIN TRANSACTION",
+            True,
+        ),
+        (
+            "Firebolt-Remove-Parameters",
+            "transaction_id",
+            "COMMIT",
+            False,
+        ),
+    ],
+)
+async def test_cursor_transaction_parameter_handling(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    cursor: Cursor,
+    header_name: str,
+    header_value: str,
+    sql_command: str,
+    expected_transaction_state: bool,
+) -> None:
+    """Test transaction parameter handling in cursor response headers."""
+    # Set initial transaction state (opposite of expected final state)
+    cursor.connection._set_transaction_state(not expected_transaction_state)
+
+    # Mock response with appropriate headers
+    def query_callback_with_transaction_header(request):
+        return Response(
+            200,
+            json={
+                "data": [[1]],
+                "meta": [{"name": "col", "type": "Int32"}],
+                "statistics": {"elapsed": 0.1},
+            },
+            headers={header_name: header_value},
+        )
+
+    httpx_mock.add_callback(query_callback_with_transaction_header, url=query_url)
+
+    # Execute query
+    await cursor.execute(sql_command)
+
+    # Verify transaction state changed as expected
+    assert cursor.connection.in_transaction is expected_transaction_state
+    assert cursor._in_transaction is expected_transaction_state
+
+
+async def test_cursor_autocommit_handling_non_autocommit_mode(
+    httpx_mock: HTTPXMock,
+    query_callback: Callable,
+    query_url: str,
+    cursor: Cursor,
+) -> None:
+    """Test cursor handles non-autocommit mode correctly."""
+    # Set connection to non-autocommit mode but no active transaction
+    cursor.connection._autocommit = False
+    cursor.connection._in_transaction = False
+
+    httpx_mock.add_callback(query_callback, url=query_url)
+
+    # Execute a regular query
+    await cursor.execute("SELECT 1")
+
+    # Transaction begin is now handled by transaction_id parameter from server
+    # so we just verify the query executed successfully
+    # The actual transaction state is updated when server sends transaction_id parameter
+    assert cursor.connection.autocommit is False
+
+
+@mark.parametrize("transaction_state", [True, False])
+async def test_cursor_sync_transaction_state(
+    cursor: Cursor, transaction_state: bool
+) -> None:
+    """Test cursor transaction state synchronization."""
+    # Set initial state to opposite of test state
+    cursor._in_transaction = not transaction_state
+
+    # Sync to new state
+    cursor._sync_transaction_state(transaction_state)
+    assert cursor._in_transaction is transaction_state
+
+    # Sync to transaction inactive
+    cursor._sync_transaction_state(False)
+    assert cursor._in_transaction is False

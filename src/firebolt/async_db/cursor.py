@@ -92,6 +92,8 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._client: AsyncClient = client
         self.engine_url = connection.engine_url
         self._row_set: Optional[BaseAsyncRowSet] = None
+        # Inherit transaction state from connection
+        self._in_transaction = connection.in_transaction
         if connection.init_parameters:
             self._update_set_parameters(connection.init_parameters)
 
@@ -192,6 +194,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         if headers.get(UPDATE_PARAMETERS_HEADER):
             param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
             self._update_set_parameters(param_dict)
+            self._handle_transaction_parameters(param_dict)
 
         if headers.get(REMOVE_PARAMETERS_HEADER):
             param_list = _parse_remove_parameters(headers.get(REMOVE_PARAMETERS_HEADER))
@@ -508,7 +511,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Fetch the next row of a query result set."""
         assert self._row_set is not None
         with Timer(self._performance_log_message):
-            return await anext(self._row_set, None)
+            return await anext(self._row_set, None)  # type: ignore[operator]
 
     @check_not_closed
     @async_not_allowed

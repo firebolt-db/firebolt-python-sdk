@@ -84,7 +84,7 @@ class StreamingAsyncRowSet(BaseAsyncRowSet, StreamingRowSetCommonBase):
             except HTTPError as err:
                 raise OperationalError("Failed to read response stream.") from err
 
-        next_line = await anext(self._lines_iter, None)
+        next_line = await anext(self._lines_iter, None)  # type: ignore[operator]
         return self._next_json_lines_record_from_line(next_line)
 
     @property

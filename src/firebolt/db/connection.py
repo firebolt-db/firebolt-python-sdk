@@ -17,6 +17,9 @@ from firebolt.common.base_connection import (
     ASYNC_QUERY_STATUS_REQUEST,
     ASYNC_QUERY_STATUS_RUNNING,
     ASYNC_QUERY_STATUS_SUCCESSFUL,
+    TRANSACTION_BEGIN,
+    TRANSACTION_COMMIT,
+    TRANSACTION_ROLLBACK,
     AsyncQueryInfo,
     BaseConnection,
     _parse_async_query_info_results,
@@ -33,6 +36,7 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
     FireboltError,
     InterfaceError,
+    NotSupportedError,
 )
 from firebolt.utils.firebolt_core import (
     get_core_certificate_context,
@@ -200,9 +204,6 @@ class Connection(BaseConnection):
         password: Firebolt account password
         api_endpoint: Optional. Firebolt API endpoint. Used for authentication.
 
-    Note:
-        Firebolt currenly doesn't support transactions so commit and rollback methods
-        are not implemented.
     """
 
     client_class: type
@@ -216,6 +217,9 @@ class Connection(BaseConnection):
         "client_class",
         "cursor_type",
         "id",
+        "_autocommit",
+        "_in_transaction",
+        "init_parameters",
     )
 
     def __init__(
@@ -345,6 +349,38 @@ class Connection(BaseConnection):
         self._raise_if_multiple_async_results(async_query_info)
         cursor = self.cursor()
         cursor.execute(ASYNC_QUERY_CANCEL, [async_query_info[0].query_id])
+
+    def _begin_transaction(self) -> None:
+        """Begin a new transaction by executing BEGIN TRANSACTION."""
+        self._execute_transaction_statement(TRANSACTION_BEGIN)
+
+    def _execute_transaction_statement(self, statement: str) -> None:
+        """Execute a transaction control statement (COMMIT or ROLLBACK)."""
+        cursor = self.cursor()
+        try:
+            cursor.execute(statement)
+        finally:
+            cursor.close()
+
+    def commit(self) -> None:
+        """Commit the current transaction."""
+        if self.closed:
+            raise ConnectionClosedError("Unable to commit: Connection closed.")
+
+        if not self._in_transaction:
+            raise NotSupportedError("No active transaction to commit.")
+
+        self._execute_transaction_statement(TRANSACTION_COMMIT)
+
+    def rollback(self) -> None:
+        """Rollback the current transaction."""
+        if self.closed:
+            raise ConnectionClosedError("Unable to rollback: Connection closed.")
+
+        if not self._in_transaction:
+            raise NotSupportedError("No active transaction to rollback.")
+
+        self._execute_transaction_statement(TRANSACTION_ROLLBACK)
 
     # Context manager support
     def __enter__(self) -> Connection:

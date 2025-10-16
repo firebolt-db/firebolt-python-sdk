@@ -17,6 +17,9 @@ from firebolt.common.base_connection import (
     ASYNC_QUERY_STATUS_REQUEST,
     ASYNC_QUERY_STATUS_RUNNING,
     ASYNC_QUERY_STATUS_SUCCESSFUL,
+    TRANSACTION_BEGIN,
+    TRANSACTION_COMMIT,
+    TRANSACTION_ROLLBACK,
     AsyncQueryInfo,
     BaseConnection,
     _parse_async_query_info_results,
@@ -32,6 +35,7 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
     FireboltError,
     InterfaceError,
+    NotSupportedError,
 )
 from firebolt.utils.firebolt_core import (
     get_core_certificate_context,
@@ -81,6 +85,9 @@ class Connection(BaseConnection):
         "client_class",
         "cursor_type",
         "id",
+        "_autocommit",
+        "_in_transaction",
+        "init_parameters",
     )
 
     def __init__(
@@ -191,6 +198,52 @@ class Connection(BaseConnection):
         self._raise_if_multiple_async_results(async_query_info)
         cursor = self.cursor()
         await cursor.execute(ASYNC_QUERY_CANCEL, [async_query_info[0].query_id])
+
+    # Transaction methods
+
+    async def _begin_transaction(self) -> None:
+        """Begin a new transaction by executing BEGIN TRANSACTION."""
+        await self._execute_transaction_statement(TRANSACTION_BEGIN)
+
+    async def _execute_transaction_statement(self, statement: str) -> None:
+        """Execute a transaction control statement (COMMIT or ROLLBACK)."""
+        cursor = self.cursor()
+        try:
+            await cursor.execute(statement)
+        finally:
+            await cursor.aclose()
+
+    def commit(self) -> None:
+        """Commit the current transaction (async version)."""
+        raise NotSupportedError(
+            "Use acommit() for async connections instead of commit()."
+        )
+
+    def rollback(self) -> None:
+        """Rollback the current transaction (async version)."""
+        raise NotSupportedError(
+            "Use arollback() for async connections instead of rollback()."
+        )
+
+    async def acommit(self) -> None:
+        """Async commit the current transaction."""
+        if self.closed:
+            raise ConnectionClosedError("Unable to commit: Connection closed.")
+
+        if not self._in_transaction:
+            raise NotSupportedError("No active transaction to commit.")
+
+        await self._execute_transaction_statement(TRANSACTION_COMMIT)
+
+    async def arollback(self) -> None:
+        """Async rollback the current transaction."""
+        if self.closed:
+            raise ConnectionClosedError("Unable to rollback: Connection closed.")
+
+        if not self._in_transaction:
+            raise NotSupportedError("No active transaction to rollback.")
+
+        await self._execute_transaction_statement(TRANSACTION_ROLLBACK)
 
     # Context manager support
     async def __aenter__(self) -> Connection:

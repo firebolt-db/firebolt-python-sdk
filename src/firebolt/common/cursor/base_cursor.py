@@ -96,6 +96,7 @@ class BaseCursor:
         "_query_token",
         "_row_set",
         "engine_url",
+        "_in_transaction",
     )
 
     default_arraysize = 1
@@ -120,6 +121,7 @@ class BaseCursor:
         self._query_token = ""
         self._client: Optional[Union[Client, AsyncClient]] = None
         self._row_set: Optional[BaseRowSet] = None
+        self._in_transaction = False  # Track transaction state at cursor level
         self._reset()
 
     @property
@@ -233,6 +235,12 @@ class BaseCursor:
 
     def _remove_set_parameters(self, parameter_names: List[str]) -> None:
         """Remove parameters from both user and immutable parameter collections."""
+        # Handle special parameters like transaction_id
+        if "transaction_id" in parameter_names:
+            # Transaction ended
+            if hasattr(self, "connection") and self.connection:
+                self.connection._on_transaction_id_removed()
+
         for param_name in parameter_names:
             # Remove from user parameters
             self._set_parameters.pop(param_name, None)
@@ -369,3 +377,16 @@ class BaseCursor:
             self._client.auth.secret,
         )
         _firebolt_cache.set(cache_key, record)
+
+    def _sync_transaction_state(self, in_transaction: bool) -> None:
+        """Synchronize transaction state from connection."""
+        self._in_transaction = in_transaction
+
+    def _handle_transaction_parameters(self, parameters: Dict[str, Any]) -> None:
+        """Handle transaction-related parameters from server headers."""
+        if "transaction_id" in parameters:
+            # Transaction started
+            if hasattr(self, "connection") and self.connection:
+                self.connection._on_transaction_id_received(
+                    parameters["transaction_id"]
+                )

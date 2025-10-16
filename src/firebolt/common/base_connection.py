@@ -1,5 +1,5 @@
 from collections import namedtuple
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Awaitable, Dict, List, Optional, Tuple, Type, Union
 
 from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
@@ -19,6 +19,11 @@ ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
 ASYNC_QUERY_STATUS_SUCCESSFUL = "ENDED_SUCCESSFULLY"
 ASYNC_QUERY_STATUS_REQUEST = "CALL fb_GetAsyncStatus(?)"
 ASYNC_QUERY_CANCEL = "CANCEL QUERY WHERE query_id=?"
+
+# Transaction statement constants
+TRANSACTION_BEGIN = "BEGIN TRANSACTION"
+TRANSACTION_COMMIT = "COMMIT"
+TRANSACTION_ROLLBACK = "ROLLBACK"
 
 AsyncQueryInfo = namedtuple(
     "AsyncQueryInfo",
@@ -68,6 +73,8 @@ class BaseConnection:
         self.cursor_type = cursor_type
         self._cursors: List[Any] = []
         self._is_closed = False
+        self._autocommit = True  # Default autocommit mode
+        self._in_transaction = False
 
     def _remove_cursor(self, cursor: Any) -> None:
         # This way it's atomic
@@ -81,11 +88,69 @@ class BaseConnection:
         """`True` if connection is closed; `False` otherwise."""
         return self._is_closed
 
-    def commit(self) -> None:
-        """Does nothing since Firebolt doesn't have transactions."""
+    @property
+    def autocommit(self) -> bool:
+        """`True` if autocommit is enabled; `False` otherwise."""
+        return self._autocommit
 
+    @autocommit.setter
+    def autocommit(self, value: bool) -> None:
+        """Set autocommit mode. When transitioning from autocommit to non-autocommit,
+        defer beginning a transaction until first statement. When transitioning
+        from non-autocommit to autocommit, commit any active transaction."""
         if self.closed:
-            raise ConnectionClosedError("Unable to commit: Connection closed.")
+            raise ConnectionClosedError("Unable to set autocommit: Connection closed.")
+
+        if self._autocommit == value:
+            return  # No change needed
+
+        if value and self._in_transaction:
+            # Transitioning to autocommit mode, commit any active transaction
+            self.commit()
+
+        self._autocommit = value
+
+    @property
+    def in_transaction(self) -> bool:
+        """`True` if currently in a transaction; `False` otherwise."""
+        return self._in_transaction
+
+    def commit(self) -> None:
+        """Commit the current transaction. To be implemented by subclasses."""
+        raise NotImplementedError("commit must be implemented by subclasses")
+
+    def rollback(self) -> None:
+        """Rollback the current transaction. To be implemented by subclasses."""
+        raise NotImplementedError("rollback must be implemented by subclasses")
+
+    def _begin_transaction(self) -> Union[None, Awaitable[None]]:
+        """Begin a new transaction. To be implemented by subclasses."""
+        raise NotImplementedError(
+            "_begin_transaction must be implemented by subclasses"
+        )
+
+    def _execute_transaction_statement(
+        self, statement: str
+    ) -> Union[None, Awaitable[None]]:
+        """Execute a transaction control statement. To be implemented by subclasses."""
+        raise NotImplementedError(
+            "_execute_transaction_statement must be implemented by subclasses"
+        )
+
+    def _set_transaction_state(self, in_transaction: bool) -> None:
+        """Set the transaction state and synchronize across all cursors."""
+        self._in_transaction = in_transaction
+        # Synchronize transaction state across all cursors
+        for cursor in self._cursors:
+            cursor._sync_transaction_state(self._in_transaction)
+
+    def _on_transaction_id_received(self, transaction_id: str) -> None:
+        """Called when a transaction_id parameter is received from the server."""
+        self._set_transaction_state(True)
+
+    def _on_transaction_id_removed(self) -> None:
+        """Called when transaction_id parameter is removed by the server."""
+        self._set_transaction_state(False)
 
 
 def get_cached_system_engine_info(

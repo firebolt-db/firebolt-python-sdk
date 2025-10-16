@@ -9,12 +9,17 @@ from pytest_httpx import HTTPXMock
 from firebolt.async_db.connection import Connection, connect
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.common._types import ColType
+from firebolt.common.base_connection import (
+    TRANSACTION_COMMIT,
+    TRANSACTION_ROLLBACK,
+)
 from firebolt.utils.cache import _firebolt_cache
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
     ConfigurationError,
     ConnectionClosedError,
     FireboltError,
+    NotSupportedError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
 
@@ -287,11 +292,12 @@ async def test_connect_system_engine_404(
 
 
 async def test_connection_commit(connection: Connection):
-    # nothing happens
-    connection.commit()
+    # async connection commit() should raise NotSupportedError suggesting acommit()
+    with raises(NotSupportedError, match="Use acommit\\(\\) for async connections"):
+        connection.commit()
 
     await connection.aclose()
-    with raises(ConnectionClosedError):
+    with raises(NotSupportedError, match="Use acommit\\(\\) for async connections"):
         connection.commit()
 
 
@@ -765,3 +771,155 @@ async def test_multiple_results_for_async_token(
         assert len(query_info) == 2, "Expected two results for the same token"
         assert query_info[0].query_id == async_multiple_query_data[0][7]
         assert query_info[1].query_id == async_multiple_query_data[1][7]
+
+
+# Transaction tests
+
+
+async def test_connection_autocommit_default(connection: Connection) -> None:
+    """Test that connections default to autocommit mode."""
+    assert connection.autocommit is True
+    assert connection.in_transaction is False
+
+
+@mark.parametrize("autocommit_value", [False, True])
+async def test_connection_autocommit_property(
+    connection: Connection, autocommit_value: bool
+) -> None:
+    """Test autocommit property getter and setter."""
+    # Set initial state
+    connection.autocommit = autocommit_value
+    assert connection.autocommit is autocommit_value
+
+    # Set opposite state
+    connection.autocommit = not autocommit_value
+    assert connection.autocommit is (not autocommit_value)
+
+
+async def test_connection_autocommit_closed_error(connection: Connection) -> None:
+    """Test that setting autocommit on closed connection raises error."""
+    await connection.aclose()
+
+    with raises(
+        ConnectionClosedError, match="Unable to set autocommit: Connection closed"
+    ):
+        connection.autocommit = False
+
+
+@mark.parametrize("method_name", ["commit", "rollback"])
+async def test_connection_sync_transaction_methods_not_supported(
+    connection: Connection, method_name: str
+) -> None:
+    """Test that sync commit/rollback methods are not supported for async connections."""
+    method = getattr(connection, method_name)
+    expected_async_method = f"a{method_name}"
+
+    with raises(
+        NotSupportedError,
+        match=f"Use {expected_async_method}\\(\\) for async connections",
+    ):
+        method()
+
+
+@mark.parametrize("method_name", ["commit", "rollback"])
+async def test_connection_sync_transaction_methods_closed_error(
+    connection: Connection, method_name: str
+) -> None:
+    """Test that sync commit/rollback on closed async connection raise NotSupportedError."""
+    await connection.aclose()
+    method = getattr(connection, method_name)
+    expected_async_method = f"a{method_name}"
+
+    with raises(
+        NotSupportedError,
+        match=f"Use {expected_async_method}\\(\\) for async connections",
+    ):
+        method()
+
+
+@mark.parametrize(
+    "method_name,expected_statement",
+    [
+        ("acommit", TRANSACTION_COMMIT),
+        ("arollback", TRANSACTION_ROLLBACK),
+    ],
+)
+@patch.object(Connection, "_execute_transaction_statement")
+async def test_connection_async_transaction_methods_with_transaction(
+    mock_execute: MagicMock,
+    connection: Connection,
+    method_name: str,
+    expected_statement: str,
+) -> None:
+    """Test that acommit/arollback execute correct statements when transaction is active."""
+    # Simulate being in transaction
+    connection._set_transaction_state(True)
+    method = getattr(connection, method_name)
+
+    await method()
+
+    mock_execute.assert_called_once_with(expected_statement)
+
+
+async def test_autocommit_false_defers_transaction(connection: Connection) -> None:
+    """Test that setting autocommit=False defers beginning a transaction."""
+    connection.autocommit = False
+
+    # Should not be in transaction yet - transaction is deferred until first statement
+    assert connection.in_transaction is False
+
+
+@patch.object(Connection, "commit")
+async def test_autocommit_true_commits_active_transaction(
+    mock_commit: MagicMock, connection: Connection
+) -> None:
+    """Test that setting autocommit=True commits active transaction."""
+    # Simulate being in transaction with autocommit off
+    connection._autocommit = False
+    connection._set_transaction_state(True)
+
+    connection.autocommit = True
+
+    mock_commit.assert_called_once()
+
+
+async def test_transaction_state_sync_to_cursors(connection: Connection) -> None:
+    """Test that transaction state is synchronized to all cursors."""
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+
+    # Initially no transaction
+    assert cursor1._in_transaction is False
+    assert cursor2._in_transaction is False
+
+    # Simulate transaction start
+    connection._set_transaction_state(True)
+
+    assert cursor1._in_transaction is True
+    assert cursor2._in_transaction is True
+
+    # Simulate transaction end
+    connection._set_transaction_state(False)
+
+    assert cursor1._in_transaction is False
+    assert cursor2._in_transaction is False
+
+
+async def test_transaction_id_handling(connection: Connection) -> None:
+    """Test transaction ID parameter handling."""
+    cursor = connection.cursor()
+
+    # Initially no transaction
+    assert connection.in_transaction is False
+
+    # Simulate receiving transaction_id parameter
+    connection._on_transaction_id_received("tx_123")
+
+    assert connection.in_transaction is True
+    assert cursor._in_transaction is True
+
+    # Simulate transaction_id removal
+    connection._on_transaction_id_removed()
+
+    assert connection.in_transaction is False
+    assert cursor._in_transaction is False
