@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import json
 import logging
 import re
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
 from httpx import URL, Response
 
 from firebolt.client.auth.base import Auth
 from firebolt.client.client import AsyncClient, Client
-from firebolt.common._types import ParameterType, RawColType, SetParameter
+from firebolt.common._types import RawColType, SetParameter
 from firebolt.common.constants import (
     DISALLOWED_PARAMETER_LIST,
     IMMUTABLE_PARAMETER_LIST,
@@ -237,42 +236,6 @@ class BaseCursor:
             "aws_key_id|credentials", query, flags=re.IGNORECASE
         ):
             logger.debug(f"Running query: {query}")
-
-    def _build_fb_numeric_query_params(
-        self,
-        parameters: Sequence[Sequence[ParameterType]],
-        streaming: bool,
-        async_execution: bool,
-    ) -> Dict[str, Any]:
-        """
-        Build query parameters dictionary for fb_numeric paramstyle.
-
-        Args:
-            parameters: A sequence of parameter sequences. For fb_numeric,
-                       only the first parameter sequence is used.
-            streaming: Whether streaming is enabled
-            async_execution: Whether async execution is enabled
-
-        Returns:
-            Dictionary of query parameters to send with the request
-        """
-        param_list = parameters[0] if parameters else []
-        query_parameters = [
-            {
-                "name": f"${i+1}",
-                "value": self._formatter.convert_parameter_for_serialization(value),
-            }
-            for i, value in enumerate(param_list)
-        ]
-
-        query_params: Dict[str, Any] = {
-            "output_format": self._get_output_format(streaming),
-        }
-        if query_parameters:
-            query_params["query_parameters"] = json.dumps(query_parameters)
-        if async_execution:
-            query_params["async"] = True
-        return query_params
 
     @property
     def engine_name(self) -> str:
