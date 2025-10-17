@@ -87,6 +87,8 @@ class Connection(BaseConnection):
         "id",
         "_autocommit",
         "_in_transaction",
+        "_transaction_id",
+        "_transaction_sequence_id",
         "init_parameters",
     )
 

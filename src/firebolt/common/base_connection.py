@@ -25,6 +25,10 @@ TRANSACTION_BEGIN = "BEGIN TRANSACTION"
 TRANSACTION_COMMIT = "COMMIT"
 TRANSACTION_ROLLBACK = "ROLLBACK"
 
+# Transaction parameter constants
+TRANSACTION_ID_PARAMETER = "transaction_id"
+TRANSACTION_SEQUENCE_ID_PARAMETER = "transaction_sequence_id"
+
 AsyncQueryInfo = namedtuple(
     "AsyncQueryInfo",
     [
@@ -76,6 +80,7 @@ class BaseConnection:
         self._autocommit = True  # Default autocommit mode
         self._in_transaction = False
         self._transaction_id: Optional[str] = None
+        self._transaction_sequence_id: Optional[str] = None
 
     def _remove_cursor(self, cursor: Any) -> None:
         # This way it's atomic
@@ -121,6 +126,11 @@ class BaseConnection:
         """`transaction_id` parameter from the server, if in transaction."""
         return self._transaction_id
 
+    @property
+    def transaction_sequence_id(self) -> Optional[str]:
+        """`transaction_sequence_id` parameter from the server, if in transaction."""
+        return self._transaction_sequence_id
+
     def commit(self) -> None:
         """Commit the current transaction. To be implemented by subclasses."""
         raise NotImplementedError("commit must be implemented by subclasses")
@@ -150,21 +160,31 @@ class BaseConnection:
         for cursor in self._cursors:
             cursor._sync_transaction_state(self._in_transaction)
 
-    def _on_transaction_id_received(self, transaction_id: str) -> None:
-        """Called when a transaction_id parameter is received from the server."""
-        self._transaction_id = transaction_id
-        self._set_transaction_state(True)
-        # Propagate transaction_id parameter to all cursors from this connection
-        for cursor in self._cursors:
-            cursor._set_transaction_id(transaction_id)
+    def _on_transaction_parameter_received(
+        self, parameter_name: str, parameter_value: str
+    ) -> None:
+        """Called when a transaction parameter is received from the server."""
+        if parameter_name == TRANSACTION_ID_PARAMETER:
+            self._transaction_id = parameter_value
+            self._set_transaction_state(True)
+        elif parameter_name == TRANSACTION_SEQUENCE_ID_PARAMETER:
+            self._transaction_sequence_id = parameter_value
 
-    def _on_transaction_id_removed(self) -> None:
-        """Called when transaction_id parameter is removed by the server."""
-        self._transaction_id = None
-        self._set_transaction_state(False)
-        # Remove transaction_id parameter from all cursors from this connection
+        # Propagate parameter to all cursors from this connection
         for cursor in self._cursors:
-            cursor._remove_transaction_id()
+            cursor._set_transaction_parameter(parameter_name, parameter_value)
+
+    def _on_transaction_parameter_removed(self, parameter_name: str) -> None:
+        """Called when a transaction parameter is removed by the server."""
+        if parameter_name == TRANSACTION_ID_PARAMETER:
+            self._transaction_id = None
+            self._set_transaction_state(False)
+        elif parameter_name == TRANSACTION_SEQUENCE_ID_PARAMETER:
+            self._transaction_sequence_id = None
+
+        # Remove parameter from all cursors from this connection
+        for cursor in self._cursors:
+            cursor._remove_transaction_parameter(parameter_name)
 
 
 def get_cached_system_engine_info(

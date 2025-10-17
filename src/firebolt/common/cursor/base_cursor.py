@@ -11,6 +11,10 @@ from httpx import URL, Response
 from firebolt.client.auth.base import Auth
 from firebolt.client.client import AsyncClient, Client
 from firebolt.common._types import ParameterType, RawColType, SetParameter
+from firebolt.common.base_connection import (
+    TRANSACTION_ID_PARAMETER,
+    TRANSACTION_SEQUENCE_ID_PARAMETER,
+)
 from firebolt.common.constants import (
     DISALLOWED_PARAMETER_LIST,
     IMMUTABLE_PARAMETER_LIST,
@@ -235,11 +239,15 @@ class BaseCursor:
 
     def _remove_set_parameters(self, parameter_names: List[str]) -> None:
         """Remove parameters from both user and immutable parameter collections."""
-        # Handle special parameters like transaction_id
-        if "transaction_id" in parameter_names:
-            # Transaction ended
-            if hasattr(self, "connection") and self.connection:
-                self.connection._on_transaction_id_removed()
+        # Handle special transaction parameters
+        transaction_parameters = [
+            TRANSACTION_ID_PARAMETER,
+            TRANSACTION_SEQUENCE_ID_PARAMETER,
+        ]
+        for param_name in parameter_names:
+            if param_name in transaction_parameters:
+                if hasattr(self, "connection") and self.connection:
+                    self.connection._on_transaction_parameter_removed(param_name)
 
         for param_name in parameter_names:
             # Remove from user parameters
@@ -382,19 +390,25 @@ class BaseCursor:
         """Synchronize transaction state from connection."""
         self._in_transaction = in_transaction
 
-    def _set_transaction_id(self, transaction_id: str) -> None:
-        """Set the transaction_id parameter on this cursor."""
-        self._set_parameters["transaction_id"] = transaction_id
+    def _set_transaction_parameter(
+        self, parameter_name: str, parameter_value: str
+    ) -> None:
+        """Set a transaction parameter on this cursor."""
+        self._set_parameters[parameter_name] = parameter_value
 
-    def _remove_transaction_id(self) -> None:
-        """Remove the transaction_id parameter from this cursor."""
-        self._set_parameters.pop("transaction_id", None)
+    def _remove_transaction_parameter(self, parameter_name: str) -> None:
+        """Remove a transaction parameter from this cursor."""
+        self._set_parameters.pop(parameter_name, None)
 
     def _handle_transaction_parameters(self, parameters: Dict[str, Any]) -> None:
         """Handle transaction-related parameters from server headers."""
-        if "transaction_id" in parameters:
-            # Transaction started
-            if hasattr(self, "connection") and self.connection:
-                self.connection._on_transaction_id_received(
-                    parameters["transaction_id"]
-                )
+        transaction_parameters = [
+            TRANSACTION_ID_PARAMETER,
+            TRANSACTION_SEQUENCE_ID_PARAMETER,
+        ]
+        if hasattr(self, "connection") and self.connection:
+            for param_name in transaction_parameters:
+                if param_name in parameters:
+                    self.connection._on_transaction_parameter_received(
+                        param_name, parameters[param_name]
+                    )

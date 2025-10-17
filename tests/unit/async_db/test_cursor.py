@@ -2,7 +2,7 @@ import re
 import time
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 from unittest.mock import patch
 
 from httpx import URL, HTTPStatusError, Request, StreamError, codes
@@ -11,6 +11,10 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.async_db import Connection, Cursor
 from firebolt.common._types import ColType
+from firebolt.common.base_connection import (
+    TRANSACTION_ID_PARAMETER,
+    TRANSACTION_SEQUENCE_ID_PARAMETER,
+)
 from firebolt.common.constants import CursorState
 from firebolt.common.row_set.types import Column
 from firebolt.utils.exception import (
@@ -1533,13 +1537,13 @@ async def test_cursor_inherits_transaction_state(connection: Connection) -> None
     [
         (
             "Firebolt-Update-Parameters",
-            "transaction_id=tx_123",
+            f"{TRANSACTION_ID_PARAMETER}=tx_123",
             "BEGIN TRANSACTION",
             True,
         ),
         (
             "Firebolt-Remove-Parameters",
-            "transaction_id",
+            TRANSACTION_ID_PARAMETER,
             "COMMIT",
             False,
         ),
@@ -1578,6 +1582,118 @@ async def test_cursor_transaction_parameter_handling(
     # Verify transaction state changed as expected
     assert cursor.connection.in_transaction is expected_transaction_state
     assert cursor._in_transaction is expected_transaction_state
+
+
+@mark.parametrize(
+    "header_name,header_value,expected_sequence_id",
+    [
+        (
+            "Firebolt-Update-Parameters",
+            f"{TRANSACTION_SEQUENCE_ID_PARAMETER}=000058eb4ea297bc0000",
+            "000058eb4ea297bc0000",
+        ),
+        (
+            "Firebolt-Update-Parameters",
+            f"{TRANSACTION_ID_PARAMETER}=tx_123,{TRANSACTION_SEQUENCE_ID_PARAMETER}=seq_456",
+            "seq_456",
+        ),
+        (
+            "Firebolt-Remove-Parameters",
+            TRANSACTION_SEQUENCE_ID_PARAMETER,
+            None,
+        ),
+        (
+            "Firebolt-Remove-Parameters",
+            f"{TRANSACTION_ID_PARAMETER},{TRANSACTION_SEQUENCE_ID_PARAMETER}",
+            None,
+        ),
+    ],
+)
+async def test_cursor_transaction_sequence_id_parameter_handling(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    cursor: Cursor,
+    header_name: str,
+    header_value: str,
+    expected_sequence_id: Optional[str],
+) -> None:
+    """Test transaction_sequence_id parameter handling in cursor response headers."""
+    # Initially set a sequence ID to test removal case
+    if expected_sequence_id is None:
+        cursor.connection._on_transaction_parameter_received(
+            TRANSACTION_SEQUENCE_ID_PARAMETER, "initial_seq_123"
+        )
+
+    # Mock response with appropriate headers - need to match any request to handle different parameters
+    def query_callback_with_sequence_id_header(request):
+        return Response(
+            200,
+            json={
+                "data": [[1]],
+                "meta": [{"name": "col", "type": "Int32"}],
+                "statistics": {"elapsed": 0.1},
+            },
+            headers={header_name: header_value},
+        )
+
+    # Use a more flexible matcher that matches any request to the engine URL
+    httpx_mock.add_callback(query_callback_with_sequence_id_header)
+
+    # Execute query
+    await cursor.execute("SELECT 1")
+
+    # Verify transaction_sequence_id state
+    assert cursor.connection.transaction_sequence_id == expected_sequence_id
+    if expected_sequence_id:
+        assert (
+            cursor._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER]
+            == expected_sequence_id
+        )
+    else:
+        assert TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor._set_parameters
+
+
+async def test_cursor_transaction_sequence_id_multi_cursor_sync(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    connection: Connection,
+) -> None:
+    """Test transaction_sequence_id synchronization across multiple cursors."""
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+
+    # Mock response that sets transaction_sequence_id
+    def query_callback_with_sequence_id_header(request):
+        return Response(
+            200,
+            json={
+                "data": [[1]],
+                "meta": [{"name": "col", "type": "Int32"}],
+                "statistics": {"elapsed": 0.1},
+            },
+            headers={
+                "Firebolt-Update-Parameters": "transaction_sequence_id=multi_sync_789"
+            },
+        )
+
+    httpx_mock.add_callback(query_callback_with_sequence_id_header)
+
+    # Execute query with cursor1
+    await cursor1.execute("BEGIN TRANSACTION")
+
+    # Both cursors should have the transaction_sequence_id
+    assert (
+        cursor1._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] == "multi_sync_789"
+    )
+    assert (
+        cursor2._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] == "multi_sync_789"
+    )
+
+    # Create new cursor - should inherit transaction_sequence_id
+    cursor3 = connection.cursor()
+    assert (
+        cursor3._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] == "multi_sync_789"
+    )
 
 
 async def test_cursor_autocommit_handling_non_autocommit_mode(

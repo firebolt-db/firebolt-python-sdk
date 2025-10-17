@@ -2,6 +2,10 @@
 
 from pytest import raises
 
+from firebolt.common.base_connection import (
+    TRANSACTION_ID_PARAMETER,
+    TRANSACTION_SEQUENCE_ID_PARAMETER,
+)
 from firebolt.db import Connection
 from firebolt.utils.exception import ConnectionClosedError
 
@@ -194,10 +198,10 @@ def test_transaction_parameter_synchronization(connection: Connection) -> None:
     # Both cursors should have the same set parameters
     # (assuming server sends transaction_id parameter)
     if hasattr(cursor1, "_set_parameters") and cursor1._set_parameters:
-        if "transaction_id" in cursor1._set_parameters:
+        if TRANSACTION_ID_PARAMETER in cursor1._set_parameters:
             assert cursor1._set_parameters.get(
-                "transaction_id"
-            ) == cursor2._set_parameters.get("transaction_id")
+                TRANSACTION_ID_PARAMETER
+            ) == cursor2._set_parameters.get(TRANSACTION_ID_PARAMETER)
 
     # Commit should remove transaction_id from all cursors
     if connection.in_transaction:
@@ -297,12 +301,16 @@ def test_multiple_sequential_transactions(connection: Connection) -> None:
 
             # First transaction
             cursor.execute("BEGIN TRANSACTION")
-            cursor.execute(f"CREATE TABLE {table1_name} AS SELECT 1 as id")
+            cursor.execute(
+                f"CREATE TABLE IF NOT EXISTS {table1_name} AS SELECT 1 as id"
+            )
             connection.commit()
 
             # Second transaction
             cursor.execute("BEGIN TRANSACTION")
-            cursor.execute(f"CREATE TABLE {table2_name} AS SELECT 2 as id")
+            cursor.execute(
+                f"CREATE TABLE IF NOT EXISTS {table2_name} AS SELECT 2 as id"
+            )
             connection.commit()
 
             # Both tables should exist
@@ -315,3 +323,88 @@ def test_multiple_sequential_transactions(connection: Connection) -> None:
             # Safe cleanup for both tables
             safe_cleanup_table(connection, table1_name)
             safe_cleanup_table(connection, table2_name)
+
+
+def test_multi_cursor_transaction_parameter_sharing(connection: Connection) -> None:
+    """Test transaction_id and transaction_sequence_id sharing across multiple cursors."""
+    connection.autocommit = False
+
+    # Create first cursor
+    cursor1 = connection.cursor()
+
+    # Begin a transaction with cursor1
+    cursor1.execute("BEGIN TRANSACTION")
+
+    # Store initial transaction parameters if any were set
+    initial_transaction_id = connection.transaction_id
+    initial_sequence_id = connection.transaction_sequence_id
+
+    # Create second cursor after transaction has started
+    cursor2 = connection.cursor()
+
+    # Both cursors should share the same transaction parameters
+    if initial_transaction_id:
+        assert (
+            cursor1._set_parameters.get(TRANSACTION_ID_PARAMETER)
+            == initial_transaction_id
+        )
+        assert (
+            cursor2._set_parameters.get(TRANSACTION_ID_PARAMETER)
+            == initial_transaction_id
+        )
+
+    if initial_sequence_id:
+        assert (
+            cursor1._set_parameters.get(TRANSACTION_SEQUENCE_ID_PARAMETER)
+            == initial_sequence_id
+        )
+        assert (
+            cursor2._set_parameters.get(TRANSACTION_SEQUENCE_ID_PARAMETER)
+            == initial_sequence_id
+        )
+
+    # Execute queries with different cursors within the same transaction
+    cursor1.execute("SELECT 1 as first_cursor")
+    result1 = cursor1.fetchone()
+    assert result1[0] == 1
+
+    cursor2.execute("SELECT 2 as second_cursor")
+    result2 = cursor2.fetchone()
+    assert result2[0] == 2
+
+    # Both cursors should still share transaction state
+    assert cursor1._in_transaction == cursor2._in_transaction
+
+    # Transaction parameters should remain consistent
+    assert cursor1._set_parameters.get(
+        TRANSACTION_ID_PARAMETER
+    ) == cursor2._set_parameters.get(TRANSACTION_ID_PARAMETER)
+    assert cursor1._set_parameters.get(
+        TRANSACTION_SEQUENCE_ID_PARAMETER
+    ) == cursor2._set_parameters.get(TRANSACTION_SEQUENCE_ID_PARAMETER)
+
+    # Commit using connection method
+    if connection.in_transaction:
+        connection.commit()
+
+    # After commit, transaction parameters should be cleared from both cursors
+    assert (
+        TRANSACTION_ID_PARAMETER not in cursor1._set_parameters
+        or cursor1._set_parameters[TRANSACTION_ID_PARAMETER] is None
+    )
+    assert (
+        TRANSACTION_ID_PARAMETER not in cursor2._set_parameters
+        or cursor2._set_parameters[TRANSACTION_ID_PARAMETER] is None
+    )
+    assert (
+        TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor1._set_parameters
+        or cursor1._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] is None
+    )
+    assert (
+        TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor2._set_parameters
+        or cursor2._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] is None
+    )
+
+    # Both cursors should no longer be in transaction
+    assert cursor1._in_transaction is False
+    assert cursor2._in_transaction is False

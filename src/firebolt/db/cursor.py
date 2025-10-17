@@ -27,6 +27,10 @@ from httpx import (
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
+from firebolt.common.base_connection import (
+    TRANSACTION_ID_PARAMETER,
+    TRANSACTION_SEQUENCE_ID_PARAMETER,
+)
 from firebolt.common.constants import (
     JSON_OUTPUT_FORMAT,
     REMOVE_PARAMETERS_HEADER,
@@ -105,7 +109,13 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # Inherit transaction_id from connection if it exists
         if connection.transaction_id:
-            self._set_parameters["transaction_id"] = connection.transaction_id
+            self._set_parameters[TRANSACTION_ID_PARAMETER] = connection.transaction_id
+
+        # Inherit transaction_sequence_id from connection if it exists
+        if connection.transaction_sequence_id:
+            self._set_parameters[
+                TRANSACTION_SEQUENCE_ID_PARAMETER
+            ] = connection.transaction_sequence_id
 
     def _raise_if_error(self, resp: Response) -> None:
         """Raise a proper error if any"""

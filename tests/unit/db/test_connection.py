@@ -11,6 +11,10 @@ from pytest_httpx import HTTPXMock
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
 from firebolt.common._types import ColType
+from firebolt.common.base_connection import (
+    TRANSACTION_ID_PARAMETER,
+    TRANSACTION_SEQUENCE_ID_PARAMETER,
+)
 from firebolt.db import Connection, connect
 from firebolt.db.cursor import CursorV2
 from firebolt.utils.cache import _firebolt_cache
@@ -921,13 +925,82 @@ def test_transaction_id_handling(connection: Connection) -> None:
     assert connection.in_transaction is False
 
     # Simulate receiving transaction_id parameter
-    connection._on_transaction_id_received("tx_123")
+    connection._on_transaction_parameter_received(TRANSACTION_ID_PARAMETER, "tx_123")
 
     assert connection.in_transaction is True
     assert cursor._in_transaction is True
 
     # Simulate transaction_id removal
-    connection._on_transaction_id_removed()
+    connection._on_transaction_parameter_removed(TRANSACTION_ID_PARAMETER)
 
     assert connection.in_transaction is False
     assert cursor._in_transaction is False
+
+
+def test_transaction_sequence_id_handling(connection: Connection) -> None:
+    """Test transaction sequence ID parameter handling."""
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+
+    # Initially no transaction_sequence_id
+    assert connection.transaction_sequence_id is None
+    assert TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor1._set_parameters
+    assert TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor2._set_parameters
+
+    # Simulate receiving transaction_sequence_id parameter
+    connection._on_transaction_parameter_received(
+        TRANSACTION_SEQUENCE_ID_PARAMETER, "seq_456"
+    )
+
+    assert connection.transaction_sequence_id == "seq_456"
+    assert cursor1._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] == "seq_456"
+    assert cursor2._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] == "seq_456"
+
+    # Simulate transaction_sequence_id removal
+    connection._on_transaction_parameter_removed(TRANSACTION_SEQUENCE_ID_PARAMETER)
+
+    assert connection.transaction_sequence_id is None
+    assert TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor1._set_parameters
+    assert TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor2._set_parameters
+
+
+def test_transaction_sequence_id_inheritance_on_cursor_creation(
+    connection: Connection,
+) -> None:
+    """Test that new cursors inherit existing transaction_sequence_id from connection."""
+    # Set transaction_sequence_id on connection
+    connection._on_transaction_parameter_received(
+        TRANSACTION_SEQUENCE_ID_PARAMETER, "seq_789"
+    )
+
+    # Create new cursor - should inherit transaction_sequence_id
+    cursor = connection.cursor()
+
+    assert cursor._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] == "seq_789"
+
+
+def test_multi_cursor_transaction_sequence_id_sync(connection: Connection) -> None:
+    """Test transaction_sequence_id synchronization across multiple cursors."""
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+    cursor3 = connection.cursor()
+
+    # All cursors should initially have no transaction_sequence_id
+    for cursor in [cursor1, cursor2, cursor3]:
+        assert TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor._set_parameters
+
+    # Set transaction_sequence_id - should propagate to all cursors
+    connection._on_transaction_parameter_received(
+        TRANSACTION_SEQUENCE_ID_PARAMETER, "seq_multi_123"
+    )
+
+    for cursor in [cursor1, cursor2, cursor3]:
+        assert (
+            cursor._set_parameters[TRANSACTION_SEQUENCE_ID_PARAMETER] == "seq_multi_123"
+        )
+
+    # Remove transaction_sequence_id - should be removed from all cursors
+    connection._on_transaction_parameter_removed(TRANSACTION_SEQUENCE_ID_PARAMETER)
+
+    for cursor in [cursor1, cursor2, cursor3]:
+        assert TRANSACTION_SEQUENCE_ID_PARAMETER not in cursor._set_parameters
