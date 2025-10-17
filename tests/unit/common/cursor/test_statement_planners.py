@@ -83,7 +83,9 @@ def test_fb_numeric_planner_initialization(formatter):
 
 def test_fb_numeric_basic_execution_plan(fb_numeric_planner):
     """Test basic execution plan creation."""
-    plan = fb_numeric_planner.create_execution_plan("SELECT $1", [[42]])
+    plan = fb_numeric_planner.create_execution_plan(
+        "SELECT $1", [[42]], bulk_insert=False
+    )
 
     assert len(plan.queries) == 1
     assert plan.queries[0] == "SELECT $1"
@@ -96,7 +98,9 @@ def test_fb_numeric_basic_execution_plan(fb_numeric_planner):
 def test_fb_numeric_execution_plan_with_parameters(fb_numeric_planner):
     """Test execution plan with parameters."""
     parameters = [[42, "test", True]]
-    plan = fb_numeric_planner.create_execution_plan("SELECT $1, $2, $3", parameters)
+    plan = fb_numeric_planner.create_execution_plan(
+        "SELECT $1, $2, $3", parameters, bulk_insert=False
+    )
 
     assert plan.query_params is not None
     assert "query_parameters" in plan.query_params
@@ -111,7 +115,7 @@ def test_fb_numeric_execution_plan_with_parameters(fb_numeric_planner):
 
 def test_fb_numeric_execution_plan_no_parameters(fb_numeric_planner):
     """Test execution plan without parameters."""
-    plan = fb_numeric_planner.create_execution_plan("SELECT 1", [])
+    plan = fb_numeric_planner.create_execution_plan("SELECT 1", [], bulk_insert=False)
 
     assert plan.query_params is not None
     assert "query_parameters" not in plan.query_params
@@ -185,7 +189,7 @@ def test_qmark_planner_initialization(formatter):
 
 def test_qmark_basic_execution_plan(qmark_planner):
     """Test basic execution plan creation."""
-    plan = qmark_planner.create_execution_plan("SELECT ?", [[42]])
+    plan = qmark_planner.create_execution_plan("SELECT ?", [[42]], bulk_insert=False)
 
     assert len(plan.queries) >= 1  # Could be split by formatter
     assert plan.query_params is not None
@@ -257,7 +261,9 @@ def test_qmark_multi_statement_detection(qmark_planner, queries, expected_multi)
     # Mock the formatter to return queries
     qmark_planner.formatter.split_format_sql = Mock(return_value=queries)
 
-    plan = qmark_planner.create_execution_plan("SELECT 1; SELECT 2", [[]])
+    plan = qmark_planner.create_execution_plan(
+        "SELECT 1; SELECT 2", [[]], bulk_insert=False
+    )
 
     assert plan.is_multi_statement is expected_multi
     assert len(plan.queries) == len(queries)
@@ -304,11 +310,38 @@ def test_statement_planner_factory_unsupported_paramstyle(formatter):
         StatementPlannerFactory.create_planner("unsupported", formatter)
 
 
+@pytest.mark.parametrize(
+    "paramstyle,expected_class",
+    [
+        ("fb_numeric", "FbNumericStatementPlanner"),
+        ("qmark", "QmarkStatementPlanner"),
+    ],
+)
+def test_statement_planner_factory_creates_correct_bulk_planners(
+    formatter, paramstyle, expected_class
+):
+    """Test that factory creates unified planner types that support both standard and bulk operations."""
+    planner = StatementPlannerFactory.create_planner(paramstyle, formatter)
+
+    assert planner.__class__.__name__ == expected_class
+    assert planner.formatter == formatter
+
+
+def test_statement_planner_factory_unified_planners(formatter):
+    """Test that planners now support both standard and bulk operations."""
+    fb_planner = StatementPlannerFactory.create_planner("fb_numeric", formatter)
+    qmark_planner = StatementPlannerFactory.create_planner("qmark", formatter)
+
+    # Check that planners are the same whether bulk_insert is True or False
+    assert isinstance(fb_planner, FbNumericStatementPlanner)
+    assert isinstance(qmark_planner, QmarkStatementPlanner)
+
+
 # Edge cases and error conditions
 def test_fb_numeric_empty_parameters_list(formatter):
     """Test fb_numeric with empty parameters list."""
     planner = FbNumericStatementPlanner(formatter)
-    plan = planner.create_execution_plan("SELECT 1", [])
+    plan = planner.create_execution_plan("SELECT 1", [], bulk_insert=False)
 
     assert "query_parameters" not in plan.query_params
     assert plan.query_params["output_format"] == JSON_OUTPUT_FORMAT
@@ -317,7 +350,9 @@ def test_fb_numeric_empty_parameters_list(formatter):
 def test_fb_numeric_none_parameters(formatter):
     """Test fb_numeric with None in parameters."""
     planner = FbNumericStatementPlanner(formatter)
-    plan = planner.create_execution_plan("SELECT $1, $2", [[None, "test"]])
+    plan = planner.create_execution_plan(
+        "SELECT $1, $2", [[None, "test"]], bulk_insert=False
+    )
 
     query_params = json.loads(plan.query_params["query_parameters"])
     assert query_params[0]["value"] is None
@@ -327,7 +362,7 @@ def test_fb_numeric_none_parameters(formatter):
 def test_qmark_empty_query(formatter):
     """Test qmark with empty query."""
     planner = QmarkStatementPlanner(formatter)
-    plan = planner.create_execution_plan("", [[]])
+    plan = planner.create_execution_plan("", [[]], bulk_insert=False)
 
     assert plan.query_params is not None
     assert "output_format" in plan.query_params

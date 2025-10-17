@@ -218,9 +218,11 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         timeout: Optional[float] = None,
         async_execution: bool = False,
         streaming: bool = False,
+        bulk_insert: bool = False,
     ) -> None:
         await self._close_rowset_and_reset()
         self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
+
         # Import paramstyle from module level
         from firebolt.async_db import paramstyle
 
@@ -230,7 +232,12 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             )
 
             plan = statement_planner.create_execution_plan(
-                raw_query, parameters, skip_parsing, async_execution, streaming
+                raw_query,
+                parameters,
+                skip_parsing,
+                async_execution,
+                streaming,
+                bulk_insert,
             )
             await self._execute_plan(plan, timeout)
             self._state = CursorState.DONE
@@ -385,6 +392,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters_seq: Sequence[Sequence[ParameterType]],
         timeout_seconds: Optional[float] = None,
+        bulk_insert: bool = False,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -402,6 +410,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 `SET param=value` statement before it. All parameters are stored in
                 cursor object until it's closed. They can also be removed with
                 `flush_parameters` method call.
+            Bulk insert: When bulk_insert=True, multiple INSERT queries are
+                concatenated and sent as a single batch for improved performance.
+                Only supported for INSERT statements.
 
         Args:
             query (str): SQL query to execute.
@@ -410,11 +421,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
             timeout_seconds (Optional[float]): Query execution timeout in seconds.
+            bulk_insert (bool): When True, concatenates multiple INSERT queries
+               into a single batch request. Only supported for INSERT statements.
 
         Returns:
             int: Query row count.
         """
-        await self._do_execute(query, parameters_seq, timeout=timeout_seconds)
+        await self._do_execute(
+            query, parameters_seq, timeout=timeout_seconds, bulk_insert=bulk_insert
+        )
         return self.rowcount
 
     @check_not_closed
