@@ -4,8 +4,10 @@ from decimal import Decimal
 from random import randint
 from typing import Callable, List, Tuple
 
+import trio
 from pytest import mark, raises
 
+import firebolt.async_db
 from firebolt.async_db import Binary, Connection, Cursor, OperationalError
 from firebolt.async_db.connection import connect
 from firebolt.client.auth.base import Auth
@@ -280,6 +282,75 @@ async def test_parameterized_query_with_special_chars(connection: Connection) ->
         assert result == [
             [parameters[0], parameters[1]]
         ], "Invalid data in table after parameterized insert"
+
+
+@mark.parametrize(
+    "paramstyle,query,test_data",
+    [
+        (
+            "fb_numeric",
+            'INSERT INTO "test_tbl" VALUES ($1, $2)',
+            [(1, "alice"), (2, "bob"), (3, "charlie")],
+        ),
+        (
+            "qmark",
+            'INSERT INTO "test_tbl" VALUES (?, ?)',
+            [(4, "david"), (5, "eve"), (6, "frank")],
+        ),
+    ],
+)
+async def test_executemany_bulk_insert_paramstyles(
+    connection: Connection,
+    paramstyle: str,
+    query: str,
+    test_data: List[Tuple],
+    create_drop_test_table_setup_teardown_async: Callable,
+) -> None:
+    """executemany with bulk_insert=True works correctly for both paramstyles."""
+    # Set the paramstyle for this test
+    original_paramstyle = firebolt.async_db.paramstyle
+    firebolt.async_db.paramstyle = paramstyle
+    # Generate a unique label for this test execution
+    unique_label = f"test_bulk_insert_async_{paramstyle}_{randint(100000, 999999)}"
+    table_name = "test_tbl"
+
+    try:
+        c = connection.cursor()
+
+        # Can't do this for fb_numeric yet - FIR-49970
+        if paramstyle != "fb_numeric":
+            await c.execute(f"SET query_label = '{unique_label}'")
+
+        # Execute bulk insert
+        await c.executemany(
+            query,
+            test_data,
+            bulk_insert=True,
+        )
+
+        # Verify the data was inserted correctly
+        await c.execute(f'SELECT * FROM "{table_name}" ORDER BY id')
+        data = await c.fetchall()
+        assert len(data) == len(test_data)
+        for i, (expected_id, expected_name) in enumerate(test_data):
+            assert data[i] == [expected_id, expected_name]
+
+        # Verify that only one INSERT query was executed with our unique label
+        # Can't do this for fb_numeric yet - FIR-49970
+        if paramstyle != "fb_numeric":
+            # Wait a moment to ensure query history is updated
+            await trio.sleep(10)
+            await c.execute(
+                "SELECT COUNT(*) FROM information_schema.engine_query_history "
+                f"WHERE query_label = '{unique_label}' AND query_text LIKE 'INSERT INTO%'"
+                " AND status = 'ENDED_SUCCESSFULLY'"
+            )
+            query_count = (await c.fetchone())[0]
+            assert (
+                query_count == 1
+            ), f"Expected 1 INSERT query with label '{unique_label}', but found {query_count}"
+    finally:
+        firebolt.async_db.paramstyle = original_paramstyle
 
 
 async def test_multi_statement_query(connection: Connection) -> None:

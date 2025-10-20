@@ -57,7 +57,7 @@ def create_drop_test_table_setup_teardown(connection: Connection) -> None:
 
 @fixture
 async def create_drop_test_table_setup_teardown_async(connection: Connection) -> None:
-    with connection.cursor() as c:
+    async with connection.cursor() as c:
         await c.execute(CREATE_TEST_TABLE)
         yield c
         await c.execute(DROP_TEST_TABLE)
