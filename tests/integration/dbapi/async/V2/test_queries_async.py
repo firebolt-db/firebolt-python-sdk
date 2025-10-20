@@ -696,3 +696,52 @@ async def test_select_quoted_bigint(
         assert result[0][0] == int(
             long_bigint_value
         ), "Invalid data returned by fetchall"
+
+
+async def test_transaction_commit(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test transaction SQL statements with COMMIT."""
+    async with connection.cursor() as c:
+        # Test successful transaction with COMMIT
+        result = await c.execute("BEGIN TRANSACTION")
+        assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+
+        await c.execute("INSERT INTO \"test_tbl\" VALUES (1, 'committed')")
+
+        result = await c.execute("COMMIT TRANSACTION")
+        assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+
+        # Verify the data was committed
+        await c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        data = await c.fetchall()
+        assert len(data) == 1, "Committed data should be present"
+        assert data[0] == [
+            1,
+            "committed",
+        ], "Committed data should match inserted values"
+
+
+async def test_transaction_rollback(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test transaction SQL statements with ROLLBACK."""
+    async with connection.cursor() as c:
+        # Test transaction with ROLLBACK
+        result = await c.execute("BEGIN")  # Test short form
+        assert result == 0, "BEGIN should return 0 rows"
+
+        await c.execute("INSERT INTO \"test_tbl\" VALUES (1, 'rolled_back')")
+
+        # Verify data is visible within transaction
+        await c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        data = await c.fetchall()
+        assert len(data) == 1, "Data should be visible within transaction"
+
+        result = await c.execute("ROLLBACK")  # Test short form
+        assert result == 0, "ROLLBACK should return 0 rows"
+
+        # Verify the data was rolled back
+        await c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        data = await c.fetchall()
+        assert len(data) == 0, "Rolled back data should not be present"

@@ -697,3 +697,52 @@ def test_select_quoted_bigint(
         assert result[0][0] == int(
             long_bigint_value
         ), "Invalid data returned by fetchall"
+
+
+def test_transaction_commit(
+    connection: Connection, create_drop_test_table_setup_teardown: Callable
+) -> None:
+    """Test transaction SQL statements with COMMIT."""
+    with connection.cursor() as c:
+        # Test successful transaction with COMMIT
+        result = c.execute("BEGIN TRANSACTION")
+        assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+
+        c.execute("INSERT INTO \"test_tbl\" VALUES (1, 'committed')")
+
+        result = c.execute("COMMIT TRANSACTION")
+        assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+
+        # Verify the data was committed
+        c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        data = c.fetchall()
+        assert len(data) == 1, "Committed data should be present"
+        assert data[0] == [
+            1,
+            "committed",
+        ], "Committed data should match inserted values"
+
+
+def test_transaction_rollback(
+    connection: Connection, create_drop_test_table_setup_teardown: Callable
+) -> None:
+    """Test transaction SQL statements with ROLLBACK."""
+    with connection.cursor() as c:
+        # Test transaction with ROLLBACK
+        result = c.execute("BEGIN")  # Test short form
+        assert result == 0, "BEGIN should return 0 rows"
+
+        c.execute("INSERT INTO \"test_tbl\" VALUES (1, 'rolled_back')")
+
+        # Verify data is visible within transaction
+        c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        data = c.fetchall()
+        assert len(data) == 1, "Data should be visible within transaction"
+
+        result = c.execute("ROLLBACK")  # Test short form
+        assert result == 0, "ROLLBACK should return 0 rows"
+
+        # Verify the data was rolled back
+        c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        data = c.fetchall()
+        assert len(data) == 0, "Rolled back data should not be present"
