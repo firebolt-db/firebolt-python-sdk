@@ -313,7 +313,7 @@ def test_executemany_bulk_insert_paramstyles(
     firebolt.db.paramstyle = paramstyle
     # Generate a unique label for this test execution
     unique_label = f"test_bulk_insert_{paramstyle}_{randint(100000, 999999)}"
-    table_name = "test_tbl"
+    table_name = create_drop_test_table_setup_teardown
 
     try:
         c = connection.cursor()
