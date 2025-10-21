@@ -774,18 +774,19 @@ def test_transaction_commit(
     connection: Connection, create_drop_test_table_setup_teardown: Callable
 ) -> None:
     """Test transaction SQL statements with COMMIT."""
+    table_name = create_drop_test_table_setup_teardown
     with connection.cursor() as c:
         # Test successful transaction with COMMIT
         result = c.execute("BEGIN TRANSACTION")
         assert result == 0, "BEGIN TRANSACTION should return 0 rows"
 
-        c.execute("INSERT INTO \"test_tbl\" VALUES (1, 'committed')")
+        c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'committed')")
 
         result = c.execute("COMMIT TRANSACTION")
         assert result == 0, "COMMIT TRANSACTION should return 0 rows"
 
         # Verify the data was committed
-        c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
         data = c.fetchall()
         assert len(data) == 1, "Committed data should be present"
         assert data[0] == [
@@ -798,15 +799,16 @@ def test_transaction_rollback(
     connection: Connection, create_drop_test_table_setup_teardown: Callable
 ) -> None:
     """Test transaction SQL statements with ROLLBACK."""
+    table_name = create_drop_test_table_setup_teardown
     with connection.cursor() as c:
         # Test transaction with ROLLBACK
         result = c.execute("BEGIN")  # Test short form
         assert result == 0, "BEGIN should return 0 rows"
 
-        c.execute("INSERT INTO \"test_tbl\" VALUES (1, 'rolled_back')")
+        c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'rolled_back')")
 
         # Verify data is visible within transaction
-        c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
         data = c.fetchall()
         assert len(data) == 1, "Data should be visible within transaction"
 
@@ -814,7 +816,7 @@ def test_transaction_rollback(
         assert result == 0, "ROLLBACK should return 0 rows"
 
         # Verify the data was rolled back
-        c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+        c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
         data = c.fetchall()
         assert len(data) == 0, "Rolled back data should not be present"
 
@@ -823,6 +825,7 @@ def test_transaction_cursor_isolation(
     connection: Connection, create_drop_test_table_setup_teardown: Callable
 ) -> None:
     """Test that one cursor can't see another's data until it commits."""
+    table_name = create_drop_test_table_setup_teardown
     cursor1 = connection.cursor()
     cursor2 = connection.cursor()
 
@@ -830,16 +833,16 @@ def test_transaction_cursor_isolation(
     result = cursor1.execute("BEGIN TRANSACTION")
     assert result == 0, "BEGIN TRANSACTION should return 0 rows"
 
-    cursor1.execute("INSERT INTO \"test_tbl\" VALUES (1, 'isolated_data')")
+    cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'isolated_data')")
 
     # Verify cursor1 can see its own uncommitted data
-    cursor1.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    cursor1.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
     data1 = cursor1.fetchall()
     assert len(data1) == 1, "Cursor1 should see its own uncommitted data"
     assert data1[0] == [1, "isolated_data"], "Cursor1 data should match inserted values"
 
     # Verify cursor2 cannot see cursor1's uncommitted data
-    cursor2.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
     data2 = cursor2.fetchall()
     assert len(data2) == 0, "Cursor2 should not see cursor1's uncommitted data"
 
@@ -848,7 +851,7 @@ def test_transaction_cursor_isolation(
     assert result == 0, "COMMIT TRANSACTION should return 0 rows"
 
     # Now cursor2 should be able to see the committed data
-    cursor2.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
     data2 = cursor2.fetchall()
     assert len(data2) == 1, "Cursor2 should see committed data after commit"
     assert data2[0] == [1, "isolated_data"], "Cursor2 should see the committed data"
