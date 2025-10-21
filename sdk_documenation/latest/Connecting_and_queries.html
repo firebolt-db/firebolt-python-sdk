@@ -53,6 +53,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#fetching-query-results">Fetching query results</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#fetching-query-result-information">Fetching query result information</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#executing-parameterized-queries">Executing parameterized queries</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bulk-insert-for-improved-performance">Bulk insert for improved performance</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#setting-session-parameters">Setting session parameters</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#executing-multiple-statement-queries">Executing multiple-statement queries</a></li>
 </ul>
@@ -484,6 +485,50 @@ as values in the second argument.</p>
 <span class="n">cursor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 </pre></div>
 </div>
+</section>
+<section id="bulk-insert-for-improved-performance">
+<h3>Bulk insert for improved performance<a class="headerlink" href="#bulk-insert-for-improved-performance" title="Link to this heading"></a></h3>
+<p>For inserting large amounts of data more efficiently, you can use the <code class="docutils literal notranslate"><span class="pre">bulk_insert</span></code> parameter
+with <code class="docutils literal notranslate"><span class="pre">executemany()</span></code>. This concatenates multiple INSERT statements into a single batch request,
+which can significantly improve performance when inserting many rows.</p>
+<p><strong>Note:</strong> The <code class="docutils literal notranslate"><span class="pre">bulk_insert</span></code> parameter only works with INSERT statements and supports both
+<code class="docutils literal notranslate"><span class="pre">fb_numeric</span></code> and <code class="docutils literal notranslate"><span class="pre">qmark</span></code> parameter styles. Using it with other statement types will
+raise an error.</p>
+<p><strong>Example with QMARK parameter style (default):</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Using the default qmark parameter style</span>
+<span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span>
+    <span class="s2">&quot;INSERT INTO test_table VALUES (?, ?, ?)&quot;</span><span class="p">,</span>
+    <span class="p">(</span>
+        <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;apple&quot;</span><span class="p">,</span> <span class="s2">&quot;2019-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;banana&quot;</span><span class="p">,</span> <span class="s2">&quot;2020-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;carrot&quot;</span><span class="p">,</span> <span class="s2">&quot;2021-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;donut&quot;</span><span class="p">,</span> <span class="s2">&quot;2022-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;eggplant&quot;</span><span class="p">,</span> <span class="s2">&quot;2023-01-01&quot;</span><span class="p">)</span>
+    <span class="p">),</span>
+    <span class="n">bulk_insert</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Enable bulk insert for better performance</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Example with FB_NUMERIC parameter style:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">firebolt.db</span>
+<span class="c1"># Set paramstyle to &quot;fb_numeric&quot; for server-side parameter substitution</span>
+<span class="n">firebolt</span><span class="o">.</span><span class="n">db</span><span class="o">.</span><span class="n">paramstyle</span> <span class="o">=</span> <span class="s2">&quot;fb_numeric&quot;</span>
+
+<span class="n">cursor</span><span class="o">.</span><span class="n">executemany</span><span class="p">(</span>
+    <span class="s2">&quot;INSERT INTO test_table VALUES ($1, $2, $3)&quot;</span><span class="p">,</span>
+    <span class="p">(</span>
+        <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;apple&quot;</span><span class="p">,</span> <span class="s2">&quot;2019-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;banana&quot;</span><span class="p">,</span> <span class="s2">&quot;2020-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;carrot&quot;</span><span class="p">,</span> <span class="s2">&quot;2021-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;donut&quot;</span><span class="p">,</span> <span class="s2">&quot;2022-01-01&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;eggplant&quot;</span><span class="p">,</span> <span class="s2">&quot;2023-01-01&quot;</span><span class="p">)</span>
+    <span class="p">),</span>
+    <span class="n">bulk_insert</span><span class="o">=</span><span class="kc">True</span>  <span class="c1"># Enable bulk insert for better performance</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>When <code class="docutils literal notranslate"><span class="pre">bulk_insert=True</span></code>, the SDK concatenates all INSERT statements into a single batch
+and sends them to the server for optimized batch processing.</p>
 </section>
 <section id="setting-session-parameters">
 <h3>Setting session parameters<a class="headerlink" href="#setting-session-parameters" title="Link to this heading"></a></h3>
