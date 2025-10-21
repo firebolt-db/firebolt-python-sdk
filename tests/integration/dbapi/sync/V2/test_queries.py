@@ -290,12 +290,12 @@ def test_parameterized_query(connection: Connection) -> None:
     [
         (
             "fb_numeric",
-            'INSERT INTO "test_tbl" VALUES ($1, $2)',
+            'INSERT INTO "{table}" VALUES ($1, $2)',
             [(1, "alice"), (2, "bob"), (3, "charlie")],
         ),
         (
             "qmark",
-            'INSERT INTO "test_tbl" VALUES (?, ?)',
+            'INSERT INTO "{table}" VALUES (?, ?)',
             [(4, "david"), (5, "eve"), (6, "frank")],
         ),
     ],
@@ -324,7 +324,7 @@ def test_executemany_bulk_insert_paramstyles(
 
         # Execute bulk insert
         c.executemany(
-            query,
+            query.format(table=table_name),
             test_data,
             bulk_insert=True,
         )
