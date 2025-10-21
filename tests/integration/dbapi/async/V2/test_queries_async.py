@@ -816,3 +816,38 @@ async def test_transaction_rollback(
         await c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
         data = await c.fetchall()
         assert len(data) == 0, "Rolled back data should not be present"
+
+
+async def test_transaction_cursor_isolation(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test that one cursor can't see another's data until it commits."""
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+
+    # Start transaction in cursor1 and insert data
+    result = await cursor1.execute("BEGIN TRANSACTION")
+    assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+
+    await cursor1.execute("INSERT INTO \"test_tbl\" VALUES (1, 'isolated_data')")
+
+    # Verify cursor1 can see its own uncommitted data
+    await cursor1.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    data1 = await cursor1.fetchall()
+    assert len(data1) == 1, "Cursor1 should see its own uncommitted data"
+    assert data1[0] == [1, "isolated_data"], "Cursor1 data should match inserted values"
+
+    # Verify cursor2 cannot see cursor1's uncommitted data
+    await cursor2.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    data2 = await cursor2.fetchall()
+    assert len(data2) == 0, "Cursor2 should not see cursor1's uncommitted data"
+
+    # Commit the transaction in cursor1
+    result = await cursor1.execute("COMMIT TRANSACTION")
+    assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+
+    # Now cursor2 should be able to see the committed data
+    await cursor2.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    data2 = await cursor2.fetchall()
+    assert len(data2) == 1, "Cursor2 should see committed data after commit"
+    assert data2[0] == [1, "isolated_data"], "Cursor2 should see the committed data"

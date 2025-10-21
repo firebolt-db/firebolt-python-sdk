@@ -817,3 +817,38 @@ def test_transaction_rollback(
         c.execute('SELECT * FROM "test_tbl" WHERE id = 1')
         data = c.fetchall()
         assert len(data) == 0, "Rolled back data should not be present"
+
+
+def test_transaction_cursor_isolation(
+    connection: Connection, create_drop_test_table_setup_teardown: Callable
+) -> None:
+    """Test that one cursor can't see another's data until it commits."""
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+
+    # Start transaction in cursor1 and insert data
+    result = cursor1.execute("BEGIN TRANSACTION")
+    assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+
+    cursor1.execute("INSERT INTO \"test_tbl\" VALUES (1, 'isolated_data')")
+
+    # Verify cursor1 can see its own uncommitted data
+    cursor1.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    data1 = cursor1.fetchall()
+    assert len(data1) == 1, "Cursor1 should see its own uncommitted data"
+    assert data1[0] == [1, "isolated_data"], "Cursor1 data should match inserted values"
+
+    # Verify cursor2 cannot see cursor1's uncommitted data
+    cursor2.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    data2 = cursor2.fetchall()
+    assert len(data2) == 0, "Cursor2 should not see cursor1's uncommitted data"
+
+    # Commit the transaction in cursor1
+    result = cursor1.execute("COMMIT TRANSACTION")
+    assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+
+    # Now cursor2 should be able to see the committed data
+    cursor2.execute('SELECT * FROM "test_tbl" WHERE id = 1')
+    data2 = cursor2.fetchall()
+    assert len(data2) == 1, "Cursor2 should see committed data after commit"
+    assert data2[0] == [1, "isolated_data"], "Cursor2 should see the committed data"
