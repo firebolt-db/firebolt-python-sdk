@@ -260,6 +260,37 @@ def insert_query_callback(
     return do_query
 
 
+@fixture
+def remove_parameters() -> List[str]:
+    return ["param1", "param3"]
+
+
+@fixture
+def query_callback_with_remove_header(
+    query_statistics: Dict[str, Any], remove_parameters: List[str]
+) -> Callable:
+    """Fixture for query callback that returns REMOVE_PARAMETERS_HEADER.
+
+    Returns a callback that simulates a server response with Firebolt-Remove-Parameters
+    header containing 'param1,param3' to test parameter removal functionality.
+    """
+
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        query_response = {
+            "meta": [{"name": "one", "type": "int"}],
+            "data": [1],
+            "rows": 1,
+            "statistics": query_statistics,
+        }
+        # Header with comma-separated parameter names to remove
+        headers = {"Firebolt-Remove-Parameters": ",".join(remove_parameters)}
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    return do_query
+
+
 def encode_param(p: Any) -> str:
     return jdumps(p).strip('"')
 

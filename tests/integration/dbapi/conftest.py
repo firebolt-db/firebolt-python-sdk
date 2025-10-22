@@ -1,4 +1,5 @@
 import os
+import uuid
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from logging import getLogger
@@ -12,8 +13,8 @@ from firebolt.db import ARRAY, DECIMAL, Connection
 
 LOGGER = getLogger(__name__)
 
-CREATE_TEST_TABLE = 'CREATE TABLE IF NOT EXISTS "test_tbl" (id int, name string)'
-DROP_TEST_TABLE = 'DROP TABLE IF EXISTS "test_tbl" CASCADE'
+CREATE_TEST_TABLE = 'CREATE TABLE IF NOT EXISTS "{table}" (id int, name string)'
+DROP_TEST_TABLE = 'DROP TABLE IF EXISTS "{table}" CASCADE'
 
 LONG_SELECT_DEFAULT_V1 = 250000000000
 LONG_SELECT_DEFAULT_V2 = 350000000000
@@ -29,38 +30,27 @@ def long_test_value() -> int:
     return long_test_value_with_default
 
 
-@fixture
-def create_drop_test_table_setup_teardown(connection: Connection) -> None:
-    with connection.cursor() as c:
-        c.execute(CREATE_TEST_TABLE)
-        yield c
-        c.execute(DROP_TEST_TABLE)
-
-
-@fixture
-async def create_server_side_test_table_setup_teardown_async(
-    connection: Connection,
-) -> None:
-    with connection.cursor() as c:
-        await c.execute(CREATE_TEST_TABLE)
-        yield c
-        await c.execute(DROP_TEST_TABLE)
+def generate_unique_table_name() -> str:
+    """Generate a unique table name for testing purposes."""
+    return f"test_table_{uuid.uuid4().hex}"
 
 
 @fixture
 def create_drop_test_table_setup_teardown(connection: Connection) -> None:
+    table = generate_unique_table_name()
     with connection.cursor() as c:
-        c.execute(CREATE_TEST_TABLE)
-        yield c
-        c.execute(DROP_TEST_TABLE)
+        c.execute(CREATE_TEST_TABLE.format(table=table))
+        yield table
+        c.execute(DROP_TEST_TABLE.format(table=table))
 
 
 @fixture
 async def create_drop_test_table_setup_teardown_async(connection: Connection) -> None:
+    table = generate_unique_table_name()
     async with connection.cursor() as c:
-        await c.execute(CREATE_TEST_TABLE)
-        yield c
-        await c.execute(DROP_TEST_TABLE)
+        await c.execute(CREATE_TEST_TABLE.format(table=table))
+        yield table
+        await c.execute(DROP_TEST_TABLE.format(table=table))
 
 
 @fixture

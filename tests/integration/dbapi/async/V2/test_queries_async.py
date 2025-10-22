@@ -289,12 +289,12 @@ async def test_parameterized_query_with_special_chars(connection: Connection) ->
     [
         (
             "fb_numeric",
-            'INSERT INTO "test_tbl" VALUES ($1, $2)',
+            'INSERT INTO "{table}" VALUES ($1, $2)',
             [(1, "alice"), (2, "bob"), (3, "charlie")],
         ),
         (
             "qmark",
-            'INSERT INTO "test_tbl" VALUES (?, ?)',
+            'INSERT INTO "{table}" VALUES (?, ?)',
             [(4, "david"), (5, "eve"), (6, "frank")],
         ),
     ],
@@ -312,7 +312,7 @@ async def test_executemany_bulk_insert_paramstyles(
     firebolt.async_db.paramstyle = paramstyle
     # Generate a unique label for this test execution
     unique_label = f"test_bulk_insert_async_{paramstyle}_{randint(100000, 999999)}"
-    table_name = "test_tbl"
+    table_name = create_drop_test_table_setup_teardown_async
 
     try:
         c = connection.cursor()
@@ -323,7 +323,7 @@ async def test_executemany_bulk_insert_paramstyles(
 
         # Execute bulk insert
         await c.executemany(
-            query,
+            query.format(table=table_name),
             test_data,
             bulk_insert=True,
         )
@@ -767,3 +767,90 @@ async def test_select_quoted_bigint(
         assert result[0][0] == int(
             long_bigint_value
         ), "Invalid data returned by fetchall"
+
+
+async def test_transaction_commit(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test transaction SQL statements with COMMIT."""
+    table_name = create_drop_test_table_setup_teardown_async
+    async with connection.cursor() as c:
+        # Test successful transaction with COMMIT
+        result = await c.execute("BEGIN TRANSACTION")
+        assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+
+        await c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'committed')")
+
+        result = await c.execute("COMMIT TRANSACTION")
+        assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+
+        # Verify the data was committed
+        await c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = await c.fetchall()
+        assert len(data) == 1, "Committed data should be present"
+        assert data[0] == [
+            1,
+            "committed",
+        ], "Committed data should match inserted values"
+
+
+async def test_transaction_rollback(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test transaction SQL statements with ROLLBACK."""
+    table_name = create_drop_test_table_setup_teardown_async
+    async with connection.cursor() as c:
+        # Test transaction with ROLLBACK
+        result = await c.execute("BEGIN")  # Test short form
+        assert result == 0, "BEGIN should return 0 rows"
+
+        await c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'rolled_back')")
+
+        # Verify data is visible within transaction
+        await c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = await c.fetchall()
+        assert len(data) == 1, "Data should be visible within transaction"
+
+        result = await c.execute("ROLLBACK")  # Test short form
+        assert result == 0, "ROLLBACK should return 0 rows"
+
+        # Verify the data was rolled back
+        await c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = await c.fetchall()
+        assert len(data) == 0, "Rolled back data should not be present"
+
+
+async def test_transaction_cursor_isolation(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test that one cursor can't see another's data until it commits."""
+    table_name = create_drop_test_table_setup_teardown_async
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+
+    # Start transaction in cursor1 and insert data
+    result = await cursor1.execute("BEGIN TRANSACTION")
+    assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+
+    await cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'isolated_data')")
+
+    # Verify cursor1 can see its own uncommitted data
+    await cursor1.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data1 = await cursor1.fetchall()
+    assert len(data1) == 1, "Cursor1 should see its own uncommitted data"
+    assert data1[0] == [1, "isolated_data"], "Cursor1 data should match inserted values"
+
+    # Verify cursor2 cannot see cursor1's uncommitted data
+    await cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data2 = await cursor2.fetchall()
+    assert len(data2) == 0, "Cursor2 should not see cursor1's uncommitted data"
+
+    # Commit the transaction in cursor1
+    result = await cursor1.execute("COMMIT TRANSACTION")
+    assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+
+    # Now cursor2 should be able to see the committed data
+    await cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data2 = await cursor2.fetchall()
+    assert len(data2) == 1, "Cursor2 should see committed data after commit"
+    assert data2[0] == [1, "isolated_data"], "Cursor2 should see the committed data"

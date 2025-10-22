@@ -796,6 +796,64 @@ async def test_cursor_reset_session(
     assert bool(cursor.database) is True, "database is not set"
 
 
+async def test_cursor_remove_parameters_header(
+    httpx_mock: HTTPXMock,
+    select_one_query_callback: Callable,
+    query_callback_with_remove_header: Callable,
+    set_query_url: str,
+    cursor: Cursor,
+):
+    """Test that cursor removes parameters when REMOVE_PARAMETERS_HEADER is received."""
+
+    # Set up initial parameters
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=value1",
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=value1&param2=value2",
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=value1&param2=value2&param3=value3",
+        is_reusable=True,
+    )
+
+    assert len(cursor._set_parameters) == 0
+
+    # Execute SET statements to add parameters
+    await cursor.execute("set param1 = value1")
+    await cursor.execute("set param2 = value2")
+    await cursor.execute("set param3 = value3")
+
+    assert len(cursor._set_parameters) == 3
+    assert "param1" in cursor._set_parameters
+    assert "param2" in cursor._set_parameters
+    assert "param3" in cursor._set_parameters
+    assert cursor._set_parameters["param1"] == "value1"
+    assert cursor._set_parameters["param2"] == "value2"
+    assert cursor._set_parameters["param3"] == "value3"
+
+    # Execute query that returns remove parameters header
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        query_callback_with_remove_header,
+        url=f"{set_query_url}&param1=value1&param2=value2&param3=value3&output_format=JSON_Compact",
+        is_reusable=True,
+    )
+    await cursor.execute("SELECT 1")
+
+    # Verify that param1 and param3 were removed, param2 remains
+    assert len(cursor._set_parameters) == 1
+    assert "param1" not in cursor._set_parameters
+    assert "param2" in cursor._set_parameters
+    assert "param3" not in cursor._set_parameters
+    assert cursor._set_parameters["param2"] == "value2"
+
+
 async def test_cursor_timeout(
     httpx_mock: HTTPXMock,
     select_one_query_callback: Callable,
