@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import logging
+import threading
 from ssl import SSLContext
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import uuid4
 from warnings import warn
 
-from httpx import Timeout, codes
+from httpx import Request, Response, Timeout, codes
 
 from firebolt.client import DEFAULT_API_URL, Client, ClientV1, ClientV2
 from firebolt.client.auth import Auth
@@ -213,6 +214,9 @@ class Connection(BaseConnection):
         "engine_url",
         "api_endpoint",
         "_is_closed",
+        "_transaction_id",
+        "_transaction_sequence_id",
+        "_transaction_lock",
         "client_class",
         "cursor_type",
         "id",
@@ -234,6 +238,7 @@ class Connection(BaseConnection):
         self._cursors: List[Cursor] = []
         self._client = client
         self.id = id
+        self._transaction_lock: threading.Lock = threading.Lock()
         self.init_parameters = init_parameters or {}
         if database:
             self.init_parameters["database"] = database
@@ -263,6 +268,25 @@ class Connection(BaseConnection):
             c.close()
         self._client.close()
         self._is_closed = True
+
+    def _execute_query_impl(self, request: Request) -> Response:
+        self._add_transaction_headers(request)
+        response = self._client.send(request, stream=True)
+        self._handle_transaction_updates(response.headers)
+        return response
+
+    def _execute_query(self, request: Request) -> Response:
+        if self.in_transaction():
+            with self._transaction_lock:
+                return self._execute_query_impl(request)
+        else:
+            return self._execute_query_impl(request)
+
+    def commit(self) -> None:
+        self.cursor().execute("COMMIT")
+
+    def rollback(self) -> None:
+        self.cursor().execute("ROLLBACK")
 
     # Server-side async methods
 

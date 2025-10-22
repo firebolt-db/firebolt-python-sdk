@@ -29,9 +29,7 @@ from firebolt.common.constants import (
 )
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
-    _parse_remove_parameters,
     _parse_update_endpoint,
-    _parse_update_parameters,
     _raise_if_internal_set_parameter,
 )
 from firebolt.common.cursor.decorators import (
@@ -58,6 +56,10 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
+from firebolt.utils.util import (
+    _parse_remove_parameters,
+    _parse_update_parameters,
+)
 
 if TYPE_CHECKING:
     from firebolt.async_db.connection import Connection
@@ -135,7 +137,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 content=query,
                 timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
             )
-            return await self._client.send(req, stream=True)
+            return await self.connection._execute_query(req)
         except TimeoutException:
             raise QueryTimeoutError()
 

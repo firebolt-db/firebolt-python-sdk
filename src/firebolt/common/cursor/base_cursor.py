@@ -33,22 +33,6 @@ from firebolt.utils.util import fix_url_schema
 logger = logging.getLogger(__name__)
 
 
-def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
-    """Parse update parameters and set them as attributes."""
-    # parse key1=value1,key2=value2 comma separated string into dict
-    param_dict = dict(item.split("=") for item in parameter_header.split(","))
-    # strip whitespace from keys and values
-    param_dict = {key.strip(): value.strip() for key, value in param_dict.items()}
-    return param_dict
-
-
-def _parse_remove_parameters(parameter_header: str) -> List[str]:
-    """Parse remove parameters header and return list of parameter names to remove."""
-    # parse key1,key2,key3 comma separated string into list
-    param_list = [item.strip() for item in parameter_header.split(",")]
-    return param_list
-
-
 def _parse_update_endpoint(
     new_engine_endpoint_header: str,
 ) -> Tuple[str, Dict[str, str]]:

@@ -5,7 +5,8 @@ from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, Union
 from uuid import uuid4
 
-from httpx import Timeout, codes
+import trio
+from httpx import Request, Response, Timeout, codes
 
 from firebolt.async_db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.client import DEFAULT_API_URL
@@ -78,6 +79,9 @@ class Connection(BaseConnection):
         "engine_url",
         "api_endpoint",
         "_is_closed",
+        "_transaction_id",
+        "_transaction_sequence_id",
+        "_transaction_lock",
         "client_class",
         "cursor_type",
         "id",
@@ -99,6 +103,7 @@ class Connection(BaseConnection):
         self._cursors: List[Cursor] = []
         self._client = client
         self.id = id
+        self._transaction_lock: trio.Lock = trio.Lock()
         self.init_parameters = init_parameters or {}
         if database:
             self.init_parameters["database"] = database
@@ -191,6 +196,25 @@ class Connection(BaseConnection):
         self._raise_if_multiple_async_results(async_query_info)
         cursor = self.cursor()
         await cursor.execute(ASYNC_QUERY_CANCEL, [async_query_info[0].query_id])
+
+    async def _execute_query_impl(self, request: Request) -> Response:
+        self._add_transaction_headers(request)
+        response = await self._client.send(request, stream=True)
+        self._handle_transaction_updates(response.headers)
+        return response
+
+    async def _execute_query(self, request: Request) -> Response:
+        if self.in_transaction():
+            async with self._transaction_lock:
+                return await self._execute_query_impl(request)
+        else:
+            return await self._execute_query_impl(request)
+
+    async def commit(self) -> None:
+        await self.cursor().execute("COMMIT")
+
+    async def rollback(self) -> None:
+        await self.cursor().execute("ROLLBACK")
 
     # Context manager support
     async def __aenter__(self) -> Connection:

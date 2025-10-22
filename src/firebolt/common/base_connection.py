@@ -1,18 +1,31 @@
 from collections import namedtuple
 from typing import Any, Dict, List, Optional, Tuple, Type
 
+from httpx import Headers, Request
+
 from firebolt.client.auth.base import Auth
 from firebolt.common._types import ColType
+from firebolt.common.constants import (
+    REMOVE_PARAMETERS_HEADER,
+    RESET_SESSION_HEADER,
+    TRANSACTION_ID_SETTING,
+    TRANSACTION_SEQUENCE_ID_SETTING,
+    UPDATE_PARAMETERS_HEADER,
+)
 from firebolt.utils.cache import (
     ConnectionInfo,
     EngineInfo,
     SecureCacheKey,
     _firebolt_cache,
 )
-from firebolt.utils.exception import ConnectionClosedError, FireboltError
+from firebolt.utils.exception import FireboltError
 from firebolt.utils.usage_tracker import (
     get_cache_tracking_params,
     get_user_agent_header,
+)
+from firebolt.utils.util import (
+    _parse_remove_parameters,
+    _parse_update_parameters,
 )
 
 ASYNC_QUERY_STATUS_RUNNING = "RUNNING"
@@ -68,6 +81,8 @@ class BaseConnection:
         self.cursor_type = cursor_type
         self._cursors: List[Any] = []
         self._is_closed = False
+        self._transaction_id: Optional[str] = None
+        self._transaction_sequence_id: Optional[str] = None
 
     def _remove_cursor(self, cursor: Any) -> None:
         # This way it's atomic
@@ -76,16 +91,61 @@ class BaseConnection:
         except ValueError:
             pass
 
+    def in_transaction(self) -> bool:
+        """`True` if connection is in a transaction; `False` otherwise."""
+        return self._transaction_id is not None
+
+    def _parse_response_headers_transaction(self, headers: Headers) -> None:
+        parameters_header = headers.get(UPDATE_PARAMETERS_HEADER)
+        if not parameters_header:
+            return
+        parameters = _parse_update_parameters(parameters_header)
+        transaction_id = parameters.get(TRANSACTION_ID_SETTING)
+        if transaction_id:
+            self._transaction_id = transaction_id
+        sequence_id = parameters.get(TRANSACTION_SEQUENCE_ID_SETTING)
+        if sequence_id:
+            self._transaction_sequence_id = sequence_id
+
+    def _parse_remove_headers_transaction(self, headers: Headers) -> None:
+        parameters_header = headers.get(REMOVE_PARAMETERS_HEADER)
+        if not parameters_header:
+            return
+        parameters = _parse_remove_parameters(parameters_header)
+        for param in parameters:
+            if param == TRANSACTION_ID_SETTING:
+                self._transaction_id = None
+            elif param == TRANSACTION_SEQUENCE_ID_SETTING:
+                self._transaction_sequence_id = None
+
+    def _reset_transaction_state(self) -> None:
+        self._transaction_id = None
+        self._transaction_sequence_id = None
+
+    def create_transaction_params(self) -> Dict[str, str]:
+        params: Dict[str, str] = {}
+        if self._transaction_id:
+            params[TRANSACTION_ID_SETTING] = self._transaction_id
+        if self._transaction_sequence_id is not None:
+            params[TRANSACTION_SEQUENCE_ID_SETTING] = str(self._transaction_sequence_id)
+        return params
+
+    def _add_transaction_headers(self, request: Request) -> None:
+        transaction_params = self.create_transaction_params()
+        for key, value in transaction_params.items():
+            request.headers[key] = value
+
+    def _handle_transaction_updates(self, headers: Headers) -> None:
+        self._parse_response_headers_transaction(headers)
+        if headers.get(RESET_SESSION_HEADER):
+            self._reset_transaction_state()
+        if headers.get(REMOVE_PARAMETERS_HEADER):
+            self._parse_remove_headers_transaction(headers)
+
     @property
     def closed(self) -> bool:
         """`True` if connection is closed; `False` otherwise."""
         return self._is_closed
-
-    def commit(self) -> None:
-        """Does nothing since Firebolt doesn't have transactions."""
-
-        if self.closed:
-            raise ConnectionClosedError("Unable to commit: Connection closed.")
 
 
 def get_cached_system_engine_info(
