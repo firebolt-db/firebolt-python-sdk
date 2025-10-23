@@ -354,7 +354,7 @@ async def connect_v2(
             client.clone(),
             CursorV2,
             api_endpoint,
-            cursor.parameters,
+            cursor.parameters | cursor._set_parameters,
             connection_id,
         )
 
