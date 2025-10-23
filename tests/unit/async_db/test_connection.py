@@ -1,4 +1,4 @@
-from typing import Callable, Generator, List, Optional, Tuple
+from typing import Callable, Dict, Generator, List, Optional, Tuple
 from unittest.mock import ANY as AnyValue
 from unittest.mock import MagicMock, patch
 
@@ -765,3 +765,55 @@ async def test_multiple_results_for_async_token(
         assert len(query_info) == 2, "Expected two results for the same token"
         assert query_info[0].query_id == async_multiple_query_data[0][7]
         assert query_info[1].query_id == async_multiple_query_data[1][7]
+
+
+async def test_use_engine_update_parameters_propagation(
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    httpx_mock: HTTPXMock,
+    system_engine_no_db_query_url: str,
+    system_engine_query_url: str,
+    use_database_callback: Callable,
+    use_engine_with_params_callback: Callable,
+    test_update_parameters: Dict[str, str],
+    mock_system_engine_connection_flow: Callable,
+) -> None:
+    """Test that USE ENGINE with Firebolt-Update-Parameters header propagates to connection init_parameters and cursors."""
+    mock_system_engine_connection_flow()
+
+    # Mock USE DATABASE callback
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    # Mock USE ENGINE callback with parameter updates
+    httpx_mock.add_callback(
+        use_engine_with_params_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    async with await connect(
+        database=db_name,
+        auth=auth,
+        engine_name=engine_name,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # Verify that parameters from USE ENGINE header are in connection init_parameters
+        for param_name, expected_value in test_update_parameters.items():
+            assert param_name in connection.init_parameters
+            assert connection.init_parameters[param_name] == expected_value
+
+        # Verify that new cursors get these parameters
+        cursor = connection.cursor()
+        for param_name, expected_value in test_update_parameters.items():
+            assert param_name in cursor._set_parameters
+            assert cursor._set_parameters[param_name] == expected_value

@@ -16,6 +16,8 @@ from firebolt.common._types import STRUCT
 from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
 )
 from firebolt.common.row_set.json_lines import (
     DataRecord,
@@ -464,6 +466,51 @@ def use_engine_callback(engine_url: str, query_statistics: Dict[str, Any]) -> Ca
             status_code=codes.OK,
             json=query_response,
             headers={"Firebolt-Update-Endpoint": engine_url},
+        )
+
+    return inner
+
+
+@fixture
+def test_update_parameters() -> Dict[str, str]:
+    """Test parameters used by use_engine_with_params_callback."""
+    return {
+        "custom_param": "test_value",
+        "another_param": "123",
+    }
+
+
+@fixture
+def use_engine_with_params_callback(
+    engine_url: str,
+    query_statistics: Dict[str, Any],
+    test_update_parameters: Dict[str, str],
+) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        # Return both endpoint update and parameter update headers
+        param_string = ",".join([f"{k}={v}" for k, v in test_update_parameters.items()])
+        headers = {
+            UPDATE_ENDPOINT_HEADER: engine_url,
+            UPDATE_PARAMETERS_HEADER: param_string,
+        }
+
+        return Response(
+            status_code=codes.OK,
+            json=query_response,
+            headers=headers,
         )
 
     return inner
