@@ -1,5 +1,5 @@
 import time
-from typing import Callable, Generator
+from typing import Callable, Dict, Generator
 from unittest.mock import patch
 
 from httpx import URL
@@ -551,3 +551,79 @@ async def test_calls_when_cache_expired(
     assert (
         use_engine_call_counter == 2
     ), "Use engine URL was not called after cache expiry"
+
+
+async def test_use_engine_parameters_caching(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    api_endpoint: str,
+    auth: Auth,
+    account_name: str,
+    httpx_mock: HTTPXMock,
+    system_engine_no_db_query_url: str,
+    system_engine_query_url: str,
+    use_database_callback: Callable,
+    use_engine_with_params_callback: Callable,
+    test_update_parameters: Dict[str, str],
+    mock_system_engine_connection_flow: Callable,
+):
+    """Test that USE ENGINE parameters are cached and correctly retrieved."""
+    mock_system_engine_connection_flow()
+
+    use_engine_call_counter = 0
+
+    def use_engine_callback_counter(request, **kwargs):
+        nonlocal use_engine_call_counter
+        use_engine_call_counter += 1
+        return use_engine_with_params_callback(request, **kwargs)
+
+    # Add the missing USE DATABASE callback
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    # Add USE ENGINE callback with parameters
+    httpx_mock.add_callback(
+        use_engine_callback_counter,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    # First connection - should populate cache with parameters
+    async with await connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        # Verify parameters are set in cursor from USE ENGINE response
+        for param_name, expected_value in test_update_parameters.items():
+            assert param_name in cursor._set_parameters
+            assert cursor._set_parameters[param_name] == expected_value
+
+    # Verify USE ENGINE was called once
+    assert use_engine_call_counter == 1, "USE ENGINE was not called on first connection"
+
+    # Second connection - should use cache and not call USE ENGINE again
+    async with await connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        # Verify cached parameters are correctly applied
+        for param_name, expected_value in test_update_parameters.items():
+            assert param_name in cursor._set_parameters
+            assert cursor._set_parameters[param_name] == expected_value
+
+    # Verify USE ENGINE was not called again (cache hit)
+    assert use_engine_call_counter == 1, "USE ENGINE was called when cache should hit"
