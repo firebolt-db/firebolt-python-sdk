@@ -4,6 +4,7 @@ from typing import Callable, Generator, List, Optional, Tuple
 from unittest.mock import ANY as AnyValue
 from unittest.mock import MagicMock, patch
 
+from httpx import codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
@@ -11,6 +12,10 @@ from pytest_httpx import HTTPXMock
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.client import ClientV2
 from firebolt.common._types import ColType
+from firebolt.common.constants import (
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
+)
 from firebolt.db import Connection, connect
 from firebolt.db.cursor import CursorV2
 from firebolt.utils.cache import _firebolt_cache
@@ -21,6 +26,7 @@ from firebolt.utils.exception import (
     FireboltError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
+from tests.unit.response import Response
 
 
 def test_connection_attributes(connection: Connection) -> None:
@@ -783,3 +789,81 @@ def test_multiple_results_for_async_token(
         assert len(query_info) == 2, "Expected two results for the same token"
         assert query_info[0].query_id == async_multiple_query_data[0][7]
         assert query_info[1].query_id == async_multiple_query_data[1][7]
+
+
+def test_use_engine_update_parameters_propagation(
+    db_name: str,
+    account_name: str,
+    engine_name: str,
+    auth: Auth,
+    api_endpoint: str,
+    httpx_mock: HTTPXMock,
+    query_statistics: Callable,
+    system_engine_no_db_query_url: str,
+    system_engine_query_url: str,
+    engine_url: str,
+    use_database_callback: Callable,
+    mock_system_engine_connection_flow: Callable,
+) -> None:
+    """Test that USE ENGINE with Firebolt-Update-Parameters header propagates to connection init_parameters and cursors."""
+    mock_system_engine_connection_flow()
+
+    # Mock USE DATABASE callback
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    # Create a custom USE ENGINE callback that returns UPDATE_PARAMETERS_HEADER
+    def use_engine_with_params_callback(request=None, **kwargs):
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        # Return both endpoint update and parameter update headers
+        headers = {
+            UPDATE_ENDPOINT_HEADER: engine_url,
+            UPDATE_PARAMETERS_HEADER: "custom_param=test_value,another_param=123",
+        }
+
+        return Response(
+            status_code=codes.OK,
+            json=query_response,
+            headers=headers,
+        )
+
+    # Mock USE ENGINE callback with parameter updates
+    httpx_mock.add_callback(
+        use_engine_with_params_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    with connect(
+        database=db_name,
+        auth=auth,
+        engine_name=engine_name,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        # Verify that parameters from USE ENGINE header are in connection init_parameters
+        assert "custom_param" in connection.init_parameters
+        assert connection.init_parameters["custom_param"] == "test_value"
+        assert "another_param" in connection.init_parameters
+        assert connection.init_parameters["another_param"] == "123"
+
+        # Verify that new cursors get these parameters
+        cursor = connection.cursor()
+        assert "custom_param" in cursor._set_parameters
+        assert cursor._set_parameters["custom_param"] == "test_value"
+        assert "another_param" in cursor._set_parameters
+        assert cursor._set_parameters["another_param"] == "123"
