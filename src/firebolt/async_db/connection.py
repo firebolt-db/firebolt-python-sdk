@@ -203,7 +203,8 @@ class Connection(BaseConnection):
     async def _execute_query_impl(self, request: Request) -> Response:
         self._add_transaction_params(request)
         response = await self._client.send(request, stream=True)
-        self._handle_transaction_updates(response.headers)
+        if not self.autocommit:
+            self._handle_transaction_updates(response.headers)
         return response
 
     async def _begin_nolock(self, request: Request) -> None:

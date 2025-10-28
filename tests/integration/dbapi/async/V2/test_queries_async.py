@@ -823,7 +823,7 @@ async def test_transaction_rollback(
 async def test_transaction_cursor_isolation(
     connection: Connection, create_drop_test_table_setup_teardown_async: Callable
 ) -> None:
-    """Test that one cursor can't see another's data until it commits."""
+    """Test that cursors share the same transaction state - no isolation between cursors."""
     table_name = create_drop_test_table_setup_teardown_async
     cursor1 = connection.cursor()
     cursor2 = connection.cursor()
@@ -832,25 +832,158 @@ async def test_transaction_cursor_isolation(
     result = await cursor1.execute("BEGIN TRANSACTION")
     assert result == 0, "BEGIN TRANSACTION should return 0 rows"
 
-    await cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'isolated_data')")
+    await cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'shared_data')")
 
     # Verify cursor1 can see its own uncommitted data
     await cursor1.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
     data1 = await cursor1.fetchall()
     assert len(data1) == 1, "Cursor1 should see its own uncommitted data"
-    assert data1[0] == [1, "isolated_data"], "Cursor1 data should match inserted values"
+    assert data1[0] == [1, "shared_data"], "Cursor1 data should match inserted values"
 
-    # Verify cursor2 cannot see cursor1's uncommitted data
+    # Verify cursor2 CAN see cursor1's uncommitted data (no isolation between cursors)
     await cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
     data2 = await cursor2.fetchall()
-    assert len(data2) == 0, "Cursor2 should not see cursor1's uncommitted data"
+    assert (
+        len(data2) == 1
+    ), "Cursor2 should see cursor1's uncommitted data (no isolation)"
+    assert data2[0] == [1, "shared_data"], "Cursor2 should see the same data as cursor1"
 
-    # Commit the transaction in cursor1
-    result = await cursor1.execute("COMMIT TRANSACTION")
+    # Commit the transaction in cursor2 (affects both cursors)
+    result = await cursor2.execute("COMMIT TRANSACTION")
     assert result == 0, "COMMIT TRANSACTION should return 0 rows"
 
-    # Now cursor2 should be able to see the committed data
+    # Both cursors should still see the committed data
+    await cursor1.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data1_after = await cursor1.fetchall()
+    assert len(data1_after) == 1, "Cursor1 should see committed data"
+    assert data1_after[0] == [1, "shared_data"], "Cursor1 should see the committed data"
+
+
+@mark.parametrize("autocommit_mode", ["implicit", "explicit"])
+async def test_autocommit_immediate_visibility(
+    connection: Connection,
+    autocommit_mode: str,
+    create_drop_test_table_setup_teardown_async: Callable,
+) -> None:
+    """Test that statements are visible immediately with autocommit enabled (uses existing connection fixture)."""
+    table_name = create_drop_test_table_setup_teardown_async
+    cursor1 = connection.cursor()
+    cursor2 = connection.cursor()
+
+    # Insert data with cursor1
+    await cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'autocommit_data')")
+
+    # Immediately verify cursor2 can see the data (autocommit makes it visible)
     await cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
-    data2 = await cursor2.fetchall()
-    assert len(data2) == 1, "Cursor2 should see committed data after commit"
-    assert data2[0] == [1, "isolated_data"], "Cursor2 should see the committed data"
+    data = await cursor2.fetchall()
+    assert (
+        len(data) == 1
+    ), f"Data should be immediately visible with {autocommit_mode} autocommit"
+    assert data[0] == [1, "autocommit_data"], "Data should match inserted values"
+
+    # Insert more data with cursor2
+    await cursor2.execute(f"INSERT INTO \"{table_name}\" VALUES (2, 'more_data')")
+
+    # Verify cursor1 can immediately see cursor2's data
+    await cursor1.execute(f'SELECT * FROM "{table_name}" ORDER BY id')
+    all_data = await cursor1.fetchall()
+    assert len(all_data) == 2, "All data should be immediately visible"
+    assert all_data[0] == [1, "autocommit_data"], "First row should match"
+    assert all_data[1] == [2, "more_data"], "Second row should match"
+
+
+# Not compatible with core
+@mark.parametrize("connection", ["remote"], indirect=True)
+async def test_begin_with_autocommit_on(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test that BEGIN does not start a transaction when autocommit is enabled."""
+    table_name = create_drop_test_table_setup_teardown_async
+
+    cursor = connection.cursor()
+    # Test that data is immediately visible without explicit transaction (autocommit)
+    await cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'autocommit_test')")
+
+    # Create a second cursor to verify data is visible immediately
+    cursor2 = connection.cursor()
+    await cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data = await cursor2.fetchall()
+    assert len(data) == 1, "Data should be visible immediately with autocommit"
+    assert data[0] == [1, "autocommit_test"], "Data should match inserted values"
+
+    # Now test with explicit BEGIN - this should be a no-op when autocommit is enabled
+    result = await cursor.execute("BEGIN TRANSACTION")
+    assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+    assert (
+        not connection.in_transaction
+    ), "Transaction should not be started when autocommit is enabled"
+
+    await cursor.execute(
+        f"INSERT INTO \"{table_name}\" VALUES (2, 'no_transaction_test')"
+    )
+
+    # ROLLBACK should fail since no transaction was started
+    with raises(Exception):
+        await cursor.execute("ROLLBACK")
+
+    # The second insert should not be rolled back since it was committed immediately
+    await cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 2')
+    data = await cursor.fetchall()
+    assert (
+        len(data) == 1
+    ), "Data should remain committed since no transaction was started"
+    assert data[0] == [2, "no_transaction_test"], "Data should match inserted values"
+
+    # Verify data is visible from another cursor (confirming it was committed)
+    cursor2 = connection.cursor()
+    await cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 2')
+    data = await cursor2.fetchall()
+    assert len(data) == 1, "Data should be visible from other cursors"
+    assert data[0] == [2, "no_transaction_test"], "Data should match inserted values"
+
+
+async def test_connection_commit(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test that connection.commit() works correctly."""
+    table_name = create_drop_test_table_setup_teardown_async
+
+    cursor = connection.cursor()
+    # Start a transaction
+    await cursor.execute("BEGIN TRANSACTION")
+    await cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'commit_test')")
+
+    # Call commit on connection level
+    await connection.commit()
+
+    # Verify data is now visible in a new cursor
+    cursor2 = connection.cursor()
+    await cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data = await cursor2.fetchall()
+    assert len(data) == 1, "Data should be visible after connection.commit()"
+    assert data[0] == [1, "commit_test"], "Data should match inserted values"
+
+
+async def test_connection_rollback(
+    connection: Connection, create_drop_test_table_setup_teardown_async: Callable
+) -> None:
+    """Test that connection.rollback() works correctly."""
+    table_name = create_drop_test_table_setup_teardown_async
+
+    cursor = connection.cursor()
+    # Start a transaction
+    await cursor.execute("BEGIN TRANSACTION")
+    await cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'rollback_test')")
+
+    # Verify data is visible within the transaction
+    await cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data = await cursor.fetchall()
+    assert len(data) == 1, "Data should be visible within transaction"
+
+    # Call rollback on connection level
+    await connection.rollback()
+
+    # Verify data is no longer visible
+    await cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data = await cursor.fetchall()
+    assert len(data) == 0, "Data should be rolled back after connection.rollback()"
