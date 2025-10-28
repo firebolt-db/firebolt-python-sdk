@@ -15,6 +15,7 @@ from firebolt.common.constants import (
     IMMUTABLE_PARAMETER_LIST,
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    TRANSACTION_PARAMETER_LIST,
     USE_PARAMETER_LIST,
     CursorState,
 )
@@ -207,7 +208,7 @@ class BaseCursor:
         user_parameters = {
             key: value
             for key, value in parameters.items()
-            if key not in IMMUTABLE_PARAMETER_LIST
+            if key not in IMMUTABLE_PARAMETER_LIST + TRANSACTION_PARAMETER_LIST
         }
 
         self.parameters.update(immutable_parameters)

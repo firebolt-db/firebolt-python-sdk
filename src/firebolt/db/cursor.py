@@ -191,6 +191,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         self._append_row_set_from_response(None)
 
     def _parse_response_headers(self, headers: Headers) -> None:
+        # TODO: merge with async in base_cursor
         if headers.get(UPDATE_ENDPOINT_HEADER):
             endpoint, params = _parse_update_endpoint(
                 headers.get(UPDATE_ENDPOINT_HEADER)

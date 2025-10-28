@@ -83,6 +83,7 @@ class BaseConnection:
         self._is_closed = False
         self._transaction_id: Optional[str] = None
         self._transaction_sequence_id: Optional[str] = None
+        self._autocommit: bool = True
 
     def _remove_cursor(self, cursor: Any) -> None:
         # This way it's atomic
@@ -91,6 +92,7 @@ class BaseConnection:
         except ValueError:
             pass
 
+    @property
     def in_transaction(self) -> bool:
         """`True` if connection is in a transaction; `False` otherwise."""
         return self._transaction_id is not None
@@ -130,10 +132,10 @@ class BaseConnection:
             params[TRANSACTION_SEQUENCE_ID_SETTING] = str(self._transaction_sequence_id)
         return params
 
-    def _add_transaction_headers(self, request: Request) -> None:
+    def _add_transaction_params(self, request: Request) -> None:
         transaction_params = self.create_transaction_params()
         for key, value in transaction_params.items():
-            request.headers[key] = value
+            request.url = request.url.copy_add_param(key, value)
 
     def _handle_transaction_updates(self, headers: Headers) -> None:
         self._parse_response_headers_transaction(headers)
@@ -141,6 +143,13 @@ class BaseConnection:
             self._reset_transaction_state()
         if headers.get(REMOVE_PARAMETERS_HEADER):
             self._parse_remove_headers_transaction(headers)
+
+    @property
+    def autocommit(self) -> bool:
+        """
+        `True` if connection is in autocommit mode; `False` otherwise.
+        """
+        return self._autocommit
 
     @property
     def closed(self) -> bool:

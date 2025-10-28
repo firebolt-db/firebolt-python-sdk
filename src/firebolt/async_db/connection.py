@@ -85,6 +85,7 @@ class Connection(BaseConnection):
         "client_class",
         "cursor_type",
         "id",
+        "_autocommit",
     )
 
     def __init__(
@@ -96,6 +97,7 @@ class Connection(BaseConnection):
         api_endpoint: str,
         init_parameters: Optional[Dict[str, Any]] = None,
         id: str = uuid4().hex,
+        autocommit: bool = True,
     ):
         super().__init__(cursor_type)
         self.api_endpoint = api_endpoint
@@ -105,6 +107,7 @@ class Connection(BaseConnection):
         self.id = id
         self._transaction_lock: trio.Lock = trio.Lock()
         self.init_parameters = init_parameters or {}
+        self._autocommit = autocommit
         if database:
             self.init_parameters["database"] = database
 
@@ -198,14 +201,26 @@ class Connection(BaseConnection):
         await cursor.execute(ASYNC_QUERY_CANCEL, [async_query_info[0].query_id])
 
     async def _execute_query_impl(self, request: Request) -> Response:
-        self._add_transaction_headers(request)
+        self._add_transaction_params(request)
         response = await self._client.send(request, stream=True)
         self._handle_transaction_updates(response.headers)
         return response
 
+    async def _begin_nolock(self, request: Request) -> None:
+        """Begin a transaction without a lock. Used internally."""
+        # Create a copy of the request with "BEGIN" as the body content
+        begin_request = self._client.build_request(
+            request.method, request.url, content="BEGIN"
+        )
+        response = await self._client.send(begin_request, stream=True)
+        self._handle_transaction_updates(response.headers)
+
     async def _execute_query(self, request: Request) -> Response:
-        if self.in_transaction():
+        if self.in_transaction or not self.autocommit:
             async with self._transaction_lock:
+                # If autocommit is off we need to explicitly begin a transaction
+                if not self.in_transaction:
+                    await self._begin_nolock(request)
                 return await self._execute_query_impl(request)
         else:
             return await self._execute_query_impl(request)
@@ -226,6 +241,9 @@ class Connection(BaseConnection):
         """Close connection and all underlying cursors."""
         if self.closed:
             return
+
+        if self.in_transaction:
+            await self.cursor().execute("ROLLBACK")
 
         # self._cursors is going to be changed during closing cursors
         # after this point no cursors would be added to _cursors, only removed since
@@ -253,6 +271,7 @@ async def connect(
     api_endpoint: str = DEFAULT_API_URL,
     disable_cache: bool = False,
     url: Optional[str] = None,
+    autocommit: bool = True,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
     # auth parameter is optional in function signature
@@ -280,6 +299,7 @@ async def connect(
             user_agent_header=user_agent_header,
             database=database,
             connection_url=url,
+            autocommit=autocommit,
         )
     elif auth_version == FireboltAuthVersion.V2:
         assert account_name is not None
@@ -292,6 +312,7 @@ async def connect(
             api_endpoint=api_endpoint,
             connection_id=connection_id,
             disable_cache=disable_cache,
+            autocommit=autocommit,
         )
     elif auth_version == FireboltAuthVersion.V1:
         return await connect_v1(
@@ -317,6 +338,7 @@ async def connect_v2(
     engine_name: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
     disable_cache: bool = False,
+    autocommit: bool = True,
 ) -> Connection:
     """Connect to Firebolt.
 
@@ -380,6 +402,7 @@ async def connect_v2(
             api_endpoint,
             cursor.parameters | cursor._set_parameters,
             connection_id,
+            autocommit,
         )
 
 
@@ -447,6 +470,7 @@ def connect_core(
     user_agent_header: str,
     database: Optional[str] = None,
     connection_url: Optional[str] = None,
+    autocommit: bool = True,
 ) -> Connection:
     """Connect to Firebolt Core.
 
@@ -484,6 +508,7 @@ def connect_core(
         client=client,
         cursor_type=CursorV2,
         api_endpoint=verified_url,
+        autocommit=autocommit,
     )
 
 
