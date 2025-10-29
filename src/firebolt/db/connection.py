@@ -314,7 +314,7 @@ class Connection(BaseConnection):
         if self.closed:
             raise ConnectionClosedError("Unable to commit: Connection closed.")
         # Commit is a no-op for V1
-        if not self.cursor_type == CursorV1:
+        if self.cursor_type != CursorV1:
             self.cursor().execute("COMMIT")
 
     def rollback(self) -> None:

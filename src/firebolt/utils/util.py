@@ -192,7 +192,9 @@ def raise_error_from_response(resp: Response) -> None:
 def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
     """Parse update parameters and set them as attributes."""
     # parse key1=value1,key2=value2 comma separated string into dict
-    param_dict = dict(item.split("=") for item in parameter_header.split(","))
+    param_dict = {
+        item.split("=")[0]: item.split("=")[1] for item in parameter_header.split(",")
+    }
     # strip whitespace from keys and values
     param_dict = {key.strip(): value.strip() for key, value in param_dict.items()}
     return param_dict

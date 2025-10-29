@@ -16,28 +16,13 @@ from typing import (
 )
 from urllib.parse import urljoin
 
-from httpx import (
-    URL,
-    USE_CLIENT_DEFAULT,
-    Headers,
-    Response,
-    TimeoutException,
-    codes,
-)
+from httpx import URL, USE_CLIENT_DEFAULT, Response, TimeoutException, codes
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
-from firebolt.common.constants import (
-    JSON_OUTPUT_FORMAT,
-    REMOVE_PARAMETERS_HEADER,
-    RESET_SESSION_HEADER,
-    UPDATE_ENDPOINT_HEADER,
-    UPDATE_PARAMETERS_HEADER,
-    CursorState,
-)
+from firebolt.common.constants import JSON_OUTPUT_FORMAT, CursorState
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
-    _parse_update_endpoint,
     _raise_if_internal_set_parameter,
 )
 from firebolt.common.cursor.decorators import (
@@ -65,12 +50,7 @@ from firebolt.utils.exception import (
 )
 from firebolt.utils.timeout_controller import TimeoutController
 from firebolt.utils.urls import DATABASES_URL, ENGINES_URL
-from firebolt.utils.util import (
-    Timer,
-    _parse_remove_parameters,
-    _parse_update_parameters,
-    raise_error_from_response,
-)
+from firebolt.utils.util import Timer, raise_error_from_response
 
 if TYPE_CHECKING:
     from firebolt.db.connection import Connection
@@ -189,26 +169,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # append empty result set
         self._append_row_set_from_response(None)
-
-    def _parse_response_headers(self, headers: Headers) -> None:
-        # TODO: merge with async in base_cursor
-        if headers.get(UPDATE_ENDPOINT_HEADER):
-            endpoint, params = _parse_update_endpoint(
-                headers.get(UPDATE_ENDPOINT_HEADER)
-            )
-            self._update_set_parameters(params)
-            self.engine_url = endpoint
-
-        if headers.get(RESET_SESSION_HEADER):
-            self.flush_parameters()
-
-        if headers.get(UPDATE_PARAMETERS_HEADER):
-            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
-            self._update_set_parameters(param_dict)
-
-        if headers.get(REMOVE_PARAMETERS_HEADER):
-            param_list = _parse_remove_parameters(headers.get(REMOVE_PARAMETERS_HEADER))
-            self._remove_set_parameters(param_list)
 
     def _close_rowset_and_reset(self) -> None:
         """Reset the cursor state."""

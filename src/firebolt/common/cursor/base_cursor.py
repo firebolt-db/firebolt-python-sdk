@@ -5,7 +5,7 @@ import re
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from httpx import URL, Response
+from httpx import URL, Headers, Response
 
 from firebolt.client.auth.base import Auth
 from firebolt.client.client import AsyncClient, Client
@@ -15,7 +15,11 @@ from firebolt.common.constants import (
     IMMUTABLE_PARAMETER_LIST,
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    REMOVE_PARAMETERS_HEADER,
+    RESET_SESSION_HEADER,
     TRANSACTION_PARAMETER_LIST,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
     USE_PARAMETER_LIST,
     CursorState,
 )
@@ -29,7 +33,11 @@ from firebolt.utils.cache import (
     _firebolt_cache,
 )
 from firebolt.utils.exception import ConfigurationError, FireboltError
-from firebolt.utils.util import fix_url_schema
+from firebolt.utils.util import (
+    _parse_remove_parameters,
+    _parse_update_parameters,
+    fix_url_schema,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -226,6 +234,26 @@ class BaseCursor:
     def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():
             self.parameters[key] = value
+
+    def _parse_response_headers(self, headers: Headers) -> None:
+        """Parse response headers to update cursor state."""
+        if headers.get(UPDATE_ENDPOINT_HEADER):
+            endpoint, params = _parse_update_endpoint(
+                headers.get(UPDATE_ENDPOINT_HEADER)
+            )
+            self._update_set_parameters(params)
+            self.engine_url = endpoint
+
+        if headers.get(RESET_SESSION_HEADER):
+            self.flush_parameters()
+
+        if headers.get(UPDATE_PARAMETERS_HEADER):
+            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
+            self._update_set_parameters(param_dict)
+
+        if headers.get(REMOVE_PARAMETERS_HEADER):
+            param_list = _parse_remove_parameters(headers.get(REMOVE_PARAMETERS_HEADER))
+            self._remove_set_parameters(param_list)
 
     @staticmethod
     def _log_query(query: Union[str, SetParameter]) -> None:
