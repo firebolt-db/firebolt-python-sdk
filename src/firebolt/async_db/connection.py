@@ -230,9 +230,15 @@ class Connection(BaseConnection):
             return await self._execute_query_impl(request)
 
     async def commit(self) -> None:
-        await self.cursor().execute("COMMIT")
+        if self.closed:
+            raise ConnectionClosedError("Unable to commit: Connection closed.")
+        # Commit is a no-op for V1
+        if not self.cursor_type == CursorV1:
+            await self.cursor().execute("COMMIT")
 
     async def rollback(self) -> None:
+        if self.closed:
+            raise ConnectionClosedError("Unable to rollback: Connection closed.")
         await self.cursor().execute("ROLLBACK")
 
     # Context manager support
