@@ -249,7 +249,7 @@ class Connection(BaseConnection):
         # Only rollback if we have a transaction and autocommit is off
         if self.in_transaction and not self.autocommit:
             try:
-                await self.cursor().execute("ROLLBACK")
+                await self.rollback()
             except Exception:
                 # If rollback fails during close, continue closing
                 logger.warning("Rollback failed during close")

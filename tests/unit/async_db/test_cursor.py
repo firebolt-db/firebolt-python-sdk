@@ -10,7 +10,7 @@ from httpx import URL, HTTPStatusError, Request, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.async_db import Cursor
+from firebolt.async_db import Connection, Cursor
 from firebolt.common._types import ColType
 from firebolt.common.constants import CursorState
 from firebolt.common.row_set.types import Column
@@ -1721,3 +1721,197 @@ async def test_executemany_bulk_insert_empty_params_fails(
             [],
             bulk_insert=True,
         )
+
+
+# Transaction tests
+
+
+async def test_autocommit_off_triggers_implicit_transaction_start(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    select_one_query_callback: Callable,
+    commit_transaction_callback: Callable,
+    transaction_id: str,
+):
+    """Test that transaction is implicitly started when autocommit=False."""
+
+    httpx_mock.add_callback(begin_transaction_callback, method="POST")
+    httpx_mock.add_callback(select_one_query_callback, method="POST")
+    httpx_mock.add_callback(commit_transaction_callback, method="POST")
+
+    cursor = connection_autocommit_off.cursor()
+    # Connection should not be in transaction initially
+    assert cursor.connection.in_transaction is False
+    assert cursor.connection._transaction_id is None
+
+    # Execute a regular query - this should implicitly start the transaction
+    result = await cursor.execute("SELECT 1")
+
+    # Connection should now be in transaction
+    assert cursor.connection.in_transaction is True
+    assert cursor.connection._transaction_id == transaction_id
+    assert result == 1  # SELECT 1 returns 1 row
+
+
+async def test_connection_commit_clears_transaction_state(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    commit_transaction_callback: Callable,
+    transaction_id: str,
+):
+    """Test that COMMIT transaction is executed and connection state is cleared."""
+    # Start transaction implicitly with a query
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    await cursor.execute("SELECT 1")  # This should implicitly start transaction
+    assert cursor.connection.in_transaction is True
+
+    # Now commit using connection method
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    await connection_autocommit_off.commit()
+
+    # Connection should no longer be in transaction
+    assert cursor.connection.in_transaction is False
+    assert cursor.connection._transaction_id is None
+    assert cursor.connection._transaction_sequence_id is None
+
+
+async def test_connection_rollback_clears_transaction_state(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    rollback_transaction_callback: Callable,
+    transaction_id: str,
+):
+    """Test that ROLLBACK transaction is executed and connection state is cleared."""
+    # Start transaction implicitly with a query
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    await cursor.execute("SELECT 1")  # This should implicitly start transaction
+    assert cursor.connection.in_transaction is True
+
+    # Now rollback using connection method
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        rollback_transaction_callback,
+        method="POST",
+    )
+
+    await connection_autocommit_off.rollback()
+
+    # Connection should no longer be in transaction
+    assert cursor.connection.in_transaction is False
+    assert cursor.connection._transaction_id is None
+    assert cursor.connection._transaction_sequence_id is None
+
+
+async def test_transaction_sequence_id_changes_each_query(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    commit_transaction_callback: Callable,
+    transaction_id: str,
+    transaction_sequence_id: int,
+):
+    """Test that transaction sequence id increments with each query in transaction."""
+    # Start transaction implicitly
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    await cursor.execute("SELECT 1")  # This should implicitly start transaction
+    assert cursor.connection._transaction_id == transaction_id
+
+    # Execute second query in transaction
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    await cursor.execute("SELECT 2")
+
+    # Sequence id should be incremented
+    assert cursor.connection._transaction_sequence_id == str(
+        transaction_sequence_id + 1
+    )
+
+
+async def test_transaction_params_included_in_query_requests(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    commit_transaction_callback: Callable,
+):
+    """Test that transaction parameters are correctly passed in query URLs."""
+    # Start transaction implicitly
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    # Execute query - this should implicitly start transaction and include transaction params
+    await cursor.execute("SELECT 1")
+
+    # Execute second query in transaction - callback will verify transaction params are present
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    await cursor.execute("SELECT 2")
