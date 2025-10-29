@@ -269,8 +269,13 @@ class Connection(BaseConnection):
         if self.closed:
             return
 
-        if self.in_transaction:
-            self.cursor().execute("ROLLBACK")
+        # Only rollback if we have a transaction and autocommit is off
+        if self.in_transaction and not self.autocommit:
+            try:
+                self.cursor().execute("ROLLBACK")
+            except Exception:
+                # If rollback fails during close, continue closing
+                logger.warning("Rollback failed during close")
 
         cursors = self._cursors[:]
         for c in cursors:
@@ -402,6 +407,10 @@ class Connection(BaseConnection):
     def __exit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
+        # If exiting normally (no exception) and we have a transaction with
+        # autocommit=False, commit the transaction before closing
+        if exc_type is None and not self.autocommit and self.in_transaction:
+            self.commit()
         self.close()
 
     def __del__(self) -> None:

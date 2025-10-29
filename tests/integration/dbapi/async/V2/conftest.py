@@ -11,8 +11,16 @@ from firebolt.client.auth.client_credentials import ClientCredentials
 from tests.integration.conftest import Secret
 
 
-@fixture(params=["remote", "core"])
+@fixture
 async def connection(
+    connection_factory: Callable[..., Connection],
+) -> Connection:
+    async with await connection_factory() as connection:
+        yield connection
+
+
+@fixture(params=["remote", "core"])
+async def connection_factory(
     engine_name: str,
     database_name: str,
     auth: Auth,
@@ -21,44 +29,23 @@ async def connection(
     api_endpoint: str,
     core_url: str,
     request: Any,
-) -> Connection:
-    if request.param == "core":
-        kwargs = {
-            "database": "firebolt",
-            "auth": core_auth,
-            "url": core_url,
-        }
-    else:
-        kwargs = {
-            "engine_name": engine_name,
-            "database": database_name,
-            "auth": auth,
-            "account_name": account_name,
-            "api_endpoint": api_endpoint,
-        }
-    async with await connect(
-        **kwargs,
-    ) as connection:
-        yield connection
-
-
-@fixture
-async def connection_factory(
-    engine_name: str,
-    database_name: str,
-    auth: Auth,
-    account_name: str,
-    api_endpoint: str,
 ) -> Callable[..., Connection]:
     async def factory(**kwargs: Any) -> Connection:
-        return await connect(
-            engine_name=engine_name,
-            database=database_name,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-            **kwargs,
-        )
+        if request.param == "core":
+            base_kwargs = {
+                "database": "firebolt",
+                "auth": core_auth,
+                "url": core_url,
+            }
+        else:
+            base_kwargs = {
+                "engine_name": engine_name,
+                "database": database_name,
+                "auth": auth,
+                "account_name": account_name,
+                "api_endpoint": api_endpoint,
+            }
+        return await connect(**base_kwargs, **kwargs)
 
     return factory
 

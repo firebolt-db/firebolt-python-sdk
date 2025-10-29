@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from ssl import SSLContext
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Type, Union
@@ -45,6 +46,8 @@ from firebolt.utils.util import (
     parse_url_and_params,
     validate_engine_name_and_url_v1,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class Connection(BaseConnection):
@@ -243,8 +246,13 @@ class Connection(BaseConnection):
         if self.closed:
             return
 
-        if self.in_transaction:
-            await self.cursor().execute("ROLLBACK")
+        # Only rollback if we have a transaction and autocommit is off
+        if self.in_transaction and not self.autocommit:
+            try:
+                await self.cursor().execute("ROLLBACK")
+            except Exception:
+                # If rollback fails during close, continue closing
+                logger.warning("Rollback failed during close")
 
         # self._cursors is going to be changed during closing cursors
         # after this point no cursors would be added to _cursors, only removed since
@@ -260,6 +268,10 @@ class Connection(BaseConnection):
     async def __aexit__(
         self, exc_type: type, exc_val: Exception, exc_tb: TracebackType
     ) -> None:
+        # If exiting normally (no exception) and we have a transaction with
+        # autocommit=False, commit the transaction before closing
+        if exc_type is None and not self.autocommit and self.in_transaction:
+            await self.commit()
         await self.aclose()
 
 
