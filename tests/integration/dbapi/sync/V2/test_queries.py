@@ -937,25 +937,24 @@ def test_begin_with_autocommit_on(
     """Test that BEGIN does not start a transaction when autocommit is enabled."""
     table_name = create_drop_test_table_setup_teardown
 
-    with connection_factory(autocommit=False) as connection_autocommit_off:
-        cursor = connection_autocommit_off.cursor()
+    with connection_factory(autocommit=True) as connection:
+        cursor = connection.cursor()
         # Test that data is immediately visible without explicit transaction (autocommit)
         cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'autocommit_test')")
 
         # Create a second cursor to verify data is visible immediately
-        cursor2 = connection_autocommit_off.cursor()
+        cursor2 = connection.cursor()
         cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
         data = cursor2.fetchall()
         assert len(data) == 1, "Data should be visible immediately with autocommit"
         assert data[0] == [1, "autocommit_test"], "Data should match inserted values"
 
         # Now test with explicit BEGIN - this should be a no-op when autocommit is enabled
-        # Can't run this in autocommit off
-        # result = cursor.execute("BEGIN TRANSACTION")
-        # assert result == 0, "BEGIN TRANSACTION should return 0 rows"
-        # assert (
-        #     not connection_autocommit_off.in_transaction
-        # ), "Transaction should not be started when autocommit is enabled"
+        result = cursor.execute("BEGIN TRANSACTION")
+        assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+        assert (
+            not connection.in_transaction
+        ), "Transaction should not be started when autocommit is enabled"
 
         cursor.execute(
             f"INSERT INTO \"{table_name}\" VALUES (2, 'no_transaction_test')"
@@ -977,7 +976,7 @@ def test_begin_with_autocommit_on(
         ], "Data should match inserted values"
 
         # Verify data is visible from another cursor (confirming it was committed)
-        cursor2 = connection_autocommit_off.cursor()
+        cursor2 = connection.cursor()
         cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 2')
         data = cursor2.fetchall()
         assert len(data) == 1, "Data should be visible from other cursors"

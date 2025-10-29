@@ -936,7 +936,7 @@ async def test_begin_with_autocommit_on(
     """Test that BEGIN does not start a transaction when autocommit is enabled."""
     table_name = create_drop_test_table_setup_teardown_async
 
-    async with await connection_factory(autocommit=False) as connection:
+    async with await connection_factory(autocommit=True) as connection:
         cursor = connection.cursor()
         # Test that data is immediately visible without explicit transaction (autocommit)
         await cursor.execute(
@@ -951,12 +951,11 @@ async def test_begin_with_autocommit_on(
         assert data[0] == [1, "autocommit_test"], "Data should match inserted values"
 
         # Now test with explicit BEGIN - this should be a no-op when autocommit is enabled
-        # Can't run this in autocommit off
-        # result = await cursor.execute("BEGIN TRANSACTION")
-        # assert result == 0, "BEGIN TRANSACTION should return 0 rows"
-        # assert (
-        #     not connection.in_transaction
-        # ), "Transaction should not be started when autocommit is enabled"
+        result = await cursor.execute("BEGIN TRANSACTION")
+        assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+        assert (
+            not connection.in_transaction
+        ), "Transaction should not be started when autocommit is enabled"
 
         await cursor.execute(
             f"INSERT INTO \"{table_name}\" VALUES (2, 'no_transaction_test')"
