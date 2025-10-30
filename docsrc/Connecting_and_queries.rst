@@ -995,7 +995,7 @@ Explicit transaction control
 
 When ``autocommit=False``, you can use explicit transaction statements to control when changes are committed or rolled back. The SDK supports the standard SQL transaction commands.
 
-**Important**: ``BEGIN`` and ``BEGIN TRANSACTION`` statements are **not supported** when ``autocommit=False`` because transactions are started implicitly with the first SQL statement. Attempting to execute ``BEGIN`` will result in an error.
+**Important**: ``BEGIN`` and ``BEGIN TRANSACTION`` statements are **not supported** when ``autocommit=False`` because transactions are started implicitly with the first SQL statement. Attempting to execute ``BEGIN`` will result in an error. With ``autocommit=True`` executing ``BEGIN`` has no effect.
 
 .. _explicit_transaction_example:
 
@@ -1132,8 +1132,7 @@ Best practices
 1. **Use autocommit=False for multi-statement operations** that need to be atomic
 2. **Always handle exceptions** when using transactions and include proper rollback logic
 3. **Keep transactions short** to minimize lock contention and improve performance
-4. **Use connection-level commit/rollback methods** when working with multiple cursors
-5. **Leverage context managers** for automatic transaction cleanup
+4. **Leverage context managers** for automatic transaction cleanup
 
 Transaction limitations and notes
 ---------------------------------
