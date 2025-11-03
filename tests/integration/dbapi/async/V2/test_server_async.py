@@ -11,7 +11,7 @@ LONG_SELECT = "SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)"  # approx
 
 # Async is only supported in remote engines, no core support yet
 # Mark all the tests in this module to run only with the "remote" connection
-pytestmark = mark.parametrize("connection", ["remote"], indirect=True)
+pytestmark = mark.parametrize("connection_factory", ["remote"], indirect=True)
 
 
 async def test_insert_async(connection: Connection) -> None:

@@ -8,30 +8,13 @@ from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Sequence, Union
 from urllib.parse import urljoin
 
-from httpx import (
-    URL,
-    USE_CLIENT_DEFAULT,
-    Headers,
-    Response,
-    TimeoutException,
-    codes,
-)
+from httpx import URL, USE_CLIENT_DEFAULT, Response, TimeoutException, codes
 
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
-from firebolt.common.constants import (
-    JSON_OUTPUT_FORMAT,
-    REMOVE_PARAMETERS_HEADER,
-    RESET_SESSION_HEADER,
-    UPDATE_ENDPOINT_HEADER,
-    UPDATE_PARAMETERS_HEADER,
-    CursorState,
-)
+from firebolt.common.constants import JSON_OUTPUT_FORMAT, CursorState
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
-    _parse_remove_parameters,
-    _parse_update_endpoint,
-    _parse_update_parameters,
     _raise_if_internal_set_parameter,
 )
 from firebolt.common.cursor.decorators import (
@@ -135,7 +118,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 content=query,
                 timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
             )
-            return await self._client.send(req, stream=True)
+            return await self.connection._execute_query(req)
         except TimeoutException:
             raise QueryTimeoutError()
 
@@ -180,25 +163,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # append empty result set
         await self._append_row_set_from_response(None)
-
-    async def _parse_response_headers(self, headers: Headers) -> None:
-        if headers.get(UPDATE_ENDPOINT_HEADER):
-            endpoint, params = _parse_update_endpoint(
-                headers.get(UPDATE_ENDPOINT_HEADER)
-            )
-            self._update_set_parameters(params)
-            self.engine_url = endpoint
-
-        if headers.get(RESET_SESSION_HEADER):
-            self.flush_parameters()
-
-        if headers.get(UPDATE_PARAMETERS_HEADER):
-            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
-            self._update_set_parameters(param_dict)
-
-        if headers.get(REMOVE_PARAMETERS_HEADER):
-            param_list = _parse_remove_parameters(headers.get(REMOVE_PARAMETERS_HEADER))
-            self._remove_set_parameters(param_list)
 
     async def _close_rowset_and_reset(self) -> None:
         """Reset cursor state."""
@@ -305,7 +269,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             await resp.aread()
             self._parse_async_response(resp)
         else:
-            await self._parse_response_headers(resp.headers)
+            self._parse_response_headers(resp.headers)
             await self._append_row_set_from_response(resp)
 
         if not async_execution:
