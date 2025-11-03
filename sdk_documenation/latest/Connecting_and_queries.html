@@ -75,6 +75,17 @@
 <li class="toctree-l2"><a class="reference internal" href="#thread-safety">Thread safety</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#using-date-and-datetime-values">Using DATE and DATETIME values</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#execution-timeout">Execution timeout</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#transaction-support">Transaction support</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#understanding-autocommit-behavior">Understanding autocommit behavior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#explicit-transaction-control">Explicit transaction control</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#connection-level-transaction-methods">Connection-level transaction methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#context-manager-behavior">Context manager behavior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#transaction-isolation-and-cursor-sharing">Transaction isolation and cursor sharing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#error-handling-and-recovery">Error handling and recovery</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#best-practices">Best practices</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#transaction-limitations-and-notes">Transaction limitations and notes</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Managing_resources.html">Managing resources</a></li>
@@ -136,22 +147,6 @@ any command or query requests to your Firebolt database.</p>
 <blockquote>
 <div><p>Your account information can be provided as parameters in a <code class="docutils literal notranslate"><span class="pre">connection()</span></code> function.</p>
 <p>A connection requires the following parameters:</p>
-<table class="docutils align-default">
-<tbody>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">auth</span></code></p></td>
-<td><p>Auth object, containing your credentials. See <a class="reference internal" href="firebolt.client.html#module-firebolt.client.auth.client_credentials.ClientCredentials"><span class="std std-ref">Auth</span></a> for more details.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">account_name</span></code></p></td>
-<td><p>The name of the account you’re using to connect to Firebolt. Must be specified in order to authenticate.</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">database</span></code></p></td>
-<td><p>Optional. The name of the database you would like to connect to.</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">engine_name</span></code></p></td>
-<td><p>Optional. The name of the engine to use for SQL queries.</p></td>
-</tr>
-</tbody>
-</table>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If an <code class="docutils literal notranslate"><span class="pre">engine_name</span></code> is not specified the SDK will not be bound to any engine. In this case, if also no <code class="docutils literal notranslate"><span class="pre">database</span></code> is specified
@@ -604,6 +599,13 @@ original query is waiting on the network or the server to respond. This is espec
 executing slower queries.</p>
 <p>Make sure you’re familiar with the <a class="reference external" href="https://docs.python.org/3/library/asyncio.html">Asyncio approach</a>
 before using asynchronous Python SDK, as it requires special async/await syntax.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><strong>Transaction behavior with async operations</strong>: The asynchronous SDK supports the same transaction
+behavior as the synchronous version. However, be careful when running concurrent queries within
+the same connection as they will share the same transaction context. For parallel processing,
+consider using separate connections for independent operations.</p>
+</div>
 <section id="simple-asynchronous-example">
 <h3>Simple asynchronous example<a class="headerlink" href="#simple-asynchronous-example" title="Link to this heading"></a></h3>
 <p>This example illustrates a simple query execution via the async Python SDK. It does not have any
@@ -930,6 +932,176 @@ function will raise a <code class="docutils literal notranslate"><span class="pr
 </pre></div>
 </div>
 <p><strong>Warning</strong>: If running multiple queries, and one of queries times out, all the previous queries will not be rolled back and their result will persist. All the remaining queries will be cancelled.</p>
+</section>
+<section id="transaction-support">
+<h2>Transaction support<a class="headerlink" href="#transaction-support" title="Link to this heading"></a></h2>
+<p>The Firebolt Python SDK provides comprehensive transaction support for both explicit transaction management and automatic transaction handling through the autocommit feature. Transactions ensure data integrity by grouping multiple SQL statements into atomic operations.</p>
+<section id="understanding-autocommit-behavior">
+<h3>Understanding autocommit behavior<a class="headerlink" href="#understanding-autocommit-behavior" title="Link to this heading"></a></h3>
+<p>The SDK supports two transaction modes controlled by the <code class="docutils literal notranslate"><span class="pre">autocommit</span></code> parameter:</p>
+<dl class="simple">
+<dt><strong>Autocommit enabled (default behavior)</strong></dt><dd><p>When <code class="docutils literal notranslate"><span class="pre">autocommit=True</span></code> (the default), each SQL statement is automatically committed immediately after execution. This provides immediate data visibility but doesn’t allow for multi-statement transactions.</p>
+</dd>
+<dt><strong>Autocommit disabled</strong></dt><dd><p>When <code class="docutils literal notranslate"><span class="pre">autocommit=False</span></code>, statements are executed within transactions that must be explicitly committed or rolled back. This enables multi-statement atomic operations.</p>
+</dd>
+</dl>
+<div class="highlight-default notranslate" id="autocommit-example"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">firebolt.db</span><span class="w"> </span><span class="kn">import</span> <span class="n">connect</span>
+
+<span class="c1"># Default behavior: autocommit enabled</span>
+<span class="k">with</span> <span class="n">connect</span><span class="p">(</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
+    <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;your_account&quot;</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s2">&quot;your_database&quot;</span>
+<span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO test_table VALUES (1, &#39;data&#39;)&quot;</span><span class="p">)</span>
+    <span class="c1"># Data is immediately visible to other connections</span>
+
+<span class="c1"># Autocommit disabled for transaction control</span>
+<span class="k">with</span> <span class="n">connect</span><span class="p">(</span>
+    <span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span>
+    <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;your_account&quot;</span><span class="p">,</span>
+    <span class="n">database</span><span class="o">=</span><span class="s2">&quot;your_database&quot;</span><span class="p">,</span>
+    <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO test_table VALUES (2, &#39;transactional&#39;)&quot;</span><span class="p">)</span>
+    <span class="c1"># Data is not visible to other connections until committed</span>
+</pre></div>
+</div>
+</section>
+<section id="explicit-transaction-control">
+<h3>Explicit transaction control<a class="headerlink" href="#explicit-transaction-control" title="Link to this heading"></a></h3>
+<p>When <code class="docutils literal notranslate"><span class="pre">autocommit=False</span></code>, you can use explicit transaction statements to control when changes are committed or rolled back. The SDK supports the standard SQL transaction commands.</p>
+<p><strong>Important</strong>: <code class="docutils literal notranslate"><span class="pre">BEGIN</span></code> and <code class="docutils literal notranslate"><span class="pre">BEGIN</span> <span class="pre">TRANSACTION</span></code> statements are <strong>not supported</strong> when <code class="docutils literal notranslate"><span class="pre">autocommit=False</span></code> because transactions are started implicitly with the first SQL statement. Attempting to execute <code class="docutils literal notranslate"><span class="pre">BEGIN</span></code> will result in an error. With <code class="docutils literal notranslate"><span class="pre">autocommit=True</span></code> executing <code class="docutils literal notranslate"><span class="pre">BEGIN</span></code> has no effect.</p>
+<p id="explicit-transaction-example"><strong>Committing transactions</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;account&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1"># Transaction starts implicitly with first statement</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO accounts VALUES (&#39;A123&#39;, 1000.00)&quot;</span><span class="p">)</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO accounts VALUES (&#39;B456&#39;, 500.00)&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Explicitly commit the transaction</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;COMMIT TRANSACTION&quot;</span><span class="p">)</span>
+    <span class="c1"># or use the short form</span>
+    <span class="c1"># cursor.execute(&quot;COMMIT&quot;)</span>
+</pre></div>
+</div>
+<p><strong>Rolling back transactions</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;account&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO accounts VALUES (&#39;A123&#39;, 1000.00)&quot;</span><span class="p">)</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;UPDATE accounts SET balance = balance - 200 WHERE id = &#39;A123&#39;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Something went wrong, rollback the transaction</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;ROLLBACK TRANSACTION&quot;</span><span class="p">)</span>
+    <span class="c1"># or use the short form</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;ROLLBACK&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="connection-level-transaction-methods">
+<h3>Connection-level transaction methods<a class="headerlink" href="#connection-level-transaction-methods" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">Connection</span></code> object provides convenient methods for transaction control that work across all cursors created from the same connection.</p>
+<div class="highlight-default notranslate" id="connection-transaction-methods-example"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;account&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor1</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor2</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1"># Both cursors share the same transaction</span>
+    <span class="n">cursor1</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO table1 VALUES (1, &#39;data1&#39;)&quot;</span><span class="p">)</span>
+    <span class="n">cursor2</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO table2 VALUES (2, &#39;data2&#39;)&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Commit using connection method (affects both cursors)</span>
+    <span class="n">connection</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+
+    <span class="c1"># Or rollback using connection method</span>
+    <span class="c1"># connection.rollback()</span>
+</pre></div>
+</div>
+</section>
+<section id="context-manager-behavior">
+<h3>Context manager behavior<a class="headerlink" href="#context-manager-behavior" title="Link to this heading"></a></h3>
+<p>When using connections as context managers, the SDK provides automatic transaction handling:</p>
+<p><strong>With autocommit=False</strong>: The connection automatically commits the transaction when exiting normally, or rolls back on exceptions.</p>
+<p><strong>With autocommit=True</strong>: No special behavior since each statement is already committed immediately.</p>
+<div class="highlight-default notranslate" id="context-manager-transaction-example"><div class="highlight"><pre><span></span><span class="c1"># Automatic commit on successful completion</span>
+<span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;account&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO test_table VALUES (1, &#39;auto-commit&#39;)&quot;</span><span class="p">)</span>
+    <span class="c1"># Transaction is automatically committed when context exits normally</span>
+
+<span class="c1"># Automatic rollback on exception</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;account&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO test_table VALUES (2, &#39;will-rollback&#39;)&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Something went wrong&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="k">pass</span>
+    <span class="c1"># Transaction is automatically rolled back due to exception</span>
+</pre></div>
+</div>
+</section>
+<section id="transaction-isolation-and-cursor-sharing">
+<h3>Transaction isolation and cursor sharing<a class="headerlink" href="#transaction-isolation-and-cursor-sharing" title="Link to this heading"></a></h3>
+<p><strong>Important</strong>: All cursors created from the same connection share the same transaction context. Changes made through one cursor are immediately visible to other cursors from the same connection, but not to external connections until the transaction is committed.</p>
+<div class="highlight-default notranslate" id="cursor-isolation-example"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;account&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor1</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor2</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="c1"># Insert data using cursor1</span>
+    <span class="n">cursor1</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO test_table VALUES (1, &#39;shared_data&#39;)&quot;</span><span class="p">)</span>
+
+    <span class="c1"># cursor2 can immediately see cursor1&#39;s changes within the same transaction</span>
+    <span class="n">cursor2</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM test_table WHERE id = 1&quot;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">cursor2</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>  <span class="c1"># Will return the inserted row</span>
+
+    <span class="c1"># But external connections cannot see the data until commit</span>
+    <span class="n">cursor1</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;COMMIT&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="error-handling-and-recovery">
+<h3>Error handling and recovery<a class="headerlink" href="#error-handling-and-recovery" title="Link to this heading"></a></h3>
+<p>When a statement fails within a transaction, the transaction enters an aborted state. All subsequent statements will fail until you explicitly execute <code class="docutils literal notranslate"><span class="pre">ROLLBACK</span></code> to clear the aborted state.</p>
+<div class="highlight-default notranslate" id="error-handling-example"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">connect</span><span class="p">(</span><span class="n">auth</span><span class="o">=</span><span class="n">auth</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">&quot;account&quot;</span><span class="p">,</span> <span class="n">database</span><span class="o">=</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">autocommit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">connection</span><span class="p">:</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO test_table VALUES (1, &#39;data&#39;)&quot;</span><span class="p">)</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;INSERT INTO test_table VALUES (&#39;invalid&#39;, 123)&quot;</span><span class="p">)</span>  <span class="c1"># This will fail</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;COMMIT&quot;</span><span class="p">)</span>  <span class="c1"># This will fail due to aborted transaction</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="c1"># Must explicitly rollback to clear aborted state</span>
+        <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;ROLLBACK&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Transaction aborted, rolled back successfully&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="best-practices">
+<h3>Best practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Use autocommit=False for multi-statement operations</strong> that need to be atomic</p></li>
+<li><p><strong>Always handle exceptions</strong> when using transactions and include proper rollback logic</p></li>
+<li><p><strong>Keep transactions short</strong> to minimize lock contention and improve performance</p></li>
+<li><p><strong>Leverage context managers</strong> for automatic transaction cleanup</p></li>
+</ol>
+</section>
+<section id="transaction-limitations-and-notes">
+<h3>Transaction limitations and notes<a class="headerlink" href="#transaction-limitations-and-notes" title="Link to this heading"></a></h3>
+<p><strong>SDK-specific behavior:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BEGIN</span></code> and <code class="docutils literal notranslate"><span class="pre">BEGIN</span> <span class="pre">TRANSACTION</span></code> statements are <strong>not supported</strong> when <code class="docutils literal notranslate"><span class="pre">autocommit=False</span></code> because transactions start implicitly with the first SQL statement</p></li>
+<li><p>When <code class="docutils literal notranslate"><span class="pre">autocommit=True</span></code>, executing <code class="docutils literal notranslate"><span class="pre">BEGIN</span></code> is a no-op and does not start a transaction</p></li>
+<li><p>All cursors from the same connection share transaction state - there is no cursor-level isolation</p></li>
+<li><p>Closing connection with <code class="docutils literal notranslate"><span class="pre">close</span></code> automatically rolls back uncommitted transactions when <code class="docutils literal notranslate"><span class="pre">autocommit=False</span></code></p></li>
+</ul>
+<p><strong>Firebolt platform limitations:</strong></p>
+<p>For complete details on transaction capabilities and limitations, see the
+<a class="reference external" href="https://docs.firebolt.io/reference-sql/explicit-transactions">Firebolt explicit transactions documentation</a>.</p>
+</section>
 </section>
 </section>
 
