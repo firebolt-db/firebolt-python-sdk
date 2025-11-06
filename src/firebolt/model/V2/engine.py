@@ -109,7 +109,11 @@ class Engine(FireboltBaseModel):
         wait_timeout = 3600
         interval_seconds = 5
         timeout_time = time.time() + wait_timeout
-        while self.current_status in (EngineStatus.STOPPING, EngineStatus.STARTING):
+        while self.current_status in (
+            EngineStatus.DRAINING,
+            EngineStatus.STOPPING,
+            EngineStatus.STARTING,
+        ):
             logger.info(
                 f"Engine {self.name} is currently "
                 f"{self.current_status.value.lower()}, waiting"
