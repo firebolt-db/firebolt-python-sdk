@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Union
 
 from httpx import Request
 from pytest import mark, raises
@@ -6,6 +6,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.model.V2.database import Database
 from firebolt.model.V2.engine import Engine, EngineStatus
+from firebolt.model.V2.instance_type import InstanceType
 from firebolt.service.manager import ResourceManager
 from firebolt.utils.exception import EngineNotFoundError
 from tests.unit.response import Response
@@ -219,3 +220,59 @@ def test_engine_new_status(
     engine = resource_manager.engines.get_by_name(mock_engine.name)
 
     assert engine.current_status == expected_status
+
+
+@mark.parametrize(
+    "spec_input, expected_spec, status_input, expected_status",
+    [
+        # Test all valid InstanceType values
+        ("S", InstanceType.S, "RUNNING", EngineStatus.RUNNING),
+        ("M", InstanceType.M, "STOPPED", EngineStatus.STOPPED),
+        ("L", InstanceType.L, "STARTING", EngineStatus.STARTING),
+        ("XL", InstanceType.XL, "STOPPING", EngineStatus.STOPPING),
+        # Test InstanceType enum values directly
+        (InstanceType.S, InstanceType.S, "FAILED", EngineStatus.FAILED),
+        (InstanceType.M, InstanceType.M, "REPAIRING", EngineStatus.REPAIRING),
+        # Test unknown/invalid values that should default to UNKNOWN
+        ("INVALID_TYPE", InstanceType.UNKNOWN, "INVALID_STATUS", EngineStatus.UNKNOWN),
+        ("XXL", InstanceType.UNKNOWN, "WEIRD_STATE", EngineStatus.UNKNOWN),
+        # Test empty strings that should default to UNKNOWN
+        ("", InstanceType.UNKNOWN, "", EngineStatus.UNKNOWN),
+        # Test all valid EngineStatus values with M instance type
+        ("M", InstanceType.M, "STARTED", EngineStatus.STARTED),
+        ("M", InstanceType.M, "DROPPING", EngineStatus.DROPPING),
+        ("M", InstanceType.M, "DELETING", EngineStatus.DELETING),
+        ("M", InstanceType.M, "RESIZING", EngineStatus.RESIZING),
+        ("M", InstanceType.M, "DRAINING", EngineStatus.DRAINING),
+    ],
+)
+def test_engine_instantiation_with_different_configurations(
+    spec_input: Union[str, InstanceType],
+    expected_spec: InstanceType,
+    status_input: str,
+    expected_status: EngineStatus,
+) -> None:
+    """
+    Test that Engine model correctly handles different instance types and statuses,
+    including unknown values and empty strings that should default to UNKNOWN.
+    """
+    engine = Engine(
+        name="test_engine",
+        region="us-east-1",
+        spec=spec_input,
+        scale=2,
+        current_status=status_input,
+        version="1.0",
+        endpoint="https://test.endpoint.com",
+        warmup="",
+        auto_stop=3600,
+        type="general_purpose",
+        _database_name="test_db",
+        _service=None,
+    )
+
+    assert engine.spec == expected_spec
+    assert engine.current_status == expected_status
+    assert engine.name == "test_engine"
+    assert engine.region == "us-east-1"
+    assert engine.scale == 2
