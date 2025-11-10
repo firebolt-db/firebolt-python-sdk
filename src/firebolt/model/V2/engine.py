@@ -140,7 +140,7 @@ class Engine(FireboltBaseModel):
         if self.current_status == EngineStatus.RUNNING:
             logger.info(f"Engine {self.name} is already running.")
             return self
-        if self.current_status in (EngineStatus.DROPPING, EngineStatus.REPAIRING):
+        if self.current_status in (EngineStatus.DRAINING,):
             raise ValueError(
                 f"Unable to start engine {self.name} because it's "
                 f"in {self.current_status.value.lower()} state"
@@ -163,7 +163,7 @@ class Engine(FireboltBaseModel):
         if self.current_status == EngineStatus.STOPPED:
             logger.info(f"Engine {self.name} is already stopped.")
             return self
-        if self.current_status in (EngineStatus.DROPPING, EngineStatus.REPAIRING):
+        if self.current_status in (EngineStatus.DRAINING,):
             raise ValueError(
                 f"Unable to stop engine {self.name} because it's "
                 f"in {self.current_status.value.lower()} state"
@@ -206,7 +206,7 @@ class Engine(FireboltBaseModel):
 
         self.refresh()
         self._wait_for_start_stop()
-        if self.current_status in (EngineStatus.DROPPING, EngineStatus.REPAIRING):
+        if self.current_status in (EngineStatus.DRAINING,):
             raise ValueError(
                 f"Unable to update engine {self.name} because it's "
                 f"in {self.current_status.value.lower()} state"
@@ -243,7 +243,7 @@ class Engine(FireboltBaseModel):
     def delete(self) -> None:
         """Delete an engine."""
         self.refresh()
-        if self.current_status in [EngineStatus.DROPPING, EngineStatus.DELETING]:
+        if self.current_status in [EngineStatus.DRAINING, EngineStatus.DELETING]:
             return
         with self._service._connection.cursor() as c:
             c.execute(self.DROP_SQL.format(self.name))
