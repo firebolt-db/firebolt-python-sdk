@@ -46,6 +46,7 @@ def test_create_start_stop_engine(
         }
 
     finally:
+        # Engine needs to be deleted first
         if engine:
             engine.stop()
             engine.delete()

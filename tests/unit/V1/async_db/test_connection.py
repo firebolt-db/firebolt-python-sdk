@@ -280,11 +280,11 @@ async def test_connect_default_engine(
 
 async def test_connection_commit(connection: Connection):
     # nothing happens
-    connection.commit()
+    await connection.commit()
 
     await connection.aclose()
     with raises(ConnectionClosedError):
-        connection.commit()
+        await connection.commit()
 
 
 @mark.nofakefs

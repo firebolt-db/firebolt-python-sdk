@@ -56,10 +56,10 @@ class Engine(FireboltBaseModel):
 
     def __post_init__(self) -> None:
         # Specs are just strings for accounts v2
-        if isinstance(self.spec, str) and self.spec:
+        if isinstance(self.spec, str):
             # Resolve engine specification
             self.spec = InstanceType(self.spec)
-        if isinstance(self.current_status, str) and self.current_status:
+        if isinstance(self.current_status, str):
             # Resolve engine status
             self.current_status = EngineStatus(self.current_status)
 

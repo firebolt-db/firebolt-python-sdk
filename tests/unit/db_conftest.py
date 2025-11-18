@@ -16,6 +16,12 @@ from firebolt.common._types import STRUCT
 from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    REMOVE_PARAMETERS_HEADER,
+    RESET_SESSION_HEADER,
+    TRANSACTION_ID_SETTING,
+    TRANSACTION_SEQUENCE_ID_SETTING,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
 )
 from firebolt.common.row_set.json_lines import (
     DataRecord,
@@ -201,7 +207,7 @@ def query_callback_with_headers(
             "rows": len(query_data),
             "statistics": query_statistics,
         }
-        headers = {"Firebolt-Update-Parameters": f"database={db_name_updated}"}
+        headers = {UPDATE_PARAMETERS_HEADER: f"database={db_name_updated}"}
         return Response(status_code=codes.OK, json=query_response, headers=headers)
 
     return do_query
@@ -256,6 +262,37 @@ def insert_query_callback(
 ) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         return Response(status_code=codes.OK, headers={"content-length": "0"})
+
+    return do_query
+
+
+@fixture
+def remove_parameters() -> List[str]:
+    return ["param1", "param3"]
+
+
+@fixture
+def query_callback_with_remove_header(
+    query_statistics: Dict[str, Any], remove_parameters: List[str]
+) -> Callable:
+    """Fixture for query callback that returns REMOVE_PARAMETERS_HEADER.
+
+    Returns a callback that simulates a server response with Firebolt-Remove-Parameters
+    header containing 'param1,param3' to test parameter removal functionality.
+    """
+
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+        query_response = {
+            "meta": [{"name": "one", "type": "int"}],
+            "data": [1],
+            "rows": 1,
+            "statistics": query_statistics,
+        }
+        # Header with comma-separated parameter names to remove
+        headers = {REMOVE_PARAMETERS_HEADER: ",".join(remove_parameters)}
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
 
     return do_query
 
@@ -388,7 +425,7 @@ def use_database_callback(db_name: str, query_statistics: Dict[str, Any]) -> Cal
         return Response(
             status_code=codes.OK,
             json=query_response,
-            headers={"Firebolt-Update-Parameters": f"database={db_name}"},
+            headers={UPDATE_PARAMETERS_HEADER: f"database={db_name}"},
         )
 
     return inner
@@ -432,7 +469,52 @@ def use_engine_callback(engine_url: str, query_statistics: Dict[str, Any]) -> Ca
         return Response(
             status_code=codes.OK,
             json=query_response,
-            headers={"Firebolt-Update-Endpoint": engine_url},
+            headers={UPDATE_ENDPOINT_HEADER: engine_url},
+        )
+
+    return inner
+
+
+@fixture
+def test_update_parameters() -> Dict[str, str]:
+    """Test parameters used by use_engine_with_params_callback."""
+    return {
+        "custom_param": "test_value",
+        "another_param": "123",
+    }
+
+
+@fixture
+def use_engine_with_params_callback(
+    engine_url: str,
+    query_statistics: Dict[str, Any],
+    test_update_parameters: Dict[str, str],
+) -> Callable:
+    def inner(
+        request: Request = None,
+        **kwargs,
+    ) -> Response:
+        assert request, "empty request"
+        assert request.method == "POST", "invalid request method"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        # Return both endpoint update and parameter update headers
+        param_string = ",".join([f"{k}={v}" for k, v in test_update_parameters.items()])
+        headers = {
+            UPDATE_ENDPOINT_HEADER: engine_url,
+            UPDATE_PARAMETERS_HEADER: param_string,
+        }
+
+        return Response(
+            status_code=codes.OK,
+            json=query_response,
+            headers=headers,
         )
 
     return inner
@@ -1004,5 +1086,205 @@ def fb_numeric_async_callback(async_token: str) -> Callable:
                 "monitorSql": "SELECT 1",
             },
         )
+
+    return do_query
+
+
+# Transaction fixtures
+@fixture
+def transaction_id() -> str:
+    return "test_transaction_id_12345"
+
+
+@fixture
+def transaction_sequence_id() -> int:
+    return 1
+
+
+@fixture
+def begin_transaction_callback(
+    transaction_id: str, query_statistics: Dict[str, Any]
+) -> Callable:
+    """Mock callback for BEGIN transaction that returns transaction_id."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        request_body = request.read().decode("utf-8")
+        assert "BEGIN" in request_body.upper()
+        assert request.method == "POST"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        headers = {
+            UPDATE_PARAMETERS_HEADER: f"{TRANSACTION_ID_SETTING}={transaction_id}"
+        }
+
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    return do_query
+
+
+@fixture
+def transaction_query_callback(
+    transaction_id: str,
+    transaction_sequence_id: int,
+    query_description: List[Column],
+    query_data: List[List[ColType]],
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    """Mock callback for queries within transaction that returns sequence_id."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+
+        # Check that transaction parameters are passed
+        url_params = dict(request.url.params)
+        assert (
+            TRANSACTION_ID_SETTING in url_params
+        ), f"Expected {TRANSACTION_ID_SETTING} in params, got: {url_params}"
+        assert (
+            url_params[TRANSACTION_ID_SETTING] == transaction_id
+        ), f"Expected {TRANSACTION_ID_SETTING}={transaction_id}, got: {url_params[TRANSACTION_ID_SETTING]}"
+
+        query_response = {
+            "meta": [{"name": c.name, "type": c.type_code} for c in query_description],
+            "data": query_data,
+            "rows": len(query_data),
+            "statistics": query_statistics,
+        }
+
+        # Return incremented sequence id
+        headers = {
+            UPDATE_PARAMETERS_HEADER: f"{TRANSACTION_SEQUENCE_ID_SETTING}={transaction_sequence_id + 1}"
+        }
+
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    return do_query
+
+
+@fixture
+def commit_transaction_callback(
+    transaction_id: str,
+    transaction_sequence_id: int,
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    """Mock callback for COMMIT transaction that resets transaction state."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        request_body = request.read().decode("utf-8")
+        assert "COMMIT" in request_body.upper()
+        assert request.method == "POST"
+
+        # Check that transaction parameters are passed
+        url_params = dict(request.url.params)
+        assert (
+            TRANSACTION_ID_SETTING in url_params
+        ), f"Expected {TRANSACTION_ID_SETTING} in params, got: {url_params}"
+        assert (
+            url_params[TRANSACTION_ID_SETTING] == transaction_id
+        ), f"Expected {TRANSACTION_ID_SETTING}={transaction_id}, got: {url_params[TRANSACTION_ID_SETTING]}"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        # Reset session header to clear transaction state
+        headers = {RESET_SESSION_HEADER: "true"}
+
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    return do_query
+
+
+@fixture
+def simple_commit_callback(query_statistics: Dict[str, Any]) -> Callable:
+    """Mock callback for COMMIT transaction when not in transaction."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        request_body = request.read().decode("utf-8")
+        assert "COMMIT" in request_body.upper()
+        assert request.method == "POST"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        return Response(status_code=codes.OK, json=query_response)
+
+    return do_query
+
+
+@fixture
+def rollback_transaction_callback(
+    transaction_id: str,
+    transaction_sequence_id: int,
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    """Mock callback for ROLLBACK transaction that resets transaction state."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        request_body = request.read().decode("utf-8")
+        assert "ROLLBACK" in request_body.upper()
+        assert request.method == "POST"
+
+        # Check that transaction parameters are passed
+        url_params = dict(request.url.params)
+        assert (
+            TRANSACTION_ID_SETTING in url_params
+        ), f"Expected {TRANSACTION_ID_SETTING} in params, got: {url_params}"
+        assert (
+            url_params[TRANSACTION_ID_SETTING] == transaction_id
+        ), f"Expected {TRANSACTION_ID_SETTING}={transaction_id}, got: {url_params[TRANSACTION_ID_SETTING]}"
+
+        query_response = {
+            "meta": [],
+            "data": [],
+            "rows": 0,
+            "statistics": query_statistics,
+        }
+
+        # Reset session header to clear transaction state
+        headers = {RESET_SESSION_HEADER: "true"}
+
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
+
+    return do_query
+
+
+@fixture
+def transaction_with_remove_params_callback(
+    query_statistics: Dict[str, Any],
+) -> Callable:
+    """Mock callback that returns REMOVE_PARAMETERS_HEADER for transaction params."""
+
+    def do_query(request: Request, **kwargs) -> Response:
+        assert request.read() != b""
+        assert request.method == "POST"
+
+        query_response = {
+            "meta": [{"name": "result", "type": "int"}],
+            "data": [1],
+            "rows": 1,
+            "statistics": query_statistics,
+        }
+
+        # Header to remove transaction parameters
+        headers = {
+            REMOVE_PARAMETERS_HEADER: f"{TRANSACTION_ID_SETTING},{TRANSACTION_SEQUENCE_ID_SETTING}"
+        }
+
+        return Response(status_code=codes.OK, json=query_response, headers=headers)
 
     return do_query

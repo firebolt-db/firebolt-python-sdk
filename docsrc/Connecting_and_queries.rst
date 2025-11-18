@@ -45,6 +45,9 @@ To get started, follow the steps below:
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
     | ``engine_name``                    |  Optional. The name of the engine to use for SQL queries.                                                     |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
+    | ``autocommit``                     |  Optional. Boolean (default: True). When True, each statement is committed immediately.                      |
+    |                                    |  When False, statements are executed in transactions that must be explicitly committed.                       |
+    +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
     .. note::
 
@@ -196,14 +199,14 @@ To get started, follow the steps below:
         ) as connection:
             # Create a cursor
             cursor = connection.cursor()
-        
+
             # Execute a simple test query
             cursor.execute("SELECT 1")
 
 .. note::
 
-    Firebolt Core is assumed to be running locally on the default port (3473). For instructions 
-    on how to run Firebolt Core locally using Docker, refer to the 
+    Firebolt Core is assumed to be running locally on the default port (3473). For instructions
+    on how to run Firebolt Core locally using Docker, refer to the
     `official docs <https://docs.firebolt.io/firebolt-core/firebolt-core-get-started>`_.
 
 
@@ -404,7 +407,7 @@ parameters equal in length to the number of placeholders in the statement.
         "INSERT INTO test_table2 VALUES ($1, $2, $3)",
         (2, "world", "2018-01-02"),
     )
-    
+
     # paramstyle only needs to be set once, it will be used for all subsequent queries
 
     cursor.execute(
@@ -435,6 +438,58 @@ as values in the second argument.
     )
 
     cursor.close()
+
+
+Bulk insert for improved performance
+--------------------------------------
+
+For inserting large amounts of data more efficiently, you can use the ``bulk_insert`` parameter
+with ``executemany()``. This concatenates multiple INSERT statements into a single batch request,
+which can significantly improve performance when inserting many rows.
+
+**Note:** The ``bulk_insert`` parameter only works with INSERT statements and supports both
+``fb_numeric`` and ``qmark`` parameter styles. Using it with other statement types will
+raise an error.
+
+**Example with QMARK parameter style (default):**
+
+::
+
+    # Using the default qmark parameter style
+    cursor.executemany(
+        "INSERT INTO test_table VALUES (?, ?, ?)",
+        (
+            (1, "apple", "2019-01-01"),
+            (2, "banana", "2020-01-01"),
+            (3, "carrot", "2021-01-01"),
+            (4, "donut", "2022-01-01"),
+            (5, "eggplant", "2023-01-01")
+        ),
+        bulk_insert=True  # Enable bulk insert for better performance
+    )
+
+**Example with FB_NUMERIC parameter style:**
+
+::
+
+    import firebolt.db
+    # Set paramstyle to "fb_numeric" for server-side parameter substitution
+    firebolt.db.paramstyle = "fb_numeric"
+
+    cursor.executemany(
+        "INSERT INTO test_table VALUES ($1, $2, $3)",
+        (
+            (1, "apple", "2019-01-01"),
+            (2, "banana", "2020-01-01"),
+            (3, "carrot", "2021-01-01"),
+            (4, "donut", "2022-01-01"),
+            (5, "eggplant", "2023-01-01")
+        ),
+        bulk_insert=True  # Enable bulk insert for better performance
+    )
+
+When ``bulk_insert=True``, the SDK concatenates all INSERT statements into a single batch
+and sends them to the server for optimized batch processing.
 
 
 Setting session parameters
@@ -527,6 +582,13 @@ executing slower queries.
 
 Make sure you're familiar with the `Asyncio approach <https://docs.python.org/3/library/asyncio.html>`_
 before using asynchronous Python SDK, as it requires special async/await syntax.
+
+.. note::
+
+    **Transaction behavior with async operations**: The asynchronous SDK supports the same transaction
+    behavior as the synchronous version. However, be careful when running concurrent queries within
+    the same connection as they will share the same transaction context. For parallel processing,
+    consider using separate connections for independent operations.
 
 
 Simple asynchronous example
@@ -731,7 +793,7 @@ of execute_async is -1, which is the rowcount for queries where it's not applica
     cursor.execute_async("INSERT INTO my_table VALUES (5, 'egg', '2022-01-01')")
     token = cursor.async_query_token
 
-Trying to access `async_query_token` before calling `execute_async` will raise an exception. 
+Trying to access `async_query_token` before calling `execute_async` will raise an exception.
 
 .. note::
     Multiple-statement queries are not supported for asynchronous queries. However, you can run each statement
@@ -746,9 +808,9 @@ Monitoring the query status
 To check the async query status you need to retrieve the token of the query. The token is a unique
 identifier for the query and can be used to fetch the query status. You can store this token
 outside of the current process and use it later to check the query status. :ref:`Connection <firebolt.db:Connection>` object
-has two methods to check the query status: :py:meth:`firebolt.db.connection.Connection.is_async_query_running` and 
-:py:meth:`firebolt.db.connection.Connection.is_async_query_successful`.`is_async_query_running` will return True 
-if the query is still running, and False otherwise. `is_async_query_successful` will return True if the query 
+has two methods to check the query status: :py:meth:`firebolt.db.connection.Connection.is_async_query_running` and
+:py:meth:`firebolt.db.connection.Connection.is_async_query_successful`.`is_async_query_running` will return True
+if the query is still running, and False otherwise. `is_async_query_successful` will return True if the query
 has finished successfully, None if query is still running and False if the query has failed.
 
 ::
@@ -779,7 +841,7 @@ will send a cancel request to the server and the query will be stopped.
 
     token = cursor.async_query_token
     connection.cancel_async_query(token)
-    
+
     # Verify that the query was cancelled
     running = connection.is_async_query_running(token)
     print(running) # False
@@ -884,3 +946,206 @@ function will raise a ``QueryTimeoutError`` exception.
     )
 
 **Warning**: If running multiple queries, and one of queries times out, all the previous queries will not be rolled back and their result will persist. All the remaining queries will be cancelled.
+
+Transaction support
+==============================
+
+The Firebolt Python SDK provides comprehensive transaction support for both explicit transaction management and automatic transaction handling through the autocommit feature. Transactions ensure data integrity by grouping multiple SQL statements into atomic operations.
+
+Understanding autocommit behavior
+----------------------------------
+
+The SDK supports two transaction modes controlled by the ``autocommit`` parameter:
+
+**Autocommit enabled (default behavior)**
+    When ``autocommit=True`` (the default), each SQL statement is automatically committed immediately after execution. This provides immediate data visibility but doesn't allow for multi-statement transactions.
+
+**Autocommit disabled**
+    When ``autocommit=False``, statements are executed within transactions that must be explicitly committed or rolled back. This enables multi-statement atomic operations.
+
+.. _autocommit_example:
+
+::
+
+    from firebolt.db import connect
+
+    # Default behavior: autocommit enabled
+    with connect(
+        auth=auth,
+        account_name="your_account",
+        database="your_database"
+    ) as connection:
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO test_table VALUES (1, 'data')")
+        # Data is immediately visible to other connections
+
+    # Autocommit disabled for transaction control
+    with connect(
+        auth=auth,
+        account_name="your_account",
+        database="your_database",
+        autocommit=False
+    ) as connection:
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO test_table VALUES (2, 'transactional')")
+        # Data is not visible to other connections until committed
+
+Explicit transaction control
+-----------------------------
+
+When ``autocommit=False``, you can use explicit transaction statements to control when changes are committed or rolled back. The SDK supports the standard SQL transaction commands.
+
+**Important**: ``BEGIN`` and ``BEGIN TRANSACTION`` statements are **not supported** when ``autocommit=False`` because transactions are started implicitly with the first SQL statement. Attempting to execute ``BEGIN`` will result in an error. With ``autocommit=True`` executing ``BEGIN`` has no effect.
+
+.. _explicit_transaction_example:
+
+**Committing transactions**
+
+::
+
+    with connect(auth=auth, account_name="account", database="db", autocommit=False) as connection:
+        cursor = connection.cursor()
+
+        # Transaction starts implicitly with first statement
+        cursor.execute("INSERT INTO accounts VALUES ('A123', 1000.00)")
+        cursor.execute("INSERT INTO accounts VALUES ('B456', 500.00)")
+
+        # Explicitly commit the transaction
+        cursor.execute("COMMIT TRANSACTION")
+        # or use the short form
+        # cursor.execute("COMMIT")
+
+**Rolling back transactions**
+
+::
+
+    with connect(auth=auth, account_name="account", database="db", autocommit=False) as connection:
+        cursor = connection.cursor()
+
+        cursor.execute("INSERT INTO accounts VALUES ('A123', 1000.00)")
+        cursor.execute("UPDATE accounts SET balance = balance - 200 WHERE id = 'A123'")
+
+        # Something went wrong, rollback the transaction
+        cursor.execute("ROLLBACK TRANSACTION")
+        # or use the short form
+        cursor.execute("ROLLBACK")
+
+Connection-level transaction methods
+------------------------------------
+
+The ``Connection`` object provides convenient methods for transaction control that work across all cursors created from the same connection.
+
+.. _connection_transaction_methods_example:
+
+::
+
+    with connect(auth=auth, account_name="account", database="db", autocommit=False) as connection:
+        cursor1 = connection.cursor()
+        cursor2 = connection.cursor()
+
+        # Both cursors share the same transaction
+        cursor1.execute("INSERT INTO table1 VALUES (1, 'data1')")
+        cursor2.execute("INSERT INTO table2 VALUES (2, 'data2')")
+
+        # Commit using connection method (affects both cursors)
+        connection.commit()
+
+        # Or rollback using connection method
+        # connection.rollback()
+
+Context manager behavior
+------------------------
+
+When using connections as context managers, the SDK provides automatic transaction handling:
+
+**With autocommit=False**: The connection automatically commits the transaction when exiting normally, or rolls back on exceptions.
+
+**With autocommit=True**: No special behavior since each statement is already committed immediately.
+
+.. _context_manager_transaction_example:
+
+::
+
+    # Automatic commit on successful completion
+    with connect(auth=auth, account_name="account", database="db", autocommit=False) as connection:
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO test_table VALUES (1, 'auto-commit')")
+        # Transaction is automatically committed when context exits normally
+
+    # Automatic rollback on exception
+    try:
+        with connect(auth=auth, account_name="account", database="db", autocommit=False) as connection:
+            cursor = connection.cursor()
+            cursor.execute("INSERT INTO test_table VALUES (2, 'will-rollback')")
+            raise ValueError("Something went wrong")
+    except ValueError:
+        pass
+        # Transaction is automatically rolled back due to exception
+
+Transaction isolation and cursor sharing
+-----------------------------------------
+
+**Important**: All cursors created from the same connection share the same transaction context. Changes made through one cursor are immediately visible to other cursors from the same connection, but not to external connections until the transaction is committed.
+
+.. _cursor_isolation_example:
+
+::
+
+    with connect(auth=auth, account_name="account", database="db", autocommit=False) as connection:
+        cursor1 = connection.cursor()
+        cursor2 = connection.cursor()
+
+        # Insert data using cursor1
+        cursor1.execute("INSERT INTO test_table VALUES (1, 'shared_data')")
+
+        # cursor2 can immediately see cursor1's changes within the same transaction
+        cursor2.execute("SELECT * FROM test_table WHERE id = 1")
+        data = cursor2.fetchall()  # Will return the inserted row
+
+        # But external connections cannot see the data until commit
+        cursor1.execute("COMMIT")
+
+Error handling and recovery
+---------------------------
+
+When a statement fails within a transaction, the transaction enters an aborted state. All subsequent statements will fail until you explicitly execute ``ROLLBACK`` to clear the aborted state.
+
+.. _error_handling_example:
+
+::
+
+    with connect(auth=auth, account_name="account", database="db", autocommit=False) as connection:
+        cursor = connection.cursor()
+
+        try:
+            cursor.execute("INSERT INTO test_table VALUES (1, 'data')")
+            cursor.execute("INSERT INTO test_table VALUES ('invalid', 123)")  # This will fail
+            cursor.execute("COMMIT")  # This will fail due to aborted transaction
+        except Exception:
+            # Must explicitly rollback to clear aborted state
+            cursor.execute("ROLLBACK")
+            print("Transaction aborted, rolled back successfully")
+
+Best practices
+--------------
+
+1. **Use autocommit=False for multi-statement operations** that need to be atomic
+2. **Always handle exceptions** when using transactions and include proper rollback logic
+3. **Keep transactions short** to minimize lock contention and improve performance
+4. **Leverage context managers** for automatic transaction cleanup
+
+Transaction limitations and notes
+---------------------------------
+
+**SDK-specific behavior:**
+
+* ``BEGIN`` and ``BEGIN TRANSACTION`` statements are **not supported** when ``autocommit=False`` because transactions start implicitly with the first SQL statement
+* When ``autocommit=True``, executing ``BEGIN`` is a no-op and does not start a transaction
+* All cursors from the same connection share transaction state - there is no cursor-level isolation
+* Closing connection with ``close`` automatically rolls back uncommitted transactions when ``autocommit=False``
+
+**Firebolt platform limitations:**
+
+For complete details on transaction capabilities and limitations, see the
+`Firebolt explicit transactions documentation <https://docs.firebolt.io/reference-sql/explicit-transactions>`_.
+

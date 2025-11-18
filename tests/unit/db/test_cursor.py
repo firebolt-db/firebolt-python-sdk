@@ -13,7 +13,7 @@ from pytest_httpx import HTTPXMock
 
 from firebolt.common.constants import CursorState
 from firebolt.common.row_set.types import Column
-from firebolt.db import Cursor
+from firebolt.db import Connection, Cursor
 from firebolt.db.cursor import ColType, ProgrammingError
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -782,6 +782,64 @@ def test_cursor_reset_session(
     assert bool(cursor.database) is True, "database is not set"
 
 
+def test_cursor_remove_parameters_header(
+    httpx_mock: HTTPXMock,
+    select_one_query_callback: Callable,
+    query_callback_with_remove_header: Callable,
+    set_query_url: str,
+    cursor: Cursor,
+):
+    """Test that cursor removes parameters when REMOVE_PARAMETERS_HEADER is received."""
+
+    # Set up initial parameters
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=value1",
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=value1&param2=value2",
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&param1=value1&param2=value2&param3=value3",
+        is_reusable=True,
+    )
+
+    assert len(cursor._set_parameters) == 0
+
+    # Execute SET statements to add parameters
+    cursor.execute("set param1 = value1")
+    cursor.execute("set param2 = value2")
+    cursor.execute("set param3 = value3")
+
+    assert len(cursor._set_parameters) == 3
+    assert "param1" in cursor._set_parameters
+    assert "param2" in cursor._set_parameters
+    assert "param3" in cursor._set_parameters
+    assert cursor._set_parameters["param1"] == "value1"
+    assert cursor._set_parameters["param2"] == "value2"
+    assert cursor._set_parameters["param3"] == "value3"
+
+    # Execute query that returns remove parameters header
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        query_callback_with_remove_header,
+        url=f"{set_query_url}&param1=value1&param2=value2&param3=value3&output_format=JSON_Compact",
+        is_reusable=True,
+    )
+    cursor.execute("SELECT 1")
+
+    # Verify that param1 and param3 were removed, param2 remains
+    assert len(cursor._set_parameters) == 1
+    assert "param1" not in cursor._set_parameters
+    assert "param2" in cursor._set_parameters
+    assert "param3" not in cursor._set_parameters
+    assert cursor._set_parameters["param2"] == "value2"
+
+
 def test_cursor_timeout(
     httpx_mock: HTTPXMock,
     select_one_query_callback: Callable,
@@ -1391,3 +1449,357 @@ def test_unsupported_paramstyle_raises(cursor):
             cursor.execute("SELECT 1")
     finally:
         db.paramstyle = original_paramstyle
+
+
+def test_executemany_bulk_insert_qmark_works(
+    httpx_mock: HTTPXMock,
+    cursor: Cursor,
+    query_url: str,
+):
+    """executemany with bulk_insert=True works with qmark paramstyle."""
+
+    def bulk_insert_callback(request):
+        query = request.content.decode()
+        # Should contain multiple INSERT statements
+        assert query.count("INSERT INTO") == 3
+        assert "; " in query
+
+        return Response(
+            status_code=200,
+            content=json.dumps(
+                {
+                    "meta": [],
+                    "data": [],
+                    "rows": 0,
+                    "statistics": {
+                        "elapsed": 0.0,
+                        "rows_read": 0,
+                        "bytes_read": 0,
+                    },
+                }
+            ),
+            headers={},
+        )
+
+    base_url = str(query_url).split("?")[0]
+    url_pattern = re.compile(re.escape(base_url))
+    httpx_mock.add_callback(bulk_insert_callback, url=url_pattern)
+
+    result = cursor.executemany(
+        "INSERT INTO test_table VALUES (?, ?)",
+        [(1, "a"), (2, "b"), (3, "c")],
+        bulk_insert=True,
+    )
+    assert result == 0
+
+
+def test_executemany_bulk_insert_fb_numeric(
+    httpx_mock: HTTPXMock,
+    cursor: Cursor,
+    query_url: str,
+):
+    """executemany with bulk_insert=True and FB_NUMERIC style."""
+    import firebolt.db as db_module
+
+    original_paramstyle = db_module.paramstyle
+
+    try:
+        db_module.paramstyle = "fb_numeric"
+
+        def bulk_insert_callback(request):
+            query = request.content.decode()
+            assert query.count("INSERT INTO") == 3
+            assert "; " in query
+
+            query_params = json.loads(request.url.params.get("query_parameters", "[]"))
+            assert len(query_params) == 6
+            assert query_params[0]["name"] == "$1"
+            assert query_params[5]["name"] == "$6"
+
+            return Response(
+                status_code=200,
+                content=json.dumps(
+                    {
+                        "meta": [],
+                        "data": [],
+                        "rows": 0,
+                        "statistics": {
+                            "elapsed": 0.0,
+                            "rows_read": 0,
+                            "bytes_read": 0,
+                        },
+                    }
+                ),
+                headers={},
+            )
+
+        base_url = str(query_url).split("?")[0]
+        url_pattern = re.compile(re.escape(base_url))
+        httpx_mock.add_callback(bulk_insert_callback, url=url_pattern)
+
+        result = cursor.executemany(
+            "INSERT INTO test_table VALUES ($1, $2)",
+            [(1, "a"), (2, "b"), (3, "c")],
+            bulk_insert=True,
+        )
+        assert result == 0
+    finally:
+        db_module.paramstyle = original_paramstyle
+
+
+def test_executemany_bulk_insert_non_insert_fails(
+    cursor: Cursor, fb_numeric_paramstyle
+):
+    """executemany with bulk_insert=True fails for non-INSERT queries."""
+    with raises(ConfigurationError, match="bulk_insert is only supported for INSERT"):
+        cursor.executemany(
+            "SELECT * FROM test_table",
+            [()],
+            bulk_insert=True,
+        )
+
+    with raises(ConfigurationError, match="bulk_insert is only supported for INSERT"):
+        cursor.executemany(
+            "UPDATE test_table SET col = $1",
+            [(1,)],
+            bulk_insert=True,
+        )
+
+    with raises(ConfigurationError, match="bulk_insert is only supported for INSERT"):
+        cursor.executemany(
+            "DELETE FROM test_table WHERE id = $1",
+            [(1,)],
+            bulk_insert=True,
+        )
+
+
+def test_executemany_bulk_insert_multi_statement_fails(
+    cursor: Cursor, fb_numeric_paramstyle
+):
+    """executemany with bulk_insert=True fails for multi-statement queries."""
+    with raises(
+        ProgrammingError, match="bulk_insert does not support multi-statement queries"
+    ):
+        cursor.executemany(
+            "INSERT INTO test_table VALUES ($1); SELECT * FROM test_table",
+            [(1,)],
+            bulk_insert=True,
+        )
+
+    with raises(
+        ProgrammingError, match="bulk_insert does not support multi-statement queries"
+    ):
+        cursor.executemany(
+            "INSERT INTO test_table VALUES ($1); INSERT INTO test_table VALUES ($2)",
+            [(1,), (2,)],
+            bulk_insert=True,
+        )
+
+
+def test_executemany_bulk_insert_empty_params_fails(
+    cursor: Cursor, fb_numeric_paramstyle
+):
+    """executemany with bulk_insert=True fails with empty parameters."""
+    with raises(
+        ProgrammingError, match="bulk_insert requires at least one parameter set"
+    ):
+        cursor.executemany(
+            "INSERT INTO test_table VALUES ($1)",
+            [],
+            bulk_insert=True,
+        )
+
+
+# Transaction tests
+
+
+def test_autocommit_off_triggers_implicit_transaction_start(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    select_one_query_callback: Callable,
+    commit_transaction_callback: Callable,
+    transaction_id: str,
+):
+    """Test that transaction is implicitly started when autocommit=False."""
+
+    httpx_mock.add_callback(begin_transaction_callback, method="POST")
+    httpx_mock.add_callback(select_one_query_callback, method="POST")
+    httpx_mock.add_callback(commit_transaction_callback, method="POST")
+
+    cursor = connection_autocommit_off.cursor()
+    # Connection should not be in transaction initially
+    assert cursor.connection.in_transaction is False
+    assert cursor.connection._transaction_id is None
+
+    # Execute a regular query - this should implicitly start the transaction
+    result = cursor.execute("SELECT 1")
+
+    # Connection should now be in transaction
+    assert cursor.connection.in_transaction is True
+    assert cursor.connection._transaction_id == transaction_id
+    assert result == 1  # SELECT 1 returns 1 row
+
+
+def test_connection_commit_clears_transaction_state(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    commit_transaction_callback: Callable,
+    transaction_id: str,
+):
+    """Test that COMMIT transaction is executed and connection state is cleared."""
+    # Start transaction implicitly with a query
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    cursor.execute("SELECT 1")  # This should implicitly start transaction
+    assert cursor.connection.in_transaction is True
+
+    # Now commit using connection method
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    connection_autocommit_off.commit()
+
+    # Connection should no longer be in transaction
+    assert cursor.connection.in_transaction is False
+    assert cursor.connection._transaction_id is None
+    assert cursor.connection._transaction_sequence_id is None
+
+
+def test_connection_rollback_clears_transaction_state(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    rollback_transaction_callback: Callable,
+    transaction_id: str,
+):
+    """Test that ROLLBACK transaction is executed and connection state is cleared."""
+    # Start transaction implicitly with a query
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    cursor.execute("SELECT 1")  # This should implicitly start transaction
+    assert cursor.connection.in_transaction is True
+
+    # Now rollback using connection method
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        rollback_transaction_callback,
+        method="POST",
+    )
+
+    connection_autocommit_off.rollback()
+
+    # Connection should no longer be in transaction
+    assert cursor.connection.in_transaction is False
+    assert cursor.connection._transaction_id is None
+    assert cursor.connection._transaction_sequence_id is None
+
+
+def test_transaction_sequence_id_changes_each_query(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    commit_transaction_callback: Callable,
+    transaction_id: str,
+    transaction_sequence_id: int,
+):
+    """Test that transaction sequence id increments with each query in transaction."""
+    # Start transaction implicitly
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    cursor.execute("SELECT 1")  # This should implicitly start transaction
+    assert cursor.connection._transaction_id == transaction_id
+
+    # Execute second query in transaction
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    cursor.execute("SELECT 2")
+
+    # Sequence id should be incremented
+    assert cursor.connection._transaction_sequence_id == str(
+        transaction_sequence_id + 1
+    )
+
+
+def test_transaction_params_included_in_query_requests(
+    httpx_mock: HTTPXMock,
+    connection_autocommit_off: Connection,
+    begin_transaction_callback: Callable,
+    transaction_query_callback: Callable,
+    commit_transaction_callback: Callable,
+):
+    """Test that transaction parameters are correctly passed in query URLs."""
+    # Start transaction implicitly
+    httpx_mock.add_callback(
+        begin_transaction_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    cursor = connection_autocommit_off.cursor()
+    # Execute query - this should implicitly start transaction and include transaction params
+    cursor.execute("SELECT 1")
+
+    # Execute second query in transaction - callback will verify transaction params are present
+    httpx_mock.reset()
+    httpx_mock.add_callback(
+        transaction_query_callback,
+        method="POST",
+    )
+    httpx_mock.add_callback(
+        commit_transaction_callback,
+        method="POST",
+    )
+
+    # This will only succeed if transaction parameters are properly passed
+    cursor.execute("SELECT 2")

@@ -11,8 +11,24 @@ from firebolt.db import Connection, connect
 from tests.integration.conftest import Secret
 
 
-@fixture(params=["remote", "core"])
+@fixture
 def connection(
+    connection_factory: Callable[..., Connection],
+) -> Connection:
+    with connection_factory() as connection:
+        yield connection
+
+
+@fixture
+def connection_autocommit_off(
+    connection_factory: Callable[..., Connection],
+) -> Connection:
+    with connection_factory(autocommit=False) as connection:
+        yield connection
+
+
+@fixture(params=["remote", "core"])
+def connection_factory(
     engine_name: str,
     database_name: str,
     auth: Auth,
@@ -21,44 +37,23 @@ def connection(
     api_endpoint: str,
     core_url: str,
     request: Any,
-) -> Connection:
-    if request.param == "core":
-        kwargs = {
-            "database": "firebolt",
-            "auth": core_auth,
-            "url": core_url,
-        }
-    else:
-        kwargs = {
-            "engine_name": engine_name,
-            "database": database_name,
-            "auth": auth,
-            "account_name": account_name,
-            "api_endpoint": api_endpoint,
-        }
-    with connect(
-        **kwargs,
-    ) as connection:
-        yield connection
-
-
-@fixture
-def connection_factory(
-    engine_name: str,
-    database_name: str,
-    auth: Auth,
-    account_name: str,
-    api_endpoint: str,
 ) -> Callable[..., Connection]:
     def factory(**kwargs: Any) -> Connection:
-        return connect(
-            engine_name=engine_name,
-            database=database_name,
-            auth=auth,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-            **kwargs,
-        )
+        if request.param == "core":
+            base_kwargs = {
+                "database": "firebolt",
+                "auth": core_auth,
+                "url": core_url,
+            }
+        else:
+            base_kwargs = {
+                "engine_name": engine_name,
+                "database": database_name,
+                "auth": auth,
+                "account_name": account_name,
+                "api_endpoint": api_endpoint,
+            }
+        return connect(**base_kwargs, **kwargs)
 
     return factory
 

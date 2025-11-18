@@ -16,35 +16,23 @@ from typing import (
 )
 from urllib.parse import urljoin
 
-from httpx import (
-    URL,
-    USE_CLIENT_DEFAULT,
-    Headers,
-    Response,
-    TimeoutException,
-    codes,
-)
+from httpx import URL, USE_CLIENT_DEFAULT, Response, TimeoutException, codes
 
 from firebolt.client import Client, ClientV1, ClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
-from firebolt.common.constants import (
-    JSON_OUTPUT_FORMAT,
-    RESET_SESSION_HEADER,
-    UPDATE_ENDPOINT_HEADER,
-    UPDATE_PARAMETERS_HEADER,
-    CursorState,
-    ParameterStyle,
-)
+from firebolt.common.constants import JSON_OUTPUT_FORMAT, CursorState
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
-    _parse_update_endpoint,
-    _parse_update_parameters,
     _raise_if_internal_set_parameter,
 )
 from firebolt.common.cursor.decorators import (
     async_not_allowed,
     check_not_closed,
     check_query_executed,
+)
+from firebolt.common.cursor.statement_planners import (
+    ExecutionPlan,
+    StatementPlannerFactory,
 )
 from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
@@ -158,7 +146,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 content=query,
                 timeout=timeout if timeout is not None else USE_CLIENT_DEFAULT,
             )
-            return self._client.send(req, stream=True)
+            return self.connection._execute_query(req)
         except TimeoutException:
             raise QueryTimeoutError()
 
@@ -181,21 +169,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
 
         # append empty result set
         self._append_row_set_from_response(None)
-
-    def _parse_response_headers(self, headers: Headers) -> None:
-        if headers.get(UPDATE_ENDPOINT_HEADER):
-            endpoint, params = _parse_update_endpoint(
-                headers.get(UPDATE_ENDPOINT_HEADER)
-            )
-            self._update_set_parameters(params)
-            self.engine_url = endpoint
-
-        if headers.get(RESET_SESSION_HEADER):
-            self.flush_parameters()
-
-        if headers.get(UPDATE_PARAMETERS_HEADER):
-            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
-            self._update_set_parameters(param_dict)
 
     def _close_rowset_and_reset(self) -> None:
         """Reset the cursor state."""
@@ -221,90 +194,87 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         timeout: Optional[float] = None,
         async_execution: bool = False,
         streaming: bool = False,
+        bulk_insert: bool = False,
     ) -> None:
         self._close_rowset_and_reset()
         self._row_set = StreamingRowSet() if streaming else InMemoryRowSet()
+
         # Import paramstyle from module level
         from firebolt.db import paramstyle
 
         try:
-            parameter_style = ParameterStyle(paramstyle)
-        except ValueError:
-            raise ProgrammingError(f"Unsupported paramstyle: {paramstyle}")
-        try:
-            if parameter_style == ParameterStyle.FB_NUMERIC:
-                self._execute_fb_numeric(
-                    raw_query, parameters, timeout, async_execution, streaming
-                )
-            else:
-                queries: List[Union[SetParameter, str]] = (
-                    [raw_query]
-                    if skip_parsing
-                    else self._formatter.split_format_sql(raw_query, parameters)
-                )
-                timeout_controller = TimeoutController(timeout)
-                if len(queries) > 1 and async_execution:
-                    raise FireboltError(
-                        "Server side async does not support multi-statement queries"
-                    )
-                for query in queries:
-                    self._execute_single_query(
-                        query, timeout_controller, async_execution, streaming
-                    )
+            statement_planner = StatementPlannerFactory.create_planner(
+                paramstyle, self._formatter
+            )
+
+            plan = statement_planner.create_execution_plan(
+                raw_query,
+                parameters,
+                skip_parsing,
+                async_execution,
+                streaming,
+                bulk_insert,
+            )
+            self._execute_plan(plan, timeout)
             self._state = CursorState.DONE
         except Exception:
             self._state = CursorState.ERROR
             raise
 
-    def _execute_fb_numeric(
+    def _execute_plan(
+        self,
+        plan: ExecutionPlan,
+        timeout: Optional[float],
+    ) -> None:
+        """Execute an execution plan."""
+        timeout_controller = TimeoutController(timeout)
+
+        for query in plan.queries:
+            if isinstance(query, SetParameter):
+                if plan.async_execution:
+                    raise FireboltError(
+                        "Server side async does not support set statements, "
+                        "please use execute to set this parameter"
+                    )
+                self._validate_set_parameter(query, timeout_controller.remaining())
+            else:
+                # Regular query execution
+                self._execute_single_query(
+                    query,
+                    plan.query_params,
+                    timeout_controller,
+                    plan.async_execution,
+                    plan.streaming,
+                )
+
+    def _execute_single_query(
         self,
         query: str,
-        parameters: Sequence[Sequence[ParameterType]],
-        timeout: Optional[float],
+        query_params: Optional[Dict[str, Any]],
+        timeout_controller: TimeoutController,
         async_execution: bool,
         streaming: bool,
     ) -> None:
+        """Execute a single query."""
+        start_time = time.time()
         Cursor._log_query(query)
-        timeout_controller = TimeoutController(timeout)
         timeout_controller.raise_if_timeout()
-        query_params = self._build_fb_numeric_query_params(
-            parameters, streaming, async_execution
-        )
+
+        final_params = query_params or {}
+
         resp = self._api_request(
             query,
-            query_params,
+            final_params,
             timeout=timeout_controller.remaining(),
         )
         self._raise_if_error(resp)
+
         if async_execution:
             resp.read()
             self._parse_async_response(resp)
         else:
             self._parse_response_headers(resp.headers)
             self._append_row_set_from_response(resp)
-
-    def _execute_single_query(
-        self,
-        query: Union[SetParameter, str],
-        timeout_controller: TimeoutController,
-        async_execution: bool,
-        streaming: bool,
-    ) -> None:
-        start_time = time.time()
-        Cursor._log_query(query)
-        timeout_controller.raise_if_timeout()
-
-        if isinstance(query, SetParameter):
-            if async_execution:
-                raise FireboltError(
-                    "Server side async does not support set statements, "
-                    "please use execute to set this parameter"
-                )
-            self._validate_set_parameter(query, timeout_controller.remaining())
-        else:
-            self._handle_query_execution(
-                query, timeout_controller, async_execution, streaming
-            )
 
         if not async_execution:
             logger.info(
@@ -313,31 +283,6 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             )
         else:
             logger.info("Query submitted for async execution.")
-
-    def _handle_query_execution(
-        self,
-        query: str,
-        timeout_controller: TimeoutController,
-        async_execution: bool,
-        streaming: bool,
-    ) -> None:
-        query_params: Dict[str, Any] = {
-            "output_format": self._get_output_format(streaming)
-        }
-        if async_execution:
-            query_params["async"] = True
-        resp = self._api_request(
-            query,
-            query_params,
-            timeout=timeout_controller.remaining(),
-        )
-        self._raise_if_error(resp)
-        if async_execution:
-            resp.read()
-            self._parse_async_response(resp)
-        else:
-            self._parse_response_headers(resp.headers)
-            self._append_row_set_from_response(resp)
 
     def use_database(self, database: str, cache: bool = True) -> None:
         """Switch the current database context with caching."""
@@ -369,7 +314,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 self._update_set_parameters(cache_obj.engines[engine].params)
             else:
                 self.execute(f'USE ENGINE "{engine}"')
-                cache_obj.engines[engine] = EngineInfo(self.engine_url, self.parameters)
+                cache_obj.engines[engine] = EngineInfo(
+                    self.engine_url, self.parameters | self._set_parameters
+                )
                 self.set_cache_record(cache_obj)
         else:
             self.execute(f'USE ENGINE "{engine}"')
@@ -419,6 +366,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters_seq: Sequence[Sequence[ParameterType]],
         timeout_seconds: Optional[float] = None,
+        bulk_insert: bool = False,
     ) -> Union[int, str]:
         """Prepare and execute a database query.
 
@@ -436,6 +384,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 `SET param=value` statement before it. All parameters are stored in
                 cursor object until it's closed. They can also be removed with
                 `flush_parameters` method call.
+            Bulk insert: When bulk_insert=True, multiple INSERT queries are
+                concatenated and sent as a single batch for improved performance.
+                Only supported for INSERT statements.
 
         Args:
             query (str): SQL query to execute.
@@ -444,11 +395,15 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                query with actual values from each set in a sequence. Resulting queries
                for each subset are executed sequentially.
             timeout_seconds (Optional[float]): Query execution timeout in seconds.
+            bulk_insert (bool): When True, concatenates multiple INSERT queries
+               into a single batch request. Only supported for INSERT statements.
 
         Returns:
             int: Query row count.
         """
-        self._do_execute(query, parameters_seq, timeout=timeout_seconds)
+        self._do_execute(
+            query, parameters_seq, timeout=timeout_seconds, bulk_insert=bulk_insert
+        )
         return self.rowcount
 
     @check_not_closed
