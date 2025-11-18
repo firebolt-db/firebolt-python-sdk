@@ -126,7 +126,7 @@ class Auth(HttpxAuth):
         If caching is disabled, None is returned.
 
         Returns:
-            Optional[str]: Token if any, and if caching is enabled; None otherwise
+            Optional[Tuple[Optional[str], Optional[int]]]: Cached token and expiry time
         """
         if not self._use_token_cache:
             return (None, None)

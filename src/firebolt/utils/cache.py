@@ -1,5 +1,7 @@
+import getpass
 import logging
 import os
+import sys
 import time
 from dataclasses import asdict, dataclass, field
 from json import JSONDecodeError
@@ -17,8 +19,6 @@ from typing import (
     TypeVar,
 )
 
-from appdirs import user_data_dir
-
 from firebolt.utils.file_operations import (
     FernetEncrypter,
     generate_encrypted_file_name,
@@ -29,7 +29,7 @@ T = TypeVar("T")
 
 # Cache expiry configuration
 CACHE_EXPIRY_SECONDS = 3600  # 1 hour
-APPNAME = "firebolt"
+APPNAME = "fireboltDriver"
 
 logger = logging.getLogger(__name__)
 
@@ -146,10 +146,11 @@ class UtilCache(Generic[T]):
     def set(self, key: ReprCacheable, value: T, preserve_expiry: bool = False) -> None:
         if not self.disabled:
             # Set expiry_time for ConnectionInfo objects
-            if hasattr(value, "expiry_time"):
-                if not preserve_expiry or value.expiry_time is None:
-                    current_time = int(time.time())
-                    value.expiry_time = current_time + CACHE_EXPIRY_SECONDS
+            if hasattr(value, "expiry_time") and (
+                not preserve_expiry or value.expiry_time is None
+            ):
+                current_time = int(time.time())
+                value.expiry_time = current_time + CACHE_EXPIRY_SECONDS
 
             s_key = self.create_key(key)
             self._cache[s_key] = value
@@ -193,6 +194,37 @@ class SecureCacheKey(ReprCacheable):
         return hash(self.key)
 
 
+def get_cache_data_dir(appname: str = APPNAME) -> str:
+    """
+    Return the directory for storing cache files based on the OS.
+    Mac: use $TMPDIR, fallback to /tmp/<appname>
+    Windows: use the environment variable TEMP or if not defined C:\\Temp
+    Linux: use $XDG_RUNTIME_DIR, fallback to /tmp/<user_home>
+    """
+
+    if sys.platform == "darwin":
+        tmpdir = os.environ.get("TMPDIR")
+        if tmpdir:
+            return os.path.join(tmpdir, appname)
+        # fallback
+        return os.path.join("/tmp", appname)
+    elif sys.platform.startswith("win"):
+        # Python doesn't expose java.io.tmpdir, but os.environ['TEMP'] is standard
+        tmpdir = os.environ.get("TEMP")
+        if tmpdir:
+            return os.path.join(tmpdir, appname)
+        # fallback
+        return os.path.join("C:\\Temp", appname)
+    else:
+        # Assume Linux/Unix
+        xdg_dir = os.environ.get("XDG_RUNTIME_DIR")
+        if xdg_dir:
+            return os.path.join(xdg_dir, appname)
+    # fallback: /tmp/<username>
+    username = getpass.getuser()
+    return os.path.join("/tmp", username, appname)
+
+
 class FileBasedCache:
     """
     File-based cache that persists to disk with encryption.
@@ -202,7 +234,7 @@ class FileBasedCache:
 
     def __init__(self, memory_cache: UtilCache[ConnectionInfo], cache_name: str = ""):
         self.memory_cache = memory_cache
-        self._data_dir = user_data_dir(appname=APPNAME)  # TODO: change to new dir
+        self._data_dir = get_cache_data_dir(APPNAME)
         makedirs(self._data_dir, exist_ok=True)
         # FileBasedCache has its own disabled state, independent of memory cache
         cache_env_var = f"FIREBOLT_SDK_DISABLE_CACHE_${cache_name}"

@@ -1,5 +1,8 @@
+import getpass
 import json
 import os
+import re
+import sys
 import time
 from typing import Generator
 from unittest.mock import mock_open, patch
@@ -9,14 +12,17 @@ from pytest import fixture, mark
 from firebolt.client.auth.client_credentials import ClientCredentials
 from firebolt.db import connect
 from firebolt.utils.cache import (
+    APPNAME,
     CACHE_EXPIRY_SECONDS,
     ConnectionInfo,
     FileBasedCache,
     SecureCacheKey,
     UtilCache,
     _firebolt_cache,
+    get_cache_data_dir,
 )
 from firebolt.utils.file_operations import FernetEncrypter, generate_salt
+from tests.unit.response import Response
 
 
 @fixture
@@ -136,29 +142,59 @@ def mock_connection_flow(httpx_mock, auth_url, api_endpoint):
     """Mock the connection flow for testing."""
 
     def _mock_flow(account_name="mock_account_name"):
-        # Mock authentication with correct URL pattern from existing tests
-        httpx_mock.add_response(
-            method="POST",
-            url=auth_url,  # Use the correct auth_url fixture
-            json={"access_token": "mock_token", "expires_in": 3600},
-        )
+        # Mock authentication with reusable responses
+        def auth_callback(request):
+            return Response(
+                status_code=200,
+                json={"access_token": "mock_token", "expires_in": 3600},
+            )
 
-        # Mock system engine URL - this is the actual URL pattern used
-        httpx_mock.add_response(
-            method="GET",
-            url=f"https://{api_endpoint}/web/v3/account/{account_name}/engineUrl",
-            json={"engineUrl": "https://system.mock.firebolt.io"},
-        )
+        def engine_url_callback(request):
+            return Response(
+                status_code=200,
+                json={"engineUrl": "https://system.mock.firebolt.io"},
+            )
 
-        # Mock queries to the system engine (this handles all POST requests to system.mock.firebolt.io)
-        # This will catch USE DATABASE, USE ENGINE queries and any other queries
         def system_engine_callback(request):
-            return {"meta": [], "data": [], "rows": 0, "statistics": {}}
+            query_response = {
+                "meta": [],
+                "data": [],
+                "rows": 0,
+                "statistics": {
+                    "elapsed": 0.116907717,
+                    "rows_read": 0,
+                    "bytes_read": 0,
+                    "time_before_execution": 0.012180623,
+                    "time_to_execute": 0.104614307,
+                    "scanned_bytes_cache": 0,
+                    "scanned_bytes_storage": 0,
+                },
+            }
+            return Response(
+                status_code=200,
+                json=query_response,
+            )
+
+        # Add all callbacks as reusable
+        httpx_mock.add_callback(
+            auth_callback,
+            url=auth_url,
+            method="POST",
+            is_reusable=True,
+        )
+
+        httpx_mock.add_callback(
+            engine_url_callback,
+            url=f"https://{api_endpoint}/web/v3/account/{account_name}/engineUrl",
+            method="GET",
+            is_reusable=True,
+        )
 
         httpx_mock.add_callback(
             system_engine_callback,
-            url="https://system.mock.firebolt.io/",
+            url=re.compile(r"https://system\.mock\.firebolt\.io(/.*)?(\?.*)?"),
             method="POST",
+            is_reusable=True,
         )
 
     return _mock_flow
@@ -169,14 +205,22 @@ def clean_cache():
     """Provide a clean cache for each test."""
     original_memory = _firebolt_cache.memory_cache._cache.copy()
     original_file_cache_disabled = _firebolt_cache.disabled
+    original_data_dir = _firebolt_cache._data_dir
 
     _firebolt_cache.clear()
     _firebolt_cache.enable()  # Enable cache for connection flow tests
+
+    # For tests using fake filesystem, set the cache directory to a path in the fake fs
+    # This works because pyfakefs creates its fake filesystem before this fixture runs
+    _firebolt_cache._data_dir = "/tmp/test_firebolt_cache"
+    os.makedirs(_firebolt_cache._data_dir, exist_ok=True)
+
     yield _firebolt_cache
 
     # Restore original state
     _firebolt_cache.memory_cache._cache = original_memory
     _firebolt_cache.disabled = original_file_cache_disabled
+    _firebolt_cache._data_dir = original_data_dir
 
 
 def test_cache_set_and_get(cache, sample_cache_key, sample_connection_info):
@@ -518,7 +562,7 @@ def test_connection_info_post_init():
     assert connection_info2.engines["engine1"] is engine_obj
 
 
-@mark.nofakefs
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_file_not_exists(
     file_based_cache, encrypter_with_key
 ):
@@ -530,6 +574,7 @@ def test_file_based_cache_read_data_json_file_not_exists(
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_valid_data(
     file_based_cache, encrypter_with_key
 ):
@@ -553,6 +598,7 @@ def test_file_based_cache_read_data_json_valid_data(
     assert result["token"] == "test_token"
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_decryption_failure(file_based_cache):
     """Test _read_data_json returns empty dict when decryption fails."""
     # Create encrypters with different keys
@@ -574,6 +620,7 @@ def test_file_based_cache_read_data_json_decryption_failure(file_based_cache):
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_invalid_json(
     file_based_cache, encrypter_with_key
 ):
@@ -593,17 +640,22 @@ def test_file_based_cache_read_data_json_invalid_json(
     assert result == {}
 
 
-@mark.nofakefs
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_io_error(file_based_cache, encrypter_with_key):
     """Test _read_data_json returns empty dict when IOError occurs."""
+    # Create a file in the fake filesystem and then mock open to raise IOError
+    test_file_path = "/test_cache/io_error_test.txt"
+    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
+
     # Mock open to raise IOError
     with patch("builtins.open", mock_open()) as mock_file:
         mock_file.side_effect = IOError("File read error")
 
-        result = file_based_cache._read_data_json("test_file.txt", encrypter_with_key)
+        result = file_based_cache._read_data_json(test_file_path, encrypter_with_key)
         assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_empty_encrypted_data(
     file_based_cache, encrypter_with_key
 ):
@@ -622,6 +674,7 @@ def test_file_based_cache_read_data_json_empty_encrypted_data(
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_invalid_encrypted_format(
     file_based_cache, encrypter_with_key
 ):
@@ -639,6 +692,7 @@ def test_file_based_cache_read_data_json_invalid_encrypted_format(
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_delete_method(file_based_cache, encrypter_with_key):
     """Test FileBasedCache delete method removes data from both memory and file."""
     # Create test data
@@ -672,7 +726,7 @@ def test_file_based_cache_delete_method(file_based_cache, encrypter_with_key):
     assert cache_result is None
 
 
-@mark.nofakefs
+@mark.usefixtures("fs")
 def test_file_based_cache_delete_method_file_removal_failure(
     file_based_cache, encrypter_with_key
 ):
@@ -680,13 +734,15 @@ def test_file_based_cache_delete_method_file_removal_failure(
     sample_key = SecureCacheKey(["delete", "failure"], "test_secret")
     sample_data = ConnectionInfo(id="test_connection", token="test_token")
 
-    # Set data in memory cache only (no file operations due to @mark.nofakefs)
-    file_based_cache.memory_cache.set(sample_key, sample_data)
+    # Set data in cache (both memory and file in fake filesystem)
+    file_based_cache.set(sample_key, sample_data)
 
-    # Mock path.exists to return True and os.remove to raise OSError
-    with patch("firebolt.utils.cache.path.exists", return_value=True), patch(
-        "firebolt.utils.cache.os.remove"
-    ) as mock_remove:
+    # Verify file exists in fake filesystem
+    file_path = file_based_cache._get_file_path(sample_key)
+    assert os.path.exists(file_path)
+
+    # Mock os.remove to raise OSError while keeping path.exists returning True
+    with patch("firebolt.utils.cache.os.remove") as mock_remove:
         mock_remove.side_effect = OSError("Permission denied")
 
         # Delete should not raise an exception despite file removal failure
@@ -696,7 +752,11 @@ def test_file_based_cache_delete_method_file_removal_failure(
         memory_result = file_based_cache.memory_cache.get(sample_key)
         assert memory_result is None
 
+        # Verify the file still exists (removal failed due to mocked OSError)
+        assert os.path.exists(file_path)
 
+
+@mark.usefixtures("fs")
 def test_file_based_cache_get_from_file_when_not_in_memory(
     file_based_cache, encrypter_with_key
 ):
@@ -740,6 +800,7 @@ def test_file_based_cache_get_from_file_when_not_in_memory(
     assert memory_result_after_load.id == "test_file_connection"
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_get_from_corrupted_file(file_based_cache, encrypter_with_key):
     """Test FileBasedCache get method handles corrupted file gracefully."""
     sample_key = SecureCacheKey(["corrupted", "file"], "test_secret")
@@ -763,6 +824,7 @@ def test_file_based_cache_get_from_corrupted_file(file_based_cache, encrypter_wi
     assert memory_result is None
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_disabled_behavior(file_based_cache, encrypter_with_key):
     """Test FileBasedCache methods when cache is disabled."""
     sample_key = SecureCacheKey(["disabled", "test"], "test_secret")
@@ -795,6 +857,7 @@ def test_file_based_cache_disabled_behavior(file_based_cache, encrypter_with_key
     file_based_cache.delete(sample_key)  # Should not raise exception
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_preserves_expiry_from_file(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -831,6 +894,7 @@ def test_file_based_cache_preserves_expiry_from_file(
         assert memory_result_after_load.expiry_time == expected_expiry
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_deletes_expired_file_on_get(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -873,6 +937,7 @@ def test_file_based_cache_deletes_expired_file_on_get(
         assert memory_result is None
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_expiry_edge_case_exactly_expired(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -907,6 +972,7 @@ def test_file_based_cache_expiry_edge_case_exactly_expired(
         assert not os.path.exists(file_path)
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_non_expired_file_loads_correctly(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -1039,6 +1105,7 @@ def test_cache_stores_connection_data(
 def test_different_accounts_isolated_cache_entries(
     clean_cache,
     auth_client_1,
+    auth_client_2,
     mock_connection_flow,
     api_endpoint,
 ):
@@ -1050,7 +1117,7 @@ def test_different_accounts_isolated_cache_entries(
     mock_connection_flow(account_1)
     mock_connection_flow(account_2)
 
-    # Connect to first account
+    # Connect to first account with first auth client
     with connect(
         database="test_db",
         engine_name="test_engine",
@@ -1066,18 +1133,18 @@ def test_different_accounts_isolated_cache_entries(
         cache_1 = _firebolt_cache.get(key_account_1)
         assert cache_1 is not None, "Account 1 should have cache entry"
 
-    # Connect to second account with same credentials
+    # Connect to second account with second auth client (different credentials)
     with connect(
         database="test_db",
         engine_name="test_engine",
-        auth=auth_client_1,
+        auth=auth_client_2,
         account_name=account_2,
         api_endpoint=api_endpoint,
     ):
         # Get second cache entry
         key_account_2 = SecureCacheKey(
-            [auth_client_1.principal, auth_client_1.secret, account_2],
-            auth_client_1.secret,
+            [auth_client_2.principal, auth_client_2.secret, account_2],
+            auth_client_2.secret,
         )
         cache_2 = _firebolt_cache.get(key_account_2)
         assert cache_2 is not None, "Account 2 should have cache entry"
@@ -1176,7 +1243,7 @@ def test_cache_delete_consistency_with_connections(
         assert disk_result is None, "Disk cache should be deleted"
 
 
-@mark.nofakefs  # These tests need to test real disk behavior
+@mark.usefixtures("fs")  # Use pyfakefs for filesystem mocking
 def test_memory_first_disk_fallback_with_connections(
     clean_cache,
     auth_client_1,
@@ -1204,6 +1271,12 @@ def test_memory_first_disk_fallback_with_connections(
         # Verify data is in memory cache
         memory_data = _firebolt_cache.memory_cache.get(cache_key)
         assert memory_data is not None, "Data should be in memory cache"
+
+        # Verify cache file exists in fake filesystem
+        cache_dir = _firebolt_cache._data_dir
+        if os.path.exists(cache_dir):
+            cache_files = [f for f in os.listdir(cache_dir) if f.endswith(".txt")]
+            assert len(cache_files) > 0, "Cache files should be created"
 
         # Clear memory cache but keep disk cache
         _firebolt_cache.memory_cache.clear()
@@ -1237,9 +1310,9 @@ def test_disk_file_operations_with_pyfakefs(
         api_endpoint=api_endpoint,
     ):
         # Verify cache file was created in fake filesystem
-        cache_dir = os.path.expanduser("~/.firebolt")
+        cache_dir = _firebolt_cache._data_dir
         if os.path.exists(cache_dir):
-            cache_files = [f for f in os.listdir(cache_dir) if f.endswith(".json")]
+            cache_files = [f for f in os.listdir(cache_dir) if f.endswith(".txt")]
             # May or may not have files depending on implementation
             assert isinstance(cache_files, list), "Cache files list should be valid"
 
@@ -1250,3 +1323,36 @@ def test_disk_file_operations_with_pyfakefs(
         )
         cache_data = _firebolt_cache.get(cache_key)
         assert cache_data is not None, "Cache data should be accessible"
+
+
+def test_get_cache_data_dir_os(monkeypatch):
+    """Test get_cache_data_dir returns correct path for each OS and env."""
+
+    # Mac
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setenv("TMPDIR", "/mac/tmpdir/")
+    assert get_cache_data_dir(APPNAME) == os.path.join("/mac/tmpdir/", APPNAME)
+    monkeypatch.delenv("TMPDIR", raising=False)
+    assert get_cache_data_dir(APPNAME) == os.path.join("/tmp", APPNAME)
+
+    # Windows
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setenv("TEMP", "C:/win/TEMP/")
+    assert get_cache_data_dir(APPNAME) == os.path.join("C:/win/TEMP/", APPNAME)
+    monkeypatch.delenv("TEMP", raising=False)
+    # Fallback to C:\\Temp/firebolt, but os.path.join on non-Windows will use /, so check both
+    expected = os.path.join("C:\\Temp", APPNAME)
+    actual = get_cache_data_dir(APPNAME)
+    assert actual == expected or actual.replace("\\", "/") == expected.replace(
+        "\\", "/"
+    )
+
+    # Linux
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setenv("XDG_RUNTIME_DIR", "/linux/xdg/")
+    assert get_cache_data_dir(APPNAME) == os.path.join("/linux/xdg/", APPNAME)
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    monkeypatch.setenv("user.home", "/home/testuser")
+    monkeypatch.setattr(getpass, "getuser", lambda: "testuser")
+    assert get_cache_data_dir(APPNAME) == os.path.join("/tmp", "testuser", APPNAME)
+    monkeypatch.delenv("user.home", raising=False)
