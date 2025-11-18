@@ -518,7 +518,7 @@ def test_connection_info_post_init():
     assert connection_info2.engines["engine1"] is engine_obj
 
 
-@mark.nofakefs
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_file_not_exists(
     file_based_cache, encrypter_with_key
 ):
@@ -530,6 +530,7 @@ def test_file_based_cache_read_data_json_file_not_exists(
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_valid_data(
     file_based_cache, encrypter_with_key
 ):
@@ -553,6 +554,7 @@ def test_file_based_cache_read_data_json_valid_data(
     assert result["token"] == "test_token"
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_decryption_failure(file_based_cache):
     """Test _read_data_json returns empty dict when decryption fails."""
     # Create encrypters with different keys
@@ -574,6 +576,7 @@ def test_file_based_cache_read_data_json_decryption_failure(file_based_cache):
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_invalid_json(
     file_based_cache, encrypter_with_key
 ):
@@ -593,17 +596,22 @@ def test_file_based_cache_read_data_json_invalid_json(
     assert result == {}
 
 
-@mark.nofakefs
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_io_error(file_based_cache, encrypter_with_key):
     """Test _read_data_json returns empty dict when IOError occurs."""
+    # Create a file in the fake filesystem and then mock open to raise IOError
+    test_file_path = "/test_cache/io_error_test.txt"
+    os.makedirs(os.path.dirname(test_file_path), exist_ok=True)
+
     # Mock open to raise IOError
     with patch("builtins.open", mock_open()) as mock_file:
         mock_file.side_effect = IOError("File read error")
 
-        result = file_based_cache._read_data_json("test_file.txt", encrypter_with_key)
+        result = file_based_cache._read_data_json(test_file_path, encrypter_with_key)
         assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_empty_encrypted_data(
     file_based_cache, encrypter_with_key
 ):
@@ -622,6 +630,7 @@ def test_file_based_cache_read_data_json_empty_encrypted_data(
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_read_data_json_invalid_encrypted_format(
     file_based_cache, encrypter_with_key
 ):
@@ -639,6 +648,7 @@ def test_file_based_cache_read_data_json_invalid_encrypted_format(
     assert result == {}
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_delete_method(file_based_cache, encrypter_with_key):
     """Test FileBasedCache delete method removes data from both memory and file."""
     # Create test data
@@ -672,7 +682,7 @@ def test_file_based_cache_delete_method(file_based_cache, encrypter_with_key):
     assert cache_result is None
 
 
-@mark.nofakefs
+@mark.usefixtures("fs")
 def test_file_based_cache_delete_method_file_removal_failure(
     file_based_cache, encrypter_with_key
 ):
@@ -680,13 +690,15 @@ def test_file_based_cache_delete_method_file_removal_failure(
     sample_key = SecureCacheKey(["delete", "failure"], "test_secret")
     sample_data = ConnectionInfo(id="test_connection", token="test_token")
 
-    # Set data in memory cache only (no file operations due to @mark.nofakefs)
-    file_based_cache.memory_cache.set(sample_key, sample_data)
+    # Set data in cache (both memory and file in fake filesystem)
+    file_based_cache.set(sample_key, sample_data)
 
-    # Mock path.exists to return True and os.remove to raise OSError
-    with patch("firebolt.utils.cache.path.exists", return_value=True), patch(
-        "firebolt.utils.cache.os.remove"
-    ) as mock_remove:
+    # Verify file exists in fake filesystem
+    file_path = file_based_cache._get_file_path(sample_key)
+    assert os.path.exists(file_path)
+
+    # Mock os.remove to raise OSError while keeping path.exists returning True
+    with patch("firebolt.utils.cache.os.remove") as mock_remove:
         mock_remove.side_effect = OSError("Permission denied")
 
         # Delete should not raise an exception despite file removal failure
@@ -696,7 +708,11 @@ def test_file_based_cache_delete_method_file_removal_failure(
         memory_result = file_based_cache.memory_cache.get(sample_key)
         assert memory_result is None
 
+        # Verify the file still exists (removal failed due to mocked OSError)
+        assert os.path.exists(file_path)
 
+
+@mark.usefixtures("fs")
 def test_file_based_cache_get_from_file_when_not_in_memory(
     file_based_cache, encrypter_with_key
 ):
@@ -740,6 +756,7 @@ def test_file_based_cache_get_from_file_when_not_in_memory(
     assert memory_result_after_load.id == "test_file_connection"
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_get_from_corrupted_file(file_based_cache, encrypter_with_key):
     """Test FileBasedCache get method handles corrupted file gracefully."""
     sample_key = SecureCacheKey(["corrupted", "file"], "test_secret")
@@ -763,6 +780,7 @@ def test_file_based_cache_get_from_corrupted_file(file_based_cache, encrypter_wi
     assert memory_result is None
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_disabled_behavior(file_based_cache, encrypter_with_key):
     """Test FileBasedCache methods when cache is disabled."""
     sample_key = SecureCacheKey(["disabled", "test"], "test_secret")
@@ -795,6 +813,7 @@ def test_file_based_cache_disabled_behavior(file_based_cache, encrypter_with_key
     file_based_cache.delete(sample_key)  # Should not raise exception
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_preserves_expiry_from_file(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -831,6 +850,7 @@ def test_file_based_cache_preserves_expiry_from_file(
         assert memory_result_after_load.expiry_time == expected_expiry
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_deletes_expired_file_on_get(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -873,6 +893,7 @@ def test_file_based_cache_deletes_expired_file_on_get(
         assert memory_result is None
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_expiry_edge_case_exactly_expired(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -907,6 +928,7 @@ def test_file_based_cache_expiry_edge_case_exactly_expired(
         assert not os.path.exists(file_path)
 
 
+@mark.usefixtures("fs")
 def test_file_based_cache_non_expired_file_loads_correctly(
     file_based_cache, encrypter_with_key, fixed_time
 ):
@@ -1176,7 +1198,7 @@ def test_cache_delete_consistency_with_connections(
         assert disk_result is None, "Disk cache should be deleted"
 
 
-@mark.nofakefs  # These tests need to test real disk behavior
+@mark.usefixtures("fs")  # Use pyfakefs for filesystem mocking
 def test_memory_first_disk_fallback_with_connections(
     clean_cache,
     auth_client_1,
@@ -1204,6 +1226,12 @@ def test_memory_first_disk_fallback_with_connections(
         # Verify data is in memory cache
         memory_data = _firebolt_cache.memory_cache.get(cache_key)
         assert memory_data is not None, "Data should be in memory cache"
+
+        # Verify cache file exists in fake filesystem
+        cache_dir = os.path.expanduser("~/.firebolt")
+        if os.path.exists(cache_dir):
+            cache_files = [f for f in os.listdir(cache_dir) if f.endswith(".json")]
+            assert len(cache_files) > 0, "Cache files should be created"
 
         # Clear memory cache but keep disk cache
         _firebolt_cache.memory_cache.clear()
