@@ -1,6 +1,8 @@
+import getpass
 import json
 import os
 import re
+import sys
 import time
 from typing import Generator
 from unittest.mock import mock_open, patch
@@ -10,12 +12,14 @@ from pytest import fixture, mark
 from firebolt.client.auth.client_credentials import ClientCredentials
 from firebolt.db import connect
 from firebolt.utils.cache import (
+    APPNAME,
     CACHE_EXPIRY_SECONDS,
     ConnectionInfo,
     FileBasedCache,
     SecureCacheKey,
     UtilCache,
     _firebolt_cache,
+    get_cache_data_dir,
 )
 from firebolt.utils.file_operations import FernetEncrypter, generate_salt
 from tests.unit.response import Response
@@ -1319,3 +1323,36 @@ def test_disk_file_operations_with_pyfakefs(
         )
         cache_data = _firebolt_cache.get(cache_key)
         assert cache_data is not None, "Cache data should be accessible"
+
+
+def test_get_cache_data_dir_os(monkeypatch):
+    """Test get_cache_data_dir returns correct path for each OS and env."""
+
+    # Mac
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setenv("TMPDIR", "/mac/tmpdir/")
+    assert get_cache_data_dir(APPNAME) == os.path.join("/mac/tmpdir/", APPNAME)
+    monkeypatch.delenv("TMPDIR", raising=False)
+    assert get_cache_data_dir(APPNAME) == os.path.join("/tmp", APPNAME)
+
+    # Windows
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setenv("TEMP", "C:/win/TEMP/")
+    assert get_cache_data_dir(APPNAME) == os.path.join("C:/win/TEMP/", APPNAME)
+    monkeypatch.delenv("TEMP", raising=False)
+    # Fallback to C:\\Temp/firebolt, but os.path.join on non-Windows will use /, so check both
+    expected = os.path.join("C:\\Temp", APPNAME)
+    actual = get_cache_data_dir(APPNAME)
+    assert actual == expected or actual.replace("\\", "/") == expected.replace(
+        "\\", "/"
+    )
+
+    # Linux
+    monkeypatch.setattr(sys, "platform", "linux")
+    monkeypatch.setenv("XDG_RUNTIME_DIR", "/linux/xdg/")
+    assert get_cache_data_dir(APPNAME) == os.path.join("/linux/xdg/", APPNAME)
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    monkeypatch.setenv("user.home", "/home/testuser")
+    monkeypatch.setattr(getpass, "getuser", lambda: "testuser")
+    assert get_cache_data_dir(APPNAME) == os.path.join("/tmp", "testuser", APPNAME)
+    monkeypatch.delenv("user.home", raising=False)

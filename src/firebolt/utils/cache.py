@@ -1,5 +1,7 @@
+import getpass
 import logging
 import os
+import sys
 import time
 from dataclasses import asdict, dataclass, field
 from json import JSONDecodeError
@@ -16,8 +18,6 @@ from typing import (
     Protocol,
     TypeVar,
 )
-
-from appdirs import user_data_dir
 
 from firebolt.utils.file_operations import (
     FernetEncrypter,
@@ -193,6 +193,37 @@ class SecureCacheKey(ReprCacheable):
         return hash(self.key)
 
 
+def get_cache_data_dir(appname: str = APPNAME) -> str:
+    """
+    Return the directory for storing cache files based on the OS.
+    Mac: use $TMPDIR
+    Windows: use the system property 'java.io.tmpdir'
+    Linux: use $XDG_RUNTIME_DIR, fallback to /tmp/<user_home>
+    """
+
+    if sys.platform == "darwin":
+        tmpdir = os.environ.get("TMPDIR")
+        if tmpdir:
+            return os.path.join(tmpdir, appname)
+        # fallback
+        return os.path.join("/tmp", appname)
+    elif sys.platform.startswith("win"):
+        # Python doesn't expose java.io.tmpdir, but os.environ['TEMP'] is standard
+        tmpdir = os.environ.get("TEMP")
+        if tmpdir:
+            return os.path.join(tmpdir, appname)
+        # fallback
+        return os.path.join("C:\\Temp", appname)
+    else:
+        # Assume Linux/Unix
+        xdg_dir = os.environ.get("XDG_RUNTIME_DIR")
+        if xdg_dir:
+            return os.path.join(xdg_dir, appname)
+    # fallback: /tmp/<username>
+    username = getpass.getuser()
+    return os.path.join("/tmp", username, appname)
+
+
 class FileBasedCache:
     """
     File-based cache that persists to disk with encryption.
@@ -202,7 +233,7 @@ class FileBasedCache:
 
     def __init__(self, memory_cache: UtilCache[ConnectionInfo], cache_name: str = ""):
         self.memory_cache = memory_cache
-        self._data_dir = user_data_dir(appname=APPNAME)  # TODO: change to new dir
+        self._data_dir = get_cache_data_dir(APPNAME)
         makedirs(self._data_dir, exist_ok=True)
         # FileBasedCache has its own disabled state, independent of memory cache
         cache_env_var = f"FIREBOLT_SDK_DISABLE_CACHE_${cache_name}"
