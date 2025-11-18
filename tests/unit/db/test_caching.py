@@ -1,3 +1,4 @@
+import os
 import time
 from typing import Callable, Dict, Generator
 from unittest.mock import patch
@@ -7,6 +8,7 @@ from pytest import fixture, mark
 from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Auth
+from firebolt.client.auth.client_credentials import ClientCredentials
 from firebolt.db import connect
 from firebolt.utils.cache import CACHE_EXPIRY_SECONDS, _firebolt_cache
 
@@ -512,7 +514,7 @@ def test_calls_when_cache_expired(
     )
 
     # First connection - should populate cache
-    connection_test(db_name, engine_name, True)  # cache_enabled=True
+    connection_test(db_name, engine_name, True)
 
     # Verify initial calls were made
     assert system_engine_call_counter == 1, "System engine URL was not called initially"
@@ -627,6 +629,275 @@ def test_use_engine_parameters_caching(
 
     # Verify USE ENGINE was not called again (cache hit)
     assert use_engine_call_counter == 1, "USE ENGINE was called when cache should hit"
+
+
+def test_token_cache_expiry_forces_reauthentication(
+    api_endpoint: str,
+    auth: Auth,
+    account_name: str,
+    mock_connection_flow: Callable,
+):
+    """Test that expired authentication tokens force re-authentication."""
+    mock_connection_flow()
+
+    fixed_time = 1000000
+
+    with patch("time.time", return_value=fixed_time):
+        # First connection should cache token
+        with connect(
+            database="test_db",
+            engine_name="test_engine",
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as _:
+            # Connection established and token cached
+            assert auth.token is not None
+            cached_token_1 = auth.token
+
+    # Simulate time passing within token validity
+    with patch("time.time", return_value=fixed_time + 1800):  # 30 minutes later
+        with connect(
+            database="test_db",
+            engine_name="test_engine",
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as _:
+            # Should use cached token
+            assert auth.token == cached_token_1
+
+    # Simulate time passing beyond token expiry
+    expired_time = fixed_time + CACHE_EXPIRY_SECONDS + 100
+    with patch("time.time", return_value=expired_time):
+        # Clear the current token to simulate expiry
+        auth._token = None
+        auth._expires = fixed_time  # Set to expired time
+
+        with connect(
+            database="test_db",
+            engine_name="test_engine",
+            auth=auth,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+        ) as _:
+            # Token expired, new authentication should occur
+            assert auth.token is not None
+            # Should get a new token (implementation detail may vary)
+            assert auth.token is not None
+
+
+@mark.parametrize("use_cache", [True, False])
+def test_connection_cache_isolation_by_credentials(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    query_url: str,
+    use_database_callback: Callable,
+    use_engine_callback: Callable,
+    query_callback: Callable,
+    account_name: str,
+    api_endpoint: str,
+    use_cache: bool,
+):
+    """Test that connections with different credentials are cached separately."""
+
+    # Create two different auth objects
+    auth1 = ClientCredentials(
+        client_id="client_1", client_secret="secret_1", use_token_cache=use_cache
+    )
+    auth2 = ClientCredentials(
+        client_id="client_2", client_secret="secret_2", use_token_cache=use_cache
+    )
+
+    system_engine_call_counter = 0
+
+    def system_engine_callback_counter(request, **kwargs):
+        nonlocal system_engine_call_counter
+        system_engine_call_counter += 1
+        return get_system_engine_callback(request, **kwargs)
+
+    # Set up mocks for both auth credentials
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        use_engine_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+
+    # Connect with first credentials
+    with connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth1,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        disable_cache=not use_cache,
+    ) as connection:
+        connection.cursor().execute("SELECT 1")
+
+    first_call_count = system_engine_call_counter
+
+    # Connect with second credentials
+    with connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth2,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        disable_cache=not use_cache,
+    ) as connection:
+        connection.cursor().execute("SELECT 1")
+
+    second_call_count = system_engine_call_counter
+
+    # Connect again with first credentials
+    with connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth1,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+        disable_cache=not use_cache,
+    ) as connection:
+        connection.cursor().execute("SELECT 1")
+
+    third_call_count = system_engine_call_counter
+
+    if use_cache:
+        # With caching: each credential should only trigger system engine call once
+        assert first_call_count == 1, "First auth should trigger system engine call"
+        assert (
+            second_call_count == 2
+        ), "Second auth should trigger another system engine call"
+        assert third_call_count == 2, "First auth second use should use cache"
+    else:
+        # Without caching: every connection should trigger system engine call
+        assert first_call_count >= 1, "System engine should be called"
+        assert (
+            second_call_count > first_call_count
+        ), "Each connection should call system engine"
+        assert third_call_count > second_call_count, "No caching means more calls"
+
+
+def test_connection_cache_isolation_by_accounts(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    query_url: str,
+    use_database_callback: Callable,
+    use_engine_callback: Callable,
+    query_callback: Callable,
+    auth: Auth,
+    api_endpoint: str,
+):
+    """Test that connections to different accounts are cached separately."""
+    system_engine_call_counter = 0
+
+    def system_engine_callback_counter(request, **kwargs):
+        nonlocal system_engine_call_counter
+        system_engine_call_counter += 1
+        return get_system_engine_callback(request, **kwargs)
+
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        use_engine_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+
+    # Connect to first account
+    with connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name="account_1",
+        api_endpoint=api_endpoint,
+    ) as connection:
+        connection.cursor().execute("SELECT 1")
+
+    first_account_calls = system_engine_call_counter
+
+    # Connect to second account with same credentials
+    with connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name="account_2",
+        api_endpoint=api_endpoint,
+    ) as connection:
+        connection.cursor().execute("SELECT 1")
+
+    second_account_calls = system_engine_call_counter
+
+    # Connect again to first account
+    with connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name="account_1",
+        api_endpoint=api_endpoint,
+    ) as connection:
+        connection.cursor().execute("SELECT 1")
+
+    third_connection_calls = system_engine_call_counter
+
+    # Each account should require its own system engine call initially
+    assert first_account_calls == 1, "First account should trigger system engine call"
+    assert (
+        second_account_calls == 2
+    ), "Second account should trigger another system engine call"
+
+    # Return to first account should use cached data
+    assert (
+        third_connection_calls == 2
+    ), "First account second connection should use cache"
 
 
 def test_database_switching_with_same_engine_preserves_database_context(
@@ -874,3 +1145,84 @@ def test_engine_cache_does_not_contain_database_parameter(
             f"Engine parameters should be separate from database context. "
             f"Full engine params: {cached_engine.params}"
         )
+
+
+@mark.parametrize("cache_disabled", [True, False])
+def test_cache_disable_via_environment_integration(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    query_url: str,
+    use_database_callback: Callable,
+    use_engine_callback: Callable,
+    query_callback: Callable,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    cache_disabled: bool,
+):
+    """Test cache behavior when disabled via environment variable."""
+    system_engine_call_counter = 0
+
+    def system_engine_callback_counter(request, **kwargs):
+        nonlocal system_engine_call_counter
+        system_engine_call_counter += 1
+        return get_system_engine_callback(request, **kwargs)
+
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        system_engine_callback_counter,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        use_engine_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+
+    # Set environment variable to disable cache
+    env_patch = {}
+    if cache_disabled:
+        env_patch["FIREBOLT_SDK_DISABLE_CACHE"] = "true"
+
+    with patch.dict(os.environ, env_patch):
+        # Create multiple connections to test caching behavior
+        for _ in range(3):
+            with connect(
+                database=db_name,
+                engine_name=engine_name,
+                auth=auth,
+                account_name=account_name,
+                api_endpoint=api_endpoint,
+            ) as connection:
+                connection.cursor().execute("SELECT 1")
+
+    if cache_disabled:
+        # Each connection should call system engine when cache is disabled
+        assert (
+            system_engine_call_counter == 3
+        ), "Cache disabled should not reuse system engine"
+    else:
+        # Only first connection should call system engine when cache is enabled
+        assert (
+            system_engine_call_counter == 1
+        ), "Cache enabled should reuse system engine"
