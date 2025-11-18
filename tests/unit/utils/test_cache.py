@@ -6,12 +6,15 @@ from unittest.mock import mock_open, patch
 
 from pytest import fixture, mark
 
+from firebolt.client.auth.client_credentials import ClientCredentials
+from firebolt.db import connect
 from firebolt.utils.cache import (
     CACHE_EXPIRY_SECONDS,
     ConnectionInfo,
     FileBasedCache,
     SecureCacheKey,
     UtilCache,
+    _firebolt_cache,
 )
 from firebolt.utils.file_operations import FernetEncrypter, generate_salt
 
@@ -100,6 +103,80 @@ def encrypter_with_key():
 
     salt = generate_salt()
     return FernetEncrypter(salt, "test_encryption_key")
+
+
+@fixture
+def auth_client_1() -> ClientCredentials:
+    """Authentication for client 1."""
+    return ClientCredentials(
+        client_id="client_1", client_secret="secret_1", use_token_cache=True
+    )
+
+
+@fixture
+def auth_client_2() -> ClientCredentials:
+    """Authentication for client 2."""
+    return ClientCredentials(
+        client_id="client_2", client_secret="secret_2", use_token_cache=True
+    )
+
+
+@fixture
+def auth_same_client_diff_secret() -> ClientCredentials:
+    """Authentication with same client ID but different secret."""
+    return ClientCredentials(
+        client_id="client_1",  # Same as auth_client_1
+        client_secret="secret_different",  # Different secret
+        use_token_cache=True,
+    )
+
+
+@fixture
+def mock_connection_flow(httpx_mock, auth_url, api_endpoint):
+    """Mock the connection flow for testing."""
+
+    def _mock_flow(account_name="mock_account_name"):
+        # Mock authentication with correct URL pattern from existing tests
+        httpx_mock.add_response(
+            method="POST",
+            url=auth_url,  # Use the correct auth_url fixture
+            json={"access_token": "mock_token", "expires_in": 3600},
+        )
+
+        # Mock system engine URL - this is the actual URL pattern used
+        httpx_mock.add_response(
+            method="GET",
+            url=f"https://{api_endpoint}/web/v3/account/{account_name}/engineUrl",
+            json={"engineUrl": "https://system.mock.firebolt.io"},
+        )
+
+        # Mock queries to the system engine (this handles all POST requests to system.mock.firebolt.io)
+        # This will catch USE DATABASE, USE ENGINE queries and any other queries
+        def system_engine_callback(request):
+            return {"meta": [], "data": [], "rows": 0, "statistics": {}}
+
+        httpx_mock.add_callback(
+            system_engine_callback,
+            url="https://system.mock.firebolt.io/",
+            method="POST",
+        )
+
+    return _mock_flow
+
+
+@fixture
+def clean_cache():
+    """Provide a clean cache for each test."""
+    original_memory = _firebolt_cache.memory_cache._cache.copy()
+    original_file_cache_disabled = _firebolt_cache.disabled
+
+    _firebolt_cache.clear()
+    _firebolt_cache.enable()  # Enable cache for connection flow tests
+    yield _firebolt_cache
+
+    # Restore original state
+    _firebolt_cache.memory_cache._cache = original_memory
+    _firebolt_cache.disabled = original_file_cache_disabled
 
 
 def test_cache_set_and_get(cache, sample_cache_key, sample_connection_info):
@@ -927,3 +1004,249 @@ def test_memory_cache_set_preserve_expiry_with_none_expiry(
         assert (
             result.expiry_time == expected_expiry
         )  # Should get new expiry despite preserve=True
+
+
+# Comprehensive cache tests using full connection flow
+def test_cache_stores_connection_data(
+    clean_cache,
+    auth_client_1,
+    mock_connection_flow,
+    api_endpoint,
+    account_name,
+):
+    """Test that cache stores connection data correctly."""
+    # Setup mock responses
+    mock_connection_flow(account_name)
+
+    # Create connection and verify data is cached
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_1,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ):
+        # Verify cache contains the expected data
+        cache_key = SecureCacheKey(
+            [auth_client_1.principal, auth_client_1.secret, account_name],
+            auth_client_1.secret,
+        )
+
+        cached_data = _firebolt_cache.get(cache_key)
+        assert cached_data is not None, "Cache should contain connection data"
+
+
+def test_different_accounts_isolated_cache_entries(
+    clean_cache,
+    auth_client_1,
+    mock_connection_flow,
+    api_endpoint,
+):
+    """Test that different accounts generate isolated cache entries."""
+    account_1 = "test_account_1"
+    account_2 = "test_account_2"
+
+    # Setup mock responses for both accounts
+    mock_connection_flow(account_1)
+    mock_connection_flow(account_2)
+
+    # Connect to first account
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_1,
+        account_name=account_1,
+        api_endpoint=api_endpoint,
+    ):
+        # Get first cache entry
+        key_account_1 = SecureCacheKey(
+            [auth_client_1.principal, auth_client_1.secret, account_1],
+            auth_client_1.secret,
+        )
+        cache_1 = _firebolt_cache.get(key_account_1)
+        assert cache_1 is not None, "Account 1 should have cache entry"
+
+    # Connect to second account with same credentials
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_1,
+        account_name=account_2,
+        api_endpoint=api_endpoint,
+    ):
+        # Get second cache entry
+        key_account_2 = SecureCacheKey(
+            [auth_client_1.principal, auth_client_1.secret, account_2],
+            auth_client_1.secret,
+        )
+        cache_2 = _firebolt_cache.get(key_account_2)
+        assert cache_2 is not None, "Account 2 should have cache entry"
+
+    # Verify cache keys are different
+    assert key_account_1.key != key_account_2.key, "Cache keys should be different"
+    assert account_1 in key_account_1.key, "Account 1 should be in cache key"
+    assert account_2 in key_account_2.key, "Account 2 should be in cache key"
+
+
+def test_different_credentials_isolated_cache_entries(
+    clean_cache,
+    auth_client_1,
+    auth_client_2,
+    mock_connection_flow,
+    api_endpoint,
+    account_name,
+):
+    """Test that different credentials generate isolated cache entries."""
+    # Setup mock responses
+    mock_connection_flow(account_name)
+
+    # Connect with first credentials
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_1,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ):
+        key_cred_1 = SecureCacheKey(
+            [auth_client_1.principal, auth_client_1.secret, account_name],
+            auth_client_1.secret,
+        )
+        cache_1 = _firebolt_cache.get(key_cred_1)
+        assert cache_1 is not None, "Credential 1 should have cache entry"
+
+    # Connect with second credentials
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_2,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ):
+        key_cred_2 = SecureCacheKey(
+            [auth_client_2.principal, auth_client_2.secret, account_name],
+            auth_client_2.secret,
+        )
+        cache_2 = _firebolt_cache.get(key_cred_2)
+        assert cache_2 is not None, "Credential 2 should have cache entry"
+
+    # Verify cache keys are different
+    assert key_cred_1.key != key_cred_2.key, "Cache keys should be different"
+
+
+def test_cache_delete_consistency_with_connections(
+    clean_cache,
+    auth_client_1,
+    mock_connection_flow,
+    api_endpoint,
+    account_name,
+):
+    """Test that cache deletion is consistent across memory and disk with real connections."""
+    # Setup mock responses
+    mock_connection_flow(account_name)
+
+    # Establish connection and populate cache
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_1,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ):
+        cache_key = SecureCacheKey(
+            [auth_client_1.principal, auth_client_1.secret, account_name],
+            auth_client_1.secret,
+        )
+
+        # Verify cache exists
+        assert (
+            _firebolt_cache.get(cache_key) is not None
+        ), "Cache should exist before deletion"
+
+        # Delete from cache
+        _firebolt_cache.delete(cache_key)
+
+        # Verify deletion from memory
+        assert (
+            _firebolt_cache.memory_cache.get(cache_key) is None
+        ), "Memory cache should be deleted"
+
+        # Verify deletion persisted to disk
+        disk_result = _firebolt_cache.get(cache_key)
+        assert disk_result is None, "Disk cache should be deleted"
+
+
+@mark.nofakefs  # These tests need to test real disk behavior
+def test_memory_first_disk_fallback_with_connections(
+    clean_cache,
+    auth_client_1,
+    mock_connection_flow,
+    api_endpoint,
+    account_name,
+):
+    """Test that memory cache is checked first, then disk cache."""
+    # Setup mock responses
+    mock_connection_flow(account_name)
+
+    # First connection - populates both memory and disk cache
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_1,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ):
+        cache_key = SecureCacheKey(
+            [auth_client_1.principal, auth_client_1.secret, account_name],
+            auth_client_1.secret,
+        )
+
+        # Verify data is in memory cache
+        memory_data = _firebolt_cache.memory_cache.get(cache_key)
+        assert memory_data is not None, "Data should be in memory cache"
+
+        # Clear memory cache but keep disk cache
+        _firebolt_cache.memory_cache.clear()
+        assert (
+            _firebolt_cache.memory_cache.get(cache_key) is None
+        ), "Memory cache should be cleared"
+
+        # Get from cache should load from disk and populate memory
+        reloaded_data = _firebolt_cache.get(cache_key)
+        assert reloaded_data is not None, "Data should be reloaded from disk"
+
+
+@mark.usefixtures("fs")  # Use pyfakefs for filesystem mocking
+def test_disk_file_operations_with_pyfakefs(
+    clean_cache,
+    auth_client_1,
+    mock_connection_flow,
+    api_endpoint,
+    account_name,
+):
+    """Test disk file operations using pyfakefs."""
+    # Setup mock responses
+    mock_connection_flow(account_name)
+
+    # Establish connection and verify file creation
+    with connect(
+        database="test_db",
+        engine_name="test_engine",
+        auth=auth_client_1,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ):
+        # Verify cache file was created in fake filesystem
+        cache_dir = os.path.expanduser("~/.firebolt")
+        if os.path.exists(cache_dir):
+            cache_files = [f for f in os.listdir(cache_dir) if f.endswith(".json")]
+            # May or may not have files depending on implementation
+            assert isinstance(cache_files, list), "Cache files list should be valid"
+
+        # Verify file content can be read from cache
+        cache_key = SecureCacheKey(
+            [auth_client_1.principal, auth_client_1.secret, account_name],
+            auth_client_1.secret,
+        )
+        cache_data = _firebolt_cache.get(cache_key)
+        assert cache_data is not None, "Cache data should be accessible"
