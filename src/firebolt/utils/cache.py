@@ -29,7 +29,7 @@ T = TypeVar("T")
 
 # Cache expiry configuration
 CACHE_EXPIRY_SECONDS = 3600  # 1 hour
-APPNAME = "firebolt"
+APPNAME = "fireboltDriver"
 
 logger = logging.getLogger(__name__)
 
