@@ -310,9 +310,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 self._update_set_parameters(cache_obj.engines[engine].params)
             else:
                 await self.execute(f'USE ENGINE "{engine}"')
-                cache_obj.engines[engine] = EngineInfo(
-                    self.engine_url, self.parameters | self._set_parameters
-                )
+                params = self.parameters | self._set_parameters
+                # Ensure 'database' parameter is not cached with engine info
+                params = {k: v for k, v in params.items() if k != "database"}
+                cache_obj.engines[engine] = EngineInfo(self.engine_url, params)
                 self.set_cache_record(cache_obj)
         else:
             await self.execute(f'USE ENGINE "{engine}"')

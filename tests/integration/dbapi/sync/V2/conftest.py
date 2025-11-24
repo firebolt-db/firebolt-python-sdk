@@ -41,7 +41,7 @@ def connection_factory(
     def factory(**kwargs: Any) -> Connection:
         if request.param == "core":
             base_kwargs = {
-                "database": "firebolt",
+                "database": kwargs.pop("database", "firebolt"),
                 "auth": core_auth,
                 "url": core_url,
             }

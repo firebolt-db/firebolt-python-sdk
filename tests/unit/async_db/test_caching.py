@@ -627,3 +627,249 @@ async def test_use_engine_parameters_caching(
 
     # Verify USE ENGINE was not called again (cache hit)
     assert use_engine_call_counter == 1, "USE ENGINE was called when cache should hit"
+
+
+async def test_database_switching_with_same_engine_preserves_database_context(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    query_url: str,
+    use_engine_callback: Callable,
+    query_callback: Callable,
+    api_endpoint: str,
+    auth: Auth,
+    account_name: str,
+    dynamic_use_database_callback: Callable,
+):
+    """
+    Test that switching databases with the same engine preserves correct database context.
+
+    This test verifies the bug scenario where:
+    1. Connect with database1 + engine1 (cache entry created)
+    2. Connect with database2 + engine1 (should add database2 to cache)
+    3. Cursors from second connection should have database2, not database1
+    """
+    second_db_name = f"{db_name}_second"
+
+    # Mock HTTP calls
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        get_system_engine_callback,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
+
+    # Create dynamic callback for both databases
+    use_db_callback = dynamic_use_database_callback(db_name, second_db_name)
+
+    # Add USE DATABASE callbacks for both databases
+    httpx_mock.add_callback(
+        use_db_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        use_db_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{second_db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    # Add USE ENGINE callback
+    httpx_mock.add_callback(
+        use_engine_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+    httpx_mock.add_callback(
+        query_callback,
+        url=query_url,
+        is_reusable=True,
+    )
+
+    # Also add callback for second database query URL
+    second_query_url = query_url.copy_with(
+        params={**query_url.params, "database": second_db_name}
+    )
+    httpx_mock.add_callback(
+        query_callback,
+        url=second_query_url,
+        is_reusable=True,
+    )
+
+    # First connection: database1 + engine1
+    async with await connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection1:
+        cursor1 = connection1.cursor()
+        await cursor1.execute("SELECT 1")
+
+        # Verify first connection has correct database
+        assert (
+            cursor1.database == db_name
+        ), f"First cursor should have database {db_name}"
+
+        # Verify cache contains first database
+        cache_record = cursor1.get_cache_record()
+        assert cache_record is not None, "Cache should have connection info"
+        assert (
+            db_name in cache_record.databases
+        ), f"Cache should contain database {db_name}"
+
+    # Second connection: database2 + engine1 (same engine)
+    async with await connect(
+        database=second_db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection2:
+        cursor2 = connection2.cursor()
+        await cursor2.execute("SELECT 1")
+
+        # Verify second connection has correct database
+        assert cursor2.database == second_db_name, (
+            f"Second cursor should have database {second_db_name}, "
+            f"but has {cursor2.database}. This indicates the database context was overwritten."
+        )
+
+        # Verify cache contains both databases
+        cache_record = cursor2.get_cache_record()
+        assert cache_record is not None, "Cache should have connection info"
+        assert (
+            db_name in cache_record.databases
+        ), f"Cache should still contain database {db_name}"
+        assert (
+            second_db_name in cache_record.databases
+        ), f"Cache should contain database {second_db_name}"
+
+    # Third connection: back to database1 + engine1 (should use cache)
+    async with await connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection3:
+        cursor3 = connection3.cursor()
+        await cursor3.execute("SELECT 1")
+
+        # Verify third connection has correct database (should be from cache)
+        assert cursor3.database == db_name, (
+            f"Third cursor should have database {db_name}, "
+            f"but has {cursor3.database}. This indicates cached database context is incorrect."
+        )
+
+
+async def test_engine_cache_does_not_contain_database_parameter(
+    db_name: str,
+    engine_name: str,
+    auth_url: str,
+    httpx_mock: HTTPXMock,
+    check_credentials_callback: Callable,
+    get_system_engine_url: str,
+    get_system_engine_callback: Callable,
+    system_engine_query_url: str,
+    system_engine_no_db_query_url: str,
+    use_database_callback: Callable,
+    use_engine_with_params_callback: Callable,
+    query_callback: Callable,
+    api_endpoint: str,
+    auth: Auth,
+    account_name: str,
+    test_update_parameters: Dict[str, str],
+):
+    """
+    Test that cached engine parameters do not include database parameter.
+
+    This test verifies the bug scenario where:
+    1. Connect with both database and engine defined
+    2. Engine cache should not contain 'database' parameter
+    3. Only engine-specific parameters should be cached
+    """
+    # Mock HTTP calls
+    httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
+    httpx_mock.add_callback(
+        get_system_engine_callback,
+        url=get_system_engine_url,
+        is_reusable=True,
+    )
+
+    # Add USE DATABASE callback
+    httpx_mock.add_callback(
+        use_database_callback,
+        url=system_engine_no_db_query_url,
+        match_content=f'USE DATABASE "{db_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    # Add USE ENGINE callback that returns parameters (including engine-specific ones)
+    httpx_mock.add_callback(
+        use_engine_with_params_callback,
+        url=system_engine_query_url,
+        match_content=f'USE ENGINE "{engine_name}"'.encode("utf-8"),
+        is_reusable=True,
+    )
+
+    # The query callback needs to be more flexible to handle additional parameters
+    # in case there's a database parameter
+    def flexible_query_callback(request, **kwargs):
+        # This will handle queries to the engine with any parameters
+        if engine_name in str(request.url) and "SELECT 1" in str(request.content):
+            return query_callback(request, **kwargs)
+
+    httpx_mock.add_callback(
+        flexible_query_callback,
+        is_reusable=True,
+    )
+
+    # Create connection with both database and engine
+    async with await connect(
+        database=db_name,
+        engine_name=engine_name,
+        auth=auth,
+        account_name=account_name,
+        api_endpoint=api_endpoint,
+    ) as connection:
+        cursor = connection.cursor()
+        await cursor.execute("SELECT 1")
+
+        # Get the cache record
+        cache_record = cursor.get_cache_record()
+        assert cache_record is not None, "Cache should have connection info"
+        assert (
+            engine_name in cache_record.engines
+        ), f"Cache should contain engine {engine_name}"
+
+        # Get cached engine info
+        cached_engine = cache_record.engines[engine_name]
+
+        # Verify that engine cache contains expected parameters from test_update_parameters
+        for param_name, expected_value in test_update_parameters.items():
+            assert (
+                param_name in cached_engine.params
+            ), f"Engine cache should contain parameter {param_name}"
+            assert cached_engine.params[param_name] == expected_value, (
+                f"Engine cache parameter {param_name} should be {expected_value}, "
+                f"but is {cached_engine.params[param_name]}"
+            )
+
+        # Verify that engine cache does NOT contain database parameter
+        assert "database" not in cached_engine.params, (
+            f"Engine cache should NOT contain 'database' parameter, "
+            f"but found database={cached_engine.params.get('database')}. "
+            f"Engine parameters should be separate from database context. "
+            f"Full engine params: {cached_engine.params}"
+        )

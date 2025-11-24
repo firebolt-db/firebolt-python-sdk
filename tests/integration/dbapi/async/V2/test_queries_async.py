@@ -1188,3 +1188,85 @@ async def test_connection_close_no_rollback_with_autocommit_on(
     await check_data_visibility_async(
         table_name, 1, connection_factory, True, [1, "autocommit_close_test"]
     )
+
+
+async def test_database_switching_with_same_engine_preserves_database_context(
+    database_name: str,
+    connection_factory: Callable[..., Connection],
+) -> None:
+    """
+    Async integration test for database context preservation with caching on Firebolt.
+
+    This test verifies against a live Firebolt instance:
+    1. Connect with database1 + engine1 (cache entry created)
+    2. Connect with database2 + engine1 (should add database2 to cache)
+    3. Cursors from second connection should have database2, not database1
+    """
+    first_db_name = database_name
+    second_db_name = f"{database_name}_second_async"
+
+    # Create a system connection to set up test databases
+    async with await connection_factory() as system_connection:
+        system_cursor = system_connection.cursor()
+
+        try:
+            # Create the second test database
+            await system_cursor.execute(
+                f'CREATE DATABASE IF NOT EXISTS "{second_db_name}"'
+            )
+
+            # First connection: database1 + engine1
+            async with await connection_factory(database=first_db_name) as connection1:
+                cursor1 = connection1.cursor()
+                await cursor1.execute("SELECT current_database()")
+                result1 = await cursor1.fetchone()
+
+                # Verify first connection has correct database
+                assert (
+                    result1[0] == first_db_name
+                ), f"First cursor should have database {first_db_name}"
+                assert (
+                    cursor1.database == first_db_name
+                ), f"First cursor database property should be {first_db_name}"
+
+            # Second connection: database2 + engine1 (same engine)
+            async with await connection_factory(database=second_db_name) as connection2:
+                cursor2 = connection2.cursor()
+                await cursor2.execute("SELECT current_database()")
+                result2 = await cursor2.fetchone()
+
+                # Verify second connection has correct database
+                assert result2[0] == second_db_name, (
+                    f"Second cursor should have database {second_db_name}, "
+                    f"but got {result2[0]}. This indicates the database context was overwritten."
+                )
+                assert cursor2.database == second_db_name, (
+                    f"Second cursor database property should be {second_db_name}, "
+                    f"but has {cursor2.database}. This indicates the database context was overwritten."
+                )
+
+            # Third connection: back to database1 + engine1 (should use cache)
+            async with await connection_factory(database=first_db_name) as connection3:
+                cursor3 = connection3.cursor()
+                await cursor3.execute("SELECT current_database()")
+                result3 = await cursor3.fetchone()
+
+                # Verify third connection has correct database (should be from cache)
+                assert result3[0] == first_db_name, (
+                    f"Third cursor should have database {first_db_name}, "
+                    f"but got {result3[0]}. This indicates cached database context is incorrect."
+                )
+                assert cursor3.database == first_db_name, (
+                    f"Third cursor database property should be {first_db_name}, "
+                    f"but has {cursor3.database}. This indicates cached database context is incorrect."
+                )
+
+        finally:
+            # Clean up: Drop the test database
+            try:
+                await system_cursor.execute(
+                    f'DROP DATABASE IF EXISTS "{second_db_name}"'
+                )
+            except Exception:
+                # Ignore cleanup errors to avoid masking the real test failure
+                pass
