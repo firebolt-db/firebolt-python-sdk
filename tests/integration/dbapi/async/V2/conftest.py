@@ -40,7 +40,7 @@ async def connection_factory(
         else:
             base_kwargs = {
                 "engine_name": engine_name,
-                "database": database_name,
+                "database": kwargs.pop("database", database_name),
                 "auth": auth,
                 "account_name": account_name,
                 "api_endpoint": api_endpoint,
