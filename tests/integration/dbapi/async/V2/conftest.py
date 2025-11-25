@@ -33,14 +33,14 @@ async def connection_factory(
     async def factory(**kwargs: Any) -> Connection:
         if request.param == "core":
             base_kwargs = {
-                "database": "firebolt",
+                "database": kwargs.pop("database", "firebolt"),
                 "auth": core_auth,
                 "url": core_url,
             }
         else:
             base_kwargs = {
                 "engine_name": engine_name,
-                "database": database_name,
+                "database": kwargs.pop("database", database_name),
                 "auth": auth,
                 "account_name": account_name,
                 "api_endpoint": api_endpoint,

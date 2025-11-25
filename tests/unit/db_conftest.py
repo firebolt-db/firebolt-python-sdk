@@ -451,6 +451,56 @@ def use_database_failed_callback(
 
 
 @fixture
+def dynamic_use_database_callback(query_statistics: Dict[str, Any]) -> Callable:
+    """
+    Dynamic USE DATABASE callback that returns the correct database name based on request content.
+
+    This fixture creates a callback that can handle multiple database names by parsing
+    the request content to determine which database is being requested, then returns
+    the appropriate database name in the response headers.
+    """
+
+    def create_callback(*database_names: str) -> Callable:
+        def inner(
+            request: Request = None,
+            **kwargs,
+        ) -> Response:
+            assert request, "empty request"
+            assert request.method == "POST", "invalid request method"
+
+            # Extract database name from request content
+            request_content = request.content.decode("utf-8")
+            requested_db = None
+
+            # Check for each database name in the request
+            for db_name in database_names:
+                if f'USE DATABASE "{db_name}"' in request_content:
+                    requested_db = db_name
+                    break
+
+            # Fallback to first database if we can't determine
+            if requested_db is None:
+                requested_db = database_names[0] if database_names else "default_db"
+
+            query_response = {
+                "meta": [],
+                "data": [],
+                "rows": 0,
+                "statistics": query_statistics,
+            }
+
+            return Response(
+                status_code=codes.OK,
+                json=query_response,
+                headers={UPDATE_PARAMETERS_HEADER: f"database={requested_db}"},
+            )
+
+        return inner
+
+    return create_callback
+
+
+@fixture
 def use_engine_callback(engine_url: str, query_statistics: Dict[str, Any]) -> Callable:
     def inner(
         request: Request = None,
