@@ -13,14 +13,15 @@ from firebolt.client.auth import Auth, Token, UsernamePassword
 from firebolt.common._types import ColType
 from firebolt.db import Connection, connect
 from firebolt.db.cursor import CursorV1 as Cursor
+from firebolt.utils.cache import _firebolt_cache
 from firebolt.utils.exception import (
     AccountNotFoundError,
     ConfigurationError,
     ConnectionClosedError,
     FireboltEngineError,
 )
-from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import ACCOUNT_ENGINE_ID_BY_NAME_URL
+from tests.unit.test_cache_helpers import get_cached_token
 
 
 def test_closed_connection(connection: Connection) -> None:
@@ -272,6 +273,7 @@ def test_connection_token_caching(
     access_token: str,
     account_id_callback: Callable,
     account_id_url: str,
+    enable_cache: Callable,
 ) -> None:
     httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
     httpx_mock.add_callback(
@@ -294,9 +296,11 @@ def test_connection_token_caching(
             api_endpoint=api_endpoint,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
-        ts = TokenSecureStorage(username=user, password=password)
-        assert ts.get_cached_token() == access_token, "Invalid token value cached"
+        # Verify token was cached using the new cache system
+        cached_token = get_cached_token(user, password, account_name)
+        assert cached_token == access_token, "Invalid token value cached"
 
+    _firebolt_cache.clear()
     # Do the same, but with use_token_cache=False
     with Patcher():
         with connect(
@@ -307,10 +311,9 @@ def test_connection_token_caching(
             api_endpoint=api_endpoint,
         ) as connection:
             assert connection.cursor().execute("select*") == len(python_query_data)
-        ts = TokenSecureStorage(username=user, password=password)
-        assert (
-            ts.get_cached_token() is None
-        ), "Token is cached even though caching is disabled"
+        # Verify token was not cached when caching is disabled
+        cached_token = get_cached_token(user, password, account_name)
+        assert cached_token is None, "Token is cached even though caching is disabled"
 
 
 def test_connect_with_auth(

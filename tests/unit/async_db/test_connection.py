@@ -16,7 +16,7 @@ from firebolt.utils.exception import (
     ConnectionClosedError,
     FireboltError,
 )
-from firebolt.utils.token_storage import TokenSecureStorage
+from tests.unit.test_cache_helpers import get_cached_token
 
 
 @mark.skip("__slots__ is broken on Connection class")
@@ -213,6 +213,8 @@ async def test_connect_system_engine_caching(
     else:
         assert system_engine_call_counter != 1, "System engine URL was cached"
 
+    _firebolt_cache.clear()
+
 
 async def test_connect_engine_failed(
     db_name: str,
@@ -298,6 +300,7 @@ async def test_connection_token_caching(
     python_query_data: List[List[ColType]],
     mock_connection_flow: Callable,
     mock_query: Callable,
+    enable_cache: Callable,
 ) -> None:
     mock_connection_flow()
     mock_query()
@@ -314,9 +317,11 @@ async def test_connection_token_caching(
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
             )
-        ts = TokenSecureStorage(username=client_id, password=client_secret)
-        assert ts.get_cached_token() == access_token, "Invalid token value cached"
+        # Verify token was cached using the new cache system
+        cached_token = get_cached_token(client_id, client_secret, account_name)
+        assert cached_token == access_token, "Invalid token value cached"
 
+    _firebolt_cache.clear()
     with Patcher():
         async with await connect(
             database=db_name,
@@ -328,9 +333,11 @@ async def test_connection_token_caching(
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
             )
-        ts = TokenSecureStorage(username=client_id, password=client_secret)
-        assert ts.get_cached_token() == access_token, "Invalid token value cached"
+        # Verify token was cached using the new cache system (second check)
+        cached_token = get_cached_token(client_id, client_secret, account_name)
+        assert cached_token == access_token, "Invalid token value cached"
 
+    _firebolt_cache.clear()
     # Do the same, but with use_token_cache=False
     with Patcher():
         async with await connect(
@@ -343,10 +350,9 @@ async def test_connection_token_caching(
             assert await connection.cursor().execute("select*") == len(
                 python_query_data
             )
-        ts = TokenSecureStorage(username=client_id, password=client_secret)
-        assert (
-            ts.get_cached_token() is None
-        ), "Token is cached even though caching is disabled"
+        # Verify token was not cached when caching is disabled
+        cached_token = get_cached_token(client_id, client_secret, account_name)
+        assert cached_token is None, "Token is cached even though caching is disabled"
 
 
 async def test_connect_with_user_agent(
