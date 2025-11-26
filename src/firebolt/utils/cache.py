@@ -146,10 +146,11 @@ class UtilCache(Generic[T]):
     def set(self, key: ReprCacheable, value: T, preserve_expiry: bool = False) -> None:
         if not self.disabled:
             # Set expiry_time for ConnectionInfo objects
-            if hasattr(value, "expiry_time"):
-                if not preserve_expiry or value.expiry_time is None:
-                    current_time = int(time.time())
-                    value.expiry_time = current_time + CACHE_EXPIRY_SECONDS
+            if hasattr(value, "expiry_time") and (
+                not preserve_expiry or value.expiry_time is None
+            ):
+                current_time = int(time.time())
+                value.expiry_time = current_time + CACHE_EXPIRY_SECONDS
 
             s_key = self.create_key(key)
             self._cache[s_key] = value
@@ -196,8 +197,8 @@ class SecureCacheKey(ReprCacheable):
 def get_cache_data_dir(appname: str = APPNAME) -> str:
     """
     Return the directory for storing cache files based on the OS.
-    Mac: use $TMPDIR
-    Windows: use the system property 'java.io.tmpdir'
+    Mac: use $TMPDIR, fallback to /tmp/<appname>
+    Windows: use the environment variable TEMP or if not defined C:\\Temp
     Linux: use $XDG_RUNTIME_DIR, fallback to /tmp/<user_home>
     """
 
