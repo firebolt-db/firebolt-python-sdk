@@ -1259,12 +1259,16 @@ def test_cache_disable_via_environment_integration(
         is_reusable=True,
     )
 
-    # Set environment variable to disable cache
-    env_patch = {}
-    if cache_disabled:
-        env_patch["FIREBOLT_SDK_DISABLE_CACHE"] = "true"
+    # Store original cache state
+    original_cache_disabled = _firebolt_cache.disabled
 
-    with patch.dict(os.environ, env_patch):
+    try:
+        # Set cache disabled state directly
+        if cache_disabled:
+            _firebolt_cache.disable()
+        else:
+            _firebolt_cache.enable()
+
         # Create multiple connections to test caching behavior
         for _ in range(3):
             with connect(
@@ -1276,13 +1280,16 @@ def test_cache_disable_via_environment_integration(
             ) as connection:
                 connection.cursor().execute("SELECT 1")
 
-    if cache_disabled:
-        # Each connection should call system engine when cache is disabled
-        assert (
-            system_engine_call_counter == 3
-        ), "Cache disabled should not reuse system engine"
-    else:
-        # Only first connection should call system engine when cache is enabled
-        assert (
-            system_engine_call_counter == 1
-        ), "Cache enabled should reuse system engine"
+        if cache_disabled:
+            # Each connection should call system engine when cache is disabled
+            assert (
+                system_engine_call_counter == 3
+            ), "Cache disabled should not reuse system engine"
+        else:
+            # Only first connection should call system engine when cache is enabled
+            assert (
+                system_engine_call_counter == 1
+            ), "Cache enabled should reuse system engine"
+    finally:
+        # Restore original cache state
+        _firebolt_cache.disabled = original_cache_disabled

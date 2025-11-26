@@ -648,7 +648,7 @@ async def test_token_cache_expiry_forces_reauthentication(
 
     with patch("time.time", return_value=fixed_time):
         # First connection should cache token
-        async with aconnect(
+        async with await connect(
             database=db_name,
             engine_name=engine_name,
             auth=auth,
@@ -661,7 +661,7 @@ async def test_token_cache_expiry_forces_reauthentication(
 
     # Simulate time passing within token validity
     with patch("time.time", return_value=fixed_time + 1800):  # 30 minutes later
-        async with aconnect(
+        async with await connect(
             database=db_name,
             engine_name=engine_name,
             auth=auth,
@@ -678,7 +678,7 @@ async def test_token_cache_expiry_forces_reauthentication(
         auth._token = None
         auth._expires = fixed_time  # Set to expired time
 
-        async with aconnect(
+        async with await connect(
             database=db_name,
             engine_name=engine_name,
             auth=auth,
@@ -791,7 +791,7 @@ async def test_connection_cache_isolation_by_credentials(
         )
 
         # Connect with first credentials
-        async with connect(
+        async with await connect(
             database=db_name,
             engine_name=engine_name,
             auth=auth1,
@@ -804,7 +804,7 @@ async def test_connection_cache_isolation_by_credentials(
         first_call_count = system_engine_call_counter
 
         # Connect with second credentials
-        async with connect(
+        async with await connect(
             database=db_name,
             engine_name=engine_name,
             auth=auth2,
@@ -817,7 +817,7 @@ async def test_connection_cache_isolation_by_credentials(
         second_call_count = system_engine_call_counter
 
         # Connect again with first credentials
-        async with connect(
+        async with await connect(
             database=db_name,
             engine_name=engine_name,
             auth=auth1,
@@ -1068,7 +1068,7 @@ async def test_connection_cache_isolation_by_accounts(
     )
 
     # Connect to first account
-    async with connect(
+    async with await connect(
         database=db_name,
         engine_name=engine_name,
         auth=auth,
@@ -1080,7 +1080,7 @@ async def test_connection_cache_isolation_by_accounts(
     first_account_calls = system_engine_call_counter
 
     # Connect to second account with same credentials
-    async with connect(
+    async with await connect(
         database=db_name,
         engine_name=engine_name,
         auth=auth,
@@ -1092,7 +1092,7 @@ async def test_connection_cache_isolation_by_accounts(
     second_account_calls = system_engine_call_counter
 
     # Connect again to first account
-    async with connect(
+    async with await connect(
         database=db_name,
         engine_name=engine_name,
         auth=auth,
@@ -1117,7 +1117,6 @@ async def test_connection_cache_isolation_by_accounts(
 
 async def test_database_switching_with_same_engine(
     db_name: str,
-    second_db_name: str,
     engine_name: str,
     auth_url: str,
     httpx_mock: HTTPXMock,
@@ -1126,18 +1125,20 @@ async def test_database_switching_with_same_engine(
     get_system_engine_callback: Callable,
     system_engine_query_url: str,
     system_engine_no_db_query_url: str,
-    use_db_callback: Callable,
-    use_engine_callback: Callable,
     query_callback: Callable,
     query_url: str,
     auth: Auth,
     account_name: str,
     api_endpoint: str,
+    use_engine_callback: Callable,
+    dynamic_use_database_callback: Callable,
 ):
     """
     Test that we can switch between different databases using the same engine
     while maintaining proper database context for each cursor.
     """
+    second_db_name = f"{db_name}_second"
+
     # Mock HTTP calls
     httpx_mock.add_callback(check_credentials_callback, url=auth_url, is_reusable=True)
     httpx_mock.add_callback(
@@ -1145,6 +1146,9 @@ async def test_database_switching_with_same_engine(
         url=get_system_engine_url,
         is_reusable=True,
     )
+
+    # Create dynamic callback for both databases
+    use_db_callback = dynamic_use_database_callback(db_name, second_db_name)
 
     # Add USE DATABASE callbacks for both databases
     httpx_mock.add_callback(
