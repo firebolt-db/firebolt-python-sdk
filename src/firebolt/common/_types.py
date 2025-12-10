@@ -22,6 +22,7 @@ except ImportError:
 
         return re.sub(unsupported_milliseconds_re, align_ms, datetime_string)
 
+    #just testing sonar
     def _fix_timezone(datetime_string: str) -> str:
         # timezone, provided as +/-dd is not supported by datetime.
         # We need to append :00 to it
