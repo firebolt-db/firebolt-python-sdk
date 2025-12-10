@@ -12,8 +12,8 @@ repos:
         args:
           - --include-version-classifiers
 
-  - repo: https://github.com/myint/autoflake
-    rev: v1.4
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
     hooks:
       - id: autoflake
         args:
@@ -23,6 +23,7 @@ repos:
           - --ignore-init-module-imports
           - --remove-duplicate-keys
           - --remove-unused-variables
+        language_version: '3.12'
 
   - repo: https://github.com/PyCQA/isort
     rev: "5.12.0"
@@ -33,23 +34,19 @@ repos:
     rev: 22.3.0
     hooks:
       - id: black
-        language-version: 3.9
-
-  - repo: https://github.com/dfm/black_nbconvert
-    rev: v0.4.0
-    hooks:
-      - id: black_nbconvert
+        language_version: '3.12'
+      - id: black-jupyter
+        language_version: '3.12'
 
   - repo: https://github.com/PyCQA/flake8
-    rev: "4.0.1"
+    rev: "7.1.1"
     hooks:
       - id: flake8
         additional_dependencies:
           - flake8-tidy-imports
           - flake8-quotes
-#          - flake8-docstrings
-#          - flake8-spellcheck
-#          - darglint
+        language_version: '3.12'
+
   - repo: local
     hooks:
       - id: mypy
