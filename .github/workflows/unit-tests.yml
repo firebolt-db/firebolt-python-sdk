@@ -76,7 +76,7 @@ jobs:
         echo "covered=$percentage_whole" >>  $GITHUB_OUTPUT
 
     - name: Create Coverage Badge
-      uses: schneegans/dynamic-badges-action@v1.2.0
+      uses: schneegans/dynamic-badges-action@v1.7.0
       if: github.event_name == 'push'
       continue-on-error: true
       with:
