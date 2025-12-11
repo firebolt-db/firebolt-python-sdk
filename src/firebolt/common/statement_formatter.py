@@ -187,7 +187,7 @@ class StatementFormatter:
             )
         return None
 
-    def statement_to_sql(self, statement: Statement) -> str:
+    def statement_to_sql(self, statement: Union[Token, Statement]) -> str:
         return str(statement).strip().rstrip(";")
 
     def split_format_sql(
