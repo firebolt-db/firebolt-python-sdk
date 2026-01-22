@@ -32,6 +32,29 @@ def assert_deep_eq(got: Any, expected: Any, msg: str) -> bool:
     ), f"{msg}: {got}(got) != {expected}(expected)"
 
 
+def check_data_visibility(
+    table_name: str,
+    row_id: int,
+    connection_factory: Callable[..., Connection],
+    expected_visible: bool,
+    expected_data: Any = None,
+) -> None:
+    """Check if data is visible using a separate autocommit connection."""
+    with connection_factory() as check_connection:
+        cursor = check_connection.cursor()
+        cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = {row_id}')
+        data = cursor.fetchall()
+
+        if expected_visible:
+            assert len(data) == 1, f"Data should be visible for id={row_id}"
+            if expected_data is not None:
+                assert (
+                    data[0] == expected_data
+                ), f"Data should match expected values for id={row_id}"
+        else:
+            assert len(data) == 0, f"Data should not be visible for id={row_id}"
+
+
 def test_connect_no_db(
     connection_no_db: Connection,
     all_types_query: str,
@@ -124,7 +147,7 @@ def test_long_query(
 
 
 # Not compatible with core
-@mark.parametrize("connection", ["remote"], indirect=True)
+@mark.parametrize("connection_factory", ["remote"], indirect=True)
 def test_drop_create(connection: Connection) -> None:
     """Create and drop table/index queries are handled properly."""
 
@@ -771,87 +794,463 @@ def test_select_quoted_bigint(
 
 
 def test_transaction_commit(
-    connection: Connection, create_drop_test_table_setup_teardown: Callable
+    create_drop_test_table_setup_teardown: Callable,
+    connection_factory: Callable[..., Connection],
 ) -> None:
     """Test transaction SQL statements with COMMIT."""
     table_name = create_drop_test_table_setup_teardown
-    with connection.cursor() as c:
-        # Test successful transaction with COMMIT
-        result = c.execute("BEGIN TRANSACTION")
-        assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+    with connection_factory(autocommit=False) as connection_autocommit_off:
+        with connection_autocommit_off.cursor() as c:
+            # Test successful transaction with COMMIT
+            # Can't run these in autocommit off
+            # result = c.execute("BEGIN TRANSACTION")
+            # assert result == 0, "BEGIN TRANSACTION should return 0 rows"
 
-        c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'committed')")
+            c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'committed')")
 
-        result = c.execute("COMMIT TRANSACTION")
-        assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+            result = c.execute("COMMIT TRANSACTION")
+            assert result == 0, "COMMIT TRANSACTION should return 0 rows"
 
-        # Verify the data was committed
-        c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
-        data = c.fetchall()
-        assert len(data) == 1, "Committed data should be present"
-        assert data[0] == [
-            1,
-            "committed",
-        ], "Committed data should match inserted values"
+            # Verify the data was committed using separate connection
+            check_data_visibility(
+                table_name, 1, connection_factory, True, [1, "committed"]
+            )
 
 
 def test_transaction_rollback(
-    connection: Connection, create_drop_test_table_setup_teardown: Callable
+    create_drop_test_table_setup_teardown: Callable,
+    connection_factory: Callable[..., Connection],
 ) -> None:
     """Test transaction SQL statements with ROLLBACK."""
     table_name = create_drop_test_table_setup_teardown
-    with connection.cursor() as c:
-        # Test transaction with ROLLBACK
-        result = c.execute("BEGIN")  # Test short form
-        assert result == 0, "BEGIN should return 0 rows"
+    with connection_factory(autocommit=False) as connection_autocommit_off:
+        with connection_autocommit_off.cursor() as c:
+            # Test transaction with ROLLBACK
+            # Can't run these with autocommit off
+            # result = c.execute("BEGIN")  # Test short form
+            # assert result == 0, "BEGIN should return 0 rows"
 
-        c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'rolled_back')")
+            c.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'rolled_back')")
 
-        # Verify data is visible within transaction
-        c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
-        data = c.fetchall()
-        assert len(data) == 1, "Data should be visible within transaction"
+            # Verify data is visible within transaction
+            c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+            data = c.fetchall()
+            assert len(data) == 1, "Data should be visible within transaction"
 
-        result = c.execute("ROLLBACK")  # Test short form
-        assert result == 0, "ROLLBACK should return 0 rows"
+            result = c.execute("ROLLBACK")  # Test short form
+            assert result == 0, "ROLLBACK should return 0 rows"
 
-        # Verify the data was rolled back
-        c.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
-        data = c.fetchall()
-        assert len(data) == 0, "Rolled back data should not be present"
+            # Verify the data was rolled back using separate connection
+            check_data_visibility(table_name, 1, connection_factory, False)
 
 
 def test_transaction_cursor_isolation(
-    connection: Connection, create_drop_test_table_setup_teardown: Callable
+    create_drop_test_table_setup_teardown: Callable,
+    connection_factory: Callable[..., Connection],
 ) -> None:
-    """Test that one cursor can't see another's data until it commits."""
+    """Test that cursors share the same transaction state - no isolation between cursors."""
+    table_name = create_drop_test_table_setup_teardown
+    with connection_factory(autocommit=False) as connection_autocommit_off:
+        cursor1 = connection_autocommit_off.cursor()
+        cursor2 = connection_autocommit_off.cursor()
+
+        # Start transaction in cursor1 and insert data
+        # Can't run this in autocommit off
+        # result = cursor1.execute("BEGIN TRANSACTION")
+        # assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+
+        cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'shared_data')")
+
+        # Verify cursor1 can see its own uncommitted data
+        cursor1.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data1 = cursor1.fetchall()
+        assert len(data1) == 1, "Cursor1 should see its own uncommitted data"
+        assert data1[0] == [
+            1,
+            "shared_data",
+        ], "Cursor1 data should match inserted values"
+
+        # Verify cursor2 CAN see cursor1's uncommitted data (no isolation between cursors)
+        cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data2 = cursor2.fetchall()
+        assert (
+            len(data2) == 1
+        ), "Cursor2 should see cursor1's uncommitted data (no isolation)"
+        assert data2[0] == [
+            1,
+            "shared_data",
+        ], "Cursor2 should see the same data as cursor1"
+
+        # Commit the transaction in cursor2 (affects both cursors)
+        result = cursor2.execute("COMMIT TRANSACTION")
+        assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+
+        # Both cursors should still see the committed data
+        cursor1.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data1_after = cursor1.fetchall()
+        assert len(data1_after) == 1, "Cursor1 should see committed data"
+        assert data1_after[0] == [
+            1,
+            "shared_data",
+        ], "Cursor1 should see the committed data"
+
+
+@mark.parametrize("autocommit_mode", ["implicit", "explicit"])
+def test_autocommit_immediate_visibility(
+    connection: Connection,
+    autocommit_mode: str,
+    create_drop_test_table_setup_teardown: Callable,
+) -> None:
+    """Test that statements are visible immediately with autocommit enabled (uses existing connection fixture)."""
     table_name = create_drop_test_table_setup_teardown
     cursor1 = connection.cursor()
     cursor2 = connection.cursor()
 
-    # Start transaction in cursor1 and insert data
-    result = cursor1.execute("BEGIN TRANSACTION")
-    assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+    # Insert data with cursor1
+    cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'autocommit_data')")
 
-    cursor1.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'isolated_data')")
-
-    # Verify cursor1 can see its own uncommitted data
-    cursor1.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
-    data1 = cursor1.fetchall()
-    assert len(data1) == 1, "Cursor1 should see its own uncommitted data"
-    assert data1[0] == [1, "isolated_data"], "Cursor1 data should match inserted values"
-
-    # Verify cursor2 cannot see cursor1's uncommitted data
+    # Immediately verify cursor2 can see the data (autocommit makes it visible)
     cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
-    data2 = cursor2.fetchall()
-    assert len(data2) == 0, "Cursor2 should not see cursor1's uncommitted data"
+    data = cursor2.fetchall()
+    assert (
+        len(data) == 1
+    ), f"Data should be immediately visible with {autocommit_mode} autocommit"
+    assert data[0] == [1, "autocommit_data"], "Data should match inserted values"
 
-    # Commit the transaction in cursor1
-    result = cursor1.execute("COMMIT TRANSACTION")
-    assert result == 0, "COMMIT TRANSACTION should return 0 rows"
+    # Insert more data with cursor2
+    cursor2.execute(f"INSERT INTO \"{table_name}\" VALUES (2, 'more_data')")
 
-    # Now cursor2 should be able to see the committed data
-    cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
-    data2 = cursor2.fetchall()
-    assert len(data2) == 1, "Cursor2 should see committed data after commit"
-    assert data2[0] == [1, "isolated_data"], "Cursor2 should see the committed data"
+    # Verify cursor1 can immediately see cursor2's data
+    cursor1.execute(f'SELECT * FROM "{table_name}" ORDER BY id')
+    all_data = cursor1.fetchall()
+    assert len(all_data) == 2, "All data should be immediately visible"
+    assert all_data[0] == [1, "autocommit_data"], "First row should match"
+    assert all_data[1] == [2, "more_data"], "Second row should match"
+
+
+# Not compatible with core
+@mark.parametrize("connection_factory", ["remote"], indirect=True)
+def test_begin_with_autocommit_on(
+    create_drop_test_table_setup_teardown: Callable,
+    connection_factory: Callable[..., Connection],
+) -> None:
+    """Test that BEGIN does not start a transaction when autocommit is enabled."""
+    table_name = create_drop_test_table_setup_teardown
+
+    with connection_factory(autocommit=True) as connection:
+        cursor = connection.cursor()
+        # Test that data is immediately visible without explicit transaction (autocommit)
+        cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'autocommit_test')")
+
+        # Create a second cursor to verify data is visible immediately
+        cursor2 = connection.cursor()
+        cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = cursor2.fetchall()
+        assert len(data) == 1, "Data should be visible immediately with autocommit"
+        assert data[0] == [1, "autocommit_test"], "Data should match inserted values"
+
+        # Now test with explicit BEGIN - this should be a no-op when autocommit is enabled
+        result = cursor.execute("BEGIN TRANSACTION")
+        assert result == 0, "BEGIN TRANSACTION should return 0 rows"
+        assert (
+            not connection.in_transaction
+        ), "Transaction should not be started when autocommit is enabled"
+
+        cursor.execute(
+            f"INSERT INTO \"{table_name}\" VALUES (2, 'no_transaction_test')"
+        )
+
+        # ROLLBACK should fail since no transaction was started
+        with raises(Exception):
+            cursor.execute("ROLLBACK")
+
+        # The second insert should not be rolled back since it was committed immediately
+        cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 2')
+        data = cursor.fetchall()
+        assert (
+            len(data) == 1
+        ), "Data should remain committed since no transaction was started"
+        assert data[0] == [
+            2,
+            "no_transaction_test",
+        ], "Data should match inserted values"
+
+        # Verify data is visible from another cursor (confirming it was committed)
+        cursor2 = connection.cursor()
+        cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 2')
+        data = cursor2.fetchall()
+        assert len(data) == 1, "Data should be visible from other cursors"
+        assert data[0] == [
+            2,
+            "no_transaction_test",
+        ], "Data should match inserted values"
+
+
+def test_connection_commit(
+    create_drop_test_table_setup_teardown: Callable,
+    connection_factory: Callable[..., Connection],
+) -> None:
+    """Test that connection.commit() works correctly."""
+    table_name = create_drop_test_table_setup_teardown
+
+    with connection_factory(autocommit=False) as connection_autocommit_off:
+        cursor = connection_autocommit_off.cursor()
+        # Start a transaction
+        # Can't run this in autocommit off
+        # cursor.execute("BEGIN TRANSACTION")
+        cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'commit_test')")
+
+        # Call commit on connection level
+        connection_autocommit_off.commit()
+
+        # Verify data is now visible in a new cursor
+        cursor2 = connection_autocommit_off.cursor()
+        cursor2.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = cursor2.fetchall()
+        assert len(data) == 1, "Data should be visible after connection.commit()"
+        assert data[0] == [1, "commit_test"], "Data should match inserted values"
+
+
+def test_connection_rollback(
+    create_drop_test_table_setup_teardown: Callable,
+    connection_factory: Callable[..., Connection],
+) -> None:
+    """Test that connection.rollback() works correctly."""
+    table_name = create_drop_test_table_setup_teardown
+
+    with connection_factory(autocommit=False) as connection_autocommit_off:
+        cursor = connection_autocommit_off.cursor()
+        # Start a transaction
+        # cursor.execute("BEGIN TRANSACTION")
+        cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'rollback_test')")
+
+        # Verify data is visible within the transaction
+        cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = cursor.fetchall()
+        assert len(data) == 1, "Data should be visible within transaction"
+
+        # Call rollback on connection level
+        connection_autocommit_off.rollback()
+
+        # Verify data is no longer visible
+        cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = cursor.fetchall()
+        assert len(data) == 0, "Data should be rolled back after connection.rollback()"
+
+
+def test_context_manager_auto_commit_on_normal_exit(
+    connection_factory: Callable[..., Connection],
+    create_drop_test_table_setup_teardown: Callable,
+) -> None:
+    """Test that context manager commits transaction on normal exit when autocommit=False."""
+    table_name = create_drop_test_table_setup_teardown
+
+    with connection_factory(autocommit=False) as connection:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            f"INSERT INTO \"{table_name}\" VALUES (1, 'context_commit_test')"
+        )
+        assert connection.in_transaction, "Connection should be in transaction"
+
+        # Verify data is visible within the transaction
+        cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = cursor.fetchall()
+        assert len(data) == 1, "Data should be visible within transaction"
+        assert data[0] == [
+            1,
+            "context_commit_test",
+        ], "Data should match inserted values"
+
+    # After context manager exit, transaction should be committed
+    # Verify with a new connection using helper function
+    check_data_visibility(
+        table_name, 1, connection_factory, True, [1, "context_commit_test"]
+    )
+
+
+def test_context_manager_works_with_autocommit_on(
+    connection_factory: Callable[..., Connection],
+    create_drop_test_table_setup_teardown: Callable,
+) -> None:
+    """Test that context manager does not auto-commit when autocommit=True."""
+    table_name = create_drop_test_table_setup_teardown
+
+    with connection_factory(
+        autocommit=True,  # This should prevent auto-commit behavior
+    ) as connection:
+        cursor = connection.cursor()
+
+        # Insert data without explicit transaction (should commit immediately due to autocommit)
+        cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'autocommit_test')")
+
+        # Verify data is immediately visible
+        cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+        data = cursor.fetchall()
+        assert len(data) == 1, "Data should be immediately visible with autocommit"
+
+    # Verify data persists (was already committed due to autocommit)
+    check_data_visibility(
+        table_name, 1, connection_factory, True, [1, "autocommit_test"]
+    )
+
+
+def test_context_manager_no_auto_commit_on_exception_exit(
+    connection_factory: Callable[..., Connection],
+    create_drop_test_table_setup_teardown: Callable,
+) -> None:
+    """Test that context manager does not commit transaction on exception exit."""
+    table_name = create_drop_test_table_setup_teardown
+
+    try:
+        with connection_factory(autocommit=False) as connection:
+            cursor = connection.cursor()
+
+            cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'exception_test')")
+            assert connection.in_transaction, "Connection should be in transaction"
+
+            # Verify data is visible within the transaction
+            cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+            data = cursor.fetchall()
+            assert len(data) == 1, "Data should be visible within transaction"
+
+            # Raise an exception to trigger exception exit
+            raise ValueError("Test exception")
+    except ValueError:
+        pass  # Expected exception
+
+    # After exception exit, transaction should be rolled back
+    # Verify with a new connection using helper function
+    check_data_visibility(table_name, 1, connection_factory, False)
+
+
+def test_connection_close_rollback_with_autocommit_off(
+    connection_factory: Callable[..., Connection],
+    create_drop_test_table_setup_teardown: Callable,
+) -> None:
+    """Test that connection.close() rolls back uncommitted transactions when autocommit=False."""
+    table_name = create_drop_test_table_setup_teardown
+
+    connection = connection_factory(autocommit=False)
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'close_rollback_test')")
+    assert connection.in_transaction, "Connection should be in transaction"
+
+    # Verify data is visible within the transaction
+    cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data = cursor.fetchall()
+    assert len(data) == 1, "Data should be visible within transaction"
+
+    # Close connection without commit - should trigger rollback
+    connection.close()
+
+    # Verify transaction was rolled back with a new connection using helper function
+    check_data_visibility(table_name, 1, connection_factory, False)
+
+
+def test_connection_close_no_rollback_with_autocommit_on(
+    connection_factory: Callable[..., Connection],
+    create_drop_test_table_setup_teardown: Callable,
+) -> None:
+    """Test that connection.close() does not rollback when autocommit=True."""
+    table_name = create_drop_test_table_setup_teardown
+
+    connection = connection_factory(autocommit=True)
+
+    cursor = connection.cursor()
+
+    # Insert data (should commit immediately due to autocommit)
+    cursor.execute(f"INSERT INTO \"{table_name}\" VALUES (1, 'autocommit_close_test')")
+
+    # Verify data is immediately visible
+    cursor.execute(f'SELECT * FROM "{table_name}" WHERE id = 1')
+    data = cursor.fetchall()
+    assert len(data) == 1, "Data should be immediately visible with autocommit"
+
+    # Close connection - should not affect already committed data
+    connection.close()
+
+    # Verify data persists with a new connection using helper function
+    check_data_visibility(
+        table_name, 1, connection_factory, True, [1, "autocommit_close_test"]
+    )
+
+
+def test_database_switching_with_same_engine_preserves_database_context(
+    database_name: str,
+    connection_factory: Callable[..., Connection],
+) -> None:
+    """
+    Integration test for database context preservation with caching on Firebolt.
+
+    This test verifies against a live Firebolt instance:
+    1. Connect with database1 + engine1 (cache entry created)
+    2. Connect with database2 + engine1 (should add database2 to cache)
+    3. Cursors from second connection should have database2, not database1
+    """
+    first_db_name = database_name
+    second_db_name = f"{database_name}_second"
+
+    # Create a system connection to set up test databases
+    with connection_factory() as system_connection:
+        system_cursor = system_connection.cursor()
+
+        try:
+            # Create the second test database
+            system_cursor.execute(f'CREATE DATABASE IF NOT EXISTS "{second_db_name}"')
+
+            # First connection: database1 + engine1
+            with connection_factory(database=first_db_name) as connection1:
+                cursor1 = connection1.cursor()
+                cursor1.execute("SELECT current_database()")
+                result1 = cursor1.fetchone()
+
+                # Verify first connection has correct database
+                assert (
+                    result1[0] == first_db_name
+                ), f"First cursor should have database {first_db_name}"
+                assert (
+                    cursor1.database == first_db_name
+                ), f"First cursor database property should be {first_db_name}"
+
+            # Second connection: database2 + engine1 (same engine)
+            with connection_factory(database=second_db_name) as connection2:
+                cursor2 = connection2.cursor()
+                cursor2.execute("SELECT current_database()")
+                result2 = cursor2.fetchone()
+
+                # Verify second connection has correct database
+                assert result2[0] == second_db_name, (
+                    f"Second cursor should have database {second_db_name}, "
+                    f"but got {result2[0]}. This indicates the database context was overwritten."
+                )
+                assert cursor2.database == second_db_name, (
+                    f"Second cursor database property should be {second_db_name}, "
+                    f"but has {cursor2.database}. This indicates the database context was overwritten."
+                )
+
+            # Third connection: back to database1 + engine1 (should use cache)
+            with connection_factory(database=first_db_name) as connection3:
+                cursor3 = connection3.cursor()
+                cursor3.execute("SELECT current_database()")
+                result3 = cursor3.fetchone()
+
+                # Verify third connection has correct database (should be from cache)
+                assert result3[0] == first_db_name, (
+                    f"Third cursor should have database {first_db_name}, "
+                    f"but got {result3[0]}. This indicates cached database context is incorrect."
+                )
+                assert cursor3.database == first_db_name, (
+                    f"Third cursor database property should be {first_db_name}, "
+                    f"but has {cursor3.database}. This indicates cached database context is incorrect."
+                )
+
+        finally:
+            # Clean up: Drop the test database
+            try:
+                system_cursor.execute(f'DROP DATABASE IF EXISTS "{second_db_name}"')
+            except Exception:
+                # Ignore cleanup errors to avoid masking the real test failure
+                pass

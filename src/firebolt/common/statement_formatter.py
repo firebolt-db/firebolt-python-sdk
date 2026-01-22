@@ -116,7 +116,7 @@ class StatementFormatter:
                 return TokenList([process_token(t) for t in token.tokens])
             return token
 
-        formatted_sql = self.statement_to_sql(process_token(statement))
+        formatted_sql = self._clean_sql_string(process_token(statement))
 
         if idx < len(parameters):
             raise DataError(
@@ -155,8 +155,8 @@ class StatementFormatter:
             # Check if set statement has a valid format
             if len(tokens) == 2 and isinstance(tokens[1], Comparison):
                 return SetParameter(
-                    self.statement_to_sql(tokens[1].left),
-                    self.statement_to_sql(tokens[1].right).strip("'"),
+                    self._clean_sql_string(tokens[1].left),
+                    self._clean_sql_string(tokens[1].right).strip("'"),
                 )
             # Or if at least there is a comparison
             cmp_idx = next(
@@ -175,20 +175,21 @@ class StatementFormatter:
 
                 if left_tokens and right_tokens:
                     return SetParameter(
-                        "".join(self.statement_to_sql(t) for t in left_tokens),
-                        "".join(self.statement_to_sql(t) for t in right_tokens).strip(
+                        "".join(self._clean_sql_string(t) for t in left_tokens),
+                        "".join(self._clean_sql_string(t) for t in right_tokens).strip(
                             "'"
                         ),
                     )
 
             raise InterfaceError(
-                f"Invalid set statement format: {self.statement_to_sql(statement)},"
+                f"Invalid set statement format: {self._clean_sql_string(statement)},"
                 " expected SET <param> = <value>"
             )
         return None
 
-    def statement_to_sql(self, statement: Statement) -> str:
-        return str(statement).strip().rstrip(";")
+    def _clean_sql_string(self, token: Token) -> str:
+        """Strip whitespace and trailing semicolons from a SQL token or statement."""
+        return str(token).strip().rstrip(";")
 
     def split_format_sql(
         self, query: str, parameters: Sequence[Sequence[ParameterType]]
@@ -215,7 +216,7 @@ class StatementFormatter:
 
         # Try parsing each statement as a SET, otherwise return as a plain sql string
         return [
-            self.statement_to_set(st) or self.statement_to_sql(st) for st in statements
+            self.statement_to_set(st) or self._clean_sql_string(st) for st in statements
         ]
 
     def format_bulk_insert(

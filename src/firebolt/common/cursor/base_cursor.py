@@ -5,7 +5,7 @@ import re
 from types import TracebackType
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
-from httpx import URL, Response
+from httpx import URL, Headers, Response
 
 from firebolt.client.auth.base import Auth
 from firebolt.client.client import AsyncClient, Client
@@ -15,6 +15,11 @@ from firebolt.common.constants import (
     IMMUTABLE_PARAMETER_LIST,
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    REMOVE_PARAMETERS_HEADER,
+    RESET_SESSION_HEADER,
+    TRANSACTION_PARAMETER_LIST,
+    UPDATE_ENDPOINT_HEADER,
+    UPDATE_PARAMETERS_HEADER,
     USE_PARAMETER_LIST,
     CursorState,
 )
@@ -28,25 +33,13 @@ from firebolt.utils.cache import (
     _firebolt_cache,
 )
 from firebolt.utils.exception import ConfigurationError, FireboltError
-from firebolt.utils.util import fix_url_schema
+from firebolt.utils.util import (
+    _parse_remove_parameters,
+    _parse_update_parameters,
+    fix_url_schema,
+)
 
 logger = logging.getLogger(__name__)
-
-
-def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
-    """Parse update parameters and set them as attributes."""
-    # parse key1=value1,key2=value2 comma separated string into dict
-    param_dict = dict(item.split("=") for item in parameter_header.split(","))
-    # strip whitespace from keys and values
-    param_dict = {key.strip(): value.strip() for key, value in param_dict.items()}
-    return param_dict
-
-
-def _parse_remove_parameters(parameter_header: str) -> List[str]:
-    """Parse remove parameters header and return list of parameter names to remove."""
-    # parse key1,key2,key3 comma separated string into list
-    param_list = [item.strip() for item in parameter_header.split(",")]
-    return param_list
 
 
 def _parse_update_endpoint(
@@ -223,7 +216,7 @@ class BaseCursor:
         user_parameters = {
             key: value
             for key, value in parameters.items()
-            if key not in IMMUTABLE_PARAMETER_LIST
+            if key not in IMMUTABLE_PARAMETER_LIST + TRANSACTION_PARAMETER_LIST
         }
 
         self.parameters.update(immutable_parameters)
@@ -241,6 +234,26 @@ class BaseCursor:
     def _update_server_parameters(self, parameters: Dict[str, Any]) -> None:
         for key, value in parameters.items():
             self.parameters[key] = value
+
+    def _parse_response_headers(self, headers: Headers) -> None:
+        """Parse response headers to update cursor state."""
+        if headers.get(UPDATE_ENDPOINT_HEADER):
+            endpoint, params = _parse_update_endpoint(
+                headers.get(UPDATE_ENDPOINT_HEADER)
+            )
+            self._update_set_parameters(params)
+            self.engine_url = endpoint
+
+        if headers.get(RESET_SESSION_HEADER):
+            self.flush_parameters()
+
+        if headers.get(UPDATE_PARAMETERS_HEADER):
+            param_dict = _parse_update_parameters(headers.get(UPDATE_PARAMETERS_HEADER))
+            self._update_set_parameters(param_dict)
+
+        if headers.get(REMOVE_PARAMETERS_HEADER):
+            param_list = _parse_remove_parameters(headers.get(REMOVE_PARAMETERS_HEADER))
+            self._remove_set_parameters(param_list)
 
     @staticmethod
     def _log_query(query: Union[str, SetParameter]) -> None:
