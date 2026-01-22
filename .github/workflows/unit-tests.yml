@@ -57,7 +57,7 @@ jobs:
         github-key: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Upload coverage report
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       continue-on-error: true
       with:
         name: pytest-coverage-report
