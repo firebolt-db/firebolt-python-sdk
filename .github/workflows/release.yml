@@ -22,7 +22,7 @@ jobs:
     needs: integration-tests
     steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         token: ${{ secrets.RELEASE_PAT }}

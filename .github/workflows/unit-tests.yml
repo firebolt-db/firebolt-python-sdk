@@ -23,7 +23,7 @@ jobs:
 
     steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
       with:
         ref: ${{ inputs.branch }}
 
@@ -42,7 +42,7 @@ jobs:
         pytest --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
 
     - name: Get Allure history
-      uses: actions/checkout@v2
+      uses: actions/checkout@v6
       if: always()
       continue-on-error: true
       with:

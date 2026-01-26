@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
@@ -62,7 +62,7 @@ jobs:
 
       # Need to pull the pages branch in order to fetch the previous runs
       - name: Get Allure history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         if: always()
         continue-on-error: true
         with:
