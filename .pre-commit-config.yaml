@@ -39,7 +39,7 @@ repos:
     rev: v0.4.0
     hooks:
       - id: black_nbconvert
-        additional_dependencies: [setuptools]
+        additional_dependencies: ["setuptools>=69,<82"]  # 82+ removes pkg_resources
 
   - repo: https://github.com/PyCQA/flake8
     rev: "4.0.1"
