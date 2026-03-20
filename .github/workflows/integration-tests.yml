@@ -31,7 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Decorate commit
-        uses: Sibz/github-status-action@v1
+        uses: Sibz/github-status-action@650dd1a882a76dbbbc4576fb5974b8d22f29847f # v1.1.6
         with:
           authToken: ${{secrets.GITHUB_TOKEN}}
           context: 'Integration tests'
