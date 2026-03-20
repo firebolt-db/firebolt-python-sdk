@@ -45,6 +45,8 @@ from firebolt.utils.util import (
     fix_url_schema,
     parse_url_and_params,
     validate_engine_name_and_url_v1,
+    validate_firebolt_parameters_v1,
+    validate_firebolt_parameters_v2,
 )
 
 logger = logging.getLogger(__name__)
@@ -61,6 +63,7 @@ def connect(
     url: Optional[str] = None,
     autocommit: bool = True,
     additional_parameters: Dict[str, Any] = {},
+    client_side_lb: Optional[bool] = None,
 ) -> Connection:
     # auth parameter is optional in function signature
     # but is required to connect.
@@ -82,6 +85,9 @@ def connect(
     if auth_version == FireboltAuthVersion.CORE:
         # Verify that Core-incompatible parameters are not provided
         validate_firebolt_core_parameters(account_name, engine_name, engine_url)
+        if client_side_lb == None:
+            # When using Core, client_side_lb is True by default
+            client_side_lb = True
 
         return connect_core(
             auth=auth,
@@ -89,8 +95,12 @@ def connect(
             database=database,
             connection_url=url,
             autocommit=autocommit,
+            client_side_lb=client_side_lb,
         )
     elif auth_version == FireboltAuthVersion.V2:
+        # Verify that v2-incompatible parameters are not provided
+        validate_firebolt_parameters_v2(client_side_lb)
+
         assert account_name is not None
         return connect_v2(
             auth=auth,
@@ -104,6 +114,9 @@ def connect(
             autocommit=autocommit,
         )
     elif auth_version == FireboltAuthVersion.V1:
+        # Verify that v1-incompatible parameters are not provided
+        validate_firebolt_parameters_v1(client_side_lb)
+
         return connect_v1(
             auth=auth,
             user_agent_header=user_agent_header,
@@ -490,6 +503,7 @@ def connect_core(
     database: Optional[str] = None,
     connection_url: Optional[str] = None,
     autocommit: bool = True,
+    client_side_lb: bool = True,
 ) -> Connection:
     """Connect to Firebolt Core.
 
@@ -520,6 +534,7 @@ def connect_core(
         timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
         headers={"User-Agent": user_agent_header},
         verify=ctx,
+        client_side_lb=client_side_lb,
     )
 
     return Connection(

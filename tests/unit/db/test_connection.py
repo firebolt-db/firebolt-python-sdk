@@ -9,6 +9,7 @@ from pytest import mark, raises, warns
 from pytest_httpx import HTTPXMock
 
 from firebolt.client.auth import Auth, ClientCredentials
+from firebolt.client.auth.base import FireboltAuthVersion
 from firebolt.client.client import ClientV2
 from firebolt.common._types import ColType
 from firebolt.db import Connection, connect
@@ -1105,3 +1106,27 @@ def test_connection_context_manager_handles_transaction_cleanup(
     # Verify transaction was cleared
     assert connection._transaction_id is None
     assert connection._transaction_sequence_id is None
+
+
+def test_sync_connect_with_incompatible_params():
+    """Test that sync connect rejects incompatible parameters."""
+    with patch("firebolt.db.connection.connect_v2") as mock_connect:
+
+        # Create a mock V2 auth that returns the correct version
+        mock_auth = MagicMock()
+        mock_auth.get_firebolt_version.return_value = FireboltAuthVersion.V2
+
+        # Test with client_side_lb True
+        with raises(ConfigurationError, match="'client_side_lb' are not compatible"):
+            connect(auth=mock_auth, account_name="test_account", client_side_lb=True)
+
+        # Test with client_side_lb False
+        with raises(ConfigurationError, match="'client_side_lb' are not compatible"):
+            connect(auth=mock_auth, account_name="test_account", client_side_lb=False)
+
+        # Verify connect_v2 is not called in any of these cases
+        mock_connect.assert_not_called()
+
+        # Test with compatible parameters
+        connect(auth=mock_auth, account_name="test_account")
+        mock_connect.assert_called_once()

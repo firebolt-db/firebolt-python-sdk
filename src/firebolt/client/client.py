@@ -106,10 +106,16 @@ class FireboltClientMixin(FireboltClientMixinBase):
 
 class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
     def __init__(self, *args: Any, **kwargs: Any):
+        # We pop it from kwargs because it's unknown to HttpxClient which won't accept it
+        client_side_lb = kwargs.pop("client_side_lb", False)
+
         super().__init__(
             *args,
             **kwargs,
-            transport=KeepaliveTransport(verify=kwargs.get("verify", True)),
+            transport=KeepaliveTransport(
+                verify=kwargs.get("verify", True),
+                client_side_lb=client_side_lb,
+            ),
         )
 
     @property
@@ -139,6 +145,7 @@ class ClientV2(Client):
         auth: Auth,
         account_name: str,
         api_endpoint: str = DEFAULT_API_URL,
+        client_side_lb: bool = False,
         **kwargs: Any,
     ):
         super().__init__(
@@ -146,6 +153,7 @@ class ClientV2(Client):
             auth=auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
+            client_side_lb=client_side_lb,
             **kwargs,
         )
 
@@ -273,10 +281,15 @@ class ClientV1(Client):
 
 class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
     def __init__(self, *args: Any, **kwargs: Any):
+        # We pop it from kwargs because it's unknown to HttpxClient which won't accept it
+        client_side_lb = kwargs.pop("client_side_lb", False)
         super().__init__(
             *args,
             **kwargs,
-            transport=AsyncKeepaliveTransport(verify=kwargs.get("verify", True)),
+            transport=AsyncKeepaliveTransport(
+                verify=kwargs.get("verify", True),
+                client_side_lb=client_side_lb,
+            ),
         )
 
     @property
@@ -306,6 +319,7 @@ class AsyncClientV2(AsyncClient):
         auth: Auth,
         account_name: str,
         api_endpoint: str = DEFAULT_API_URL,
+        client_side_lb: bool = False,
         **kwargs: Any,
     ):
         super().__init__(
@@ -313,6 +327,7 @@ class AsyncClientV2(AsyncClient):
             auth=auth,
             account_name=account_name,
             api_endpoint=api_endpoint,
+            client_side_lb=client_side_lb,
             **kwargs,
         )
 
