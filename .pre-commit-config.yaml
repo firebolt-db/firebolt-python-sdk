@@ -39,6 +39,7 @@ repos:
     rev: v0.4.0
     hooks:
       - id: black_nbconvert
+        additional_dependencies: [setuptools]
 
   - repo: https://github.com/PyCQA/flake8
     rev: "4.0.1"
