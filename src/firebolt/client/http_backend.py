@@ -58,6 +58,10 @@ class DNSCache:
                     if not cached_ips:
                         raise
 
+            # explicit check as hint for type checkers
+            if not cached_ips:
+                raise RuntimeError(f"Could not resolve or find cached IPs for {hostname}")
+
             # calculate round robin index
             current_index = self.indices.get(hostname, 0)
             target_ip = cached_ips[current_index % len(cached_ips)]
