@@ -16,10 +16,10 @@ Optionally setup PyCharm linting shortcut:
 Name: lint
 Description: Format the current file
 Program: $PyInterpreterDirectory$/pre-commit
-Arguments: run --files=$FilePath$Working 
+Arguments: run --files=$FilePath$Working
 Working Directory: $ProjectFileDir$
 ```
-2. Preferences -> Keymap -> External Tools -> lint, 
+2. Preferences -> Keymap -> External Tools -> lint,
    Assign the keyboard shortcut `Option-cmd-l`
 
 ### Before Committing
@@ -28,8 +28,8 @@ Working Directory: $ProjectFileDir$
 2. run `mypy src` to check for type errors
 3. run `pytest tests/unit` to run unit tests
 
-Note: while there is a `mypy` hook for pre-commit, 
-I found it too buggy to be worthwhile, so I just run mypy manually. 
+Note: while there is a `mypy` hook for pre-commit,
+I found it too buggy to be worthwhile, so I just run mypy manually.
 
 ### PR procedures
 
@@ -44,13 +44,35 @@ I found it too buggy to be worthwhile, so I just run mypy manually.
 4. If the integration tests pass and the change looks good to the maintainer they approve it.
 5. Merge into the main branch. Only the maintainers have the ability to merge a PR. They will do so at the earliest convenience, with regards to the impact of the change as well as the release planning.
 
+### Integration Tests
+The integration test suite runs against Firebolt SaaS v1, Firebolt SaaS v2 and Firebolt Core. The SaaS test suites only run as part of the CI. Locally you can run the Firebolt Core test suite.
+
+#### Run the tests locally
+
+**Run on Kind:**
+You must have [kind](https://kind.sigs.k8s.io/) installed. The test driver will create a kind cluster and install the Firebolt Core Helm chart.
+
+```shell
+pytest -k "core" --run-kind tests/integration
+```
+
+**Run on Docker Compose:**
+```shell
+pytest -k "core" --run-compose tests/integration
+```
+
+### Include a test in the core suite
+Not all integration tests are supported by Firebolt Core.
+
+The tests that are supported, use `@fixture(params=["core"])` on the fixture. Other ways are to use a `core` mark or add `core` in the name of the test. For more details on how tests are selected with the `pytest -k` flag, please check the pytest documentation.
+
 ### Docstrings
 
-Use the Google format for docstrings. Do not include types or an indication 
-of "optional" in docstrings. Those should be captured in the function signature 
+Use the Google format for docstrings. Do not include types or an indication
+of "optional" in docstrings. Those should be captured in the function signature
 as type annotations; no need to repeat them in the docstring.
 
-Public methods and functions should have docstrings. 
+Public methods and functions should have docstrings.
 One-liners are fine for simple methods and functions.
 
 For PyCharm Users:
@@ -73,20 +95,20 @@ In general, organize class internals in this order:
    * alternative constructors first
    * other classmethods next
 4. properties (`@property`)
-5. remaining methods 
+5. remaining methods
    * put more important / broadly applicable functions first
    * group related functions together to minimize scrolling
 
-Read more about this philosophy 
+Read more about this philosophy
 [here](https://softwareengineering.stackexchange.com/a/199317).
 
 ### Huge classes
 
-If classes start to approach 1k lines, consider breaking them into parts, 
+If classes start to approach 1k lines, consider breaking them into parts,
 possibly like [this](https://stackoverflow.com/a/47562412).
 
 ### Versioning
 
-Consider adopting: 
+Consider adopting:
  * https://packboard.atlassian.net/wiki/x/AYC6aQ
  * https://python-semantic-release.readthedocs.io/en/latest/

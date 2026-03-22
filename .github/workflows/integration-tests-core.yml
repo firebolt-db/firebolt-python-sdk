@@ -69,7 +69,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Run integration tests HTTP
+      - name: "Compose: Run integration tests HTTP"
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -80,9 +80,9 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: ${{ steps.setup-core.outputs.service_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-compose --alluredir=allure-results/
 
-      - name: Run integration tests HTTPS
+      - name: "Compose: Run integration tests HTTPS"
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -93,7 +93,14 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: ${{ steps.setup-core.outputs.service_https_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results-https/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-compose --alluredir=allure-results-https/
+
+      - name: "Kind: Run integration tests HTTP"
+        env:
+          HELM_CHART_VERSION: "0.3.0"
+          CORE_IMAGE_TAG: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
+        run: |
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-kind --alluredir=allure-results-kind/
 
       - name: Allure Reports
         uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
@@ -104,5 +111,6 @@ jobs:
           mapping-json: |
             {
               "allure-results": "core",
-              "allure-results-https": "core_https"
+              "allure-results-https": "core_https",
+              "allure-results-kind": "core_kind"
             }
