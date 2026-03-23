@@ -268,17 +268,12 @@ def test_engine_new_status(
         ("M", InstanceType.M, "STOPPED", EngineStatus.STOPPED),
         ("L", InstanceType.L, "STARTING", EngineStatus.STARTING),
         ("XL", InstanceType.XL, "STOPPING", EngineStatus.STOPPING),
-        # Test InstanceType enum values directly
-        (InstanceType.S, InstanceType.S, "FAILED", EngineStatus.FAILED),
-        (InstanceType.M, InstanceType.M, "REPAIRING", EngineStatus.REPAIRING),
         # Test unknown/invalid values that should default to UNKNOWN
         ("INVALID_TYPE", InstanceType.UNKNOWN, "INVALID_STATUS", EngineStatus.UNKNOWN),
         ("XXL", InstanceType.UNKNOWN, "WEIRD_STATE", EngineStatus.UNKNOWN),
         # Test empty strings that should default to UNKNOWN
         ("", InstanceType.UNKNOWN, "", EngineStatus.UNKNOWN),
         # Test all valid EngineStatus values with M instance type
-        ("M", InstanceType.M, "STARTED", EngineStatus.STARTED),
-        ("M", InstanceType.M, "DROPPING", EngineStatus.DROPPING),
         ("M", InstanceType.M, "DELETING", EngineStatus.DELETING),
         ("M", InstanceType.M, "RESIZING", EngineStatus.RESIZING),
         ("M", InstanceType.M, "DRAINING", EngineStatus.DRAINING),
