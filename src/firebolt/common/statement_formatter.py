@@ -95,8 +95,7 @@ def _patched_change_splitlevel(self, ttype, value):  # type: ignore[no-untyped-d
     return 0
 
 
-_StatementSplitter._change_splitlevel = \
-    _patched_change_splitlevel  # type: ignore[method-assign]
+setattr(_StatementSplitter, "_change_splitlevel", _patched_change_splitlevel)
 
 
 escape_chars_v2 = {
