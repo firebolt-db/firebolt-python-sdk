@@ -14,16 +14,18 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: 3.x
 
-    - uses: actions/cache@v4
+    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
@@ -44,21 +46,25 @@ jobs:
     - name: Resolve url path
       id: resolve_url_path
       shell: bash
+      env:
+        CUSTOM_PATH: ${{ github.event.inputs.custom-path }}
+        GITHUB_REF_NAME: ${{ github.ref_name }}
+        GITHUB_RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
       run: |
-        if [[ -n "${{ github.event.inputs.custom-path }}" ]]; then
-            echo "path=${{ github.event.inputs.custom-path }}" >> $GITHUB_OUTPUT
+        if [[ -n "${CUSTOM_PATH}" ]]; then
+            echo "path=${CUSTOM_PATH}" >> $GITHUB_OUTPUT
         # 0.x releases deploy to 0.x path, all other releases deploy to latest path
-        elif [[ "${{ github.event_name }}" == "release" && "${{ github.event.release.tag_name }}" == 0.* ]]; then
+        elif [[ "${{ github.event_name }}" == "release" && "${GITHUB_RELEASE_TAG_NAME}" == 0.* ]]; then
             echo "path=0.x" >> $GITHUB_OUTPUT
         # for manual builds deploy to the branch name path
         elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "path=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+            echo "path=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
         else
             echo "path=latest" >> $GITHUB_OUTPUT
         fi
 
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v4
+      uses: peaceiris/actions-gh-pages@4f9cc6602d3f66b9c108549d475ec49e8ef4d45e # v4.0.0
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs_compiled

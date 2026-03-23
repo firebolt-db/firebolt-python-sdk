@@ -10,7 +10,9 @@ updates:
     schedule:
       interval: "weekly"
     commit-message:
-      prefix: "build(NoTicket)"
+      prefix: "chore(deps):"
+    cooldown:
+      default-days: 7
 
   # Keep GitHub Actions up to date
   - package-ecosystem: "github-actions"
@@ -22,4 +24,6 @@ updates:
       timezone: "UTC"
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "build(NoTicket)"
+      prefix: "chore(deps):"
+    cooldown:
+      default-days: 7
