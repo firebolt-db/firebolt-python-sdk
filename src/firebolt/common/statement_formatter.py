@@ -19,6 +19,13 @@ from sqlparse.tokens import Newline  # type: ignore
 from sqlparse.tokens import Whitespace  # type: ignore
 from sqlparse.tokens import Token as TokenType  # type: ignore
 
+from firebolt.common._types import ParameterType, SetParameter
+from firebolt.utils.exception import (
+    DataError,
+    InterfaceError,
+    NotSupportedError,
+)
+
 
 def _patched_change_splitlevel(self, ttype, value):  # type: ignore[no-untyped-def]
     """Patched version of StatementSplitter._change_splitlevel.
@@ -88,15 +95,9 @@ def _patched_change_splitlevel(self, ttype, value):  # type: ignore[no-untyped-d
     return 0
 
 
-_StatementSplitter._change_splitlevel = _patched_change_splitlevel  # type: ignore[method-assign]
+_StatementSplitter._change_splitlevel = \
+    _patched_change_splitlevel  # type: ignore[method-assign]
 
-
-from firebolt.common._types import ParameterType, SetParameter
-from firebolt.utils.exception import (
-    DataError,
-    InterfaceError,
-    NotSupportedError,
-)
 
 escape_chars_v2 = {
     "\0": "\\0",
