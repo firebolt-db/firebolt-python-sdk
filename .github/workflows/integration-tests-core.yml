@@ -53,12 +53,6 @@ jobs:
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
-      - name: Setup Firebolt Core
-        id: setup-core
-        uses: firebolt-db/action-setup-core@eabcd701de0be41793fda0655d29d46c70c847c2 # main
-        with:
-          tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
-
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
@@ -73,12 +67,6 @@ jobs:
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: ""
-          ACCOUNT_NAME: ""
-          CORE_URL: ${{ steps.setup-core.outputs.service_url }}
         run: |
           pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-compose --alluredir=allure-results/
 
@@ -86,14 +74,8 @@ jobs:
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: ""
-          ACCOUNT_NAME: ""
-          CORE_URL: ${{ steps.setup-core.outputs.service_https_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-compose --alluredir=allure-results-https/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-https --run-compose --alluredir=allure-results-https/
 
       - name: "Kind: Run integration tests HTTP"
         env:

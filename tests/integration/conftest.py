@@ -1,10 +1,8 @@
 import os
-import socket
 import subprocess
-import uuid
 from logging import getLogger
 from os import environ, getenv
-from time import sleep, time
+from time import time
 from typing import Optional
 
 from pytest import fixture, mark
@@ -12,6 +10,8 @@ from pytest import fixture, mark
 from firebolt.client.auth import ClientCredentials
 from firebolt.client.auth.firebolt_core import FireboltCore
 from firebolt.client.auth.username_password import UsernamePassword
+from tests.integration.cluster.compose import ComposeAppManager
+from tests.integration.cluster.helm import HelmAppManager
 
 LOGGER = getLogger(__name__)
 
@@ -28,16 +28,7 @@ ENGINE_URL_ENV = "ENGINE_URL"
 STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
 CORE_URL_ENV = "CORE_URL"
 
-# Variables to configure the Firebolt Core Helm installation
-CORE_HELM_CHART_VERSION_ENV = "CORE_HELM_CHART_VERSION"
-CORE_DEFAULT_HELM_CHART_VERSION = "0.3.0"
-CORE_IMAGE_TAG_ENV = "CORE_IMAGE_TAG"
-CORE_PORT = 3473
-
 KIND_CLUSTER_NAME = "firebolt-python-sdk"
-
-# https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
-# Adding slow marker to tests
 
 
 def pytest_addoption(parser):
@@ -52,16 +43,18 @@ def pytest_addoption(parser):
         action="store_true",
         help="Run integration tests against docker-compose",
     )
+    parser.addoption(
+        "--run-https",
+        action="store_true",
+        help="Run integration tests against https endpoint",
+    )
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line(
-        "markers", "kind_only: tests that require a Kubernetes/Kind environment"
-    )
-    config.addinivalue_line(
         "markers",
-        "dedicated_helm_install: Marker for tests that need a dedicated helm release installation",
+        "dedicated_core_cluster: Marker for tests that need a dedicated core cluster installation",
     )
 
 
@@ -100,87 +93,87 @@ def must_env(var_name: str) -> str:
 
 
 @fixture(scope="function")
-def engine_name(kind_app_setup) -> str:
+def engine_name(app_setup) -> str:
     return must_env(ENGINE_NAME_ENV)
 
 
 @fixture(scope="function")
-def stopped_engine_name(kind_app_setup) -> str:
+def stopped_engine_name(app_setup) -> str:
     return must_env(STOPPED_ENGINE_NAME_ENV)
 
 
 @fixture(scope="function")
-def database_name(kind_app_setup) -> str:
+def database_name(app_setup) -> str:
     return must_env(DATABASE_NAME_ENV)
 
 
 @fixture(scope="function")
-def use_db_name(kind_app_setup, database_name: str):
+def use_db_name(app_setup, database_name: str):
     return f"{database_name}_use_db_test"
 
 
 @fixture(scope="function")
-def account_name(kind_app_setup) -> str:
+def account_name(app_setup) -> str:
     return must_env(ACCOUNT_NAME_ENV)
 
 
 @fixture(scope="function")
-def invalid_account_name(kind_app_setup, account_name: str) -> str:
+def invalid_account_name(app_setup, account_name: str) -> str:
     return f"{account_name}--"
 
 
 @fixture(scope="function")
-def api_endpoint(kind_app_setup) -> str:
+def api_endpoint(app_setup) -> str:
     return must_env(API_ENDPOINT_ENV)
 
 
 @fixture(scope="function")
-def service_id(kind_app_setup) -> str:
+def service_id(app_setup) -> str:
     return must_env(SERVICE_ID_ENV)
 
 
 @fixture(scope="function")
-def service_secret(kind_app_setup) -> Secret:
+def service_secret(app_setup) -> Secret:
     return Secret(must_env(SERVICE_SECRET_ENV))
 
 
 @fixture(scope="function")
-def auth(kind_app_setup, service_id: str, service_secret: Secret) -> ClientCredentials:
+def auth(app_setup, service_id: str, service_secret: Secret) -> ClientCredentials:
     return ClientCredentials(service_id, service_secret.value)
 
 
 @fixture(scope="function")
-def core_auth(kind_app_setup) -> FireboltCore:
+def core_auth(app_setup) -> FireboltCore:
     return FireboltCore()
 
 
 @fixture(scope="function")
-def username(kind_app_setup) -> str:
+def username(app_setup) -> str:
     return must_env(USER_NAME_ENV)
 
 
 @fixture(scope="function")
-def password(kind_app_setup) -> str:
+def password(app_setup) -> str:
     return Secret(must_env(PASSWORD_ENV))
 
 
 @fixture(scope="function")
-def password_auth(kind_app_setup, username: str, password: Secret) -> UsernamePassword:
+def password_auth(app_setup, username: str, password: Secret) -> UsernamePassword:
     return UsernamePassword(username, password.value)
 
 
 @fixture(scope="function")
-def engine_url(kind_app_setup) -> str:
+def engine_url(app_setup) -> str:
     return must_env(ENGINE_URL_ENV)
 
 
 @fixture(scope="function")
-def stopped_engine_url(kind_app_setup) -> str:
+def stopped_engine_url(app_setup) -> str:
     return must_env(STOPPED_ENGINE_URL_ENV)
 
 
 @fixture(scope="function")
-def core_url(kind_app_setup) -> str:
+def core_url(app_setup) -> str:
     return getenv(CORE_URL_ENV, "")
 
 
@@ -202,47 +195,26 @@ def minimal_time():
 
 
 def pytest_generate_tests(metafunc):
-    if "kind_app_setup" in metafunc.fixturenames:
+    if "app_setup" in metafunc.fixturenames:
         run_kind = metafunc.config.getoption("--run-kind")
         run_compose = metafunc.config.getoption("--run-compose")
-        is_kind_only = metafunc.definition.get_closest_marker("kind_only") is not None
+        run_https = metafunc.config.getoption("--run-https")
 
-        # Default behavior: if no flags are provided, we assume --run-compose
-        if not run_kind and not run_compose:
-            run_compose = True
+        if run_kind and run_https:
+            raise ValueError(
+                "The --run-kind and --run-https arguments are not compatible. HTTPS is only supported with --run-compose."
+            )
 
         backends = []
 
-        # Logic for tests marked with @pytest.mark.kind_only
-        if is_kind_only:
-            if run_kind:
-                backends = ["kind"]
-            else:
-                # If kind_only but --run-kind wasn't requested, we skip it
-                backends = []
-
-        # Logic for standard tests
-        else:
-            if run_compose:
-                backends.append("docker-compose")
-            if run_kind:
-                backends.append("kind")
+        if run_compose:
+            backends.append("docker-compose")
+        if run_kind:
+            backends.append("kind")
 
         # Apply the parametrization
         if backends:
-            metafunc.parametrize("kind_app_setup", backends, indirect=True)
-        else:
-            # If no backends match (e.g. kind_only test but no --run-kind flag),
-            # we parametrize with an empty list which skips the test.
-            metafunc.parametrize("kind_app_setup", [], indirect=True)
-
-
-def get_free_port():
-    """Ask the OS for a free ephemeral port."""
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("", 0))
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        return s.getsockname()[1]
+            metafunc.parametrize("app_setup", backends, indirect=True)
 
 
 @fixture(scope="session")
@@ -298,213 +270,94 @@ def kind_cluster(request):
         )
 
 
-def deploy_app(kind_cluster, helm_values=None):
-    """Common logic for both session and function-scoped setups."""
-    test_id = (
-        f"{os.environ.get('PYTEST_XDIST_WORKER', 'python-sdk')}-{uuid.uuid4().hex[:4]}"
-    )
-    release, ns = f"core-{test_id}", f"ns-{test_id}"
-    local_port = get_free_port()
-
-    # Use CORE_IMAGE_TAG if not provided in helm_values
-    if helm_values is None:
-        helm_values = {}
-    if "image.tag" not in helm_values:
-        core_image_tag = getenv(CORE_IMAGE_TAG_ENV)
-        if core_image_tag:
-            helm_values["image.tag"] = core_image_tag
-
-    set_args = []
-    if helm_values:
-        for key, value in helm_values.items():
-            set_args.extend(["--set", f"{key}={value}"])
-
-    print(f"[Kind] Installing Helm release {release} into namespace {ns}...")
-    subprocess.run(
-        [
-            "helm",
-            "install",
-            release,
-            "oci://ghcr.io/firebolt-db/helm-charts/firebolt-core",
-            "--version",
-            getenv(CORE_HELM_CHART_VERSION_ENV, CORE_DEFAULT_HELM_CHART_VERSION),
-            "-n",
-            ns,
-            "--create-namespace",
-            "--wait",
-            "--kube-context",
-            kind_cluster,
-        ]
-        + set_args,
-        check=True,
-    )
-
-    print(f"[Kind] Waiting for pods in {ns} to be ready...")
-    subprocess.run(
-        [
-            "kubectl",
-            "wait",
-            "--for=condition=ready",
-            "pod",
-            "-l",
-            "app.kubernetes.io/instance=" + release,
-            "--namespace",
-            ns,
-            "--timeout=120s",
-            "--context",
-            kind_cluster,
-        ],
-        check=True,
-    )
-
-    pod_names_result = subprocess.run(
-        [
-            "kubectl",
-            "get",
-            "pods",
-            "-l",
-            "app.kubernetes.io/instance=" + release,
-            "-n",
-            ns,
-            "-o",
-            "jsonpath={.items[*].metadata.name}",
-            "--context",
-            kind_cluster,
-        ],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    pod_names = pod_names_result.stdout.split()
-
-    pf_procs = []
-    ips_with_ports = []
-    for i, pod_name in enumerate(pod_names):
-        ip = "127.0.0.1"
-        port = local_port + i
-        ips_with_ports.append(f"{ip}:{port}")
-        print(f"[Kind] Port-forward to pod {pod_name} on {ip}:{port}->{CORE_PORT}...")
-        pf_proc = subprocess.Popen(
-            [
-                "kubectl",
-                "port-forward",
-                "--address",
-                ip,
-                f"pod/{pod_name}",
-                f"{port}:{CORE_PORT}",
-                "-n",
-                ns,
-                "--context",
-                kind_cluster,
-            ]
-        )
-        pf_procs.append(pf_proc)
-
-    sleep(1)
-    # Wait for port-forward
-    for i in range(10):
-        try:
-            # Check all port-forwards
-            all_up = True
-            for ip_port in ips_with_ports:
-                ip, port = ip_port.split(":")
-                try:
-                    with socket.create_connection((ip, int(port)), timeout=1):
-                        print(f"[Kind] Port-forward on {ip}:{port} is UP")
-                except (socket.error, ConnectionRefusedError):
-                    all_up = False
-                    break
-            if all_up:
-                break
-        except (socket.error, ConnectionRefusedError):
-            if i == 9:
-                raise RuntimeError(f"Failed to connect to port-forward on {local_port}")
-            sleep(1)
-
-    url = f"http://127.0.0.1:{local_port}"
-
-    # Return everything needed for cleanup
-    return {
-        "url": url,
-        "processes": pf_procs,
-        "release": release,
-        "ns": ns,
-        "ips": ips_with_ports,
-    }
-
-
-def cleanup_app(setup_data, kind_cluster):
-    """Common teardown logic."""
-    for proc in setup_data["processes"]:
-        proc.terminate()
-    subprocess.run(
-        [
-            "helm",
-            "uninstall",
-            setup_data["release"],
-            "-n",
-            setup_data["ns"],
-            "--kube-context",
-            kind_cluster,
-        ],
-        check=True,
-    )
-    subprocess.run(["kubectl", "delete", "ns", setup_data["ns"]], check=True)
-
-
 @fixture(scope="session")
 def session_helm_install(request, kind_cluster):
-    """The fast, shared deployment."""
+    """The fast, shared Kind/Helm deployment."""
     if not request.config.getoption("--run-kind"):
         yield None
         return
 
-    data = deploy_app(kind_cluster)
+    manager = HelmAppManager(kind_cluster)
+    data = manager.deploy()
     yield data
-    cleanup_app(data, kind_cluster)
+    manager.cleanup(data)
+
+
+@fixture(scope="session")
+def session_compose_install(request):
+    """The fast, shared Docker Compose deployment."""
+    run_kind = request.config.getoption("--run-kind")
+    run_compose = request.config.getoption("--run-compose")
+
+    # Only run if --run-compose is explicitly requested
+    if not run_compose:
+        yield None
+        return
+
+    manager = ComposeAppManager()
+    data = manager.deploy()
+    yield data
+    manager.cleanup(data)
 
 
 @fixture(scope="function")
 def dedicated_helm_install(request, kind_cluster):
-    """
-    Create a dedicated Core Helm installation.
-
-    Use this if the test case requires a customized Helm installation or
-    would interfere due to it behavior with other test cases and hence can't
-    use the session (shared) Core Helm installation.
-
-    Example: Your test requires 5 replicas or your test deletes pods.
-    """
-    # Only run if specifically requested via @pytest.mark.dedicated_helm_install
-    if request.node.get_closest_marker("dedicated_helm_install"):
-        helm_values = getattr(request, "param", {})
-        data = deploy_app(kind_cluster, helm_values=helm_values)
+    """Create a dedicated Kind/Helm installation."""
+    marker = request.node.get_closest_marker("dedicated_core_cluster")
+    if marker and getattr(request, "param", "docker-compose") == "kind":
+        # Prefer marker args if present, else fallback to indirect param
+        params = marker.args[0] if marker.args else getattr(request, "param", {})
+        manager = HelmAppManager(kind_cluster)
+        data = manager.deploy(params=params)
         yield data
-        cleanup_app(data, kind_cluster)
+        manager.cleanup(data)
     else:
         yield None
 
 
 @fixture(scope="function")
-def kind_app_setup(request, session_helm_install, dedicated_helm_install):
+def dedicated_compose_install(request):
+    """Create a dedicated Docker Compose installation."""
+    marker = request.node.get_closest_marker("dedicated_core_cluster")
+    if marker and getattr(request, "param", "docker-compose") == "docker-compose":
+        # Prefer marker args if present, else fallback to indirect param
+        params = marker.args[0] if marker.args else getattr(request, "param", {})
+        manager = ComposeAppManager()
+        data = manager.deploy(params=params)
+        yield data
+        manager.cleanup(data)
+    else:
+        yield None
+
+
+@fixture(scope="function")
+def app_setup(
+    request,
+    session_helm_install,
+    session_compose_install,
+    dedicated_helm_install,
+    dedicated_compose_install,
+):
     """
-    Dynamically injects the required environment variables from whichever kind setup is active.
+    Dynamically injects the required environment variables from active setup.
     """
-    # Use dedicated if it exists (not None), otherwise fall back to session
-    active_setup = (
-        dedicated_helm_install
-        if dedicated_helm_install is not None
-        else session_helm_install
-    )
+    backend = getattr(request, "param", "remote")
+    run_https = request.config.getoption("--run-https")
+
+    if backend == "kind":
+        active_setup = dedicated_helm_install or session_helm_install
+    elif backend == "docker-compose":
+        active_setup = dedicated_compose_install or session_compose_install
+    else:
+        active_setup = None
 
     if active_setup:
-        if active_setup == dedicated_helm_install:
+        if active_setup in (dedicated_helm_install, dedicated_compose_install):
             print(f"\n[DEBUG] Using DEDICATED install at {active_setup['url']}")
         else:
             print(f"\n[DEBUG] Using SESSION install at {active_setup['url']}")
 
-    backend = getattr(request, "param", "docker-compose")
-    if backend == "kind" and active_setup:
+    if active_setup:
         url = active_setup["url"]
         ips = active_setup.get("ips", ["127.0.0.1"])
         env_vars = {
@@ -519,10 +372,27 @@ def kind_app_setup(request, session_helm_install, dedicated_helm_install):
             "ENGINE_URL": "",
             "CORE_IPS": ",".join(ips),
         }
+
+        if run_https and backend == "docker-compose":
+            # Override url to use https if provided
+            nginx_ports = active_setup.get("nginx_ports", [])
+            if not nginx_ports:
+                raise ValueError("HTTPS is requested, but no nginx ports available.")
+
+            https_ips = [f"https://127.0.0.1:{port}" for port in nginx_ports]
+            env_vars["CORE_URL"] = https_ips[0]
+            env_vars["CORE_IPS"] = ",".join(https_ips)
+
+            # Set SSL cert file for https requests
+            cert_path = active_setup.get("server_cert_path")
+            if not cert_path:
+                raise ValueError("HTTPS is requested, but no cert path available.")
+            env_vars["SSL_CERT_FILE"] = cert_path
+
         old_env = {k: os.environ.get(k) for k in env_vars}
         os.environ.update(env_vars)
 
-        yield "kind"
+        yield backend
 
         # Restore env
         for k, v in old_env.items():
@@ -531,4 +401,5 @@ def kind_app_setup(request, session_helm_install, dedicated_helm_install):
             else:
                 os.environ[k] = v
     else:
-        yield "docker-compose"
+        # Fallback if no setup is active (e.g. external compose or remote)
+        yield backend
