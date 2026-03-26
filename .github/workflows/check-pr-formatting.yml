@@ -7,9 +7,15 @@ on:
 
 jobs:
   pr-formatting:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
+    permissions:
+      pull-requests: read
     steps:
-      - name: Formatting conventions
-        uses: firebolt-db/action-pr-checks@main
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: ${{ !startsWith(github.head_ref, 'dependabot') }}
         with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
+          # Ensures the subject doesn't start with an uppercase character.
+          subjectPattern: ^(?![A-Z]).+$
+          requireScope: false
