@@ -43,6 +43,9 @@ on:
         required: false
 jobs:
   run-core-integration-tests:
+    permissions:
+      contents: write # Push allure reports to gh-pages
+      statuses: write # Update status on PR
     runs-on: ${{ inputs.os_name }}
     steps:
       - name: Check out code
@@ -77,7 +80,7 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: ${{ steps.setup-core.outputs.service_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results/
 
       - name: Run integration tests HTTPS
         env:
@@ -90,35 +93,16 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: ${{ steps.setup-core.outputs.service_https_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"  --alluredir=allure-results-https/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results-https/
 
-       # Need to pull the pages branch in order to fetch the previous runs
-      - name: Get Allure history
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Allure Reports
+        uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
         if: always()
-        continue-on-error: true
         with:
-            ref: gh-pages
-            path: gh-pages
-
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1
-        if: always()
-        continue-on-error: true
-        with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
-          test-type: core
-          allure-dir: allure-results
+          github-token: ${{ github.token }}
           pages-branch: gh-pages
-          repository-name: python-sdk
-
-      - name: Allure Report HTTPS
-        uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1
-        if: always()
-        continue-on-error: true
-        with:
-          github-key: ${{ secrets.GITHUB_TOKEN }}
-          test-type: core_https
-          allure-dir: allure-results-https
-          pages-branch: gh-pages
-          repository-name: python-sdk
+          mapping-json: |
+            {
+              "allure-results": "core",
+              "allure-results-https": "core_https"
+            }

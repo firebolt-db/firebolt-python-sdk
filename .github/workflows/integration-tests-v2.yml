@@ -20,6 +20,9 @@ on:
 
 jobs:
   tests:
+    permissions:
+      contents: write # Push allure reports to gh-pages
+      statuses: write # Update status on PR
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -58,23 +61,15 @@ jobs:
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT }}
           LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V2 }}
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1 and not core" --runslow  --alluredir=allure-results
-
-      # Need to pull the pages branch in order to fetch the previous runs
-      - name: Get Allure history
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        if: always()
-        continue-on-error: true
-        with:
-            ref: gh-pages
-            path: gh-pages
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1 and not core" --runslow --alluredir=allure-results
 
       - name: Allure Report
-        uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1
+        uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
         if: always()
         with:
-          github-key: ${{ inputs.token || secrets.GITHUB_TOKEN }}
-          test-type: integration
-          allure-dir: allure-results
+          github-token: ${{ inputs.token || secrets.GITHUB_TOKEN }}
           pages-branch: gh-pages
-          repository-name: python-sdk
+          mapping-json: |
+            {
+              "allure-results": "integration_v2"
+            }
