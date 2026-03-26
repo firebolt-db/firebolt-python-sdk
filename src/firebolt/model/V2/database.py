@@ -83,6 +83,7 @@ class Database(FireboltBaseModel):
         for engine in self.get_attached_engines():
             if engine.current_status in {
                 EngineStatus.STARTING,
+                EngineStatus.DRAINING,
                 EngineStatus.STOPPING,
             }:
                 raise AttachedEngineInUseError(method_name="delete")
