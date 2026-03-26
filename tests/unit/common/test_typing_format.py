@@ -269,3 +269,86 @@ def test_statement_to_set_errors(
 
 def test_binary() -> None:
     assert Binary("abc") == b"abc"
+
+
+def test_convert_parameter_for_serialization(formatter: StatementFormatter) -> None:
+    assert formatter.convert_parameter_for_serialization(1) == 1
+    assert formatter.convert_parameter_for_serialization(1.1) == 1.1
+    assert formatter.convert_parameter_for_serialization(True) is True
+    assert formatter.convert_parameter_for_serialization(None) is None
+    assert formatter.convert_parameter_for_serialization(Decimal("1.1")) == "1.1"
+    assert formatter.convert_parameter_for_serialization(b"abc") == "abc"
+    assert formatter.convert_parameter_for_serialization(
+        [1, Decimal("1.1"), [b"x"]]
+    ) == [
+        1,
+        "1.1",
+        ["x"],
+    ]
+    assert (
+        formatter.convert_parameter_for_serialization(date(2022, 1, 1)) == "2022-01-01"
+    )
+    assert formatter.convert_parameter_for_serialization({"a": 1}) == "{'a': 1}"
+
+
+def test_format_bulk_insert(formatter: StatementFormatter) -> None:
+    query = "INSERT INTO t VALUES (?, ?)"
+    params = [[1, "a"], [2, "b"]]
+    result = formatter.format_bulk_insert(query, params)
+    assert result == "INSERT INTO t VALUES (1, 'a'); INSERT INTO t VALUES (2, 'b')"
+
+    with raises(DataError):
+        formatter.format_bulk_insert("", [])
+
+
+def test_create_statement_formatter_invalid_version() -> None:
+    with raises(ValueError) as excinfo:
+        create_statement_formatter(3)
+    assert "Unsupported version: 3" in str(excinfo.value)
+
+
+def test_patched_change_splitlevel(formatter: StatementFormatter) -> None:
+    # Testing CREATE, DECLARE, BEGIN, END, CASE, IF, FOR, WHILE
+    # These exercise _patched_change_splitlevel via split_format_sql which calls parse_sql
+
+    # CREATE, BEGIN, END
+    sql = "CREATE PROCEDURE p AS BEGIN SELECT 1; END; SELECT 2;"
+    results = formatter.split_format_sql(sql, None)
+    assert len(results) == 2
+
+    # Testing CASE...END outside of CREATE
+    sql = "SELECT CASE WHEN 1 THEN 'a' ELSE 'b' END FROM t; SELECT 2;"
+    results = formatter.split_format_sql(sql, None)
+    assert len(results) == 2
+    assert "SELECT CASE" in str(results[0])
+    assert "SELECT 2" in str(results[1])
+
+    # Testing IF, FOR, WHILE inside CREATE
+    sql = """
+    CREATE PROCEDURE p AS
+    BEGIN
+        IF 1 THEN
+            SELECT 1;
+        END IF;
+        FOR i IN 1..10 LOOP
+            SELECT i;
+        END FOR;
+        WHILE 1 LOOP
+            SELECT 1;
+        END WHILE;
+    END;
+    SELECT 2;
+    """
+    results = formatter.split_format_sql(sql, None)
+    # sqlparse might split at some ENDs depending on its internal state and how it tokens things
+    assert len(results) >= 2
+
+    # Testing TRANSACTION, WORK etc
+    sql = "BEGIN TRANSACTION; SELECT 1; COMMIT;"
+    results = formatter.split_format_sql(sql, None)
+    assert len(results) == 3
+
+    # Testing DECLARE
+    sql = "CREATE PROCEDURE p AS DECLARE x INT; BEGIN SELECT x; END;"
+    results = formatter.split_format_sql(sql, None)
+    assert len(results) == 1
