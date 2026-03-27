@@ -112,6 +112,15 @@ jobs:
           pages-branch: gh-pages
           repository-name: python-sdk
 
+      # Need to pull the pages branch in order to fetch the previous runs
+      - name: Get Allure history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        if: always()
+        continue-on-error: true
+        with:
+            ref: gh-pages
+            path: gh-pages
+
       - name: Allure Report HTTPS
         uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1
         if: always()
