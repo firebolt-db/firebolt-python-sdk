@@ -3,12 +3,12 @@ from unittest.mock import MagicMock
 
 from pytest import fixture, mark
 
-from firebolt.common.cursor.base_cursor import (
-    BaseCursor,
+from firebolt.common.cursor.base_cursor import BaseCursor
+from firebolt.common.statement_formatter import create_statement_formatter
+from firebolt.utils.util import (
     _parse_remove_parameters,
     _parse_update_parameters,
 )
-from firebolt.common.statement_formatter import create_statement_formatter
 
 
 @fixture

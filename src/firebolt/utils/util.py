@@ -19,6 +19,7 @@ from httpx import URL, Response, codes
 
 from firebolt.utils.exception import (
     ConfigurationError,
+    FireboltError,
     FireboltStructuredError,
 )
 
@@ -171,6 +172,10 @@ def raise_error_from_response(resp: Response) -> None:
         resp (Response): HTTP response
     """
     to_raise = None
+    # If error is Text - raise as is
+    if "text/plain" in resp.headers.get("Content-Type", ""):
+        raise FireboltError(resp.text)
+    # If error is Json - parse it and raise
     try:
         decoded = resp.json()
         if "errors" in decoded and len(decoded["errors"]) > 0:
@@ -186,7 +191,26 @@ def raise_error_from_response(resp: Response) -> None:
         raise to_raise
 
     # Raise status error if no error info was found in the body
+    # This error does not contain the response body
     resp.raise_for_status()
+
+
+def _parse_update_parameters(parameter_header: str) -> Dict[str, str]:
+    """Parse update parameters and set them as attributes."""
+    # parse key1=value1,key2=value2 comma separated string into dict
+    param_dict = {
+        item.split("=")[0]: item.split("=")[1] for item in parameter_header.split(",")
+    }
+    # strip whitespace from keys and values
+    param_dict = {key.strip(): value.strip() for key, value in param_dict.items()}
+    return param_dict
+
+
+def _parse_remove_parameters(parameter_header: str) -> List[str]:
+    """Parse remove parameters header and return list of parameter names to remove."""
+    # parse key1,key2,key3 comma separated string into list
+    param_list = [item.strip() for item in parameter_header.split(",")]
+    return param_list
 
 
 class Timer:

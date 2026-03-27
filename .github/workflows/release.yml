@@ -22,13 +22,13 @@ jobs:
     needs: integration-tests
     steps:
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         fetch-depth: 0
         token: ${{ secrets.RELEASE_PAT }}
 
     - name: 'Publish action'
-      uses: firebolt-db/action-python-release@main
+      uses: firebolt-db/action-python-release@0cb5692fd39a782bce366e9120055d999bc8824b # main
       with:
         pre-release-tag: ${{ inputs.pre-release-tag }}
         major-release: ${{ inputs.major-release }}

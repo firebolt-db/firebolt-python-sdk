@@ -3,6 +3,10 @@ from decimal import Decimal
 from typing import Dict, List, Optional, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
+from sqlparse import tokens as _T
+from sqlparse.engine.statement_splitter import (
+    StatementSplitter as _StatementSplitter,
+)
 from sqlparse.sql import (  # type: ignore
     Comment,
     Comparison,
@@ -21,6 +25,78 @@ from firebolt.utils.exception import (
     InterfaceError,
     NotSupportedError,
 )
+
+
+def _patched_change_splitlevel(self, ttype, value):  # type: ignore[no-untyped-def]
+    """Patched version of StatementSplitter._change_splitlevel.
+
+    Fixes CASE...END level tracking outside of CREATE blocks.
+    See: https://github.com/andialbrecht/sqlparse/pull/839
+    """
+    if ttype is _T.Punctuation and value == "(":
+        return 1
+    elif ttype is _T.Punctuation and value == ")":
+        return -1
+    elif ttype not in _T.Keyword:
+        return 0
+
+    unified = value.upper()
+
+    if ttype is _T.Keyword.DDL and unified.startswith("CREATE"):
+        self._is_create = True
+        return 0
+
+    if unified == "DECLARE" and self._is_create and self._begin_depth == 0:
+        self._in_declare = True
+        return 1
+
+    if unified == "BEGIN":
+        self._begin_depth += 1
+        self._seen_begin = True
+        if self._is_create:
+            return 1
+        return 0
+
+    if (
+        self._seen_begin
+        and (ttype is _T.Keyword or ttype is _T.Name)
+        and unified
+        in (
+            "TRANSACTION",
+            "WORK",
+            "TRAN",
+            "DISTRIBUTED",
+            "DEFERRED",
+            "IMMEDIATE",
+            "EXCLUSIVE",
+        )
+    ):
+        self._begin_depth = max(0, self._begin_depth - 1)
+        self._seen_begin = False
+        return 0
+
+    if unified == "END":
+        if not self._in_case:
+            self._begin_depth = max(0, self._begin_depth - 1)
+        else:
+            self._in_case = False
+        return -1
+
+    if unified == "CASE":
+        self._in_case = True
+        return 1
+
+    if unified in ("IF", "FOR", "WHILE") and self._is_create and self._begin_depth > 0:
+        return 1
+
+    if unified in ("END IF", "END FOR", "END WHILE"):
+        return -1
+
+    return 0
+
+
+setattr(_StatementSplitter, "_change_splitlevel", _patched_change_splitlevel)
+
 
 escape_chars_v2 = {
     "\0": "\\0",
@@ -116,7 +192,7 @@ class StatementFormatter:
                 return TokenList([process_token(t) for t in token.tokens])
             return token
 
-        formatted_sql = self.statement_to_sql(process_token(statement))
+        formatted_sql = self._clean_sql_string(process_token(statement))
 
         if idx < len(parameters):
             raise DataError(
@@ -155,8 +231,8 @@ class StatementFormatter:
             # Check if set statement has a valid format
             if len(tokens) == 2 and isinstance(tokens[1], Comparison):
                 return SetParameter(
-                    self.statement_to_sql(tokens[1].left),
-                    self.statement_to_sql(tokens[1].right).strip("'"),
+                    self._clean_sql_string(tokens[1].left),
+                    self._clean_sql_string(tokens[1].right).strip("'"),
                 )
             # Or if at least there is a comparison
             cmp_idx = next(
@@ -175,20 +251,21 @@ class StatementFormatter:
 
                 if left_tokens and right_tokens:
                     return SetParameter(
-                        "".join(self.statement_to_sql(t) for t in left_tokens),
-                        "".join(self.statement_to_sql(t) for t in right_tokens).strip(
+                        "".join(self._clean_sql_string(t) for t in left_tokens),
+                        "".join(self._clean_sql_string(t) for t in right_tokens).strip(
                             "'"
                         ),
                     )
 
             raise InterfaceError(
-                f"Invalid set statement format: {self.statement_to_sql(statement)},"
+                f"Invalid set statement format: {self._clean_sql_string(statement)},"
                 " expected SET <param> = <value>"
             )
         return None
 
-    def statement_to_sql(self, statement: Statement) -> str:
-        return str(statement).strip().rstrip(";")
+    def _clean_sql_string(self, token: Token) -> str:
+        """Strip whitespace and trailing semicolons from a SQL token or statement."""
+        return str(token).strip().rstrip(";")
 
     def split_format_sql(
         self, query: str, parameters: Sequence[Sequence[ParameterType]]
@@ -215,7 +292,7 @@ class StatementFormatter:
 
         # Try parsing each statement as a SET, otherwise return as a plain sql string
         return [
-            self.statement_to_set(st) or self.statement_to_sql(st) for st in statements
+            self.statement_to_set(st) or self._clean_sql_string(st) for st in statements
         ]
 
     def format_bulk_insert(

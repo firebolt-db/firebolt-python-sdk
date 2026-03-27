@@ -8,9 +8,10 @@ def test_instance_types(resource_manager: ResourceManager):
         InstanceType.M,
         InstanceType.L,
         InstanceType.XL,
+        InstanceType.UNKNOWN,
     ]
 
     assert resource_manager.instance_types.get("XL") == InstanceType.XL
-    assert resource_manager.instance_types.get("XS") is None
+    assert resource_manager.instance_types.get("XS") == InstanceType.UNKNOWN
 
     assert resource_manager.instance_types.cheapest_instance() == InstanceType.S
