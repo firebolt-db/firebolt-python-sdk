@@ -20,7 +20,8 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # Push allure reports to gh-pages
+      statuses: write # Update status on PR
     steps:
     - name: Check out code
       uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -41,20 +42,16 @@ jobs:
       run: |
         pytest --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
 
-    - name: Get Allure history
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      if: always()
-      continue-on-error: true
-      with:
-        ref: gh-pages
-        path: gh-pages
-
     - name: Allure Report
-      uses: firebolt-db/action-allure-report@781b4529b67b4f393c63d7dc1e098cb558e1ab16 # v1.4.1
+      uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
       if: always()
-      continue-on-error: true
       with:
-        github-key: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ github.token }}
+        pages-branch: gh-pages
+        mapping-json: |
+          {
+            "allure-results": "unit"
+          }
 
     - name: Upload coverage report
       uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
