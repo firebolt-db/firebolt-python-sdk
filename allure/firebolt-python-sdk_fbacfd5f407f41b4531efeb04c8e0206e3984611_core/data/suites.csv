@@ -20,7 +20,7 @@
 "","31","test_select_geography[core]","tests.integration.dbapi.async.V2","2026-04-04","passed","2026-04-04","","test_queries_async","",""
 "Test that connection.close() rolls back uncommitted transactions when autocommit=False.","79","test_connection_close_rollback_with_autocommit_off[core]","tests.integration.dbapi.sync.V2","2026-04-04","passed","2026-04-04","","test_queries","",""
 "
-    Integration test for database context preservation with caching on Firebolt.
+Async integration test for database context preservation with caching on Firebolt.
 
     This test verifies against a live Firebolt instance:
     1. Connect with database1 + engine1 (cache entry created)
@@ -71,7 +71,7 @@
 "AWS ALB TCP timeout set to 350; make sure we handle the keepalive correctly.","0","test_long_query[core]","tests.integration.dbapi.async.V2","2026-04-04","skipped","2026-04-04","","test_queries_async","",""
 "","6","test_select_quoted_decimal[core]","tests.integration.dbapi.sync.V2","2026-04-04","passed","2026-04-04","","test_queries","",""
 "
-    Async integration test for database context preservation with caching on Firebolt.
+Integration test for database context preservation with caching on Firebolt.
 
     This test verifies against a live Firebolt instance:
     1. Connect with database1 + engine1 (cache entry created)
