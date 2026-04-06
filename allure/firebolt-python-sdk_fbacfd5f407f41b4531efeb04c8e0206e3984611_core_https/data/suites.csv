@@ -11,7 +11,7 @@
 "Select handles errors properly.","29","test_streaming_error[core]","tests.integration.dbapi.sync.V2","2026-04-06","passed","2026-04-06","","test_streaming","",""
 "Test that context manager commits transaction on normal exit when autocommit=False.","87","test_context_manager_auto_commit_on_normal_exit[core]","tests.integration.dbapi.sync.V2","2026-04-06","passed","2026-04-06","","test_queries","",""
 "
-    Integration test for database context preservation with caching on Firebolt.
+Async integration test for database context preservation with caching on Firebolt.
 
     This test verifies against a live Firebolt instance:
     1. Connect with database1 + engine1 (cache entry created)
@@ -47,7 +47,7 @@
 "Test that connection.aclose() rolls back uncommitted transactions when autocommit=False.","156","test_connection_close_rollback_with_autocommit_off[core]","tests.integration.dbapi.async.V2","2026-04-06","passed","2026-04-06","","test_queries_async","",""
 "Select handles multiple records properly.","763","test_streaming_multiple_records[core]","tests.integration.dbapi.sync.V2","2026-04-06","passed","2026-04-06","","test_streaming","",""
 "
-    Async integration test for database context preservation with caching on Firebolt.
+Integration test for database context preservation with caching on Firebolt.
 
     This test verifies against a live Firebolt instance:
     1. Connect with database1 + engine1 (cache entry created)
