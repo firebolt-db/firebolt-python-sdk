@@ -22,7 +22,7 @@
 "Test that connection.aclose() does not rollback when autocommit=True.","122","test_connection_close_no_rollback_with_autocommit_on[core]","tests.integration.dbapi.async.V2","2026-04-08","passed","2026-04-08","","test_queries_async","",""
 "Test that statements are visible immediately with autocommit enabled (uses existing connection fixture).","85","test_autocommit_immediate_visibility[core-implicit]","tests.integration.dbapi.async.V2","2026-04-08","passed","2026-04-08","","test_queries_async","",""
 "
-    Integration test for database context preservation with caching on Firebolt.
+Async integration test for database context preservation with caching on Firebolt.
 
     This test verifies against a live Firebolt instance:
     1. Connect with database1 + engine1 (cache entry created)
