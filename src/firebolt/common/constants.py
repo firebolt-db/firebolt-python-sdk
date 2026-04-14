@@ -37,7 +37,8 @@ TRANSACTION_PARAMETER_LIST = [TRANSACTION_ID_SETTING, TRANSACTION_SEQUENCE_ID_SE
 # parameters that are set by the backend and should not be set by the user
 IMMUTABLE_PARAMETER_LIST = USE_PARAMETER_LIST + DISALLOWED_PARAMETER_LIST
 
-# Keys omitted from SET validation probe requests (SELECT 1); values still stored after success
+# Keys omitted from SET validation probe requests (SELECT 1).
+# Values are still stored on the cursor after successful SET.
 SET_VALIDATION_DROP_PARAMETER_KEYS = ("query_label",)
 UPDATE_ENDPOINT_HEADER = "Firebolt-Update-Endpoint"
 UPDATE_PARAMETERS_HEADER = "Firebolt-Update-Parameters"
