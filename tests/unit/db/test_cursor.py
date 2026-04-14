@@ -509,6 +509,34 @@ def test_cursor_set_statements(
     assert len(cursor._set_parameters) == 0
 
 
+def test_validate_set_parameter_drops_inherited_query_label(
+    httpx_mock: HTTPXMock,
+    select_one_query_callback: Callable,
+    set_query_url: str,
+    cursor: Cursor,
+):
+    """Inherited query_label is not sent on SELECT 1 when validating another SET.
+
+    query_label remains stored on the cursor after a subsequent SET.
+    """
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&query_label=v",
+        is_reusable=True,
+    )
+    cursor.execute("set query_label = v")
+
+    httpx_mock.add_callback(
+        select_one_query_callback,
+        url=f"{set_query_url}&a=b",
+        is_reusable=True,
+    )
+    cursor.execute("set a = b")
+
+    assert cursor._set_parameters["query_label"] == "v"
+    assert cursor._set_parameters["a"] == "b"
+
+
 def test_cursor_set_parameters_sent(
     httpx_mock: HTTPXMock,
     set_query_url: str,

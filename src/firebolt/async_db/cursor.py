@@ -12,7 +12,11 @@ from httpx import URL, USE_CLIENT_DEFAULT, Response, TimeoutException, codes
 
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common._types import ColType, ParameterType, SetParameter
-from firebolt.common.constants import JSON_OUTPUT_FORMAT, CursorState
+from firebolt.common.constants import (
+    JSON_OUTPUT_FORMAT,
+    SET_VALIDATION_DROP_PARAMETER_KEYS,
+    CursorState,
+)
 from firebolt.common.cursor.base_cursor import (
     BaseCursor,
     _raise_if_internal_set_parameter,
@@ -88,6 +92,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         path: str = "",
         use_set_parameters: bool = True,
         timeout: Optional[float] = None,
+        drop_parameter_keys: Optional[Sequence[str]] = None,
     ) -> Response:
         """
         Query API, return Response object.
@@ -104,12 +109,22 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 set parameters are sent. Setting this to False will allow
                 self._set_parameters to be ignored.
             timeout (Optional[float]): Request execution timeout in seconds
+            drop_parameter_keys: If non-empty, remove these keys from merged request
+                parameters unless the key appears in this call's ``parameters``
+                dict (the explicit overlay). Empty or omitted is a no-op.
         """
-        parameters = parameters or {}
+        explicit = parameters or {}
         if use_set_parameters:
-            parameters = {**(self._set_parameters or {}), **parameters}
+            parameters = {**(self._set_parameters or {}), **explicit}
+        else:
+            parameters = dict(explicit)
         if self.parameters:
             parameters = {**self.parameters, **parameters}
+        if drop_parameter_keys:
+            explicit_keys = explicit.keys()
+            for k in drop_parameter_keys:
+                if k not in explicit_keys:
+                    parameters.pop(k, None)
         try:
             req = self._client.build_request(
                 url=urljoin(self.engine_url.rstrip("/") + "/", path or ""),
@@ -150,7 +165,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         """Validate parameter by executing simple query with it."""
         _raise_if_internal_set_parameter(parameter)
         resp = await self._api_request(
-            "select 1", {parameter.name: parameter.value}, timeout=timeout
+            "select 1",
+            {parameter.name: parameter.value},
+            timeout=timeout,
+            drop_parameter_keys=SET_VALIDATION_DROP_PARAMETER_KEYS,
         )
         # Handle invalid set parameter
         if resp.status_code == codes.BAD_REQUEST:
