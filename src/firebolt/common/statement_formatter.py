@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
 from sqlparse import tokens as _T
+from sqlparse.engine import grouping as _grouping
 from sqlparse.engine.statement_splitter import (
     StatementSplitter as _StatementSplitter,
 )
@@ -97,6 +98,8 @@ def _patched_change_splitlevel(self, ttype, value):  # type: ignore[no-untyped-d
 
 setattr(_StatementSplitter, "_change_splitlevel", _patched_change_splitlevel)
 
+# Increase sqplarse's token limit to handle queries with lots of literals
+_grouping.MAX_GROUPING_TOKENS = 50000
 
 escape_chars_v2 = {
     "\0": "\\0",
