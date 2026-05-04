@@ -1,4 +1,4 @@
-name: Build documenation
+name: Build documentation
 
 on:
   workflow_dispatch:
@@ -68,10 +68,11 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs_compiled
-        destination_dir: sdk_documenation/${{ steps.resolve_url_path.outputs.path }}
+        destination_dir: sdk_documentation/${{ steps.resolve_url_path.outputs.path }}
+        keep_files: true
 
     - name: Add URL to the Job Summary
       shell: bash
       run: |
-        url="https://old.docs.firebolt.io/firebolt-python-sdk/sdk_documenation/${{ steps.resolve_url_path.outputs.path }}"
+        url="https://python.docs.firebolt.io/sdk_documentation/${{ steps.resolve_url_path.outputs.path }}"
         echo "[Documentation]($url)" >> $GITHUB_STEP_SUMMARY
