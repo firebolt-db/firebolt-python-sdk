@@ -68,6 +68,8 @@ def connect(
     if not auth:
         raise ConfigurationError("auth is required to connect.")
 
+    auth.account = account_name
+
     api_endpoint = fix_url_schema(api_endpoint)
     # Type checks
     assert auth is not None
