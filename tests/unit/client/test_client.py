@@ -1,12 +1,16 @@
+import socket
+import time
+
 from typing import Callable
 
 from httpx import Request, Timeout, codes
 from pyfakefs.fake_filesystem import FakeFilesystem
-from pytest import raises
+from pytest import raises, fixture
 from pytest_httpx import HTTPXMock
 
 from firebolt.client import ClientV2 as Client
-from firebolt.client.auth import Auth, ClientCredentials
+from firebolt.client.auth import Auth, ClientCredentials, FireboltCore
+from firebolt.client.http_backend import KeepaliveTransport
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
@@ -181,3 +185,71 @@ def test_client_clone(
 
         # not sure how to test the timeout, but at least make sure it's the same
         assert c2._timeout == timeout
+
+
+@fixture(autouse=True)
+def clear_dns_cache():
+    # Always clear cache between test runs to avoid unwanted side effects
+    KeepaliveTransport._dns_cache.cache.clear()
+    KeepaliveTransport._dns_cache.expiry.clear()
+    KeepaliveTransport._dns_cache.indices.clear()
+    yield
+
+
+@fixture
+def mock_dns(monkeypatch):
+    def mock_gethost(*args):
+        return ("my-db-service", [], ["10.0.0.1", "10.0.0.2"])
+    monkeypatch.setattr(socket, "gethostbyname_ex", mock_gethost)
+
+
+def test_client_side_lb_round_robin(mock_dns, httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://10.0.0.1/query", status_code=200, text="pod-1", is_reusable=True)
+    httpx_mock.add_response(url="http://10.0.0.2/query", status_code=200, text="pod-2")
+
+    client = Client(auth=FireboltCore(), account_name="", client_side_lb=True)
+
+    # 1. Request -> should go to 10.0.0.1 (sorted IPs)
+    r1 = client.get("http://my-db-service/query")
+    assert r1.text == "pod-1"
+
+    # 2. Request -> should go to 10.0.0.2
+    r2 = client.get("http://my-db-service/query")
+    assert r2.text == "pod-2"
+
+    # 3. Request -> should go to 10.0.0.1
+    r3 = client.get("http://my-db-service/query")
+    assert r3.text == "pod-1"
+
+
+def test_dns_stale_cache_on_failure(monkeypatch, httpx_mock: HTTPXMock):
+    ips = ["10.0.0.1"]
+
+    def mock_gethost_success(*args):
+        return ("service", [], ips)
+
+    def mock_gethost_fail(*args):
+        raise socket.gaierror("DNS Timeout")
+
+    monkeypatch.setattr(socket, "gethostbyname_ex", mock_gethost_success)
+    httpx_mock.add_response(url="http://10.0.0.1/query", is_reusable=True)
+
+    client = Client(auth=FireboltCore(), account_name="", client_side_lb=True)
+    client.get("http://my-db-service/query")
+
+    monkeypatch.setattr(socket, "gethostbyname_ex", mock_gethost_fail)
+
+    # On DNS timeout, we re-use the stale IP from the cache (best effort)
+    response = client.get("http://my-db-service/query")
+    assert response.status_code == 200
+
+
+def test_lb_disabled_behavior(mock_dns, httpx_mock: HTTPXMock):
+    httpx_mock.add_response(url="http://my-db-service/query", text="standard")
+
+    client = Client(auth=FireboltCore(), account_name="", client_side_lb=False)
+    r = client.get("http://my-db-service/query")
+
+    assert r.text == "standard"
+    # Ensure that no IP based routing happened
+    assert len(httpx_mock.get_requests(url="http://10.0.0.1/query")) == 0

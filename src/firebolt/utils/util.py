@@ -161,6 +161,56 @@ def validate_engine_name_and_url_v1(
         )
 
 
+def validate_firebolt_parameters_v1(
+    client_side_lb: Optional[bool] = None,
+) -> None:
+    """Validate that no incompatible parameters are provided with
+    v1 authentication.
+
+    Args:
+        client_side_lb (Optional[bool]): Client side LB parameter to validate
+
+    Raises:
+        ConfigurationError: If any incompatible parameters are provided
+    """
+    forbidden_params = {}
+    if client_side_lb != None:
+        forbidden_params["client_side_lb"] = client_side_lb
+
+    if forbidden_params:
+        param_list = ", ".join(f"'{p}'" for p in forbidden_params.keys())
+        raise ConfigurationError(
+            f"Parameters {param_list} are not compatible with Firebolt v1 "
+            "authentication. These parameters should not be provided when "
+            "using Firebolt v1."
+        )
+
+
+def validate_firebolt_parameters_v2(
+    client_side_lb: Optional[bool] = None,
+) -> None:
+    """Validate that no incompatible parameters are provided with
+    v2 authentication.
+
+    Args:
+        client_side_lb (Optional[bool]): Client side LB parameter to validate
+
+    Raises:
+        ConfigurationError: If any incompatible parameters are provided
+    """
+    forbidden_params = {}
+    if client_side_lb != None:
+        forbidden_params["client_side_lb"] = client_side_lb
+
+    if forbidden_params:
+        param_list = ", ".join(f"'{p}'" for p in forbidden_params.keys())
+        raise ConfigurationError(
+            f"Parameters {param_list} are not compatible with Firebolt v2 "
+            "authentication. These parameters should not be provided when "
+            "using Firebolt v2."
+        )
+
+
 def raise_error_from_response(resp: Response) -> None:
     """
     Raise a correct error from the response.

@@ -64,7 +64,7 @@ def test_core_connection_single_query_request(
     auth = FireboltCore()
 
     # Connect and run a query
-    with connect(auth=auth, database="test_db") as connection:
+    with connect(auth=auth, database="test_db", client_side_lb=True) as connection:
         cursor = connection.cursor()
         cursor.execute("SELECT 1")
 
@@ -75,4 +75,4 @@ def test_core_connection_single_query_request(
     # Verify the request was for the query execution
     request = requests[0]
     assert request.method == "POST"
-    assert "SELECT 1" in request.content.decode()
+    assert "SELECT 1" in request.read().decode()
