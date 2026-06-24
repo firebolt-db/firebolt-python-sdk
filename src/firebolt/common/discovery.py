@@ -101,27 +101,36 @@ def _endpoint_from_mapping(data: Mapping[str, Any]) -> Optional[str]:
     )
 
 
+def _resolve_endpoint(base_url: str, endpoint: str) -> str:
+    if "://" in endpoint or endpoint.startswith("/"):
+        return urljoin(base_url.rstrip("/") + "/", endpoint)
+    parsed_base = urlparse(base_url)
+    if ":" in endpoint or "." in endpoint:
+        return f"{parsed_base.scheme}://{endpoint}"
+    return urljoin(base_url.rstrip("/") + "/", endpoint)
+
+
 def _extract_engine_url(discovery: Mapping[str, Any], base_url: str) -> str:
     endpoint = _endpoint_from_mapping(discovery)
     if endpoint:
-        return urljoin(base_url.rstrip("/") + "/", endpoint)
+        return _resolve_endpoint(base_url, endpoint)
 
     endpoints = discovery.get("endpoints")
     if isinstance(endpoints, Mapping):
         for key in ("query", "sql", "engine", "http"):
             value = endpoints.get(key)
             if isinstance(value, str) and value:
-                return urljoin(base_url.rstrip("/") + "/", value)
+                return _resolve_endpoint(base_url, value)
             if isinstance(value, Mapping):
                 endpoint = _endpoint_from_mapping(value)
                 if endpoint:
-                    return urljoin(base_url.rstrip("/") + "/", endpoint)
+                    return _resolve_endpoint(base_url, endpoint)
 
     query = discovery.get("query")
     if isinstance(query, Mapping):
         endpoint = _endpoint_from_mapping(query)
         if endpoint:
-            return urljoin(base_url.rstrip("/") + "/", endpoint)
+            return _resolve_endpoint(base_url, endpoint)
 
     return base_url
 

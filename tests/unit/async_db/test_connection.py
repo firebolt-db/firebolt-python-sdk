@@ -122,7 +122,7 @@ async def test_connect_discovery(
     httpx_mock.add_response(
         method="GET",
         url="http://localhost:3473/.well-known/firebolt",
-        json={"engineUrl": "http://localhost:3473/?discovered_param=value"},
+        json={"engineUrl": "localhost:3473/?discovered_param=value"},
     )
 
     def query_with_discovery_params(request: Request, **kwargs) -> Response:

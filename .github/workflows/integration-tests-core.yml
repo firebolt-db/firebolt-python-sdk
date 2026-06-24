@@ -57,7 +57,7 @@ jobs:
         env:
           ENGINE_TAG: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG || 'dev' }}
         run: |
-          bash <(curl -fsSL https://get.firebolt.io/) < /dev/null
+          printf 'n\n' | bash <(curl -fsSL https://get.firebolt.io/)
 
       - name: Start Firebolt
         env:
