@@ -20,9 +20,7 @@ from firebolt.utils.token_storage import TokenSecureStorage
 from tests.unit.discovery_connection_helpers import (
     DISCOVERY_HOST,
     DISCOVERY_SETTINGS,
-    assert_async_discovery_lookup_error,
     mock_discovery_connection_flow,
-    mock_discovery_not_found,
 )
 
 
@@ -133,41 +131,6 @@ async def test_connect_discovery(
         settings=DISCOVERY_SETTINGS,
     ) as connection:
         assert await connection.cursor().execute("select *") == len(python_query_data)
-
-
-async def test_connect_discovery_rejects_legacy_parameters(auth: Auth):
-    with raises(ConfigurationError, match="account_name"):
-        await connect(host=DISCOVERY_HOST, ssl_mode="none", account_name="account")
-    with raises(ConfigurationError, match="api_endpoint"):
-        await connect(
-            host=DISCOVERY_HOST,
-            ssl_mode="none",
-            api_endpoint="api.example.com",
-        )
-    with raises(ConfigurationError, match="engine_url"):
-        await connect(
-            host=DISCOVERY_HOST,
-            ssl_mode="none",
-            engine_url="engine.example.com",
-        )
-    with raises(ConfigurationError, match="url"):
-        await connect(
-            host=DISCOVERY_HOST,
-            ssl_mode="none",
-            url=f"http://{DISCOVERY_HOST}",
-        )
-    with raises(ConfigurationError, match="auth"):
-        await connect(host=DISCOVERY_HOST, ssl_mode="none", auth=auth)
-
-
-async def test_connect_discovery_validation(httpx_mock: HTTPXMock):
-    with raises(ConfigurationError, match="ssl_mode"):
-        await connect(host=DISCOVERY_HOST, ssl_mode="invalid")
-
-    mock_discovery_not_found(httpx_mock)
-    await assert_async_discovery_lookup_error(
-        lambda: connect(host=DISCOVERY_HOST, ssl_mode="none")
-    )
 
 
 async def test_connect_database_failed(

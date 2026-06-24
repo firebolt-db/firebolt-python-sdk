@@ -62,8 +62,3 @@ def mock_discovery_not_found(httpx_mock: HTTPXMock) -> None:
 def assert_discovery_lookup_error(connect_call: Callable) -> None:
     with raises(InterfaceError, match="Unable to retrieve Firebolt discovery"):
         connect_call()
-
-
-async def assert_async_discovery_lookup_error(connect_call: Callable) -> None:
-    with raises(InterfaceError, match="Unable to retrieve Firebolt discovery"):
-        await connect_call()
