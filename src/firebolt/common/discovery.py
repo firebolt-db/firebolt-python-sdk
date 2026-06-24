@@ -10,6 +10,10 @@ from httpx import AsyncClient as HttpxAsyncClient
 from httpx import Client as HttpxClient
 from httpx import Timeout, codes
 
+from firebolt.client.auth import Auth, FireboltCore
+from firebolt.client.auth.base import FireboltAuthVersion
+from firebolt.client.constants import DEFAULT_API_URL
+from firebolt.common.base_connection import get_user_agent_for_connection
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.utils.exception import ConfigurationError, InterfaceError
 from firebolt.utils.firebolt_core import get_core_certificate_context
@@ -27,6 +31,12 @@ class DiscoveryConnectionInfo:
     api_endpoint: str
     parameters: Dict[str, Any]
     verify: Union[SSLContext, bool]
+
+
+@dataclass(frozen=True)
+class PreparedDiscoveryConnection:
+    auth: Auth
+    user_agent_header: str
 
 
 def normalize_ssl_mode(ssl_mode: str) -> str:
@@ -77,6 +87,79 @@ def get_tls_verify(base_url: str, ssl_mode: str) -> Union[SSLContext, bool]:
 
 def build_discovery_url(base_url: str) -> str:
     return urljoin(base_url.rstrip("/") + "/", DISCOVERY_PATH.lstrip("/"))
+
+
+def resolve_engine_name(
+    engine: Optional[str],
+    engine_name: Optional[str],
+) -> Optional[str]:
+    if engine and engine_name and engine != engine_name:
+        raise ConfigurationError(
+            "Both engine and engine_name are provided. Provide only one to connect."
+        )
+    return engine_name or engine
+
+
+def validate_discovery_connection_parameters(
+    account_name: Optional[str],
+    api_endpoint: str,
+    engine_url: Optional[str],
+    url: Optional[str],
+    auth: Optional[Auth],
+) -> None:
+    if account_name:
+        raise ConfigurationError(
+            "account_name is not compatible with discovery-based connections."
+        )
+    if api_endpoint != DEFAULT_API_URL:
+        raise ConfigurationError(
+            "api_endpoint is not compatible with discovery-based connections."
+        )
+    if engine_url:
+        raise ConfigurationError(
+            "engine_url is not compatible with discovery-based connections."
+        )
+    if url:
+        raise ConfigurationError(
+            "url is not compatible with discovery-based connections. Use host instead."
+        )
+    if auth and auth.get_firebolt_version() != FireboltAuthVersion.CORE:
+        raise ConfigurationError(
+            "auth is not compatible with discovery-based connections."
+        )
+
+
+def prepare_discovery_connection(
+    auth: Optional[Auth],
+    connection_id: str,
+    additional_parameters: Dict[str, Any],
+) -> PreparedDiscoveryConnection:
+    core_auth = auth or FireboltCore()
+    return PreparedDiscoveryConnection(
+        auth=core_auth,
+        user_agent_header=get_user_agent_for_connection(
+            core_auth,
+            connection_id,
+            None,
+            additional_parameters,
+            True,
+        ),
+    )
+
+
+def make_discovery_client_kwargs(
+    discovery_info: DiscoveryConnectionInfo,
+    prepared_connection: PreparedDiscoveryConnection,
+) -> Dict[str, Any]:
+    return {
+        "auth": prepared_connection.auth,
+        "account_name": "",
+        "base_url": discovery_info.engine_url,
+        "api_endpoint": discovery_info.api_endpoint,
+        "timeout": Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+        "headers": {"User-Agent": prepared_connection.user_agent_header},
+        "verify": discovery_info.verify,
+    }
 
 
 def _string_value(data: Mapping[str, Any], *keys: str) -> Optional[str]:
@@ -147,11 +230,7 @@ def make_discovery_connection_info(
     base_url = normalize_host(host, ssl_mode)
     verify = get_tls_verify(base_url, ssl_mode)
 
-    if engine and engine_name and engine != engine_name:
-        raise ConfigurationError(
-            "Both engine and engine_name are provided. Provide only one to connect."
-        )
-    engine_parameter = engine or engine_name
+    engine_parameter = resolve_engine_name(engine, engine_name)
 
     endpoint = _extract_engine_url(discovery, base_url)
     endpoint_url, endpoint_params = parse_url_and_params(endpoint)
@@ -184,6 +263,37 @@ def _decode_discovery_response(response_text: str) -> Mapping[str, Any]:
     return decoded
 
 
+def _raise_if_discovery_failed(status_code: int, text: str, discovery_url: str) -> None:
+    if status_code != codes.OK:
+        raise InterfaceError(
+            f"Unable to retrieve Firebolt discovery document {discovery_url}: "
+            f"{status_code} {text}"
+        )
+
+
+def _make_info_from_response(
+    status_code: int,
+    text: str,
+    discovery_url: str,
+    host: str,
+    ssl_mode: str,
+    database: Optional[str],
+    engine: Optional[str],
+    engine_name: Optional[str],
+    settings: Optional[Dict[str, Any]],
+) -> DiscoveryConnectionInfo:
+    _raise_if_discovery_failed(status_code, text, discovery_url)
+    return make_discovery_connection_info(
+        host=host,
+        ssl_mode=ssl_mode,
+        discovery=_decode_discovery_response(text),
+        database=database,
+        engine=engine,
+        engine_name=engine_name,
+        settings=settings,
+    )
+
+
 def discover(
     host: str,
     ssl_mode: str,
@@ -202,16 +312,12 @@ def discover(
     ) as client:
         response = client.get(discovery_url)
 
-    if response.status_code != codes.OK:
-        raise InterfaceError(
-            f"Unable to retrieve Firebolt discovery document {discovery_url}: "
-            f"{response.status_code} {response.text}"
-        )
-
-    return make_discovery_connection_info(
+    return _make_info_from_response(
+        status_code=response.status_code,
+        text=response.text,
+        discovery_url=discovery_url,
         host=host,
         ssl_mode=ssl_mode,
-        discovery=_decode_discovery_response(response.text),
         database=database,
         engine=engine,
         engine_name=engine_name,
@@ -237,16 +343,12 @@ async def async_discover(
     ) as client:
         response = await client.get(discovery_url)
 
-    if response.status_code != codes.OK:
-        raise InterfaceError(
-            f"Unable to retrieve Firebolt discovery document {discovery_url}: "
-            f"{response.status_code} {response.text}"
-        )
-
-    return make_discovery_connection_info(
+    return _make_info_from_response(
+        status_code=response.status_code,
+        text=response.text,
+        discovery_url=discovery_url,
         host=host,
         ssl_mode=ssl_mode,
-        discovery=_decode_discovery_response(response.text),
         database=database,
         engine=engine,
         engine_name=engine_name,
