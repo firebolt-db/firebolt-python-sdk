@@ -11,7 +11,7 @@ from httpx import Request, Response, Timeout, codes
 
 from firebolt.async_db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.client import DEFAULT_API_URL
-from firebolt.client.auth import Auth
+from firebolt.client.auth import Auth, FireboltCore
 from firebolt.client.auth.base import FireboltAuthVersion
 from firebolt.client.client import AsyncClient, AsyncClientV1, AsyncClientV2
 from firebolt.common.base_connection import (
@@ -27,6 +27,7 @@ from firebolt.common.base_connection import (
     set_cached_system_engine_info,
 )
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
+from firebolt.common.discovery import async_discover
 from firebolt.utils.cache import EngineInfo
 from firebolt.utils.exception import (
     AccountNotFoundOrNoAccessError,
@@ -285,14 +286,41 @@ async def connect(
     auth: Optional[Auth] = None,
     account_name: Optional[str] = None,
     database: Optional[str] = None,
+    engine: Optional[str] = None,
     engine_name: Optional[str] = None,
     engine_url: Optional[str] = None,
     api_endpoint: str = DEFAULT_API_URL,
     disable_cache: bool = False,
     url: Optional[str] = None,
+    host: Optional[str] = None,
+    ssl_mode: str = "strict",
+    settings: Optional[Dict[str, Any]] = None,
     autocommit: bool = True,
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
+    if host:
+        return await connect_discovery(
+            host=host,
+            database=database,
+            engine=engine,
+            engine_name=engine_name,
+            engine_url=engine_url,
+            account_name=account_name,
+            api_endpoint=api_endpoint,
+            url=url,
+            auth=auth,
+            ssl_mode=ssl_mode,
+            settings=settings,
+            autocommit=autocommit,
+            additional_parameters=additional_parameters,
+        )
+
+    if engine and engine_name and engine != engine_name:
+        raise ConfigurationError(
+            "Both engine and engine_name are provided. Provide only one to connect."
+        )
+    engine_name = engine_name or engine
+
     # auth parameter is optional in function signature
     # but is required to connect.
     # PEP 249 recommends making it kwargs.
@@ -346,6 +374,79 @@ async def connect(
         )
     else:
         raise ConfigurationError(f"Unsupported auth type: {type(auth)}")
+
+
+async def connect_discovery(
+    host: str,
+    database: Optional[str] = None,
+    engine: Optional[str] = None,
+    engine_name: Optional[str] = None,
+    engine_url: Optional[str] = None,
+    account_name: Optional[str] = None,
+    api_endpoint: str = DEFAULT_API_URL,
+    url: Optional[str] = None,
+    auth: Optional[Auth] = None,
+    ssl_mode: str = "strict",
+    settings: Optional[Dict[str, Any]] = None,
+    autocommit: bool = True,
+    additional_parameters: Dict[str, Any] = {},
+) -> Connection:
+    """Connect using the discovery-based Firebolt session model."""
+    if account_name:
+        raise ConfigurationError(
+            "account_name is not compatible with discovery-based connections."
+        )
+    if api_endpoint != DEFAULT_API_URL:
+        raise ConfigurationError(
+            "api_endpoint is not compatible with discovery-based connections."
+        )
+    if engine_url:
+        raise ConfigurationError(
+            "engine_url is not compatible with discovery-based connections."
+        )
+    if url:
+        raise ConfigurationError(
+            "url is not compatible with discovery-based connections. Use host instead."
+        )
+    if auth and auth.get_firebolt_version() != FireboltAuthVersion.CORE:
+        raise ConfigurationError(
+            "auth is not compatible with discovery-based connections."
+        )
+
+    connection_id = uuid4().hex
+    discovery_info = await async_discover(
+        host=host,
+        ssl_mode=ssl_mode,
+        database=database,
+        engine=engine,
+        engine_name=engine_name,
+        settings=settings,
+    )
+    core_auth = auth or FireboltCore()
+    user_agent_header = get_user_agent_for_connection(
+        core_auth, connection_id, None, additional_parameters, True
+    )
+
+    client = AsyncClientV2(
+        auth=core_auth,
+        account_name="",
+        base_url=discovery_info.engine_url,
+        api_endpoint=discovery_info.api_endpoint,
+        timeout=Timeout(DEFAULT_TIMEOUT_SECONDS, read=None),
+        headers={"User-Agent": user_agent_header},
+        verify=discovery_info.verify,
+    )
+
+    return Connection(
+        engine_url=discovery_info.engine_url,
+        database=None,
+        client=client,
+        cursor_type=CursorV2,
+        api_endpoint=discovery_info.api_endpoint,
+        init_parameters=discovery_info.parameters,
+        id=connection_id,
+        autocommit=autocommit,
+    )
 
 
 async def connect_v2(

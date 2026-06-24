@@ -53,11 +53,44 @@ jobs:
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
-      - name: Setup Firebolt Core
-        id: setup-core
-        uses: firebolt-db/action-setup-core@eabcd701de0be41793fda0655d29d46c70c847c2 # main
-        with:
-          tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
+      - name: Install Firebolt
+        env:
+          ENGINE_TAG: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG || 'dev' }}
+        run: |
+          bash <(curl -fsSL https://get.firebolt.io/) < /dev/null
+
+      - name: Start Firebolt
+        env:
+          ENGINE_REPO: ghcr.io/firebolt-db/engine
+          ENGINE_TAG: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG || 'dev' }}
+        run: |
+          mkdir -p -m 777 firebolt-data
+          docker run \
+            --detach \
+            --user firebolt \
+            --name firebolt \
+            --rm \
+            --ulimit memlock=8589934592:8589934592 \
+            --security-opt seccomp=unconfined \
+            -v "${PWD}/firebolt-data:/var/lib/firebolt" \
+            -p 3473:3473 \
+            "${ENGINE_REPO}:${ENGINE_TAG}"
+
+          timeout=60
+          until [ "$timeout" -eq 0 ]; do
+            response="$(
+              curl -s 'http://localhost:3473/?output_format=TabSeparatedWithNamesAndTypes' \
+                --data-binary 'SELECT 42;' || true
+            )"
+            if [ "$response" = $'?column?\nint\n42' ]; then
+              exit 0
+            fi
+            sleep 1
+            timeout=$((timeout - 1))
+          done
+
+          docker logs firebolt
+          exit 1
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -69,7 +102,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Run integration tests HTTP
+      - name: Run integration tests
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -78,22 +111,9 @@ jobs:
           STOPPED_ENGINE_NAME: ""
           API_ENDPOINT: ""
           ACCOUNT_NAME: ""
-          CORE_URL: ${{ steps.setup-core.outputs.service_url }}
+          CORE_URL: http://localhost:3473
         run: |
           pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results/
-
-      - name: Run integration tests HTTPS
-        env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: ""
-          ACCOUNT_NAME: ""
-          CORE_URL: ${{ steps.setup-core.outputs.service_https_url }}
-        run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results-https/
 
       - name: Allure Reports
         uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
@@ -103,6 +123,5 @@ jobs:
           pages-branch: gh-pages
           mapping-json: |
             {
-              "allure-results": "core",
-              "allure-results-https": "core_https"
+              "allure-results": "core"
             }

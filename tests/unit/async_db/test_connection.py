@@ -2,6 +2,7 @@ from typing import Callable, Dict, Generator, List, Optional, Tuple
 from unittest.mock import ANY as AnyValue
 from unittest.mock import MagicMock, patch
 
+from httpx import Request, codes
 from pyfakefs.fake_filesystem_unittest import Patcher
 from pytest import mark, raises
 from pytest_httpx import HTTPXMock
@@ -15,8 +16,10 @@ from firebolt.utils.exception import (
     ConfigurationError,
     ConnectionClosedError,
     FireboltError,
+    InterfaceError,
 )
 from firebolt.utils.token_storage import TokenSecureStorage
+from tests.unit.response import Response
 
 
 @mark.skip("__slots__ is broken on Connection class")
@@ -106,6 +109,80 @@ async def test_connect(
         api_endpoint=api_endpoint,
     ) as connection:
         assert await connection.cursor().execute("select *") == len(python_query_data)
+
+
+async def test_connect_discovery(
+    db_name: str,
+    engine_name: str,
+    httpx_mock: HTTPXMock,
+    query_callback: Callable,
+    python_query_data: List[List[ColType]],
+):
+    """Discovery connections pass database, engine and settings as query params."""
+    httpx_mock.add_response(
+        method="GET",
+        url="http://localhost:3473/.well-known/firebolt",
+        json={"engineUrl": "http://localhost:3473/?discovered_param=value"},
+    )
+
+    def query_with_discovery_params(request: Request, **kwargs) -> Response:
+        params = dict(request.url.params)
+        assert "authorization" not in request.headers
+        assert params["database"] == db_name
+        assert params["engine"] == engine_name
+        assert params["custom_setting"] == "custom_value"
+        assert params["discovered_param"] == "value"
+        return query_callback(request, **kwargs)
+
+    httpx_mock.add_callback(query_with_discovery_params, method="POST")
+
+    async with await connect(
+        host="localhost:3473",
+        ssl_mode="none",
+        database=db_name,
+        engine=engine_name,
+        settings={"custom_setting": "custom_value"},
+    ) as connection:
+        assert await connection.cursor().execute("select *") == len(python_query_data)
+
+
+async def test_connect_discovery_rejects_legacy_parameters(auth: Auth):
+    with raises(ConfigurationError, match="account_name"):
+        await connect(host="localhost:3473", ssl_mode="none", account_name="account")
+    with raises(ConfigurationError, match="api_endpoint"):
+        await connect(
+            host="localhost:3473",
+            ssl_mode="none",
+            api_endpoint="api.example.com",
+        )
+    with raises(ConfigurationError, match="engine_url"):
+        await connect(
+            host="localhost:3473",
+            ssl_mode="none",
+            engine_url="engine.example.com",
+        )
+    with raises(ConfigurationError, match="url"):
+        await connect(
+            host="localhost:3473",
+            ssl_mode="none",
+            url="http://localhost:3473",
+        )
+    with raises(ConfigurationError, match="auth"):
+        await connect(host="localhost:3473", ssl_mode="none", auth=auth)
+
+
+async def test_connect_discovery_validation(httpx_mock: HTTPXMock):
+    with raises(ConfigurationError, match="ssl_mode"):
+        await connect(host="localhost:3473", ssl_mode="invalid")
+
+    httpx_mock.add_response(
+        method="GET",
+        url="http://localhost:3473/.well-known/firebolt",
+        status_code=codes.NOT_FOUND,
+        text="not found",
+    )
+    with raises(InterfaceError, match="Unable to retrieve Firebolt discovery"):
+        await connect(host="localhost:3473", ssl_mode="none")
 
 
 async def test_connect_database_failed(
