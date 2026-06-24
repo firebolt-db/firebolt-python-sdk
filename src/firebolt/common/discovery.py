@@ -65,7 +65,8 @@ def normalize_host(host: str, ssl_mode: str) -> str:
         )
     if not parsed.netloc:
         raise ConfigurationError(
-            f"Invalid host: {host}. Expected a hostname, optionally with scheme and port."
+            f"Invalid host: {host}. Expected a hostname, optionally with scheme "
+            "and port."
         )
     if parsed.query or parsed.fragment:
         raise ConfigurationError(
