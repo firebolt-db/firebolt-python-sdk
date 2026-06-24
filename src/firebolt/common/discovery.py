@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from json import JSONDecodeError
 from ssl import SSLContext
-from typing import Any, Dict, Mapping, Optional, Union
+from typing import Any, Dict, Mapping, Optional, Type, Union
 from urllib.parse import urljoin, urlparse
 
 from httpx import AsyncClient as HttpxAsyncClient
@@ -37,6 +37,54 @@ class DiscoveryConnectionInfo:
 class PreparedDiscoveryConnection:
     auth: Auth
     user_agent_header: str
+
+
+@dataclass(frozen=True)
+class DiscoveryConnectConfig:
+    host: str
+    database: Optional[str] = None
+    engine: Optional[str] = None
+    engine_name: Optional[str] = None
+    engine_url: Optional[str] = None
+    account_name: Optional[str] = None
+    api_endpoint: str = DEFAULT_API_URL
+    url: Optional[str] = None
+    auth: Optional[Auth] = None
+    ssl_mode: str = SSL_MODE_STRICT
+    settings: Optional[Dict[str, Any]] = None
+    autocommit: bool = True
+    additional_parameters: Dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_connect_kwargs(
+        cls,
+        kwargs: Mapping[str, Any],
+    ) -> "DiscoveryConnectConfig":
+        return cls(
+            host=kwargs["host"],
+            database=kwargs.get("database"),
+            engine=kwargs.get("engine"),
+            engine_name=kwargs.get("engine_name"),
+            engine_url=kwargs.get("engine_url"),
+            account_name=kwargs.get("account_name"),
+            api_endpoint=kwargs.get("api_endpoint", DEFAULT_API_URL),
+            url=kwargs.get("url"),
+            auth=kwargs.get("auth"),
+            ssl_mode=kwargs.get("ssl_mode", SSL_MODE_STRICT),
+            settings=kwargs.get("settings"),
+            autocommit=kwargs.get("autocommit", True),
+            additional_parameters=kwargs.get("additional_parameters") or {},
+        )
+
+    def discovery_kwargs(self) -> Dict[str, Any]:
+        return {
+            "host": self.host,
+            "ssl_mode": self.ssl_mode,
+            "database": self.database,
+            "engine": self.engine,
+            "engine_name": self.engine_name,
+            "settings": self.settings,
+        }
 
 
 def normalize_ssl_mode(ssl_mode: str) -> str:
@@ -130,6 +178,16 @@ def validate_discovery_connection_parameters(
         )
 
 
+def validate_discovery_connect_config(config: DiscoveryConnectConfig) -> None:
+    validate_discovery_connection_parameters(
+        account_name=config.account_name,
+        api_endpoint=config.api_endpoint,
+        engine_url=config.engine_url,
+        url=config.url,
+        auth=config.auth,
+    )
+
+
 def prepare_discovery_connection(
     auth: Optional[Auth],
     connection_id: str,
@@ -161,6 +219,34 @@ def make_discovery_client_kwargs(
         "headers": {"User-Agent": prepared_connection.user_agent_header},
         "verify": discovery_info.verify,
     }
+
+
+def make_connection_from_discovery(
+    discovery_info: DiscoveryConnectionInfo,
+    config: DiscoveryConnectConfig,
+    connection_id: str,
+    client_type: Type,
+    cursor_type: Type,
+    connection_type: Type,
+) -> Any:
+    prepared_connection = prepare_discovery_connection(
+        config.auth,
+        connection_id,
+        config.additional_parameters,
+    )
+    client = client_type(
+        **make_discovery_client_kwargs(discovery_info, prepared_connection)
+    )
+    return connection_type(
+        engine_url=discovery_info.engine_url,
+        database=None,
+        client=client,
+        cursor_type=cursor_type,
+        api_endpoint=discovery_info.api_endpoint,
+        init_parameters=discovery_info.parameters,
+        id=connection_id,
+        autocommit=config.autocommit,
+    )
 
 
 def _string_value(data: Mapping[str, Any], *keys: str) -> Optional[str]:

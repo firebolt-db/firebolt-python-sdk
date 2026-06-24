@@ -27,11 +27,11 @@ from firebolt.common.base_connection import (
 )
 from firebolt.common.constants import DEFAULT_TIMEOUT_SECONDS
 from firebolt.common.discovery import (
+    DiscoveryConnectConfig,
     discover,
-    make_discovery_client_kwargs,
-    prepare_discovery_connection,
+    make_connection_from_discovery,
     resolve_engine_name,
-    validate_discovery_connection_parameters,
+    validate_discovery_connect_config,
 )
 from firebolt.db.cursor import Cursor, CursorV1, CursorV2
 from firebolt.utils.cache import EngineInfo
@@ -74,21 +74,7 @@ def connect(
     additional_parameters: Dict[str, Any] = {},
 ) -> Connection:
     if host:
-        return connect_discovery(
-            host=host,
-            database=database,
-            engine=engine,
-            engine_name=engine_name,
-            engine_url=engine_url,
-            account_name=account_name,
-            api_endpoint=api_endpoint,
-            url=url,
-            auth=auth,
-            ssl_mode=ssl_mode,
-            settings=settings,
-            autocommit=autocommit,
-            additional_parameters=additional_parameters,
-        )
+        return connect_discovery(DiscoveryConnectConfig.from_connect_kwargs(locals()))
 
     engine_name = resolve_engine_name(engine, engine_name)
 
@@ -148,54 +134,18 @@ def connect(
         raise ConfigurationError(f"Unsupported auth type: {type(auth)}")
 
 
-def connect_discovery(
-    host: str,
-    database: Optional[str] = None,
-    engine: Optional[str] = None,
-    engine_name: Optional[str] = None,
-    engine_url: Optional[str] = None,
-    account_name: Optional[str] = None,
-    api_endpoint: str = DEFAULT_API_URL,
-    url: Optional[str] = None,
-    auth: Optional[Auth] = None,
-    ssl_mode: str = "strict",
-    settings: Optional[Dict[str, Any]] = None,
-    autocommit: bool = True,
-    additional_parameters: Dict[str, Any] = {},
-) -> Connection:
+def connect_discovery(config: DiscoveryConnectConfig) -> Connection:
     """Connect using the discovery-based Firebolt session model."""
-    validate_discovery_connection_parameters(
-        account_name=account_name,
-        api_endpoint=api_endpoint,
-        engine_url=engine_url,
-        url=url,
-        auth=auth,
-    )
+    validate_discovery_connect_config(config)
     connection_id = uuid4().hex
-    discovery_info = discover(
-        host=host,
-        ssl_mode=ssl_mode,
-        database=database,
-        engine=engine,
-        engine_name=engine_name,
-        settings=settings,
-    )
-    prepared_connection = prepare_discovery_connection(
-        auth, connection_id, additional_parameters
-    )
-    client = ClientV2(
-        **make_discovery_client_kwargs(discovery_info, prepared_connection)
-    )
-
-    return Connection(
-        engine_url=discovery_info.engine_url,
-        database=None,
-        client=client,
+    discovery_info = discover(**config.discovery_kwargs())
+    return make_connection_from_discovery(
+        discovery_info=discovery_info,
+        config=config,
+        connection_id=connection_id,
+        client_type=ClientV2,
         cursor_type=CursorV2,
-        api_endpoint=discovery_info.api_endpoint,
-        init_parameters=discovery_info.parameters,
-        id=connection_id,
-        autocommit=autocommit,
+        connection_type=Connection,
     )
 
 
