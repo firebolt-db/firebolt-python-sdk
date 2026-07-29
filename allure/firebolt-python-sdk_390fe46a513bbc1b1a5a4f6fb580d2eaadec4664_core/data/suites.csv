@@ -21,7 +21,7 @@
 "Connection properly reacts to sql execution error.","3","test_sql_error[core]","tests.integration.dbapi.sync.V2","2026-07-29","passed","2026-07-29","","test_errors","",""
 "Test that context manager commits transaction on normal exit when autocommit=False.","71","test_context_manager_auto_commit_on_normal_exit[core]","tests.integration.dbapi.sync.V2","2026-07-29","passed","2026-07-29","","test_queries","",""
 "
-    Integration test for database context preservation with caching on Firebolt.
+Integration test for database context preservation with caching on Firebolt.
 
     This test verifies against a live Firebolt instance:
     1. Connect with database1 + engine1 (cache entry created)
@@ -59,7 +59,7 @@
 "executemany with bulk_insert=True works correctly for both paramstyles.","10037","test_executemany_bulk_insert_paramstyles[core-qmark-INSERT INTO ""{table}"" VALUES (?, ?)-test_data1]","tests.integration.dbapi.sync.V2","2026-07-29","passed","2026-07-29","","test_queries","",""
 "Test that statements are visible immediately with autocommit enabled (uses existing connection fixture).","79","test_autocommit_immediate_visibility[core-implicit]","tests.integration.dbapi.async.V2","2026-07-29","passed","2026-07-29","","test_queries_async","",""
 "
-    Async integration test for database context preservation with caching on Firebolt.
+Async integration test for database context preservation with caching on Firebolt.
 
     This test verifies against a live Firebolt instance:
     1. Connect with database1 + engine1 (cache entry created)
