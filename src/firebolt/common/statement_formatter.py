@@ -128,7 +128,9 @@ class StatementFormatter:
         elif isinstance(value, datetime):
             if value.tzinfo is not None:
                 value = value.astimezone(timezone.utc)
-            return f"'{value.strftime('%Y-%m-%d %H:%M:%S')}'"
+            # Keep fractional seconds; whole-second values render as before.
+            fmt = "%Y-%m-%d %H:%M:%S.%f" if value.microsecond else "%Y-%m-%d %H:%M:%S"
+            return f"'{value.strftime(fmt)}'"
         elif isinstance(value, date):
             return f"'{value.isoformat()}'"
         elif isinstance(value, bytes):
