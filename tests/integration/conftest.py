@@ -24,6 +24,19 @@ ENGINE_URL_ENV = "ENGINE_URL"
 STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
 CORE_URL_ENV = "CORE_URL"
 
+# Only these values are safe to print. Anything else, including renamed
+# credentials, stays out of the logs and Allure attachments.
+_LOGGED_ENVS = {
+    ENGINE_NAME_ENV,
+    STOPPED_ENGINE_NAME_ENV,
+    DATABASE_NAME_ENV,
+    ACCOUNT_NAME_ENV,
+    API_ENDPOINT_ENV,
+    ENGINE_URL_ENV,
+    STOPPED_ENGINE_URL_ENV,
+    CORE_URL_ENV,
+}
+
 # https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
 # Adding slow marker to tests
 
@@ -68,8 +81,10 @@ class Secret:
 
 def must_env(var_name: str) -> str:
     assert var_name in environ, f"Expected {var_name} to be provided in environment"
-    LOGGER.info(f"{var_name}: {environ[var_name]}")
-    return environ[var_name]
+    value = environ[var_name]
+    if var_name in _LOGGED_ENVS:
+        LOGGER.info(f"{var_name}: {value}")
+    return value
 
 
 @fixture(scope="session")
