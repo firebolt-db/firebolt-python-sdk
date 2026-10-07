@@ -76,7 +76,7 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
           LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V2 }}
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V1 and not core"
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not core"
 
       - name: Slack Notify of failure
         if: failure()

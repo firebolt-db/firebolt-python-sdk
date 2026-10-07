@@ -3,30 +3,18 @@ on:
   workflow_dispatch:
   workflow_call:
     secrets:
-      FIREBOLT_STG_USERNAME:
-        required: true
-      FIREBOLT_STG_PASSWORD:
-        required: true
-      SERVICE_ID_STG:
-        required: true
-      SERVICE_SECRET_STG:
-        required: true
-      # V2 secrets
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
 jobs:
-  integration-test-v1:
-    uses: ./.github/workflows/integration-tests-v1.yml
-    secrets: inherit
   integration-test-v2:
     uses: ./.github/workflows/integration-tests-v2.yml
     secrets: inherit
   integration-test-core:
     uses: ./.github/workflows/integration-tests-core.yml
   report-test-results:
-    needs: [integration-test-v1, integration-test-v2, integration-test-core]
+    needs: [integration-test-v2, integration-test-core]
     if: always()
     runs-on: ubuntu-latest
     steps:
