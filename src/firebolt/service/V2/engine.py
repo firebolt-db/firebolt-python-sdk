@@ -127,7 +127,7 @@ class EngineService(BaseService):
 
     @staticmethod
     def _format_engine_parameter(
-        value: Union[str, int, InstanceType]
+        value: Union[str, int, InstanceType],
     ) -> Union[str, int]:
         if not isinstance(value, (str, int, InstanceType)) or isinstance(value, bool):
             raise TypeError(f"Unsupported type {type(value)} for engine parameter. ")

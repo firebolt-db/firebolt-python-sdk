@@ -114,8 +114,7 @@ class Client(FireboltClientMixin, HttpxClient, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def account_id(self) -> str:
-        ...
+    def account_id(self) -> str: ...
 
     def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any
@@ -281,8 +280,7 @@ class AsyncClient(FireboltClientMixin, HttpxAsyncClient, metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    async def account_id(self) -> str:
-        ...
+    async def account_id(self) -> str: ...
 
     async def _send_handling_redirects(
         self, request: Request, *args: Any, **kwargs: Any

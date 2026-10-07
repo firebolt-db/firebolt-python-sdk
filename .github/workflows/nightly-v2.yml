@@ -3,6 +3,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 3 * * *' # 3 am UTC every day
+
+permissions:
+  contents: read
+
 jobs:
   code-check:
     uses: ./.github/workflows/code-check.yml
@@ -11,6 +15,9 @@ jobs:
     secrets:
       GIST_PAT: ${{ secrets.GIST_PAT }}
   security-scan:
+    permissions:
+      contents: read
+      pull-requests: read
     needs: [unit-tests]
     uses: ./.github/workflows/security-scan.yml
     secrets:
@@ -36,10 +43,10 @@ jobs:
       max-parallel: 2
       matrix:
         os: ['ubuntu-latest', 'macos-latest', 'windows-latest']
-        python-version: ['3.9', '3.10', '3.11']
+        python-version: ['3.10', '3.11', '3.12', '3.13']
     steps:
       - name: Check out code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -57,7 +64,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@813c4835ef38adcba3f8760e7afc21a3c7248023 # v2.6.2
+        uses: firebolt-db/integration-testing-setup@39ed7c82e431c3a073ca8f14b8341c631e72ef4a # new-identity
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -69,6 +76,8 @@ jobs:
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          SERVICE_ID_NO_USER: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG }}
+          SERVICE_SECRET_NO_USER: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
@@ -76,7 +85,7 @@ jobs:
           API_ENDPOINT: "api.staging.firebolt.io"
           LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V2 }}
         run: |
-          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not V1 and not core"
+          pytest --timeout_method "thread" -o log_cli=true -o log_cli_level=WARNING --junit-xml=report/junit.xml tests/integration -k "not core"
 
       - name: Slack Notify of failure
         if: failure()

@@ -71,16 +71,14 @@ async def test_cursor_initialized(
     )
 
     for url in (engine_url, f"https://{engine_url}"):
-        async with (
-            await connect(
-                engine_url=url,
-                database=db_name,
-                auth=UsernamePassword(
-                    "u",
-                    "p",
-                ),
-                api_endpoint=api_endpoint,
-            )
+        async with await connect(
+            engine_url=url,
+            database=db_name,
+            auth=UsernamePassword(
+                "u",
+                "p",
+            ),
+            api_endpoint=api_endpoint,
         ) as connection:
             cursor = connection.cursor()
             assert (
@@ -121,13 +119,11 @@ async def test_connect_access_token(
         url=query_url,
         is_reusable=True,
     )
-    async with (
-        await connect(
-            engine_url=engine_url,
-            database=db_name,
-            auth=Token(access_token),
-            api_endpoint=api_endpoint,
-        )
+    async with await connect(
+        engine_url=engine_url,
+        database=db_name,
+        auth=Token(access_token),
+        api_endpoint=api_endpoint,
     ) as connection:
         cursor = connection.cursor()
         assert await cursor.execute("select*") == -1
@@ -510,16 +506,14 @@ def test_from_asyncio(
     db_name: str,
 ):
     async def async_flow() -> None:
-        async with (
-            await connect(
-                engine_url=engine_url,
-                database=db_name,
-                auth=UsernamePassword(
-                    "u",
-                    "p",
-                ),
-                api_endpoint=api_endpoint,
-            )
+        async with await connect(
+            engine_url=engine_url,
+            database=db_name,
+            auth=UsernamePassword(
+                "u",
+                "p",
+            ),
+            api_endpoint=api_endpoint,
         ) as connection:
             cursor = connection.cursor()
             await cursor.execute("SELECT 1")

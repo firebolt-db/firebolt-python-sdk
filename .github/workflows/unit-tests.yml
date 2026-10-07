@@ -5,33 +5,30 @@ name: Unit tests
 
 on:
   workflow_call:
-    inputs:
-      branch:
-        required: false
-        type: string
-        description: 'Branch to run on'
     secrets:
       GIST_PAT:
         required: true
   push:
     branches: [ main, 0.x ]
 
+permissions:
+  contents: read
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # Push allure reports to gh-pages
-      statuses: write # Update status on PR
+      contents: read
     steps:
     - name: Check out code
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
-        ref: ${{ inputs.branch }}
+        persist-credentials: false
 
-    - name: Set up Python 3.9
+    - name: Set up Python 3.10
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
-        python-version: 3.9
+        python-version: '3.10'
 
     - name: Install dependencies
       run: |
@@ -40,21 +37,10 @@ jobs:
 
     - name: Run unit tests
       run: |
-        pytest --cov=src/ tests/unit --cov-report=xml --alluredir=allure-results
-
-    - name: Allure Report
-      uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
-      if: always()
-      with:
-        github-token: ${{ github.token }}
-        pages-branch: gh-pages
-        mapping-json: |
-          {
-            "allure-results": "unit"
-          }
+        pytest --cov=src/ tests/unit --cov-report=xml
 
     - name: Upload coverage report
-      uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       continue-on-error: true
       with:
         name: pytest-coverage-report

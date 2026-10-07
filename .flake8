@@ -1,0 +1,24 @@
+[flake8]
+exclude = tests/*
+max-line-length = 88
+per-file-ignores = __init__.py:F401
+ignore =
+    # Whitespace before ':'. Ignored for black compatibility
+    E203,
+    # Black formats abstract methods on one line.
+    E704,
+    # Line break occurred before a binary operator. Ignored for black compatibility
+    W503,
+    # Missing docstring in public module
+    D100,
+    # Missing docstring in public package
+    D104,
+    # Missing docstring in magic method
+    D105,
+    # Missing docstring in __init__
+    D107,
+    # Spelling error in name (e.g. variable, function, class)
+    SC200,
+ban-relative-imports = True
+docstring-convention = google
+inline-quotes = "

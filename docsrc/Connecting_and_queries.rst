@@ -231,8 +231,6 @@ To get started, follow the steps below:
       export SSL_CERT_FILE=/path/to/your/certificate.pem
       ```
 
-    - **Python Version Considerations**: The system certificate store is only available for users running Python 3.10 and above. If you are using an older version of Python, you must explicitly set the `SSL_CERT_FILE` environment variable to use the certificate.
-
 
 **3. Execute commands using the cursor**
 

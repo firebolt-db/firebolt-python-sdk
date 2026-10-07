@@ -7,7 +7,6 @@ from pytest import fixture, mark
 
 from firebolt.client.auth import ClientCredentials
 from firebolt.client.auth.firebolt_core import FireboltCore
-from firebolt.client.auth.username_password import UsernamePassword
 
 LOGGER = getLogger(__name__)
 
@@ -18,11 +17,22 @@ ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
-USER_NAME_ENV = "USER_NAME"
-PASSWORD_ENV = "PASSWORD"
-ENGINE_URL_ENV = "ENGINE_URL"
-STOPPED_ENGINE_URL_ENV = "STOPPED_ENGINE_URL"
+# Pre-provisioned service account that has no user attached, used to check
+# that such an account cannot connect
+SERVICE_ID_NO_USER_ENV = "SERVICE_ID_NO_USER"
+SERVICE_SECRET_NO_USER_ENV = "SERVICE_SECRET_NO_USER"
 CORE_URL_ENV = "CORE_URL"
+
+# Only these values are safe to print. Anything else, including renamed
+# credentials, stays out of the logs.
+_LOGGED_ENVS = {
+    ENGINE_NAME_ENV,
+    STOPPED_ENGINE_NAME_ENV,
+    DATABASE_NAME_ENV,
+    ACCOUNT_NAME_ENV,
+    API_ENDPOINT_ENV,
+    CORE_URL_ENV,
+}
 
 # https://docs.pytest.org/en/latest/example/simple.html#control-skipping-of-tests-according-to-command-line-option
 # Adding slow marker to tests
@@ -68,8 +78,10 @@ class Secret:
 
 def must_env(var_name: str) -> str:
     assert var_name in environ, f"Expected {var_name} to be provided in environment"
-    LOGGER.info(f"{var_name}: {environ[var_name]}")
-    return environ[var_name]
+    value = environ[var_name]
+    if var_name in _LOGGED_ENVS:
+        LOGGER.info(f"{var_name}: {value}")
+    return value
 
 
 @fixture(scope="session")
@@ -123,33 +135,15 @@ def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
 
 
 @fixture(scope="session")
+def auth_no_user() -> ClientCredentials:
+    return ClientCredentials(
+        must_env(SERVICE_ID_NO_USER_ENV), must_env(SERVICE_SECRET_NO_USER_ENV)
+    )
+
+
+@fixture(scope="session")
 def core_auth() -> FireboltCore:
     return FireboltCore()
-
-
-@fixture(scope="session")
-def username() -> str:
-    return must_env(USER_NAME_ENV)
-
-
-@fixture(scope="session")
-def password() -> str:
-    return Secret(must_env(PASSWORD_ENV))
-
-
-@fixture(scope="session")
-def password_auth(username: str, password: Secret) -> UsernamePassword:
-    return UsernamePassword(username, password.value)
-
-
-@fixture(scope="session")
-def engine_url() -> str:
-    return must_env(ENGINE_URL_ENV)
-
-
-@fixture(scope="session")
-def stopped_engine_url() -> str:
-    return must_env(STOPPED_ENGINE_URL_ENV)
 
 
 @fixture(scope="session")
