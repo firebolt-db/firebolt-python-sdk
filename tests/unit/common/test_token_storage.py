@@ -111,7 +111,10 @@ def test_cache_filename_does_not_depend_on_password(
     original = TokenSecureStorage(username="username", password="password")
     original.cache_token("token", 1)
 
-    changed = TokenSecureStorage(username="username", password="different-password")
+    changed = TokenSecureStorage(
+        username="username",
+        password="different-password",  # legit:ignore-secrets
+    )
     assert changed._token_file == original._token_file
     assert changed.get_cached_token() is None
     assert original.get_cached_token() == "token"
