@@ -42,6 +42,17 @@ def global_fake_fs(request) -> None:
 
 
 @fixture(autouse=True)
+def isolate_token_cache(monkeypatch, request) -> None:
+    if "nofakefs" not in request.keywords:
+        return
+    cache_dir = request.getfixturevalue("tmp_path")
+    monkeypatch.setattr(
+        "firebolt.utils.token_storage.user_data_dir",
+        lambda appname: str(cache_dir / appname),
+    )
+
+
+@fixture(autouse=True)
 def clear_cache() -> None:
     _firebolt_cache.clear()
 

@@ -1,7 +1,6 @@
 import os
 from unittest.mock import patch
 
-from appdirs import user_config_dir
 from pyfakefs.fake_filesystem import FakeFilesystem
 
 from firebolt.utils.token_storage import (
@@ -99,11 +98,63 @@ def test_token_storage_json_broken(fs: FakeFilesystem):
     """
     settings = {"username": "username", "password": "password"}
 
-    data_dir = os.path.join(user_config_dir(), "firebolt")
-    fs.create_dir(data_dir)
-    fs.create_file(os.path.join(data_dir, "token.json"), contents="{Not a valid json")
+    storage = TokenSecureStorage(**settings)
+    fs.create_file(storage._token_file, contents="{Not a valid json")
 
     assert TokenSecureStorage(**settings).get_cached_token() is None
+
+
+@patch("firebolt.utils.token_storage.time", return_value=0)
+def test_cache_filename_does_not_depend_on_password(
+    _mock_time, fs: FakeFilesystem
+) -> None:
+    original = TokenSecureStorage(username="username", password="password")
+    original.cache_token("token", 1)
+
+    changed = TokenSecureStorage(username="username", password="different-password")
+    assert changed._token_file == original._token_file
+    assert changed.get_cached_token() is None
+    assert original.get_cached_token() == "token"
+
+
+@patch("firebolt.utils.token_storage.time", return_value=0)
+def test_legacy_cache_is_discarded_without_migration(
+    _mock_time, fs: FakeFilesystem
+) -> None:
+    storage = TokenSecureStorage(username="username", password="password")
+    storage.cache_token("legacy-token", 1)
+    legacy_file = os.path.join(storage._data_dir, "a" * 64 + ".json")
+    os.rename(storage._token_file, legacy_file)
+
+    fresh = TokenSecureStorage(username="username", password="password")
+    assert not os.path.exists(legacy_file)
+    assert fresh.get_cached_token() is None
+    fresh.cache_token("fresh-token", 1)
+    assert fresh.get_cached_token() == "fresh-token"
+
+
+@patch("firebolt.utils.token_storage.time", return_value=0)
+def test_cleanup_preserves_new_cache_and_unrelated_files(
+    _mock_time, fs: FakeFilesystem
+) -> None:
+    storage = TokenSecureStorage(username="username", password="password")
+    storage.cache_token("current-token", 1)
+    legacy_files = [
+        os.path.join(storage._data_dir, character * 64 + ".json")
+        for character in ("a", "b")
+    ]
+    for filename in legacy_files:
+        fs.create_file(filename, contents='{"expiration": 0}')
+    unrelated_file = os.path.join(storage._data_dir, "notes.json")
+    fs.create_file(unrelated_file, contents="unrelated")
+    unrelated_dir = os.path.join(storage._data_dir, "c" * 64 + ".json")
+    fs.create_dir(unrelated_dir)
+
+    fresh = TokenSecureStorage(username="username", password="password")
+    assert all(not os.path.exists(filename) for filename in legacy_files)
+    assert os.path.isfile(unrelated_file)
+    assert os.path.isdir(unrelated_dir)
+    assert fresh.get_cached_token() == "current-token"
 
 
 @patch("firebolt.utils.token_storage.time", return_value=0)
