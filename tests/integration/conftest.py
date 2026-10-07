@@ -17,6 +17,10 @@ ACCOUNT_NAME_ENV = "ACCOUNT_NAME"
 API_ENDPOINT_ENV = "API_ENDPOINT"
 SERVICE_ID_ENV = "SERVICE_ID"
 SERVICE_SECRET_ENV = "SERVICE_SECRET"
+# Pre-provisioned service account that has no user attached, used to check
+# that such an account cannot connect
+SERVICE_ID_NO_USER_ENV = "SERVICE_ID_NO_USER"
+SERVICE_SECRET_NO_USER_ENV = "SERVICE_SECRET_NO_USER"
 CORE_URL_ENV = "CORE_URL"
 
 # Only these values are safe to print. Anything else, including renamed
@@ -128,6 +132,13 @@ def service_secret() -> Secret:
 @fixture(scope="session")
 def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
     return ClientCredentials(service_id, service_secret.value)
+
+
+@fixture(scope="session")
+def auth_no_user() -> ClientCredentials:
+    return ClientCredentials(
+        must_env(SERVICE_ID_NO_USER_ENV), must_env(SERVICE_SECRET_NO_USER_ENV)
+    )
 
 
 @fixture(scope="session")

@@ -1,14 +1,10 @@
-import random
-import string
 from typing import Any, Callable, Tuple
 
 from pytest import fixture
 
 import firebolt.db
 from firebolt.client.auth.base import Auth
-from firebolt.client.auth.client_credentials import ClientCredentials
 from firebolt.db import Connection, connect
-from tests.integration.conftest import Secret
 
 
 @fixture
@@ -102,42 +98,6 @@ def connection_system_engine_no_db(
         api_endpoint=api_endpoint,
     ) as connection:
         yield connection
-
-
-@fixture
-def service_account_no_user(
-    connection_system_engine_no_db: Connection,
-    database_name: str,
-) -> Tuple[str, Secret]:
-    # function-level fixture so we need to make sa name is unique
-    randomness = "".join(random.choices(string.ascii_letters + string.digits, k=2))
-    sa_account_name = f"{database_name}_no_user_{randomness}"
-    with connection_system_engine_no_db.cursor() as cursor:
-        cursor.execute(
-            f'CREATE SERVICE ACCOUNT "{sa_account_name}" '
-            "WITH DESCRIPTION = 'Ecosytem test with no user'"
-        )
-        cursor.execute(f"CALL fb_GENERATESERVICEACCOUNTKEY('{sa_account_name}')")
-        # service_account_name, service_account_id, secret
-        _, s_id, key = cursor.fetchone()
-        # Currently this is bugged so retrieve id via a query. FIR-28719
-        if not s_id:
-            cursor.execute(
-                "SELECT service_account_id FROM information_schema.service_accounts "
-                f"WHERE service_account_name='{sa_account_name}'"
-            )
-            s_id = cursor.fetchone()[0]
-        # Wrap in secret to avoid leaking the key in the logs
-        yield s_id, Secret(key)
-        cursor.execute(f'DROP SERVICE ACCOUNT "{sa_account_name}"')
-
-
-@fixture
-def auth_no_user(
-    service_account_no_user: Tuple[str, Secret],
-) -> ClientCredentials:
-    s_id, s_secret = service_account_no_user
-    return ClientCredentials(s_id, s_secret.value)
 
 
 @fixture
