@@ -1,54 +1,54 @@
-from time import time
-
-from pytest import mark, raises
+from pytest import fixture, mark, raises
+from pytest_mock import MockerFixture
 
 from firebolt.async_db import Connection
-from firebolt.utils.exception import AuthenticationError
+from firebolt.client.auth import ClientCredentials
+from firebolt.utils.exception import AuthenticationError, AuthorizationError
+from tests.integration.conftest import Secret
+
+pytestmark = mark.parametrize("connection_factory", ["remote"], indirect=True)
 
 
-@mark.skip(reason="flaky, token not updated each time")
-async def test_refresh_token(connection: Connection) -> None:
-    """Auth refreshes token on expiration/invalidation"""
-    async with connection.cursor() as c:
-        # Works fine
-        await c.execute("show tables")
-
-        # Invalidate the token
-        c._client.auth._token += "_"
-
-        # Still works fine
-        await c.execute("show tables")
-
-        old = c._client.auth.token
-        c._client.auth._expires = int(time()) - 1
-
-        # Still works fine.
-        await c.execute("show tables")
-
-        assert c._client.auth.token != old, "Auth didn't update token on expiration."
+@fixture
+def auth(service_id: str, service_secret: Secret) -> ClientCredentials:
+    # These tests mutate credentials; never reuse the session auth or its cache.
+    return ClientCredentials(service_id, service_secret.value, use_token_cache=False)
 
 
-@mark.skip("Avoiding excessive load with username/password")
-async def test_credentials_invalidation(
-    connection: Connection, username_password_connection: Connection
+@mark.parametrize("invalidation", ["expired", "invalid"])
+async def test_refresh_token(
+    connection: Connection, mocker: MockerFixture, invalidation: str
 ) -> None:
-    """Auth raises authentication error on credentials invalidation"""
-    # Can't pytest.parametrize it due to nested event loop error
-    for conn in [connection, username_password_connection]:
-        async with conn.cursor() as c:
-            # Works fine
-            await c.execute("show tables")
+    async with connection.cursor() as c:
+        await c.execute("SELECT 1")
+        assert await c.fetchone() == [1]
 
-            # Invalidate the token
-            c._client.auth._token += "_"
-            # Invalidate credentials
-            for cred in ("username", "password", "client_id", "client_secret"):
-                if hasattr(c._client.auth, cred):
-                    setattr(c._client.auth, cred, "_")
+        auth = c._client.auth
+        refresh = mocker.spy(auth, "get_new_token_generator")
+        if invalidation == "expired":
+            auth._expires = 0
+        else:
+            auth._token = "invalid-token"
 
-            with raises(AuthenticationError) as exc_info:
-                await c.execute("show tables")
+        await c.execute("SELECT 1")
+        assert await c.fetchone() == [1]
+        refresh.assert_called_once()
+        assert auth.token
+        assert not auth.expired
 
-            assert str(exc_info.value).startswith(
-                "Failed to authenticate"
-            ), "Invalid authentication error message"
+
+async def test_credentials_invalidation(
+    connection: Connection, mocker: MockerFixture
+) -> None:
+    async with connection.cursor() as c:
+        await c.execute("SELECT 1")
+        assert await c.fetchone() == [1]
+
+        auth = c._client.auth
+        refresh = mocker.spy(auth, "get_new_token_generator")
+        auth._token = "invalid-token"
+        auth.client_secret = "_"
+
+        with raises((AuthenticationError, AuthorizationError)):
+            await c.execute("SELECT 1")
+        refresh.assert_called_once()
