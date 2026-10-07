@@ -911,6 +911,22 @@ as it will lead to a nondeterministic data returned. Follow the best practice fr
 Using DATE and DATETIME values
 ==============================
 
+For Firebolt 2.0 query parameters, pass Python ``datetime`` objects directly.
+Naive datetimes are bound as ``TIMESTAMP`` values, preserving their date/time
+fields. Aware datetimes are bound as ``TIMESTAMPTZ`` values with an explicit UTC
+offset, preserving the instant. Both retain microseconds.
+
+When an aware parameter is assigned to a ``TIMESTAMP`` column, Firebolt converts
+it to the session timezone before dropping timezone information. When a naive
+parameter is assigned to a ``TIMESTAMPTZ`` column, Firebolt interprets it in the
+session timezone. Earlier SDK versions converted aware parameters to UTC and
+discarded the offset; applications relying on that behavior should choose their
+desired timezone explicitly before passing a naive datetime.
+
+With ``fb_numeric`` parameters, datetimes are sent as strings with their original
+offset and microseconds. Cast the parameter to ``TIMESTAMP`` for naive values or
+``TIMESTAMPTZ`` for aware values in SQL, for example ``CAST($1 AS TIMESTAMPTZ)``.
+
 DATE, DATETIME and TIMESTAMP values used in SQL insertion statements must be provided in
 a specific format; otherwise they could be read incorrectly.
 
@@ -1146,4 +1162,3 @@ Transaction limitations and notes
 
 For complete details on transaction capabilities and limitations, see the
 `Firebolt explicit transactions documentation <https://docs.firebolt.io/reference-sql/explicit-transactions>`_.
-

@@ -61,8 +61,9 @@ escape_chars_v1 = {
 
 
 class StatementFormatter:
-    def __init__(self, escape_chars: Dict[str, str]):
+    def __init__(self, escape_chars: Dict[str, str], version: int = 2):
         self.escape_chars = escape_chars
+        self._version = version
 
     def format_value(self, value: ParameterType) -> str:
         """For Python value to be used in a SQL query."""
@@ -73,11 +74,14 @@ class StatementFormatter:
         elif isinstance(value, str):
             return f"'{''.join(self.escape_chars.get(c, c) for c in value)}'"
         elif isinstance(value, datetime):
-            if value.tzinfo is not None:
-                value = value.astimezone(timezone.utc)
-            # Keep fractional seconds; whole-second values render as before.
-            fmt = "%Y-%m-%d %H:%M:%S.%f" if value.microsecond else "%Y-%m-%d %H:%M:%S"
-            return f"'{value.strftime(fmt)}'"
+            if self._version == 1:
+                if value.tzinfo is not None:
+                    value = value.astimezone(timezone.utc)
+                fmt = "%Y-%m-%d %H:%M:%S.%f" if value.microsecond else "%Y-%m-%d %H:%M:%S"
+                return f"'{value.strftime(fmt)}'"
+            # The parameter's type preserves awareness; the server casts to the target.
+            sql_type = "TIMESTAMPTZ" if value.utcoffset() is not None else "TIMESTAMP"
+            return f"{sql_type} '{value.isoformat(sep=' ')}'"
         elif isinstance(value, date):
             return f"'{value.isoformat()}'"
         elif isinstance(value, bytes):
@@ -274,7 +278,7 @@ class StatementFormatter:
 
 def create_statement_formatter(version: int) -> StatementFormatter:
     if version == 1:
-        return StatementFormatter(escape_chars_v1)
+        return StatementFormatter(escape_chars_v1, version=1)
     elif version == 2:
         return StatementFormatter(escape_chars_v2)
     else:
