@@ -74,8 +74,8 @@ jobs:
 
       - name: Run integration tests HTTP
         env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          SERVICE_ID: ""
+          SERVICE_SECRET: ""
           DATABASE_NAME: "firebolt"
           ENGINE_NAME: ""
           STOPPED_ENGINE_NAME: ""
@@ -87,8 +87,8 @@ jobs:
 
       - name: Run integration tests HTTPS
         env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          SERVICE_ID: ""
+          SERVICE_SECRET: ""
           DATABASE_NAME: "firebolt"
           ENGINE_NAME: ""
           STOPPED_ENGINE_NAME: ""
