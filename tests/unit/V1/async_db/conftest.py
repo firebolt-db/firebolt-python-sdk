@@ -13,13 +13,11 @@ async def connection(
     db_name: str,
     username_password_auth: UsernamePassword,
 ) -> Connection:
-    async with (
-        await connect(
-            engine_url=engine_url,
-            database=db_name,
-            auth=username_password_auth,
-            api_endpoint=api_endpoint,
-        )
+    async with await connect(
+        engine_url=engine_url,
+        database=db_name,
+        auth=username_password_auth,
+        api_endpoint=api_endpoint,
     ) as connection:
         yield connection
 

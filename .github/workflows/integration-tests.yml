@@ -3,39 +3,48 @@ on:
   workflow_dispatch:
   workflow_call:
     secrets:
-      FIREBOLT_STG_USERNAME:
-        required: true
-      FIREBOLT_STG_PASSWORD:
-        required: true
-      SERVICE_ID_STG:
-        required: true
-      SERVICE_SECRET_STG:
-        required: true
-      # V2 secrets
       FIREBOLT_CLIENT_ID_STG_NEW_IDN:
         required: true
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG:
+        required: true
+
+permissions:
+  contents: read
+
 jobs:
-  integration-test-v1:
-    uses: ./.github/workflows/integration-tests-v1.yml
-    secrets: inherit
   integration-test-v2:
     uses: ./.github/workflows/integration-tests-v2.yml
-    secrets: inherit
+    secrets:
+      FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
+      FIREBOLT_CLIENT_SECRET_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG }}
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG }}
   integration-test-core:
     uses: ./.github/workflows/integration-tests-core.yml
   report-test-results:
-    needs: [integration-test-v1, integration-test-v2, integration-test-core]
+    permissions:
+      statuses: write
+    needs: [integration-test-v2, integration-test-core]
     if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Decorate commit
-        uses: Sibz/github-status-action@650dd1a882a76dbbbc4576fb5974b8d22f29847f # v1.1.6
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          NEEDS_RESULTS: ${{ toJSON(needs) }}
         with:
-          authToken: ${{secrets.GITHUB_TOKEN}}
-          context: 'Integration tests'
-          description: "${{ contains(needs.*.result, 'failure') && 'Failed' || 'Successful' }}"
-          state: "${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}"
-          sha: ${{github.event.pull_request.head.sha || github.sha}}
-          target_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          script: |
+            const failed = Object.values(JSON.parse(process.env.NEEDS_RESULTS))
+              .some(job => job.result === 'failure');
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: context.payload.pull_request?.head.sha || context.sha,
+              context: 'Integration tests',
+              description: failed ? 'Failed' : 'Successful',
+              state: failed ? 'failure' : 'success',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });

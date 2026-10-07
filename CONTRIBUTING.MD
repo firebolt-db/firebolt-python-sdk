@@ -4,7 +4,7 @@
 
 ### Development Setup
 
-1. Clone this repo into a Python `3.9` virtual environment.
+1. Clone this repo into a Python `3.10` virtual environment.
 1. `pip install -e ".[dev]"`
 1. `pre-commit install`
 1. If using PyCharm, set the test runner as `pytest` and mark `src` as a sources root.
@@ -45,7 +45,7 @@ I found it too buggy to be worthwhile, so I just run mypy manually.
 5. Merge into the main branch. Only the maintainers have the ability to merge a PR. They will do so at the earliest convenience, with regards to the impact of the change as well as the release planning.
 
 ### Integration Tests
-The integration test suite runs against Firebolt SaaS v1, Firebolt SaaS v2 and Firebolt Core. The SaaS test suites only run as part of the CI. Locally you can run the Firebolt Core test suite.
+The integration test suite runs against Firebolt SaaS v2 and Firebolt Core. The SaaS test suites only run as part of the CI. Locally you can run the Firebolt Core test suite.
 
 #### Run the tests locally
 

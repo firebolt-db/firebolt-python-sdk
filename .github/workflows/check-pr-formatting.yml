@@ -5,6 +5,9 @@ on:
     branches: [ main, 0.x ]
     types: [opened, synchronize, edited]
 
+permissions:
+  contents: read
+
 jobs:
   pr-formatting:
     runs-on: ubuntu-slim

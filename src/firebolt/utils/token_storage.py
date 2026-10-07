@@ -3,7 +3,8 @@ from hashlib import sha256
 from json import JSONDecodeError
 from json import dump as json_dump
 from json import load as json_load
-from os import makedirs, path, urandom
+from os import makedirs, path, scandir, unlink, urandom
+from re import fullmatch
 from time import time
 from typing import Optional
 
@@ -27,23 +28,18 @@ def generate_salt() -> str:
     return b64encode(urandom(16)).decode("ascii")
 
 
-def generate_file_name(username: str, password: str) -> str:
-    """Generate unique file name based on username and password.
-
-    Username and password values are not exposed.
+def generate_file_name(username: str) -> str:
+    """Generate a cache file name from the account or client identity.
 
     Args:
         username (str): Username
-        password (str): Password
 
     Returns:
-        str: File name 64 characters long
+        str: Versioned cache file name
 
     """
-    username_hash = sha256(username.encode("utf-8")).hexdigest()[:32]
-    password_hash = sha256(password.encode("utf-8")).hexdigest()[:32]
-
-    return f"{username_hash}{password_hash}.json"
+    username_hash = sha256(username.encode("utf-8")).hexdigest()
+    return f"token-v2-{username_hash}.json"
 
 
 class TokenSecureStorage:
@@ -59,13 +55,24 @@ class TokenSecureStorage:
     def __init__(self, username: str, password: str):
         self._data_dir = user_data_dir(appname=APPNAME)
         makedirs(self._data_dir, exist_ok=True)
+        self._remove_legacy_cache_files()
 
-        self._token_file = path.join(
-            self._data_dir, generate_file_name(username, password)
-        )
+        self._token_file = path.join(self._data_dir, generate_file_name(username))
 
         self.salt = self._get_salt()
         self.encrypter = FernetEncrypter(self.salt, username, password)
+
+    def _remove_legacy_cache_files(self) -> None:
+        # Legacy names expose password hashes even after their tokens expire.
+        with scandir(self._data_dir) as entries:
+            for entry in entries:
+                if fullmatch(r"[0-9a-f]{64}\.json", entry.name) and entry.is_file(
+                    follow_symlinks=False
+                ):
+                    try:
+                        unlink(entry.path)
+                    except FileNotFoundError:
+                        pass
 
     def _get_salt(self) -> str:
         """Get salt from the file if exists, or generate a new one.

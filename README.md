@@ -9,12 +9,12 @@
 
 ### Installation
 
-* Requires Python `>=3.8`
+* Requires Python `>=3.10`
 * `pip install "firebolt-sdk>=1.0.0a1"`
 
 ## Documentation
 
-For reference and tutorials, see the [Firebolt Python SDK reference](https://python.docs.firebolt.io/sdk_documenation/latest/).
+For reference and tutorials, see the [Firebolt Python SDK reference](https://python.docs.firebolt.io/sdk_documentation/latest/).
 
 ## Connection parameters
 These parameters are used to connect to a Firebolt database:

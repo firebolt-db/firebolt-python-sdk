@@ -13,22 +13,18 @@ class BaseRowSet(ABC):
 
     @property
     @abstractmethod
-    def row_count(self) -> int:
-        ...
+    def row_count(self) -> int: ...
 
     @property
     @abstractmethod
-    def statistics(self) -> Optional[Statistics]:
-        ...
+    def statistics(self) -> Optional[Statistics]: ...
 
     @property
     @abstractmethod
-    def columns(self) -> Optional[List[Column]]:
-        ...
+    def columns(self) -> Optional[List[Column]]: ...
 
     @abstractmethod
-    def append_empty_response(self) -> None:
-        ...
+    def append_empty_response(self) -> None: ...
 
     def _parse_row(self, row: List[RawColType]) -> List[ColType]:
         if self.columns is None:

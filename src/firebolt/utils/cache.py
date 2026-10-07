@@ -19,8 +19,7 @@ CACHE_EXPIRY_SECONDS = 3600  # 1 hour
 
 
 class ReprCacheable(Protocol):
-    def __repr__(self) -> str:
-        ...
+    def __repr__(self) -> str: ...
 
 
 @dataclass

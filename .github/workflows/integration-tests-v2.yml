@@ -7,33 +7,35 @@ on:
         required: true
       FIREBOLT_CLIENT_SECRET_STG_NEW_IDN:
         required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG:
+        required: true
+      ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG:
+        required: true
     inputs:
       engine-version:
         description: 'Engine version to use for integration tests'
         required: false
         type: string
         default: ''
-      token:
-        description: 'GitHub token if called from another workflow'
-        required: false
-        type: string
+
+permissions:
+  contents: read
 
 jobs:
   tests:
     permissions:
-      contents: write # Push allure reports to gh-pages
-      statuses: write # Update status on PR
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
 
-      - name: Set up Python 3.9
+      - name: Set up Python 3.10
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: 3.9
+          python-version: '3.10'
 
       - name: Install dependencies
         run: |
@@ -42,7 +44,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@813c4835ef38adcba3f8760e7afc21a3c7248023 # v2.6.2
+        uses: firebolt-db/integration-testing-setup@39ed7c82e431c3a073ca8f14b8341c631e72ef4a # new-identity
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
@@ -54,6 +56,8 @@ jobs:
         env:
           SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          SERVICE_ID_NO_USER: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG }}
+          SERVICE_SECRET_NO_USER: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG }}
           DATABASE_NAME: ${{ steps.setup.outputs.database_name }}
           ENGINE_NAME: ${{ steps.setup.outputs.engine_name }}
           STOPPED_ENGINE_NAME: ${{ steps.setup.outputs.stopped_engine_name }}
@@ -61,15 +65,4 @@ jobs:
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT }}
           LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V2 }}
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not V1 and not core" --runslow --alluredir=allure-results
-
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
-        if: always()
-        with:
-          github-token: ${{ inputs.token || secrets.GITHUB_TOKEN }}
-          pages-branch: gh-pages
-          mapping-json: |
-            {
-              "allure-results": "integration_v2"
-            }
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not core" --runslow

@@ -2,12 +2,13 @@ from typing import Callable
 
 from httpx import Request, Timeout, codes
 from pyfakefs.fake_filesystem import FakeFilesystem
-from pytest import raises
+from pytest import mark, raises
 from pytest_httpx import HTTPXMock
 
 from firebolt.client import ClientV2 as Client
 from firebolt.client.auth import Auth, ClientCredentials
 from firebolt.client.resource_manager_hooks import raise_on_4xx_5xx
+from firebolt.utils.exception import AuthenticationError, AuthorizationError
 from firebolt.utils.token_storage import TokenSecureStorage
 from firebolt.utils.urls import AUTH_SERVICE_ACCOUNT_URL
 from tests.unit.conftest import Response
@@ -49,6 +50,78 @@ def test_client_retry(
         assert (
             client.get("https://url").status_code == codes.OK
         ), "request failed with firebolt client"
+
+
+def test_client_refresh_expired_token_with_same_value(
+    httpx_mock: HTTPXMock,
+    auth: Auth,
+    account_name: str,
+    api_endpoint: str,
+    auth_url: str,
+    access_token: str,
+) -> None:
+    auth._token = access_token
+    auth._expires = 2**32
+    httpx_mock.add_response(
+        url="https://url",
+        match_headers={"Authorization": f"Bearer {access_token}"},
+        is_reusable=True,
+    )
+    httpx_mock.add_response(
+        url=auth_url, json={"expires_in": 3600, "access_token": access_token}
+    )
+
+    with Client(
+        account_name=account_name, auth=auth, api_endpoint=api_endpoint
+    ) as client:
+        assert (client.get("https://url")).status_code == codes.OK
+        auth._expires = 0
+        assert (client.get("https://url")).status_code == codes.OK
+
+    assert auth.token == access_token
+    assert not auth.expired
+    assert len(httpx_mock.get_requests(url=auth_url)) == 1
+
+
+@mark.parametrize(
+    "status_code, error",
+    [
+        (codes.BAD_REQUEST, AuthenticationError),
+        (codes.UNAUTHORIZED, AuthorizationError),
+    ],
+)
+def test_client_refresh_with_invalid_credentials(
+    httpx_mock: HTTPXMock,
+    auth: ClientCredentials,
+    account_name: str,
+    api_endpoint: str,
+    auth_url: str,
+    access_token: str,
+    status_code: int,
+    error: type[Exception],
+) -> None:
+    auth._token = access_token
+    auth._expires = 2**32
+    httpx_mock.add_response(
+        url="https://url", match_headers={"Authorization": f"Bearer {access_token}"}
+    )
+    httpx_mock.add_response(
+        url="https://url",
+        status_code=codes.UNAUTHORIZED,
+        match_headers={"Authorization": "Bearer invalid-token"},
+    )
+    httpx_mock.add_response(url=auth_url, status_code=status_code)
+
+    with Client(
+        account_name=account_name, auth=auth, api_endpoint=api_endpoint
+    ) as client:
+        assert (client.get("https://url")).status_code == codes.OK
+        auth._token = "invalid-token"
+        auth.client_secret = "_"
+        with raises(error):
+            client.get("https://url")
+
+    assert len(httpx_mock.get_requests(url=auth_url)) == 1
 
 
 def test_client_different_auths(

@@ -133,7 +133,7 @@ def get_sdk_properties() -> Tuple[str, str, str, str]:
 
 
 def detect_connectors(
-    connector_map: List[Tuple[str, str, Path, str]]
+    connector_map: List[Tuple[str, str, Path, str]],
 ) -> Dict[str, str]:
     """
     Detect which connectors are running the code by parsing the stack.

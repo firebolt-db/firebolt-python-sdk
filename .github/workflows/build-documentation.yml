@@ -1,4 +1,4 @@
-name: Build documenation
+name: Build documentation
 
 on:
   workflow_dispatch:
@@ -11,6 +11,9 @@ on:
     types:
       - created
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,14 +21,14 @@ jobs:
       contents: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
     - name: Set up Python
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: 3.x
 
-    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
@@ -68,10 +71,11 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./docs_compiled
-        destination_dir: sdk_documenation/${{ steps.resolve_url_path.outputs.path }}
+        destination_dir: sdk_documentation/${{ steps.resolve_url_path.outputs.path }}
+        keep_files: true
 
     - name: Add URL to the Job Summary
       shell: bash
       run: |
-        url="https://old.docs.firebolt.io/firebolt-python-sdk/sdk_documenation/${{ steps.resolve_url_path.outputs.path }}"
+        url="https://python.docs.firebolt.io/sdk_documentation/${{ steps.resolve_url_path.outputs.path }}"
         echo "[Documentation]($url)" >> $GITHUB_STEP_SUMMARY

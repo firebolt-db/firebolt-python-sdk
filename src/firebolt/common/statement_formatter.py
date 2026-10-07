@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Sequence, Union
 
 from sqlparse import parse as parse_sql  # type: ignore
 from sqlparse import tokens as _T
+from sqlparse.engine import grouping as _grouping
 from sqlparse.engine.statement_splitter import (
     StatementSplitter as _StatementSplitter,
 )
@@ -26,77 +27,26 @@ from firebolt.utils.exception import (
     NotSupportedError,
 )
 
+_original_change_splitlevel = _StatementSplitter._change_splitlevel
+
 
 def _patched_change_splitlevel(self, ttype, value):  # type: ignore[no-untyped-def]
-    """Patched version of StatementSplitter._change_splitlevel.
-
-    Fixes CASE...END level tracking outside of CREATE blocks.
-    See: https://github.com/andialbrecht/sqlparse/pull/839
-    """
-    if ttype is _T.Punctuation and value == "(":
-        return 1
-    elif ttype is _T.Punctuation and value == ")":
-        return -1
-    elif ttype not in _T.Keyword:
-        return 0
-
-    unified = value.upper()
-
-    if ttype is _T.Keyword.DDL and unified.startswith("CREATE"):
-        self._is_create = True
-        return 0
-
-    if unified == "DECLARE" and self._is_create and self._begin_depth == 0:
-        self._in_declare = True
-        return 1
-
-    if unified == "BEGIN":
-        self._begin_depth += 1
-        self._seen_begin = True
-        if self._is_create:
-            return 1
-        return 0
-
+    """Track CASE outside BEGIN blocks until sqlparse fixes PR 839."""
+    # https://github.com/andialbrecht/sqlparse/pull/839
     if (
-        self._seen_begin
-        and (ttype is _T.Keyword or ttype is _T.Name)
-        and unified
-        in (
-            "TRANSACTION",
-            "WORK",
-            "TRAN",
-            "DISTRIBUTED",
-            "DEFERRED",
-            "IMMEDIATE",
-            "EXCLUSIVE",
-        )
+        ttype in _T.Keyword
+        and value.upper() == "CASE"
+        and "BEGIN" not in self._block_stack
     ):
-        self._begin_depth = max(0, self._begin_depth - 1)
-        self._seen_begin = False
-        return 0
-
-    if unified == "END":
-        if not self._in_case:
-            self._begin_depth = max(0, self._begin_depth - 1)
-        else:
-            self._in_case = False
-        return -1
-
-    if unified == "CASE":
-        self._in_case = True
+        self._block_stack.append("CASE")
         return 1
-
-    if unified in ("IF", "FOR", "WHILE") and self._is_create and self._begin_depth > 0:
-        return 1
-
-    if unified in ("END IF", "END FOR", "END WHILE"):
-        return -1
-
-    return 0
+    return _original_change_splitlevel(self, ttype, value)
 
 
 setattr(_StatementSplitter, "_change_splitlevel", _patched_change_splitlevel)
 
+# Increase sqplarse's token limit to handle queries with lots of literals
+_grouping.MAX_GROUPING_TOKENS = 50000
 
 escape_chars_v2 = {
     "\0": "\\0",
