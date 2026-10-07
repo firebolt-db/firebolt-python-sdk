@@ -911,24 +911,28 @@ as it will lead to a nondeterministic data returned. Follow the best practice fr
 Using DATE and DATETIME values
 ==============================
 
-For Firebolt 2.0 query parameters, pass Python ``datetime`` objects directly.
-Naive datetimes are bound as ``TIMESTAMP`` values, preserving their date/time
-fields. Aware datetimes are bound as ``TIMESTAMPTZ`` values with an explicit UTC
-offset, preserving the instant. Both retain microseconds.
+For query parameters, pass Python ``datetime`` objects directly. Datetimes
+without timezone information are bound as ``TIMESTAMP`` values, preserving their
+date/time fields. Timezone-aware datetimes are bound as ``TIMESTAMPTZ`` values
+with an explicit UTC offset, preserving the instant. Both retain microseconds.
 
-When an aware parameter is assigned to a ``TIMESTAMP`` column, Firebolt converts
-it to the session timezone before dropping timezone information. When a naive
-parameter is assigned to a ``TIMESTAMPTZ`` column, Firebolt interprets it in the
-session timezone. Earlier SDK versions converted aware parameters to UTC and
-discarded the offset; applications relying on that behavior should choose their
-desired timezone explicitly before passing a naive datetime.
+When a timezone-aware parameter is assigned to a ``TIMESTAMP`` column, Firebolt
+converts it to the session timezone before dropping timezone information. When
+a parameter without timezone information is assigned to a ``TIMESTAMPTZ``
+column, Firebolt interprets it in the session timezone. Earlier SDK versions
+converted timezone-aware parameters to UTC and discarded the offset;
+applications relying on that behavior should explicitly convert to UTC and
+remove timezone information before passing the datetime.
 
 With ``fb_numeric`` parameters, datetimes are sent as strings with their original
-offset and microseconds. Cast the parameter to ``TIMESTAMP`` for naive values or
-``TIMESTAMPTZ`` for aware values in SQL, for example ``CAST($1 AS TIMESTAMPTZ)``.
+offset and microseconds. Cast the parameter to ``TIMESTAMP`` for values without
+timezone information or ``TIMESTAMPTZ`` for timezone-aware values in SQL, for
+example ``CAST($1 AS TIMESTAMPTZ)``.
 
-DATE, DATETIME and TIMESTAMP values used in SQL insertion statements must be provided in
-a specific format; otherwise they could be read incorrectly.
+Legacy Firebolt 1.0 connections retain their existing datetime formatting.
+
+When writing date/time values directly into SQL rather than using parameters,
+use the following formats:
 
 * DATE values should be formatted as **YYYY-MM-DD**
 
