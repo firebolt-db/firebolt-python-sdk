@@ -10,8 +10,14 @@ on:
         required: false
         description: 'Trigger a major release (optional). Leave empty for regular release.'
 
+permissions:
+  contents: read
+
 jobs:
   integration-tests:
+    permissions:
+      contents: read
+      statuses: write
     uses: ./.github/workflows/integration-tests.yml
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}

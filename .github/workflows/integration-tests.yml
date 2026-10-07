@@ -11,6 +11,10 @@ on:
         required: true
       ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG:
         required: true
+
+permissions:
+  contents: read
+
 jobs:
   integration-test-v2:
     uses: ./.github/workflows/integration-tests-v2.yml
@@ -22,6 +26,8 @@ jobs:
   integration-test-core:
     uses: ./.github/workflows/integration-tests-core.yml
   report-test-results:
+    permissions:
+      statuses: write
     needs: [integration-test-v2, integration-test-core]
     if: always()
     runs-on: ubuntu-latest

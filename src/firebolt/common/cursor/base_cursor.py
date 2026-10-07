@@ -293,7 +293,7 @@ class BaseCursor:
     def close(self) -> None:
         """Terminate an ongoing query (if any) and mark connection as closed."""
         self._state = CursorState.CLOSED
-        self.connection._remove_cursor(self)  # type:ignore
+        self.connection._remove_cursor(self)  # type: ignore
 
     def __del__(self) -> None:
         self.close()
