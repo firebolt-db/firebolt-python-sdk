@@ -13,16 +13,11 @@ on:
         required: false
         type: string
         default: ''
-      token:
-        description: 'GitHub token if called from another workflow'
-        required: false
-        type: string
 
 jobs:
   tests:
     permissions:
-      contents: write # Push allure reports to gh-pages
-      statuses: write # Update status on PR
+      contents: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -61,15 +56,4 @@ jobs:
           ACCOUNT_NAME: ${{ vars.FIREBOLT_ACCOUNT }}
           LONG_TEST_VALUE: ${{ vars.LONG_TEST_VALUE_V2 }}
         run: |
-          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not core" --runslow --alluredir=allure-results
-
-      - name: Allure Report
-        uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
-        if: always()
-        with:
-          github-token: ${{ inputs.token || secrets.GITHUB_TOKEN }}
-          pages-branch: gh-pages
-          mapping-json: |
-            {
-              "allure-results": "integration_v2"
-            }
+          pytest -n 6 --dist loadgroup --timeout_method "signal" -o log_cli=true -o log_cli_level=WARNING tests/integration -k "not core" --runslow

@@ -44,8 +44,7 @@ on:
 jobs:
   run-core-integration-tests:
     permissions:
-      contents: write # Push allure reports to gh-pages
-      statuses: write # Update status on PR
+      contents: read
     runs-on: ${{ inputs.os_name }}
     steps:
       - name: Check out code
@@ -80,7 +79,7 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: ${{ steps.setup-core.outputs.service_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results/
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"
 
       - name: Run integration tests HTTPS
         env:
@@ -93,16 +92,4 @@ jobs:
           ACCOUNT_NAME: ""
           CORE_URL: ${{ steps.setup-core.outputs.service_https_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --alluredir=allure-results-https/
-
-      - name: Allure Reports
-        uses: firebolt-db/action-allure-report@8cdc116f65f6eca845a992e347e72b75ca8ccf5f # v2.1.1
-        if: always()
-        with:
-          github-token: ${{ github.token }}
-          pages-branch: gh-pages
-          mapping-json: |
-            {
-              "allure-results": "core",
-              "allure-results-https": "core_https"
-            }
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"
