@@ -307,6 +307,23 @@ def test_create_statement_formatter_invalid_version() -> None:
     assert "Unsupported version: 3" in str(excinfo.value)
 
 
+@mark.parametrize(
+    "expression",
+    [
+        "CASE WHEN 1 THEN 'a' ELSE 'b' END",
+        "CASE WHEN 1 THEN CASE WHEN 2 THEN 'a' END ELSE 'b' END",
+    ],
+)
+def test_case_followed_by_quoted_semicolon(
+    formatter: StatementFormatter, expression: str
+) -> None:
+    sql = f"SELECT {expression}, test IN ('foo \\', 'foo;') FROM t; SELECT 2;"
+    assert formatter.split_format_sql(sql, None) == [
+        f"SELECT {expression}, test IN ('foo \\', 'foo;') FROM t",
+        "SELECT 2",
+    ]
+
+
 def test_patched_change_splitlevel(formatter: StatementFormatter) -> None:
     # Testing CREATE, DECLARE, BEGIN, END, CASE, IF, FOR, WHILE
     # These exercise _patched_change_splitlevel via split_format_sql which calls parse_sql
