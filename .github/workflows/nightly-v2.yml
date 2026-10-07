@@ -64,7 +64,7 @@ jobs:
 
       - name: Setup database and engine
         id: setup
-        uses: firebolt-db/integration-testing-setup@813c4835ef38adcba3f8760e7afc21a3c7248023 # v2.6.2
+        uses: firebolt-db/integration-testing-setup@39ed7c82e431c3a073ca8f14b8341c631e72ef4a # new-identity
         with:
           firebolt-client-id: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
           firebolt-client-secret: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
