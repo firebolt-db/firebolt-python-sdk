@@ -33,11 +33,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Decorate commit
-        uses: Sibz/github-status-action@650dd1a882a76dbbbc4576fb5974b8d22f29847f # v1.1.6
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          NEEDS_RESULTS: ${{ toJSON(needs) }}
         with:
-          authToken: ${{secrets.GITHUB_TOKEN}}
-          context: 'Integration tests'
-          description: "${{ contains(needs.*.result, 'failure') && 'Failed' || 'Successful' }}"
-          state: "${{ contains(needs.*.result, 'failure') && 'failure' || 'success' }}"
-          sha: ${{github.event.pull_request.head.sha || github.sha}}
-          target_url: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          script: |
+            const failed = Object.values(JSON.parse(process.env.NEEDS_RESULTS))
+              .some(job => job.result === 'failure');
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: context.payload.pull_request?.head.sha || context.sha,
+              context: 'Integration tests',
+              description: failed ? 'Failed' : 'Successful',
+              state: failed ? 'failure' : 'success',
+              target_url: `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+            });
