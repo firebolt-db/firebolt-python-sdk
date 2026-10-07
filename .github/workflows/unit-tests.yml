@@ -11,6 +11,9 @@ on:
   push:
     branches: [ main, 0.x ]
 
+permissions:
+  contents: read
+
 jobs:
   unit-tests:
     runs-on: ubuntu-latest

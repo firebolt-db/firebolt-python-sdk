@@ -9,6 +9,10 @@ on:
       SONARCLOUD_TOKEN:
         required: true
 
+permissions:
+  contents: read
+  pull-requests: read
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest

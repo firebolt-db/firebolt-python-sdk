@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main, 0.x ]
 
+permissions:
+  contents: read
+
 jobs:
   check-code:
     runs-on: ubuntu-latest

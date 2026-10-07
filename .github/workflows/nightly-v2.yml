@@ -3,6 +3,10 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 3 * * *' # 3 am UTC every day
+
+permissions:
+  contents: read
+
 jobs:
   code-check:
     uses: ./.github/workflows/code-check.yml
@@ -11,6 +15,9 @@ jobs:
     secrets:
       GIST_PAT: ${{ secrets.GIST_PAT }}
   security-scan:
+    permissions:
+      contents: read
+      pull-requests: read
     needs: [unit-tests]
     uses: ./.github/workflows/security-scan.yml
     secrets:
