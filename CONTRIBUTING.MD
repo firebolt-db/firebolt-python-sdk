@@ -4,7 +4,7 @@
 
 ### Development Setup
 
-1. Clone this repo into a Python `3.9` virtual environment.
+1. Clone this repo into a Python `3.10` virtual environment.
 1. `pip install -e ".[dev]"`
 1. `pre-commit install`
 1. If using PyCharm, set the test runner as `pytest` and mark `src` as a sources root.
