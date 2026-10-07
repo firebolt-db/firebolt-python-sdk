@@ -58,7 +58,7 @@ jobs:
 
       - name: Setup Firebolt Core
         id: setup-core
-        uses: firebolt-db/action-setup-core@eabcd701de0be41793fda0655d29d46c70c847c2 # main
+        uses: firebolt-db/action-setup-core@c1a5dc8d2f54509084037487c6ff71643f695790 # main
         with:
           tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
 
@@ -74,8 +74,8 @@ jobs:
 
       - name: Run integration tests HTTP
         env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          SERVICE_ID: ""
+          SERVICE_SECRET: ""
           DATABASE_NAME: "firebolt"
           ENGINE_NAME: ""
           STOPPED_ENGINE_NAME: ""
@@ -87,8 +87,8 @@ jobs:
 
       - name: Run integration tests HTTPS
         env:
-          SERVICE_ID: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
-          SERVICE_SECRET: ${{ secrets.FIREBOLT_CLIENT_SECRET_STG_NEW_IDN }}
+          SERVICE_ID: ""
+          SERVICE_SECRET: ""
           DATABASE_NAME: "firebolt"
           ENGINE_NAME: ""
           STOPPED_ENGINE_NAME: ""
