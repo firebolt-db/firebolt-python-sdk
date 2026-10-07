@@ -2,22 +2,23 @@ name: Code quality checks
 
 on:
   workflow_call:
-    inputs:
-      branch:
-        required: false
-        type: string
-        description: 'Branch to run on'
   push:
     branches: [ main, 0.x ]
+
+permissions:
+  contents: read
 
 jobs:
   check-code:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    cache-mode: none
     steps:
     - name: Check out code
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       with:
-        ref: ${{ inputs.branch }}
+        persist-credentials: false
     
     - name: Set up Python 3.10
       uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
