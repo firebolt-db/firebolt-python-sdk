@@ -6,7 +6,7 @@ repos:
       - id: check-merge-conflict
 
   - repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v3.1.0
+    rev: v3.2.0
     hooks:
       - id: setup-cfg-fmt
         args:
@@ -14,7 +14,7 @@ repos:
           - --min-py-version=3.10
 
   - repo: https://github.com/myint/autoflake
-    rev: v2.3.1
+    rev: v2.4.0
     hooks:
       - id: autoflake
         args:
@@ -26,12 +26,12 @@ repos:
           - --remove-unused-variables
 
   - repo: https://github.com/PyCQA/isort
-    rev: "6.1.0"
+    rev: "9.0.2"
     hooks:
       - id: isort
 
   - repo: https://github.com/psf/black
-    rev: 25.11.0
+    rev: 26.10.0
     hooks:
       - id: black
         language_version: python3.10
@@ -40,10 +40,10 @@ repos:
     rev: v0.4.0
     hooks:
       - id: black_nbconvert
-        additional_dependencies: ["setuptools>=69,<82", "black==25.11.0", "tomli"]  # 82+ removes pkg_resources
+        additional_dependencies: ["setuptools>=69,<82", "black==26.10.0", "tomli"]  # 82+ removes pkg_resources
 
   - repo: https://github.com/PyCQA/flake8
-    rev: "7.3.0"
+    rev: "7.4.1"
     hooks:
       - id: flake8
         additional_dependencies:
