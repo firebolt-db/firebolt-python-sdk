@@ -20,7 +20,7 @@ SERVICE_SECRET_ENV = "SERVICE_SECRET"
 CORE_URL_ENV = "CORE_URL"
 
 # Only these values are safe to print. Anything else, including renamed
-# credentials, stays out of the logs and Allure attachments.
+# credentials, stays out of the logs.
 _LOGGED_ENVS = {
     ENGINE_NAME_ENV,
     STOPPED_ENGINE_NAME_ENV,
