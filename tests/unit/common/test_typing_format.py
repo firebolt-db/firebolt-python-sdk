@@ -52,7 +52,10 @@ def formatter_v1() -> StatementFormatter:
             datetime(2022, 1, 10, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))),
             "TIMESTAMPTZ '2022-01-10 01:01:01+01:00'",
         ),
-        (datetime(2022, 1, 10, 1, 1, 1, 123456), "TIMESTAMP '2022-01-10 01:01:01.123456'"),
+        (
+            datetime(2022, 1, 10, 1, 1, 1, 123456),
+            "TIMESTAMP '2022-01-10 01:01:01.123456'",
+        ),
         (
             datetime(2022, 1, 10, 1, 1, 1, 50, tzinfo=timezone(timedelta(hours=1))),
             "TIMESTAMPTZ '2022-01-10 01:01:01.000050+01:00'",

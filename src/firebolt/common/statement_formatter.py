@@ -77,7 +77,9 @@ class StatementFormatter:
             if self._version == 1:
                 if value.tzinfo is not None:
                     value = value.astimezone(timezone.utc)
-                fmt = "%Y-%m-%d %H:%M:%S.%f" if value.microsecond else "%Y-%m-%d %H:%M:%S"
+                fmt = (
+                    "%Y-%m-%d %H:%M:%S.%f" if value.microsecond else "%Y-%m-%d %H:%M:%S"
+                )
                 return f"'{value.strftime(fmt)}'"
             # The parameter's type preserves awareness; the server casts to the target.
             sql_type = "TIMESTAMPTZ" if value.utcoffset() is not None else "TIMESTAMP"
