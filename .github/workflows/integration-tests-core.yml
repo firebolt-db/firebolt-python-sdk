@@ -50,17 +50,13 @@ jobs:
     permissions:
       contents: read
     runs-on: ${{ inputs.os_name }}
+    env:
+      CORE_IMAGE_TAG: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
     steps:
       - name: Check out code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: 'firebolt-db/firebolt-python-sdk'
-
-      - name: Setup Firebolt Core
-        id: setup-core
-        uses: firebolt-db/action-setup-core@c1a5dc8d2f54509084037487c6ff71643f695790 # main
-        with:
-          tag_version: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -72,28 +68,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install ".[dev]"
 
-      - name: Run integration tests HTTP
+      - name: "Compose: Run integration tests HTTP"
         env:
           SERVICE_ID: ""
           SERVICE_SECRET: ""
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: ""
-          ACCOUNT_NAME: ""
-          CORE_URL: ${{ steps.setup-core.outputs.service_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-compose
 
-      - name: Run integration tests HTTPS
+      - name: "Compose: Run integration tests HTTPS"
         env:
           SERVICE_ID: ""
           SERVICE_SECRET: ""
-          DATABASE_NAME: "firebolt"
-          ENGINE_NAME: ""
-          STOPPED_ENGINE_NAME: ""
-          API_ENDPOINT: ""
-          ACCOUNT_NAME: ""
-          CORE_URL: ${{ steps.setup-core.outputs.service_https_url }}
         run: |
-          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core"
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-https --run-compose
+
+      - name: "Kind: Run integration tests HTTP"
+        env:
+          CORE_HELM_CHART_VERSION: "0.3.0"
+          CORE_IMAGE_TAG: ${{ inputs.tag_version || vars.DEFAULT_CORE_IMAGE_TAG }}
+        run: |
+          pytest -o log_cli=true -o log_cli_level=WARNING tests/integration -k "core" --run-kind

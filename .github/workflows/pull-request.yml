@@ -14,7 +14,7 @@ jobs:
     uses: ./.github/workflows/unit-tests.yml
     secrets:
       GIST_PAT: ${{ secrets.GIST_PAT }}
-      
+
   security-scan:
     permissions:
       contents: read
@@ -24,4 +24,3 @@ jobs:
     secrets:
       FOSSA_TOKEN: ${{ secrets.FOSSA_TOKEN }}
       SONARCLOUD_TOKEN: ${{ secrets.SONARCLOUD_TOKEN }}
-
