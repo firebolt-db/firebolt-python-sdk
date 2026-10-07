@@ -52,6 +52,11 @@ def formatter_v1() -> StatementFormatter:
             datetime(2022, 1, 10, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))),
             "'2022-01-10 00:01:01'",
         ),
+        (datetime(2022, 1, 10, 1, 1, 1, 123456), "'2022-01-10 01:01:01.123456'"),
+        (
+            datetime(2022, 1, 10, 1, 1, 1, 50, tzinfo=timezone(timedelta(hours=1))),
+            "'2022-01-10 00:01:01.000050'",
+        ),
         # List, tuple
         ([], "[]"),
         ([1, 2, 3], "[1, 2, 3]"),
@@ -64,6 +69,17 @@ def formatter_v1() -> StatementFormatter:
 )
 def test_format_value(formatter: StatementFormatter, value: str, result: str) -> None:
     assert formatter.format_value(value) == result, "Invalid format_value result"
+
+
+def test_format_statement_keeps_datetime_fractional_seconds(
+    formatter: StatementFormatter,
+) -> None:
+    """Truncating to whole seconds silently changes stored and compared values."""
+    statement = parse("SELECT * FROM t WHERE ts = ?")[0]
+    assert (
+        formatter.format_statement(statement, [datetime(2024, 2, 29, 1, 2, 3, 4)])
+        == "SELECT * FROM t WHERE ts = '2024-02-29 01:02:03.000004'"
+    )
 
 
 @mark.parametrize(
@@ -88,6 +104,11 @@ def test_format_value(formatter: StatementFormatter, value: str, result: str) ->
         (
             datetime(2022, 1, 10, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))),
             "'2022-01-10 00:01:01'",
+        ),
+        (datetime(2022, 1, 10, 1, 1, 1, 123456), "'2022-01-10 01:01:01.123456'"),
+        (
+            datetime(2022, 1, 10, 1, 1, 1, 50, tzinfo=timezone(timedelta(hours=1))),
+            "'2022-01-10 00:01:01.000050'",
         ),
         # List, tuple
         ([], "[]"),
