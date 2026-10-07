@@ -6,7 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from io import StringIO
-from typing import Any, Dict, List, Sequence, Tuple, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union, cast
 
 try:
     from ciso8601 import parse_datetime  # type: ignore
@@ -321,8 +321,7 @@ def parse_value(
     if value is None:
         return None
     if ctype in (int, str, float):
-        assert isinstance(ctype, type)  # assertion for mypy
-        return ctype(value)
+        return cast(type, ctype)(value)
     if ctype is date:
         if not isinstance(value, str):
             raise DataError(f"Invalid date value {value}: str expected")
