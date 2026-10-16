@@ -11,8 +11,7 @@ on:
     types:
       - created
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   build:
@@ -21,19 +20,14 @@ jobs:
       contents: write
     steps:
     - name: Checkout code
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
 
     - name: Set up Python
-      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
       with:
         python-version: 3.x
-
-    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/setup.cfg') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
 
     - name: Install dependencies
       shell: bash
@@ -55,15 +49,15 @@ jobs:
         GITHUB_RELEASE_TAG_NAME: ${{ github.event.release.tag_name }}
       run: |
         if [[ -n "${CUSTOM_PATH}" ]]; then
-            echo "path=${CUSTOM_PATH}" >> $GITHUB_OUTPUT
+            echo "path=${CUSTOM_PATH}" >> "$GITHUB_OUTPUT"
         # 0.x releases deploy to 0.x path, all other releases deploy to latest path
-        elif [[ "${{ github.event_name }}" == "release" && "${GITHUB_RELEASE_TAG_NAME}" == 0.* ]]; then
-            echo "path=0.x" >> $GITHUB_OUTPUT
+        elif [[ "${GITHUB_EVENT_NAME}" == "release" && "${GITHUB_RELEASE_TAG_NAME}" == 0.* ]]; then
+            echo "path=0.x" >> "$GITHUB_OUTPUT"
         # for manual builds deploy to the branch name path
-        elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            echo "path=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+        elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            echo "path=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
         else
-            echo "path=latest" >> $GITHUB_OUTPUT
+            echo "path=latest" >> "$GITHUB_OUTPUT"
         fi
 
     - name: Deploy to GitHub Pages
@@ -76,6 +70,8 @@ jobs:
 
     - name: Add URL to the Job Summary
       shell: bash
+      env:
+        DOCS_PATH: ${{ steps.resolve_url_path.outputs.path }}
       run: |
-        url="https://python.docs.firebolt.io/sdk_documentation/${{ steps.resolve_url_path.outputs.path }}"
-        echo "[Documentation]($url)" >> $GITHUB_STEP_SUMMARY
+        url="https://python.docs.firebolt.io/sdk_documentation/${DOCS_PATH}"
+        echo "[Documentation]($url)" >> "$GITHUB_STEP_SUMMARY"

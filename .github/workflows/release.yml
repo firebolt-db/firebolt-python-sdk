@@ -10,8 +10,7 @@ on:
         required: false
         description: 'Trigger a major release (optional). Leave empty for regular release.'
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   integration-tests:
@@ -40,14 +39,14 @@ jobs:
         permission-contents: write
 
     - name: Check out code
-      uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         fetch-depth: 0
         token: ${{ steps.app-token.outputs.token }}
         persist-credentials: true # The release action pushes the version commit and tag.
 
     - name: 'Publish action'
-      uses: firebolt-db/action-python-release@0cb5692fd39a782bce366e9120055d999bc8824b # main
+      uses: firebolt-db/action-python-release@535d72bf4fb7ff9ff7f87bb0454e232afe1cef91 # main
       with:
         pre-release-tag: ${{ inputs.pre-release-tag }}
         major-release: ${{ inputs.major-release }}

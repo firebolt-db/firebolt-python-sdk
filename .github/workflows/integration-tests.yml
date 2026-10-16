@@ -12,11 +12,12 @@ on:
       ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG:
         required: true
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   integration-test-v2:
+    permissions:
+      contents: read
     uses: ./.github/workflows/integration-tests-v2.yml
     secrets:
       FIREBOLT_CLIENT_ID_STG_NEW_IDN: ${{ secrets.FIREBOLT_CLIENT_ID_STG_NEW_IDN }}
@@ -24,6 +25,8 @@ jobs:
       ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_ID_STG }}
       ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG: ${{ secrets.ECOSYSTEM_FIREBOLT_SA_NO_USER_CLIENT_SECRET_STG }}
   integration-test-core:
+    permissions:
+      contents: read
     uses: ./.github/workflows/integration-tests-core.yml
   report-test-results:
     permissions:
