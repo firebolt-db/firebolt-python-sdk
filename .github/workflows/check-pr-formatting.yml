@@ -16,7 +16,8 @@ jobs:
       - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ !startsWith(github.head_ref, 'dependabot') }}
+        # Skip Dependabot PRs. Check the PR author, not the branch name, which anyone can choose.
+        if: ${{ github.event.pull_request.user.login != 'dependabot[bot]' }}
         with:
           # Ensures the subject doesn't start with an uppercase character.
           subjectPattern: ^(?![A-Z]).+$
