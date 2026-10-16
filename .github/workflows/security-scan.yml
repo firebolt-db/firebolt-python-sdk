@@ -29,7 +29,7 @@ jobs:
           name: pytest-coverage-report
 
       - name: "Security Scan"
-        uses: firebolt-db/action-security-scan@83d65487985b5e0e967362900c665ced1e8d0dbf # main
+        uses: firebolt-db/action-security-scan@43e78eff2e3313515c49b6c710ea0ae8a0bfb86a # v1.0.0
         with:
           github-key: ${{ secrets.GITHUB_TOKEN }}
           fossa-key: ${{ secrets.FOSSA_TOKEN }}
