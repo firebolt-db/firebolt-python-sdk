@@ -5,7 +5,11 @@ from typing import Callable
 from pytest import mark, raises
 
 from firebolt.db import Connection
-from firebolt.utils.exception import FireboltError, FireboltStructuredError
+from firebolt.utils.exception import (
+    FireboltError,
+    FireboltStructuredError,
+    MethodNotAllowedInAsyncError,
+)
 
 LONG_SELECT = "SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)"  # approx 3 sec
 
@@ -49,6 +53,19 @@ def test_insert_async(connection: Connection) -> None:
         assert len(query_history_result) == 1
     finally:
         cursor.execute(f"DROP TABLE {table_name}")
+
+
+def test_select_async(connection: Connection) -> None:
+    cursor = connection.cursor()
+    cursor.execute_async("SELECT 1")
+    token = cursor.async_query_token
+    assert token is not None, "Async token was not returned"
+    # sleep for 2 sec to make sure the async query is completed
+    time.sleep(2)
+    assert connection.is_async_query_running(token) == False
+    assert connection.is_async_query_successful(token) == True
+    with raises(MethodNotAllowedInAsyncError):
+        cursor.fetchall()
 
 
 def test_insert_async_running(connection: Connection) -> None:

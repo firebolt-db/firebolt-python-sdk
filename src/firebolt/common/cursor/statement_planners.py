@@ -11,6 +11,7 @@ from firebolt.common._types import ParameterType, SetParameter
 from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    NULL_OUTPUT_FORMAT,
 )
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -129,8 +130,15 @@ class BaseStatementPlanner(ABC):
         """Create parameter-style specific bulk execution plan."""
 
     @staticmethod
-    def _get_output_format(streaming: bool) -> str:
+    def _get_output_format(streaming: bool, async_execution: bool = False) -> str:
         """Get output format for the query."""
+        assert not (
+            streaming and async_execution
+        ), "Streaming and async execution are not supported together"
+        # Async queries return no rows, and the server only accepts async
+        # SELECTs when no result serialization is requested.
+        if async_execution:
+            return NULL_OUTPUT_FORMAT
         if streaming:
             return JSON_LINES_OUTPUT_FORMAT
         return JSON_OUTPUT_FORMAT
@@ -203,7 +211,7 @@ class FbNumericStatementPlanner(BaseStatementPlanner):
         ]
 
         query_params: Dict[str, Any] = {
-            "output_format": self._get_output_format(streaming),
+            "output_format": self._get_output_format(streaming, async_execution),
         }
         if query_parameters:
             query_params["query_parameters"] = json.dumps(query_parameters)
@@ -263,7 +271,7 @@ class QmarkStatementPlanner(BaseStatementPlanner):
 
         # Build basic query parameters for qmark style
         query_params: Dict[str, Any] = {
-            "output_format": self._get_output_format(streaming),
+            "output_format": self._get_output_format(streaming, async_execution),
         }
         if async_execution:
             query_params["async"] = True
@@ -288,7 +296,7 @@ class QmarkStatementPlanner(BaseStatementPlanner):
 
         # Build query parameters for bulk insert
         query_params: Dict[str, Any] = {
-            "output_format": self._get_output_format(False),
+            "output_format": self._get_output_format(False, async_execution),
         }
         if async_execution:
             query_params["async"] = True

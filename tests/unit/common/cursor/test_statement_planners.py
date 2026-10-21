@@ -9,6 +9,7 @@ from firebolt.common._types import SetParameter
 from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    NULL_OUTPUT_FORMAT,
 )
 from firebolt.common.cursor.statement_planners import (
     BaseStatementPlanner,
@@ -63,15 +64,24 @@ def test_execution_plan_defaults():
 
 # BaseStatementPlanner tests
 @pytest.mark.parametrize(
-    "streaming,expected_format",
+    "streaming,async_execution,expected_format",
     [
-        (True, JSON_LINES_OUTPUT_FORMAT),
-        (False, JSON_OUTPUT_FORMAT),
+        (True, False, JSON_LINES_OUTPUT_FORMAT),
+        (False, False, JSON_OUTPUT_FORMAT),
+        (False, True, NULL_OUTPUT_FORMAT),
     ],
 )
-def test_get_output_format(streaming, expected_format):
+def test_get_output_format(streaming, async_execution, expected_format):
     """Test output format selection."""
-    assert BaseStatementPlanner._get_output_format(streaming) == expected_format
+    assert (
+        BaseStatementPlanner._get_output_format(streaming, async_execution)
+        == expected_format
+    )
+
+
+def test_get_output_format_rejects_streaming_async():
+    with pytest.raises(AssertionError):
+        BaseStatementPlanner._get_output_format(True, True)
 
 
 # FbNumericStatementPlanner tests
@@ -126,8 +136,7 @@ def test_fb_numeric_execution_plan_no_parameters(fb_numeric_planner):
     "streaming,async_execution,expected_format,expected_async",
     [
         (True, False, JSON_LINES_OUTPUT_FORMAT, None),
-        (False, True, JSON_OUTPUT_FORMAT, True),
-        (True, True, JSON_LINES_OUTPUT_FORMAT, True),
+        (False, True, NULL_OUTPUT_FORMAT, True),
         (False, False, JSON_OUTPUT_FORMAT, None),
     ],
 )
@@ -213,8 +222,7 @@ def test_qmark_execution_plan_skip_parsing(qmark_planner):
     "streaming,async_execution,expected_format,expected_async",
     [
         (True, False, JSON_LINES_OUTPUT_FORMAT, None),
-        (False, True, JSON_OUTPUT_FORMAT, True),
-        (True, True, JSON_LINES_OUTPUT_FORMAT, True),
+        (False, True, NULL_OUTPUT_FORMAT, True),
         (False, False, JSON_OUTPUT_FORMAT, None),
     ],
 )

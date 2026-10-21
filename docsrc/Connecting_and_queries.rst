@@ -798,7 +798,8 @@ Trying to access `async_query_token` before calling `execute_async` will raise a
     separately using multiple `execute_async` calls.
 
 .. note::
-    Fetching data via SELECT is not supported and will raise an exception. execute_async is best suited for DML queries.
+    Async SELECT queries are accepted, but there is currently no way to retrieve their results - execute_async is best suited for DML queries.
+    Calling fetch methods after ``execute_async`` raises an exception.
 
 Monitoring the query status
 ----------------------------
