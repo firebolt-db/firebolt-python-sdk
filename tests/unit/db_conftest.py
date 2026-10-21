@@ -16,6 +16,7 @@ from firebolt.common._types import STRUCT
 from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    NULL_OUTPUT_FORMAT,
     REMOVE_PARAMETERS_HEADER,
     RESET_SESSION_HEADER,
     TRANSACTION_ID_SETTING,
@@ -319,7 +320,7 @@ def async_query_url(engine_url: str, db_name: str) -> URL:
     return URL(
         f"https://{engine_url}/",
         params={
-            "output_format": JSON_OUTPUT_FORMAT,
+            "output_format": NULL_OUTPUT_FORMAT,
             "database": db_name,
             "async": "true",
         },
@@ -852,7 +853,7 @@ def async_query_callback(async_token: str) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         assert request.read() != b""
         assert request.method == "POST"
-        assert f"output_format={JSON_OUTPUT_FORMAT}" in str(request.url)
+        assert f"output_format={NULL_OUTPUT_FORMAT}" in str(request.url)
         assert "async=true" in str(request.url)
         query_response = {
             "message": "the query was accepted for async processing",
