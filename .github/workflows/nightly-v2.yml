@@ -99,7 +99,7 @@ jobs:
       - name: Slack Notify of failure
         if: failure()
         id: slack
-        uses: firebolt-db/action-slack-nightly-notify@1bdd915837fbe0986aeacd2ee63a648ae2dcc6db # v1.0.0
+        uses: firebolt-db/action-slack-nightly-notify@38a20fcaeba512af5befb9ae7318c091ac7455e3 # v1.0.1
         with:
           os: ${{ matrix.os }}
           programming-language: Python
