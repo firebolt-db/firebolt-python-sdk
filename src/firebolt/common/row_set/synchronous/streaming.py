@@ -77,13 +77,18 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         if self._current_response is None:
             return None
-        if self._lines_iter is None:
-            try:
+        try:
+            if self._lines_iter is None:
                 self._lines_iter = self._current_response.iter_lines()
-            except HTTPError as err:
-                raise OperationalError("Failed to read response stream.") from err
+            while True:
+                next_line = next(self._lines_iter, None)
+                # A blank line separates nothing
+                if next_line is None or next_line.strip():
+                    break
+        except HTTPError as err:
+            self._response_failed = True
+            raise OperationalError("Failed to read response stream.") from err
 
-        next_line = next(self._lines_iter, None)
         return self._next_json_lines_record_from_line(next_line)
 
     @property
@@ -136,13 +141,25 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         """
         Move to the next result set.
 
+        A response may carry several result sets one after another. Those are
+        visited first, then the following responses. The remaining rows of the
+        current result set are read and discarded on the way.
+
         Returns:
             bool: True if there is a next result set, False otherwise
 
         Raises:
             OperationalError: If the response stream cannot be closed or if an error
-                occurs while fetching new columns
+                occurs while reading the response
+            FireboltStructuredError: If the response reports an error for the
+                current or the next result set
         """
+        if (
+            self._responses
+            and self._current_response is not None
+            and self._next_result_set_in_response()
+        ):
+            return True
         if self._current_row_set_idx + 1 < len(self._responses):
             if self._current_response is not None:
                 try:
@@ -155,6 +172,26 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
             self._current_columns = self._fetch_columns()
             return True
         return False
+
+    @close_on_op_error
+    def _next_result_set_in_response(self) -> bool:
+        """
+        Skip the remaining rows of the current result set and start the next
+        result set of the same response, if there is one.
+
+        Returns:
+            bool: True if a new result set was started, False if the response
+                carries no more result sets
+
+        Raises:
+            OperationalError: If an error occurs while reading the response
+        """
+        if self._response_failed:
+            return False
+        self._discard_current_record()
+        while not self._response_consumed:
+            self._count_skipped_record(self._pop_data_record())
+        return self._start_result_set_from_record(self._next_json_lines_record())
 
     @close_on_op_error
     def _pop_data_record(self) -> Optional[DataRecord]:
@@ -185,11 +222,13 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         if self._current_response is None or self._response_consumed:
             raise StopIteration
 
-        if self._current_record is None or self._current_record_row_idx >= len(
+        while self._current_record is None or self._current_record_row_idx >= len(
             self._current_record.data
         ):
             self._current_record = self._pop_data_record()
             self._current_record_row_idx = 0
+            if self._current_record is None:
+                break
 
         return self._get_next_data_row_from_current_record(StopIteration)
 

@@ -1,5 +1,6 @@
 import json
-from typing import Iterator, List, Optional
+import re
+from typing import Any, Dict, Iterator, List, Optional
 
 from httpx import Response
 
@@ -7,6 +8,9 @@ from firebolt.common._types import ColType, parse_type
 from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.types import Column, RowsResponse, Statistics
 from firebolt.utils.exception import DataError, FireboltStructuredError
+
+# Whitespace as JSON defines it (RFC 8259), which is narrower than str.isspace()
+_JSON_WHITESPACE = re.compile(r"[ \t\n\r]*")
 
 
 class InMemoryRowSet(BaseSyncRowSet):
@@ -41,29 +45,65 @@ class InMemoryRowSet(BaseSyncRowSet):
         content = b"".join(stream).decode("utf-8")
         if len(content) == 0:
             self.append_empty_response()
-        else:
+            return
+        try:
+            row_sets = [
+                self._parse_query_data(query_data)
+                for query_data in self._iter_documents(content)
+            ]
+            if not row_sets:
+                raise ValueError("no result set found in response")
+        except (KeyError, TypeError, ValueError) as err:
+            raise DataError(f"Invalid query data format: {str(err)}")
+        # Only a fully parsed response contributes result sets
+        self._row_sets.extend(row_sets)
+
+    @staticmethod
+    def _iter_documents(content: str) -> Iterator[Dict[str, Any]]:
+        """
+        Yield every JSON document of a response, one per result set.
+        """
+        # Skip parsing floats to properly parse them later
+        decoder = json.JSONDecoder(parse_float=str)
+        position = 0
+        while True:
+            whitespace = _JSON_WHITESPACE.match(content, position)
+            if whitespace is not None:
+                position = whitespace.end()
+            if position == len(content):
+                return
             try:
-                # Skip parsing floats to properly parse them later
-                query_data = json.loads(content, parse_float=str)
+                document, position = decoder.raw_decode(content, position)
+            except json.JSONDecodeError as err:
+                if position == 0:
+                    raise
+                # Keep the text the engine wrote after a complete document, which
+                # is where it reports an error of a later statement
+                raise ValueError(
+                    f"{err}; unexpected content after a result set: "
+                    f"{content[position:position + 500]!r}"
+                ) from err
+            yield document
 
-                if "errors" in query_data and len(query_data["errors"]) > 0:
-                    raise FireboltStructuredError(query_data)
+    @staticmethod
+    def _parse_query_data(query_data: Any) -> RowsResponse:
+        """
+        Build a result set from a parsed JSON document.
+        """
+        if not isinstance(query_data, dict):
+            raise ValueError(f"expected a JSON object, got {type(query_data).__name__}")
+        if "errors" in query_data and len(query_data["errors"]) > 0:
+            raise FireboltStructuredError(query_data)
 
-                columns = [
-                    Column(
-                        d["name"], parse_type(d["type"]), None, None, None, None, None
-                    )
-                    for d in query_data["meta"]
-                ]
-                # Extract rows
-                rows = query_data["data"]
-                row_count = len(rows)
-                statistics = Statistics(**query_data.get("statistics", {}))
-                self._row_sets.append(
-                    RowsResponse(row_count, columns, statistics, rows)
-                )
-            except (KeyError, ValueError) as err:
-                raise DataError(f"Invalid query data format: {str(err)}")
+        columns = [
+            Column(d["name"], parse_type(d["type"]), None, None, None, None, None)
+            for d in query_data["meta"]
+        ]
+        # Extract rows
+        rows = query_data["data"]
+        row_count = len(rows)
+        statistics = Statistics(**query_data.get("statistics", {}))
+        return RowsResponse(row_count, columns, statistics, rows)
 
     @property
     def _row_set(self) -> RowsResponse:

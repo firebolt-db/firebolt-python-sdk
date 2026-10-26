@@ -8,6 +8,7 @@ from firebolt.common.row_set.json_lines import (
     DataRecord,
     ErrorRecord,
     JSONLinesRecord,
+    MessageType,
     StartRecord,
     SuccessRecord,
     parse_json_lines_record,
@@ -18,6 +19,14 @@ from firebolt.utils.exception import (
     FireboltStructuredError,
     OperationalError,
 )
+
+
+def _message_type_name(record: JSONLinesRecord) -> str:
+    """Name of a record's message type, whether it holds the enum or its raw value."""
+    message_type = record.message_type
+    if isinstance(message_type, MessageType):
+        return message_type.value
+    return str(message_type)
 
 
 class StreamingRowSetCommonBase:
@@ -46,12 +55,23 @@ class StreamingRowSetCommonBase:
         """
         Reset the state of the streaming row set.
 
-        Resets internal counters, iterators, and cached data for the next row set.
+        Resets internal counters, iterators, and cached data for the next response.
         Note: Does not reset _current_row_set_idx to allow for multiple row sets.
+        """
+        self._lines_iter: Optional[Union[AsyncIterator[str], Iterator[str]]] = None
+        # Set once reading the response failed; no further result set is read from it.
+        self._response_failed = False
+        self._reset_result_set()
+
+    def _reset_result_set(self) -> None:
+        """
+        Reset the state of the current result set.
+
+        Keeps the response and its line iterator, so that the next result set
+        can be read from the same response.
         """
         self._current_row_count = -1
         self._current_statistics = None
-        self._lines_ite: Optional[Union[AsyncIterator[str], Iterator[str]]] = None
         self._current_record = None
         self._current_record_row_idx = -1
         self._response_consumed = False
@@ -97,13 +117,18 @@ class StreamingRowSetCommonBase:
             # Skip parsing floats to properly parse them later
             record = json.loads(next_line, parse_float=str)
         except json.JSONDecodeError as err:
+            self._response_failed = True
             raise OperationalError(
                 f"Invalid JSON line response format: {next_line}"
             ) from err
 
         record = parse_json_lines_record(record)
         if isinstance(record, ErrorRecord):
+            if self._response_consumed:
+                # The error belongs to a statement that produced no START record
+                self._reset_result_set()
             self._response_consumed = True
+            self._response_failed = True
             self._current_statistics = record.statistics
             self._handle_error_record(record)
         return record
@@ -138,13 +163,15 @@ class StreamingRowSetCommonBase:
         """
         if record is None:
             self._response_consumed = True
+            self._response_failed = True
             raise OperationalError(
                 "Unexpected end of response stream while reading columns."
             )
         if not isinstance(record, StartRecord):
             self._response_consumed = True
+            self._response_failed = True
             raise OperationalError(
-                f"Unexpected json line message type {record.message_type.value}, "
+                f"Unexpected json line message type {_message_type_name(record)}, "
                 "expected START"
             )
 
@@ -152,6 +179,46 @@ class StreamingRowSetCommonBase:
             Column(col.name, parse_type(col.type), None, None, None, None, None)
             for col in record.result_columns
         ]
+
+    def _discard_current_record(self) -> None:
+        """
+        Drop the current data record, counting its unread rows as read.
+        """
+        if self._current_record is not None:
+            self._rows_returned += (
+                len(self._current_record.data) - self._current_record_row_idx
+            )
+            self._current_record = None
+            self._current_record_row_idx = -1
+
+    def _count_skipped_record(self, record: Optional[DataRecord]) -> None:
+        """
+        Count the rows of a data record that nextset() skipped over.
+        """
+        if record is not None:
+            self._rows_returned += len(record.data)
+
+    def _start_result_set_from_record(self, record: Optional[JSONLinesRecord]) -> bool:
+        """
+        Start the next result set of the current response.
+
+        Args:
+            record: The record that follows the end of the previous result set,
+                or None if the response stream is exhausted.
+
+        Returns:
+            bool: True if a new result set was started, False if the response
+                carries no more result sets.
+
+        Raises:
+            OperationalError: If the record is not a START record.
+        """
+        if record is None:
+            return False
+        columns = self._fetch_columns_from_record(record)
+        self._reset_result_set()
+        self._current_columns = columns
+        return True
 
     def _pop_data_record_from_record(
         self, record: Optional[JSONLinesRecord]
@@ -172,6 +239,7 @@ class StreamingRowSetCommonBase:
         if record is None:
             if not self._response_consumed:
                 self._response_consumed = True
+                self._response_failed = True
                 raise OperationalError(
                     "Unexpected end of response stream while reading data."
                 )
@@ -184,8 +252,9 @@ class StreamingRowSetCommonBase:
             self._response_consumed = True
             return None
         if not isinstance(record, DataRecord):
+            self._response_failed = True
             raise OperationalError(
-                f"Unexpected json line message type {record.message_type.value}, "
+                f"Unexpected json line message type {_message_type_name(record)}, "
                 "expected DATA"
             )
         return record

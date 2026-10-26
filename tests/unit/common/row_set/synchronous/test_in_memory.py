@@ -6,7 +6,7 @@ import pytest
 from httpx import Response
 
 from firebolt.common.row_set.synchronous.in_memory import InMemoryRowSet
-from firebolt.utils.exception import DataError
+from firebolt.utils.exception import DataError, FireboltStructuredError
 
 
 class TestInMemoryRowSet:
@@ -450,3 +450,135 @@ class TestInMemoryRowSet:
         assert isinstance(parsed_row[1], str)
         assert parsed_row[0] == 1
         assert parsed_row[1] == "one"
+
+
+def _document(columns, rows) -> str:
+    statistics = {
+        "elapsed": 0.1,
+        "rows_read": len(rows),
+        "bytes_read": 100,
+        "time_before_execution": 0.01,
+        "time_to_execute": 0.09,
+    }
+    return json.dumps({"meta": columns, "data": rows, "statistics": statistics})
+
+
+FIRST_DOCUMENT = _document([{"name": "col1", "type": "int"}], [[1], [2]])
+SECOND_DOCUMENT = _document(
+    [{"name": "col2", "type": "string"}, {"name": "col3", "type": "int"}], [["a", 3]]
+)
+EMPTY_DOCUMENT = _document([], [])
+ERROR_DOCUMENT = json.dumps({"errors": [{"message": "error"}]})
+
+
+def _response(content: str) -> Response:
+    mock = MagicMock(spec=Response)
+    mock.iter_bytes.return_value = iter([content.encode("utf-8")])
+    return mock
+
+
+def _assert_two_result_sets(row_set: InMemoryRowSet) -> None:
+    assert [c.name for c in row_set.columns] == ["col1"]
+    assert row_set.row_count == 2
+    assert list(row_set) == [[1], [2]]
+    assert row_set.statistics.rows_read == 2
+
+    assert row_set.nextset() is True
+    assert [c.name for c in row_set.columns] == ["col2", "col3"]
+    assert row_set.row_count == 1
+    assert list(row_set) == [["a", 3]]
+    assert row_set.statistics.rows_read == 1
+
+    assert row_set.nextset() is False
+
+
+@pytest.mark.parametrize("separator", ["", "\n", "\n\n  "])
+def test_several_result_sets_in_one_response(separator: str):
+    """All result sets carried by one response are available through nextset."""
+    row_set = InMemoryRowSet()
+    row_set.append_response(_response(FIRST_DOCUMENT + separator + SECOND_DOCUMENT))
+    _assert_two_result_sets(row_set)
+
+
+def test_result_sets_in_one_response_then_another_response():
+    """Result sets of one response come before those of the next response."""
+    row_set = InMemoryRowSet()
+    row_set.append_response(_response(FIRST_DOCUMENT + "\n" + SECOND_DOCUMENT))
+    row_set.append_response(_response(EMPTY_DOCUMENT))
+    assert list(row_set) == [[1], [2]]
+    assert row_set.nextset() is True
+    assert list(row_set) == [["a", 3]]
+    assert row_set.nextset() is True
+    assert row_set.columns == []
+    assert row_set.row_count == 0
+    assert row_set.nextset() is False
+
+
+def test_empty_result_set_between_others():
+    """A result set without columns does not break the following ones."""
+    row_set = InMemoryRowSet()
+    row_set.append_response(
+        _response(FIRST_DOCUMENT + "\n" + EMPTY_DOCUMENT + "\n" + SECOND_DOCUMENT)
+    )
+    assert list(row_set) == [[1], [2]]
+    assert row_set.nextset() is True
+    assert row_set.columns == []
+    assert row_set.row_count == 0
+    assert row_set.nextset() is True
+    assert list(row_set) == [["a", 3]]
+    assert row_set.nextset() is False
+
+
+def test_error_after_result_set():
+    """An error document after a result set is reported as an error."""
+    row_set = InMemoryRowSet()
+    with pytest.raises(FireboltStructuredError):
+        row_set.append_response(_response(FIRST_DOCUMENT + "\n" + ERROR_DOCUMENT))
+
+
+def test_invalid_data_after_result_set():
+    """Anything but a JSON document after a result set is a data error."""
+    row_set = InMemoryRowSet()
+    with pytest.raises(DataError):
+        row_set.append_response(_response(FIRST_DOCUMENT + "\nnot json"))
+
+
+def test_whitespace_only_response():
+    """A response without any document is a data error."""
+    row_set = InMemoryRowSet()
+    with pytest.raises(DataError):
+        row_set.append_response(_response("  \n"))
+
+
+def test_failed_parse_leaves_no_result_set():
+    """A response that fails to parse contributes no result set at all."""
+    row_set = InMemoryRowSet()
+    with pytest.raises(DataError):
+        row_set.append_response(_response(FIRST_DOCUMENT + "\nnot json"))
+    assert row_set.nextset() is False
+    with pytest.raises(DataError, match="No results available"):
+        row_set.columns
+
+
+@pytest.mark.parametrize("document", ["[1]", "1", "null", '"text"'])
+def test_non_object_document(document: str):
+    """A document that is not a JSON object is a data error, not a TypeError."""
+    row_set = InMemoryRowSet()
+    with pytest.raises(DataError, match="expected a JSON object"):
+        row_set.append_response(_response(FIRST_DOCUMENT + "\n" + document))
+
+
+def test_only_json_whitespace_separates_documents():
+    """Whitespace JSON does not know, such as a no-break space, is a data error."""
+    row_set = InMemoryRowSet()
+    with pytest.raises(DataError):
+        row_set.append_response(_response(FIRST_DOCUMENT + "\u00a0" + SECOND_DOCUMENT))
+
+
+def test_invalid_content_after_result_set_is_reported():
+    """The engine's text after a complete document is kept in the error."""
+    row_set = InMemoryRowSet()
+    with pytest.raises(DataError, match="unexpected content after a result set"):
+        row_set.append_response(
+            _response(FIRST_DOCUMENT + '\n\t],\n  "errors": [{"description": "x"}]}')
+        )

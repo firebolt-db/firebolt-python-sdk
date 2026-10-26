@@ -1826,3 +1826,78 @@ def test_cursor_plaintext_error(
     assert "Plaintext error message" in str(
         excinfo.value
     ), "Invalid error message for plaintext error response"
+
+
+def test_cursor_execute_several_result_sets(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A response carrying several result sets is walked with nextset."""
+    first = {
+        "meta": [{"name": "a", "type": "int"}],
+        "data": [[1]],
+        "rows": 1,
+        "statistics": query_statistics,
+    }
+    second = {
+        "meta": [{"name": "b", "type": "text"}],
+        "data": [["x"], ["y"]],
+        "rows": 2,
+        "statistics": query_statistics,
+    }
+    httpx_mock.add_response(
+        url=query_url, content=(json.dumps(first) + "\n" + json.dumps(second)).encode()
+    )
+    cursor.execute("select 1; select 'x'", skip_parsing=True)
+    assert cursor.rowcount == 1
+    assert [d.name for d in cursor.description] == ["a"]
+    assert cursor.fetchall() == [[1]]
+    assert cursor.nextset() is True
+    assert cursor.rowcount == 2
+    assert [d.name for d in cursor.description] == ["b"]
+    assert cursor.fetchall() == [["x"], ["y"]]
+    assert cursor.nextset() is False
+
+
+def test_cursor_execute_stream_several_result_sets(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A streamed response carrying several result sets is walked with nextset."""
+    lines = [
+        {
+            "message_type": "START",
+            "result_columns": [{"name": "a", "type": "integer"}],
+            "query_id": "q1",
+            "query_label": "l",
+            "request_id": "r",
+        },
+        {"message_type": "DATA", "data": [[1]]},
+        {"message_type": "FINISH_SUCCESSFULLY", "statistics": query_statistics},
+        {
+            "message_type": "START",
+            "result_columns": [{"name": "b", "type": "text"}],
+            "query_id": "q2",
+            "query_label": "l",
+            "request_id": "r",
+        },
+        {"message_type": "DATA", "data": [["x"], ["y"]]},
+        {"message_type": "FINISH_SUCCESSFULLY", "statistics": query_statistics},
+    ]
+    httpx_mock.add_response(
+        url=streaming_query_url,
+        content="\n".join(json.dumps(line) for line in lines).encode(),
+    )
+    cursor.execute_stream("select 1; select 'x'", skip_parsing=True)
+    assert [d.name for d in cursor.description] == ["a"]
+    assert cursor.fetchall() == [[1]]
+    assert cursor.rowcount == 1
+    assert cursor.nextset() is True
+    assert [d.name for d in cursor.description] == ["b"]
+    assert cursor.fetchall() == [["x"], ["y"]]
+    assert cursor.rowcount == 2
+    assert cursor.nextset() is False

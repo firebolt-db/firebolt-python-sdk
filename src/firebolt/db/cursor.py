@@ -472,10 +472,17 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     def nextset(self) -> bool:
         """
         Skip to the next available set, discarding any remaining rows
-        from the current set.
+        from the current set. Result sets returned by one response are
+        visited in order, like those of separate statements; for a streamed
+        result the remaining rows are read and discarded on the way.
 
         Returns:
             bool: True if there is a next result set, False otherwise
+
+        Raises:
+            OperationalError: If the response cannot be read
+            FireboltStructuredError: If the response reports an error for the
+                current or the next result set
         """
         assert self._row_set is not None
         return self._row_set.nextset()
