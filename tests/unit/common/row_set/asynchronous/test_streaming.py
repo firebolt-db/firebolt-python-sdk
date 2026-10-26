@@ -2,6 +2,7 @@ import json
 from decimal import Decimal
 from unittest.mock import MagicMock, PropertyMock, patch
 
+import httpx
 import pytest
 from httpx import HTTPError, Response
 
@@ -249,14 +250,16 @@ class TestStreamingAsyncRowSet:
         start_record,
     ):
         """Test nextset when there are no more result sets."""
-        # Setup mocks
-        mock_next_json_lines_record.return_value = start_record
+        # Setup mocks: the current result set is fully read and the response
+        # stream is exhausted after it
+        mock_next_json_lines_record.return_value = None
         mock_fetch_columns_from_record.return_value = [
             Column("col1", int, None, None, None, None, None)
         ]
 
         streaming_rowset._responses = [mock_response]
         streaming_rowset._current_columns = mock_fetch_columns_from_record.return_value
+        streaming_rowset._response_consumed = True
 
         assert await streaming_rowset.nextset() is False
 
@@ -276,11 +279,14 @@ class TestStreamingAsyncRowSet:
         # Setup mocks
         mock_fetch_columns.side_effect = [columns1, columns2]
 
-        # Setup two responses
+        # Setup two responses, each carrying a single, fully read result set
         response1 = MagicMock(spec=Response)
+        response1.aiter_lines.return_value = self._async_iter([])
         response2 = MagicMock(spec=Response)
+        response2.aiter_lines.return_value = self._async_iter([])
         streaming_rowset._responses = [response1, response2]
         streaming_rowset._current_columns = columns1
+        streaming_rowset._response_consumed = True
 
         # Verify first result set
         assert streaming_rowset.columns[0].name == "col1"
@@ -297,6 +303,7 @@ class TestStreamingAsyncRowSet:
 
         # Update current columns to match what mock_fetch_columns returned
         streaming_rowset._current_columns = columns2
+        streaming_rowset._response_consumed = True
 
         # Verify second result set
         assert streaming_rowset.columns[0].name == "col3"
@@ -1020,3 +1027,242 @@ class TestStreamingAsyncRowSet:
             assert (
                 str(row[2]) == "1231232.123459999990457054844258706536"
             ), "Decimal value mismatch"
+
+
+def _start(columns) -> str:
+    return json.dumps(
+        {
+            "message_type": "START",
+            "result_columns": columns,
+            "query_id": "q",
+            "query_label": "l",
+            "request_id": "r",
+        }
+    )
+
+
+def _data(rows) -> str:
+    return json.dumps({"message_type": "DATA", "data": rows})
+
+
+def _finish(rows_read: int) -> str:
+    return json.dumps(
+        {
+            "message_type": "FINISH_SUCCESSFULLY",
+            "statistics": {
+                "elapsed": 0.1,
+                "rows_read": rows_read,
+                "bytes_read": 100,
+                "time_before_execution": 0.01,
+                "time_to_execute": 0.09,
+            },
+        }
+    )
+
+
+FINISH_WITH_ERRORS = json.dumps(
+    {
+        "message_type": "FINISH_WITH_ERRORS",
+        "errors": [{"message": "error"}],
+        "query_id": "q",
+        "query_label": "l",
+        "request_id": "r",
+        "statistics": {
+            "elapsed": 0.1,
+            "rows_read": 0,
+            "bytes_read": 0,
+            "time_before_execution": 0.01,
+            "time_to_execute": 0.09,
+        },
+    }
+)
+
+FIRST_COLUMNS = [{"name": "col1", "type": "int"}]
+SECOND_COLUMNS = [{"name": "col2", "type": "string"}, {"name": "col3", "type": "int"}]
+TWO_RESULT_SETS = [
+    _start(FIRST_COLUMNS),
+    _data([[1], [2]]),
+    _finish(2),
+    _start(SECOND_COLUMNS),
+    _data([["a", 3]]),
+    _data([["b", 4]]),
+    _finish(2),
+]
+
+
+def _response(lines) -> Response:
+    mock = MagicMock(spec=Response)
+
+    async def aiter_lines():
+        for line in lines:
+            yield line
+
+    mock.aiter_lines.return_value = aiter_lines()
+    mock.is_closed = False
+    return mock
+
+
+async def _rows(row_set: StreamingAsyncRowSet):
+    return [row async for row in row_set]
+
+
+async def test_several_result_sets_in_one_response():
+    """All result sets carried by one response are available through nextset."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(_response(TWO_RESULT_SETS))
+
+    assert [c.name for c in row_set.columns] == ["col1"]
+    assert row_set.row_count == -1
+    assert await _rows(row_set) == [[1], [2]]
+    assert row_set.row_count == 2
+    assert row_set.statistics.rows_read == 2
+
+    assert await row_set.nextset() is True
+    assert [c.name for c in row_set.columns] == ["col2", "col3"]
+    assert row_set.row_count == -1
+    assert await _rows(row_set) == [["a", 3], ["b", 4]]
+    assert row_set.row_count == 2
+
+    assert await row_set.nextset() is False
+
+
+async def test_nextset_skips_remaining_rows_of_result_set():
+    """nextset discards whatever is left of the current result set."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(_response(TWO_RESULT_SETS))
+    assert await row_set.__anext__() == [1]
+    assert await row_set.nextset() is True
+    assert await _rows(row_set) == [["a", 3], ["b", 4]]
+    assert await row_set.nextset() is False
+
+
+async def test_result_sets_across_several_responses():
+    """Result sets of one response come before those of the next response."""
+    row_set = StreamingAsyncRowSet()
+    first = _response(TWO_RESULT_SETS)
+    second = _response([_start(FIRST_COLUMNS), _data([[5]]), _finish(1)])
+    await row_set.append_response(first)
+    await row_set.append_response(second)
+
+    assert await _rows(row_set) == [[1], [2]]
+    assert await row_set.nextset() is True
+    assert await _rows(row_set) == [["a", 3], ["b", 4]]
+    first.aclose.assert_not_called()
+
+    assert await row_set.nextset() is True
+    first.aclose.assert_called_once()
+    assert await _rows(row_set) == [[5]]
+    assert await row_set.nextset() is False
+
+
+async def test_error_in_later_result_set():
+    """An error of a later result set is raised when its rows are read."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response(
+            [
+                _start(FIRST_COLUMNS),
+                _data([[1]]),
+                _finish(1),
+                _start(SECOND_COLUMNS),
+                FINISH_WITH_ERRORS,
+            ]
+        )
+    )
+    assert await _rows(row_set) == [[1]]
+    assert await row_set.nextset() is True
+    with pytest.raises(FireboltStructuredError):
+        await row_set.__anext__()
+    assert await row_set.nextset() is False
+
+
+async def test_truncated_result_set_on_nextset():
+    """A result set cut before its end is an error on nextset."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(_response([_start(FIRST_COLUMNS), _data([[1]])]))
+    with pytest.raises(OperationalError, match="Unexpected end of response stream"):
+        await row_set.nextset()
+
+
+async def test_unexpected_record_after_result_set():
+    """A record other than START after a result set is an error on nextset."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response([_start(FIRST_COLUMNS), _finish(0), _data([[1]])])
+    )
+    with pytest.raises(OperationalError, match="expected START"):
+        await row_set.nextset()
+
+
+class _FailingStream(httpx.AsyncByteStream):
+    """A body that breaks after its payload, like a connection cut mid-transfer."""
+
+    def __init__(self, payload: bytes) -> None:
+        self._payload = payload
+
+    async def __aiter__(self):
+        yield self._payload
+        raise httpx.RemoteProtocolError("peer closed connection")
+
+
+@pytest.mark.parametrize("rows_fetched", [0, 1])
+async def test_row_count_counts_rows_skipped_by_nextset(rows_fetched: int):
+    """row_count covers the rows nextset discarded, not only the fetched ones."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response([_start(FIRST_COLUMNS), _data([[1], [2]]), _data([[3]]), _finish(3)])
+    )
+    for _ in range(rows_fetched):
+        await row_set.__anext__()
+    assert await row_set.nextset() is False
+    assert row_set.row_count == 3
+
+
+async def test_transport_error_after_last_record():
+    """A broken connection after the last record surfaces as OperationalError."""
+    row_set = StreamingAsyncRowSet()
+    body = "\n".join([_start(FIRST_COLUMNS), _data([[1]]), _finish(1)]) + "\n"
+    response = httpx.Response(200, stream=_FailingStream(body.encode("utf-8")))
+    await row_set.append_response(response)
+    assert await _rows(row_set) == [[1]]
+    with pytest.raises(OperationalError, match="Failed to read response stream"):
+        await row_set.nextset()
+    assert response.is_closed
+
+
+async def test_blank_lines_between_and_after_result_sets():
+    """Blank lines in the stream separate nothing and break nothing."""
+    row_set = StreamingAsyncRowSet()
+    body = "\n".join([_start(FIRST_COLUMNS), _data([[1]]), _finish(1), "", " "])
+    body += "\n" + "\n".join([_start(SECOND_COLUMNS), _data([["a", 3]]), _finish(1)])
+    body += "\n\n"
+    await row_set.append_response(httpx.Response(200, content=body.encode("utf-8")))
+    assert await _rows(row_set) == [[1]]
+    assert await row_set.nextset() is True
+    assert await _rows(row_set) == [["a", 3]]
+    assert await row_set.nextset() is False
+
+
+async def test_error_record_without_start_after_result_set():
+    """An error of a statement that produced no START is reported by nextset."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response([_start(FIRST_COLUMNS), _data([[1]]), _finish(1), FINISH_WITH_ERRORS])
+    )
+    assert await _rows(row_set) == [[1]]
+    with pytest.raises(FireboltStructuredError):
+        await row_set.nextset()
+    assert row_set.row_count == -1
+    assert row_set.columns is None
+
+
+async def test_empty_data_records_are_skipped():
+    """A DATA record without rows does not end or break the iteration."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response(
+            [_start(FIRST_COLUMNS), _data([]), _data([[1]]), _data([]), _finish(1)]
+        )
+    )
+    assert await _rows(row_set) == [[1]]
+    assert row_set.row_count == 1

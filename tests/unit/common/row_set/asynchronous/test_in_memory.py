@@ -6,7 +6,7 @@ import pytest
 from httpx import Response
 
 from firebolt.common.row_set.asynchronous.in_memory import InMemoryAsyncRowSet
-from firebolt.utils.exception import DataError
+from firebolt.utils.exception import DataError, FireboltStructuredError
 
 
 class TestInMemoryAsyncRowSet:
@@ -454,3 +454,75 @@ class TestInMemoryAsyncRowSet:
             assert (
                 str(row[2]) == "1231232.123459999990457054844258706536"
             ), "Decimal value mismatch"
+
+
+def _document(columns, rows) -> str:
+    statistics = {
+        "elapsed": 0.1,
+        "rows_read": len(rows),
+        "bytes_read": 100,
+        "time_before_execution": 0.01,
+        "time_to_execute": 0.09,
+    }
+    return json.dumps({"meta": columns, "data": rows, "statistics": statistics})
+
+
+FIRST_DOCUMENT = _document([{"name": "col1", "type": "int"}], [[1], [2]])
+SECOND_DOCUMENT = _document(
+    [{"name": "col2", "type": "string"}, {"name": "col3", "type": "int"}], [["a", 3]]
+)
+ERROR_DOCUMENT = json.dumps({"errors": [{"message": "error"}]})
+
+
+def _response(content: str) -> Response:
+    mock = MagicMock(spec=Response)
+
+    async def aiter_bytes():
+        yield content.encode("utf-8")
+
+    mock.aiter_bytes.return_value = aiter_bytes()
+    return mock
+
+
+async def _rows(row_set: InMemoryAsyncRowSet):
+    return [row async for row in row_set]
+
+
+async def test_several_result_sets_in_one_response():
+    """All result sets carried by one response are available through nextset."""
+    row_set = InMemoryAsyncRowSet()
+    await row_set.append_response(_response(FIRST_DOCUMENT + "\n" + SECOND_DOCUMENT))
+
+    assert [c.name for c in row_set.columns] == ["col1"]
+    assert row_set.row_count == 2
+    assert await _rows(row_set) == [[1], [2]]
+    assert row_set.statistics.rows_read == 2
+
+    assert await row_set.nextset() is True
+    assert [c.name for c in row_set.columns] == ["col2", "col3"]
+    assert row_set.row_count == 1
+    assert await _rows(row_set) == [["a", 3]]
+    assert row_set.statistics.rows_read == 1
+
+    assert await row_set.nextset() is False
+
+
+async def test_error_after_result_set():
+    """An error document after a result set is reported as an error."""
+    row_set = InMemoryAsyncRowSet()
+    with pytest.raises(FireboltStructuredError):
+        await row_set.append_response(_response(FIRST_DOCUMENT + "\n" + ERROR_DOCUMENT))
+
+
+async def test_invalid_data_after_result_set():
+    """Anything but a JSON document after a result set is a data error."""
+    row_set = InMemoryAsyncRowSet()
+    with pytest.raises(DataError):
+        await row_set.append_response(_response(FIRST_DOCUMENT + "\nnot json"))
+
+
+async def test_non_object_document():
+    """A document that is not a JSON object is a data error, not a TypeError."""
+    row_set = InMemoryAsyncRowSet()
+    with pytest.raises(DataError, match="expected a JSON object"):
+        await row_set.append_response(_response(FIRST_DOCUMENT + "\n[1]"))
