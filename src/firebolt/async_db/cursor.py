@@ -489,10 +489,10 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
     @check_query_executed
     async def nextset(self) -> bool:
         """
-        Skip to the next available set, discarding any remaining rows
-        from the current set. Result sets returned by one response are
-        visited in order, like those of separate statements; for a streamed
-        result the remaining rows are read and discarded on the way.
+        Skip to the next available set, if there is one, discarding any
+        remaining rows from the current set. If there is no next set, the
+        current set and its remaining rows are kept. Result sets returned by
+        one response are visited in order, like those of separate statements.
 
         Returns:
             bool: True if there is a next result set, False otherwise

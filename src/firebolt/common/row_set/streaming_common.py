@@ -1,5 +1,15 @@
 import json
-from typing import Any, AsyncIterator, Iterator, List, Optional, Type, Union
+from collections import deque
+from typing import (
+    Any,
+    AsyncIterator,
+    Deque,
+    Iterator,
+    List,
+    Optional,
+    Type,
+    Union,
+)
 
 from httpx import Response
 
@@ -77,6 +87,9 @@ class StreamingRowSetCommonBase:
         self._response_consumed = False
         self._current_columns = None
         self._rows_returned = 0
+        # Rows nextset() read past. They stay readable if no next result set
+        # follows, as with a buffered row set.
+        self._skipped_records: Deque[DataRecord] = deque()
 
     @property
     def _current_response(self) -> Optional[Response]:
@@ -127,6 +140,9 @@ class StreamingRowSetCommonBase:
             if self._response_consumed:
                 # The error belongs to a statement that produced no START record
                 self._reset_result_set()
+            # Rows of a failed statement must not be fetched afterwards
+            self._current_record = None
+            self._skipped_records.clear()
             self._response_consumed = True
             self._response_failed = True
             self._current_statistics = record.statistics
@@ -180,23 +196,23 @@ class StreamingRowSetCommonBase:
             for col in record.result_columns
         ]
 
-    def _discard_current_record(self) -> None:
+    def _count_unread_rows_of_current_record(self) -> None:
         """
-        Drop the current data record, counting its unread rows as read.
+        Count the unread rows of the current data record as read.
         """
         if self._current_record is not None:
             self._rows_returned += (
                 len(self._current_record.data) - self._current_record_row_idx
             )
-            self._current_record = None
-            self._current_record_row_idx = -1
 
-    def _count_skipped_record(self, record: Optional[DataRecord]) -> None:
+    def _skip_record(self, record: Optional[DataRecord]) -> None:
         """
-        Count the rows of a data record that nextset() skipped over.
+        Count the rows of a data record that nextset() read past, and keep
+        the record in case no next result set follows.
         """
         if record is not None:
             self._rows_returned += len(record.data)
+            self._skipped_records.append(record)
 
     def _start_result_set_from_record(self, record: Optional[JSONLinesRecord]) -> bool:
         """
