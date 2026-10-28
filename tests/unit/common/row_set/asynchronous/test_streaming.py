@@ -1292,6 +1292,7 @@ async def test_rows_skipped_before_next_response_are_dropped():
     assert await row_set.nextset() is False
     assert await _rows(row_set) == []
 
+
 async def test_rows_of_statement_failing_during_nextset_are_dropped():
     """Rows read past before an error are not fetchable after nextset raises."""
     row_set = StreamingAsyncRowSet()
