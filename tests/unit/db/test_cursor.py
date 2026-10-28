@@ -1901,3 +1901,48 @@ def test_cursor_execute_stream_several_result_sets(
     assert cursor.fetchall() == [["x"], ["y"]]
     assert cursor.rowcount == 2
     assert cursor.nextset() is False
+
+
+def _copy_then_select_lines(statistics: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Two statements without result columns, like COPY and CALL, then a SELECT."""
+    lines: List[Dict[str, Any]] = []
+    for query_id, columns, data in [
+        ("q1", [], []),
+        ("q2", [], []),
+        ("q3", [{"name": "query_id", "type": "text"}], [["q1"], ["q2"]]),
+    ]:
+        lines.append(
+            {
+                "message_type": "START",
+                "result_columns": columns,
+                "query_id": query_id,
+                "query_label": "l",
+                "request_id": "r",
+            }
+        )
+        if data:
+            lines.append({"message_type": "DATA", "data": data})
+        lines.append({"message_type": "FINISH_SUCCESSFULLY", "statistics": statistics})
+    return lines
+
+
+def test_cursor_execute_stream_walk_to_last_result_set(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """The rows of the last streamed result set survive the nextset that ends the walk."""
+    httpx_mock.add_response(
+        url=streaming_query_url,
+        content="\n".join(
+            json.dumps(line) for line in _copy_then_select_lines(query_statistics)
+        ).encode(),
+    )
+    cursor.execute_stream("copy ...; call ...; select ...", skip_parsing=True)
+    while cursor.nextset():
+        pass
+    assert [d.name for d in cursor.description] == ["query_id"]
+    assert cursor.rowcount == 2
+    assert cursor.fetchall() == [["q1"], ["q2"]]
+    assert cursor.fetchall() == []

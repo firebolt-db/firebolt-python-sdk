@@ -806,8 +806,9 @@ class TestStreamingAsyncRowSet:
                 row = await streaming_rowset.__anext__()
                 assert row == ["success"]
 
-                # Mark as consumed for the test
+                # Mark as consumed for the test, as reading the FINISH record does
                 streaming_rowset._response_consumed = True
+                streaming_rowset._current_record = None
 
                 # Should be able to iterate to the end
                 with pytest.raises(StopAsyncIteration):
@@ -1216,6 +1217,95 @@ async def test_row_count_counts_rows_skipped_by_nextset(rows_fetched: int):
         await row_set.__anext__()
     assert await row_set.nextset() is False
     assert row_set.row_count == 3
+
+
+@pytest.mark.parametrize(
+    "rows_fetched,rows_left",
+    [(0, [[1], [2], [3]]), (1, [[2], [3]]), (2, [[3]]), (3, [])],
+)
+async def test_nextset_without_next_set_keeps_remaining_rows(rows_fetched, rows_left):
+    """When nextset finds no next result set, the unread rows stay readable."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response([_start(FIRST_COLUMNS), _data([[1], [2]]), _data([[3]]), _finish(3)])
+    )
+    for _ in range(rows_fetched):
+        await row_set.__anext__()
+    assert await row_set.nextset() is False
+    assert [c.name for c in row_set.columns] == ["col1"]
+    assert row_set.row_count == 3
+    assert row_set.statistics.rows_read == 3
+    assert await _rows(row_set) == rows_left
+    assert row_set.row_count == 3
+    assert await row_set.nextset() is False
+
+
+async def test_repeated_nextset_without_next_set_keeps_remaining_rows():
+    """Calling nextset again at the end neither loses nor recounts rows."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response([_start(FIRST_COLUMNS), _data([[1], [2]]), _data([[3]]), _finish(3)])
+    )
+    assert await row_set.__anext__() == [1]
+    assert await row_set.nextset() is False
+    assert await row_set.nextset() is False
+    assert row_set.row_count == 3
+    assert await _rows(row_set) == [[2], [3]]
+    assert await row_set.nextset() is False
+    assert await _rows(row_set) == []
+
+
+async def test_walk_to_last_result_set_then_fetch():
+    """Skipping to the last result set with nextset leaves its rows to fetch."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response(
+            [
+                _start([]),
+                _finish(0),
+                _start([]),
+                _finish(0),
+                _start(SECOND_COLUMNS),
+                _data([["a", 3]]),
+                _data([["b", 4]]),
+                _finish(2),
+            ]
+        )
+    )
+    while await row_set.nextset():
+        pass
+    assert [c.name for c in row_set.columns] == ["col2", "col3"]
+    assert row_set.row_count == 2
+    assert await _rows(row_set) == [["a", 3], ["b", 4]]
+
+
+async def test_rows_skipped_before_next_response_are_dropped():
+    """Rows skipped on the way to the next response are not read afterwards."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(_response(TWO_RESULT_SETS))
+    await row_set.append_response(
+        _response([_start(FIRST_COLUMNS), _data([[5]]), _finish(1)])
+    )
+    assert await row_set.nextset() is True
+    assert await row_set.nextset() is True
+    assert await _rows(row_set) == [[5]]
+    assert await row_set.nextset() is False
+    assert await _rows(row_set) == []
+
+async def test_rows_of_statement_failing_during_nextset_are_dropped():
+    """Rows read past before an error are not fetchable after nextset raises."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response(
+            [_start(FIRST_COLUMNS), _data([[1], [2]]), _data([[3]]), FINISH_WITH_ERRORS]
+        )
+    )
+    assert await row_set.__anext__() == [1]
+    with pytest.raises(FireboltStructuredError):
+        await row_set.nextset()
+    assert await _rows(row_set) == []
+    assert await row_set.nextset() is False
+    assert await _rows(row_set) == []
 
 
 async def test_transport_error_after_last_record():
