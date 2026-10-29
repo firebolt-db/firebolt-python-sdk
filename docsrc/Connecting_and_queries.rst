@@ -178,12 +178,12 @@ To get started, follow the steps below:
     A connection requires the following parameters:
 
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``auth``                           |  Auth object of type FireboltCore. This is a special authentication type that doesn't require credentials.     |
+    | ``auth``                           |  Auth object of type FireboltCore. This is a special authentication type that doesn't require credentials.    |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``database``                       |  Optional. The name of the database you would like to connect to. Defaults to "firebolt" if not specified.     |
+    | ``database``                       |  Optional. The name of the database you would like to connect to. Defaults to "firebolt" if not specified.    |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``url``                            |  Optional. The URL of the Firebolt Core instance of form <scheme>://<host>:<port>.                             |
-    |                                    |  Defaults to "http://localhost:3473" if not specified.                                                         |
+    | ``url``                            |  Optional. The URL of the Firebolt Core instance of form <scheme>://<host>:<port>.                            |
+    |                                    |  Defaults to "http://localhost:3473" if not specified.                                                        |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
     Here's how to create a connection to Firebolt Core:
