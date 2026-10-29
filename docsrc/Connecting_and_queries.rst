@@ -36,6 +36,8 @@ To get started, follow the steps below:
 
     A connection requires the following parameters:
 
+    .. rst-class:: connection-parameters
+
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
     | ``auth``                           |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.           |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
@@ -176,6 +178,8 @@ To get started, follow the steps below:
     to establish a connection.
 
     A connection requires the following parameters:
+
+    .. rst-class:: connection-parameters
 
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
     | ``auth``                           |  Auth object of type FireboltCore. This is a special authentication type that doesn't require credentials.    |
