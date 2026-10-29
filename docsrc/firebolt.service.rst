@@ -50,7 +50,7 @@ Manager
 Types
 -----------------------------
 
-.. automodule:: firebolt.service.types
+.. automodule:: firebolt.service.V2.types
    :members:
    :undoc-members:
    :show-inheritance:
