@@ -65,3 +65,18 @@ html_theme = "sphinx_rtd_theme"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+
+
+def qualify_cursor_connections(app, doctree):
+    from sphinx.addnodes import pending_xref
+
+    for node in doctree.findall(pending_xref):
+        module = node.get("py:module", "")
+        if node.get("reftarget") == "Connection" and module in (
+            "firebolt.db.cursor", "firebolt.async_db.cursor"
+        ):
+            node["reftarget"] = module.removesuffix("cursor") + "connection.Connection"
+
+
+def setup(app):
+    app.connect("doctree-read", qualify_cursor_connections)
