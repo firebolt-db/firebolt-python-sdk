@@ -9,7 +9,7 @@ The model package contains various classes and functions for managing Firebolt e
 Database
 ------------------------------
 
-.. automodule:: firebolt.model.database
+.. automodule:: firebolt.model.V2.database
    :members:
    :exclude-members: DatabaseKey, FieldMask
    :undoc-members:
@@ -20,7 +20,7 @@ Database
 Engine
 ----------------------------
 
-.. automodule:: firebolt.model.engine
+.. automodule:: firebolt.model.V2.engine
    :members:
    :exclude-members: EngineKey, FieldMask, check_attached_to_database, wait
    :undoc-members:
@@ -30,7 +30,7 @@ Engine
 Instance type
 ------------------------------------
 
-.. automodule:: firebolt.model.instance_type
+.. automodule:: firebolt.model.V2.instance_type
    :members:
    :exclude-members: InstanceTypeKey
    :undoc-members:

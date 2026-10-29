@@ -285,7 +285,7 @@ Updating an engine
 Update an engine to change its specifications, returning an updated version of the engine.
 The engine must be stopped in order to be updated.
 
-For a list of engine parameters that can be updated, see :meth:`~firebolt.model.engine.Engine.update`
+For a list of engine parameters that can be updated, see :meth:`~firebolt.model.V2.engine.Engine.update`
 
     ::
 

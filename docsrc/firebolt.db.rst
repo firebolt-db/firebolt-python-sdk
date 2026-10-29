@@ -17,6 +17,7 @@ Connection
 
 .. automodule:: firebolt.db.connection
    :members:
+   :exclude-members: connect
    :inherited-members:
    :undoc-members:
    :show-inheritance:

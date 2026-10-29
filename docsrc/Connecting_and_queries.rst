@@ -36,6 +36,8 @@ To get started, follow the steps below:
 
     A connection requires the following parameters:
 
+    .. rst-class:: connection-parameters
+
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
     | ``auth``                           |  Auth object, containing your credentials. See :ref:`Auth <firebolt.client:auth>` for more details.           |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
@@ -45,7 +47,7 @@ To get started, follow the steps below:
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
     | ``engine_name``                    |  Optional. The name of the engine to use for SQL queries.                                                     |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``autocommit``                     |  Optional. Boolean (default: True). When True, each statement is committed immediately.                      |
+    | ``autocommit``                     |  Optional. Boolean (default: True). When True, each statement is committed immediately.                       |
     |                                    |  When False, statements are executed in transactions that must be explicitly committed.                       |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
@@ -177,13 +179,15 @@ To get started, follow the steps below:
 
     A connection requires the following parameters:
 
+    .. rst-class:: connection-parameters
+
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``auth``                           |  Auth object of type FireboltCore. This is a special authentication type that doesn't require credentials.     |
+    | ``auth``                           |  Auth object of type FireboltCore. This is a special authentication type that doesn't require credentials.    |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``database``                       |  Optional. The name of the database you would like to connect to. Defaults to "firebolt" if not specified.     |
+    | ``database``                       |  Optional. The name of the database you would like to connect to. Defaults to "firebolt" if not specified.    |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``url``                            |  Optional. The URL of the Firebolt Core instance of form <scheme>://<host>:<port>.                             |
-    |                                    |  Defaults to "http://localhost:3473" if not specified.                                                         |
+    | ``url``                            |  Optional. The URL of the Firebolt Core instance of form <scheme>://<host>:<port>.                            |
+    |                                    |  Defaults to "http://localhost:3473" if not specified.                                                        |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
     Here's how to create a connection to Firebolt Core:
@@ -313,7 +317,7 @@ below use the data queried from ``test_table`` created in the
 
 
 Fetching query result information
------------------------
+---------------------------------
 
 After running a query, you can fetch information about the results using the same ``cursor`` object. The examples
 below are from the last SELECT query in :ref:`connecting_and_queries:Inserting and selecting data`.
@@ -890,6 +894,7 @@ Synchronous example:
 
 Asynchronous example:
 ::
+
     async with async_connection.cursor() as cursor:
         await cursor.execute_stream("SELECT * FROM my_huge_table")
         async for row in cursor:
