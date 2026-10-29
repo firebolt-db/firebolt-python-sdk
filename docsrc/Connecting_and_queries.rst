@@ -313,7 +313,7 @@ below use the data queried from ``test_table`` created in the
 
 
 Fetching query result information
------------------------
+---------------------------------
 
 After running a query, you can fetch information about the results using the same ``cursor`` object. The examples
 below are from the last SELECT query in :ref:`connecting_and_queries:Inserting and selecting data`.
