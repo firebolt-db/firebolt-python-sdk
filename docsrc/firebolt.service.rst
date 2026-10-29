@@ -33,7 +33,7 @@ Engine
 Instance type
 --------------------------------------
 
-.. automodule:: firebolt.service.instance_type
+.. automodule:: firebolt.service.V2.instance_type
    :members:
    :exclude-members: InstanceTypeLookup
    :undoc-members:
