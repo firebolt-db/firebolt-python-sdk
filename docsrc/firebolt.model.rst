@@ -9,7 +9,7 @@ The model package contains various classes and functions for managing Firebolt e
 Database
 ------------------------------
 
-.. automodule:: firebolt.model.database
+.. automodule:: firebolt.model.V2.database
    :members:
    :exclude-members: DatabaseKey, FieldMask
    :undoc-members:
