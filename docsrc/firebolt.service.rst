@@ -4,7 +4,7 @@ Service
 
 The service package enables launching and cataloging Firebolt engines and databases.
 
-.. automodule:: firebolt.service.base
+.. automodule:: firebolt.service.V2.base
    :members:
    :exclude-members: BaseService
    :undoc-members:
