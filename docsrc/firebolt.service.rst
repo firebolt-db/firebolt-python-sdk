@@ -15,7 +15,7 @@ The service package enables launching and cataloging Firebolt engines and databa
 Database
 --------------------------------
 
-.. automodule:: firebolt.service.database
+.. automodule:: firebolt.service.V2.database
    :members:
    :undoc-members:
    :show-inheritance:
