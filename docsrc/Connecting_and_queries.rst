@@ -45,7 +45,7 @@ To get started, follow the steps below:
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
     | ``engine_name``                    |  Optional. The name of the engine to use for SQL queries.                                                     |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
-    | ``autocommit``                     |  Optional. Boolean (default: True). When True, each statement is committed immediately.                      |
+    | ``autocommit``                     |  Optional. Boolean (default: True). When True, each statement is committed immediately.                       |
     |                                    |  When False, statements are executed in transactions that must be explicitly committed.                       |
     +------------------------------------+---------------------------------------------------------------------------------------------------------------+
 
