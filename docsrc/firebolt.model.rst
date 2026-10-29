@@ -20,7 +20,7 @@ Database
 Engine
 ----------------------------
 
-.. automodule:: firebolt.model.engine
+.. automodule:: firebolt.model.V2.engine
    :members:
    :exclude-members: EngineKey, FieldMask, check_attached_to_database, wait
    :undoc-members:
