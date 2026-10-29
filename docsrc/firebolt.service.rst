@@ -25,7 +25,7 @@ Database
 Engine
 ------------------------------
 
-.. automodule:: firebolt.service.engine
+.. automodule:: firebolt.service.V2.engine
    :members:
    :undoc-members:
    :show-inheritance:
