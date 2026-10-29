@@ -12,7 +12,7 @@ Auth
    :undoc-members:
    :show-inheritance:
 
-Client
+HTTP clients
 -----------------------------
 
 .. automodule:: firebolt.client.client
