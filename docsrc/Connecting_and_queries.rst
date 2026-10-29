@@ -890,6 +890,7 @@ Synchronous example:
 
 Asynchronous example:
 ::
+
     async with async_connection.cursor() as cursor:
         await cursor.execute_stream("SELECT * FROM my_huge_table")
         async for row in cursor:
