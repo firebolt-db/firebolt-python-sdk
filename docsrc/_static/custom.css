@@ -1,0 +1,13 @@
+/* Wrap connection parameter descriptions within the page width. */
+.wy-table-responsive table.connection-parameters {
+    width: 100%;
+    table-layout: fixed;
+}
+.wy-table-responsive table.connection-parameters td,
+.wy-table-responsive table.connection-parameters th {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.wy-table-responsive table.connection-parameters td:first-child {
+    width: 25%;
+}
