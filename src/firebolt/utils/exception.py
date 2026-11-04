@@ -294,6 +294,15 @@ class ConfigurationError(InterfaceError):
     """Invalid configuration error."""
 
 
+def query_id_from_json(json: Dict[str, Any]) -> Optional[str]:
+    query = json.get("query")
+    if isinstance(query, dict):
+        return query.get("query_id")
+    # A JSON lines error record, as a rejected streamed query returns it
+    query_id = json.get("query_id")
+    return query_id if isinstance(query_id, str) else None
+
+
 class FireboltStructuredError(ProgrammingError):
     """Base class for structured errors received in JSON body."""
 
@@ -301,9 +310,10 @@ class FireboltStructuredError(ProgrammingError):
     # "{severity}: {name} ({code}) - {description}, see {helpLink}"
     message_template = "{severity}{name}{code}{description}{at}{helpLink}"
 
-    def __init__(self, json: Dict[str, Any]):
+    def __init__(self, json: Dict[str, Any], query_id: Optional[str] = None):
         self.json = json
         self.errors = json.get("errors", [])
+        self.query_id = query_id or query_id_from_json(json)
 
     def __str__(self) -> str:
         error_messages = []

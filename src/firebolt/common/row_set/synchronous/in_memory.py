@@ -7,7 +7,11 @@ from httpx import Response
 from firebolt.common._types import ColType, parse_type
 from firebolt.common.row_set.synchronous.base import BaseSyncRowSet
 from firebolt.common.row_set.types import Column, RowsResponse, Statistics
-from firebolt.utils.exception import DataError, FireboltStructuredError
+from firebolt.utils.exception import (
+    DataError,
+    FireboltStructuredError,
+    query_id_from_json,
+)
 
 # Whitespace as JSON defines it (RFC 8259), which is narrower than str.isspace()
 _JSON_WHITESPACE = re.compile(r"[ \t\n\r]*")
@@ -103,7 +107,9 @@ class InMemoryRowSet(BaseSyncRowSet):
         rows = query_data["data"]
         row_count = len(rows)
         statistics = Statistics(**query_data.get("statistics", {}))
-        return RowsResponse(row_count, columns, statistics, rows)
+        return RowsResponse(
+            row_count, columns, statistics, rows, query_id_from_json(query_data)
+        )
 
     @property
     def _row_set(self) -> RowsResponse:
@@ -122,6 +128,13 @@ class InMemoryRowSet(BaseSyncRowSet):
     @property
     def statistics(self) -> Optional[Statistics]:
         return self._row_set.statistics
+
+    @property
+    def query_id(self) -> Optional[str]:
+        try:
+            return self._row_set.query_id
+        except DataError:
+            return None
 
     def nextset(self) -> bool:
         if self._current_row_set_idx + 1 < len(self._row_sets):

@@ -84,8 +84,8 @@ class BaseCursor:
         "_state",
         "_formatter",
         "_set_parameters",
-        "_query_id",
         "_query_token",
+        "_failed_query_id",
         "_row_set",
         "engine_url",
     )
@@ -108,8 +108,8 @@ class BaseCursor:
         # Server-side parameters (user can't change them)
         self.parameters: Dict[str, str] = dict()
         self.engine_url = ""
-        self._query_id = ""  # not used
         self._query_token = ""
+        self._failed_query_id: Optional[str] = None
         self._client: Optional[Union[Client, AsyncClient]] = None
         self._row_set: Optional[BaseRowSet] = None
         self._reset()
@@ -161,11 +161,18 @@ class BaseCursor:
     @check_not_closed
     def query_id(self) -> str:
         """
-        Deprecated: This property is not populated anymore and is left for
-        backward compatibility.
+        The id of the query that produced the current result set, or of the
+        statement that failed if execution raised an error.
+
+        Empty if no query was run, the query was async, or the server
+        didn't report the id.
         """
-        # FIR-42243
-        return self._query_id
+        if self._state == CursorState.ERROR:
+            # Never the id of an earlier statement that succeeded
+            return self._failed_query_id or ""
+        if not self._row_set:
+            return ""
+        return self._row_set.query_id or ""
 
     @property
     def async_query_token(self) -> str:
@@ -203,8 +210,8 @@ class BaseCursor:
         """Clear all data stored from previous query."""
         self._state = CursorState.NONE
         self._row_set = None
-        self._query_id = ""
         self._query_token = ""
+        self._failed_query_id = None
 
     def _update_set_parameters(self, parameters: Dict[str, Any]) -> None:
         # Split parameters into immutable and user parameters

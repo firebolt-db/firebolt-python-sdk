@@ -582,3 +582,8 @@ def test_invalid_content_after_result_set_is_reported():
         row_set.append_response(
             _response(FIRST_DOCUMENT + '\n\t],\n  "errors": [{"description": "x"}]}')
         )
+
+
+def test_query_id_without_result_sets():
+    """A row set without result sets has no query_id."""
+    assert InMemoryRowSet().query_id is None

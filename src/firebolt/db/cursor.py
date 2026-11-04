@@ -217,8 +217,9 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
             )
             self._execute_plan(plan, timeout)
             self._state = CursorState.DONE
-        except Exception:
+        except Exception as err:
             self._state = CursorState.ERROR
+            self._failed_query_id = getattr(err, "query_id", None)
             raise
 
     def _execute_plan(

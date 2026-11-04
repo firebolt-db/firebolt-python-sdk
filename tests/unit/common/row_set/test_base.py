@@ -86,3 +86,8 @@ class TestBaseRowSetClass:
         # We don't need to instantiate it directly
         assert hasattr(BaseRowSet, "__abstractmethods__")
         assert len(BaseRowSet.__abstractmethods__) > 0
+
+    def test_query_id_defaults_to_none(self, base_row_set):
+        """A row set that does not define query_id can still be created."""
+        assert "query_id" not in BaseRowSet.__abstractmethods__
+        assert base_row_set.query_id is None

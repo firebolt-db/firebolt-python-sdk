@@ -1357,3 +1357,73 @@ async def test_empty_data_records_are_skipped():
     )
     assert await _rows(row_set) == [[1]]
     assert row_set.row_count == 1
+
+
+def _with_query_id(line: str, query_id: str) -> str:
+    record = json.loads(line)
+    record["query_id"] = query_id
+    return json.dumps(record)
+
+
+async def test_query_id_follows_result_sets():
+    """Each result set has its own id; a response without a body has none."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response(
+            [
+                _with_query_id(_start(FIRST_COLUMNS), "q1"),
+                _finish(0),
+                _with_query_id(_start(SECOND_COLUMNS), "q2"),
+                _finish(0),
+            ]
+        )
+    )
+    row_set.append_empty_response()
+    assert row_set.query_id == "q1"
+    assert await row_set.nextset() is True
+    assert row_set.query_id == "q2"
+    assert await row_set.nextset() is True
+    assert row_set.query_id is None
+
+
+async def test_query_id_of_statement_failing_without_start():
+    """A statement that fails without a START reports the id of its error."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response(
+            [
+                _with_query_id(_start(FIRST_COLUMNS), "q1"),
+                _finish(0),
+                _with_query_id(FINISH_WITH_ERRORS, "q2"),
+            ]
+        )
+    )
+    with pytest.raises(FireboltStructuredError) as exc_info:
+        await row_set.nextset()
+    assert exc_info.value.query_id == "q2"
+    assert row_set.query_id == "q2"
+
+
+async def test_query_id_kept_after_transport_error():
+    """A broken connection closes the row set but keeps the id of its query."""
+    row_set = StreamingAsyncRowSet()
+    body = "\n".join([_with_query_id(_start(FIRST_COLUMNS), "q1"), _data([[1]])])
+    response = httpx.Response(200, stream=_FailingStream((body + "\n").encode()))
+    await row_set.append_response(response)
+    with pytest.raises(OperationalError):
+        await _rows(row_set)
+    assert response.is_closed
+    assert row_set.query_id == "q1"
+
+
+async def test_query_id_unchanged_by_unexpected_record():
+    """A record that is not a START does not leave a stale id behind."""
+    row_set = StreamingAsyncRowSet()
+    await row_set.append_response(
+        _response(
+            [_with_query_id(_start(FIRST_COLUMNS), "q1"), _finish(0), _data([[1]])]
+        )
+    )
+    with pytest.raises(OperationalError):
+        await row_set.nextset()
+    assert row_set.query_id is None
