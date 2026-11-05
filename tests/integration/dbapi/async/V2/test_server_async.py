@@ -1,6 +1,6 @@
 import time
-from random import randint
 from typing import Callable
+from uuid import uuid4
 
 from pytest import mark, raises
 
@@ -20,7 +20,7 @@ pytestmark = mark.parametrize("connection_factory", ["remote"], indirect=True)
 
 async def test_insert_async(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id INT, name TEXT)")
@@ -80,7 +80,7 @@ async def test_select_async_requires_null_output_format(
 
 async def test_insert_async_running(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
@@ -100,7 +100,7 @@ async def test_check_async_execution_from_another_connection(
     connection_1 = await connection_factory()
     connection_2 = await connection_factory()
     cursor = connection_1.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id INT, name TEXT)")
@@ -126,7 +126,7 @@ async def test_check_async_execution_from_another_connection(
 
 async def test_check_async_query_fails(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
@@ -151,7 +151,7 @@ async def test_check_async_execution_fails(connection: Connection) -> None:
 
 async def test_cancel_async_query(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
