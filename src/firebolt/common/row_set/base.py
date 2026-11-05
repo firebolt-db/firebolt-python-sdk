@@ -23,6 +23,11 @@ class BaseRowSet(ABC):
     @abstractmethod
     def columns(self) -> Optional[List[Column]]: ...
 
+    # Not abstract, so row sets subclassed outside the SDK keep working
+    @property
+    def query_id(self) -> Optional[str]:
+        return None
+
     @abstractmethod
     def append_empty_response(self) -> None: ...
 

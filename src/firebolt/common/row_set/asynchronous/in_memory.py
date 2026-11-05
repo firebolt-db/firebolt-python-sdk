@@ -68,6 +68,10 @@ class InMemoryAsyncRowSet(BaseAsyncRowSet):
         """
         return self._sync_row_set.statistics
 
+    @property
+    def query_id(self) -> Optional[str]:
+        return self._sync_row_set.query_id
+
     async def nextset(self) -> bool:
         """Move to the next result set.
 

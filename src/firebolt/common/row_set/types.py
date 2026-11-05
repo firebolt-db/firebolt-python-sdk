@@ -59,6 +59,7 @@ class RowsResponse:
     columns: List[Column]
     statistics: Optional[Statistics]
     rows: List[List[RawColType]]
+    query_id: Optional[str] = None
 
 
 @dataclass

@@ -53,6 +53,7 @@ class StreamingRowSetCommonBase:
         self._current_row_count: int
         self._current_statistics: Optional[Statistics]
         self._current_columns: Optional[List[Column]] = None
+        self._current_query_id: Optional[str] = None
         self._response_consumed: bool
 
         # current json lines record
@@ -86,6 +87,7 @@ class StreamingRowSetCommonBase:
         self._current_record_row_idx = -1
         self._response_consumed = False
         self._current_columns = None
+        self._current_query_id = None
         self._rows_returned = 0
         # Rows nextset() read past. They stay readable if no next result set
         # follows, as with a buffered row set.
@@ -146,6 +148,7 @@ class StreamingRowSetCommonBase:
             self._response_consumed = True
             self._response_failed = True
             self._current_statistics = record.statistics
+            self._current_query_id = record.query_id
             self._handle_error_record(record)
         return record
 
@@ -159,7 +162,7 @@ class StreamingRowSetCommonBase:
         Raises:
             FireboltStructuredError: With details from the error record.
         """
-        raise FireboltStructuredError({"errors": record.errors})
+        raise FireboltStructuredError({"errors": record.errors}, record.query_id)
 
     def _fetch_columns_from_record(
         self, record: Optional[JSONLinesRecord]
@@ -191,6 +194,7 @@ class StreamingRowSetCommonBase:
                 "expected START"
             )
 
+        self._current_query_id = record.query_id
         return [
             Column(col.name, parse_type(col.type), None, None, None, None, None)
             for col in record.result_columns
@@ -231,9 +235,8 @@ class StreamingRowSetCommonBase:
         """
         if record is None:
             return False
-        columns = self._fetch_columns_from_record(record)
         self._reset_result_set()
-        self._current_columns = columns
+        self._current_columns = self._fetch_columns_from_record(record)
         return True
 
     def _pop_data_record_from_record(

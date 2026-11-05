@@ -166,6 +166,7 @@ class TestStreamingRowSetCommonBase:
             time_to_execute=0.09,
         )
         mock_record.statistics = stats
+        mock_record.query_id = "query_id"
         mock_parse.return_value = mock_record
 
         error_record_json = {
@@ -193,8 +194,9 @@ class TestStreamingRowSetCommonBase:
 
         assert streaming_rowset._response_consumed is True
         assert streaming_rowset._current_statistics == stats
+        assert streaming_rowset._current_query_id == "query_id"
         mock_parse.assert_called_once()
-        mock_error.assert_called_once()
+        mock_error.assert_called_once_with({"errors": mock_record.errors}, "query_id")
 
     def test_fetch_columns_from_record_none(self, streaming_rowset):
         """Test _fetch_columns_from_record with None record."""
@@ -226,6 +228,7 @@ class TestStreamingRowSetCommonBase:
         start_record = MagicMock(spec=StartRecord)
         start_record.message_type = MessageType.start
         start_record.result_columns = columns
+        start_record.query_id = "q1"
 
         with patch(
             "firebolt.common.row_set.streaming_common.parse_type",
@@ -238,6 +241,7 @@ class TestStreamingRowSetCommonBase:
         assert result[0].type_code == int
         assert result[1].name == "col2"
         assert result[1].type_code == str
+        assert streaming_rowset._current_query_id == "q1"
 
     def test_pop_data_record_from_record_none_consumed(self, streaming_rowset):
         """Test _pop_data_record_from_record with None and consumed response."""

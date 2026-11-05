@@ -128,6 +128,10 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
         return self._current_columns
 
     @property
+    def query_id(self) -> Optional[str]:
+        return self._current_query_id
+
+    @property
     def statistics(self) -> Optional[Statistics]:
         """
         Get query execution statistics for the current result set.
@@ -258,8 +262,12 @@ class StreamingRowSet(BaseSyncRowSet, StreamingRowSetCommonBase):
                 except HTTPError as err:
                     errors.append(err)
 
+        query_id = self._current_query_id
         self._reset()
         self._responses = []
+        # A read error closes the row set; the id is what the user needs to
+        # look the failed query up
+        self._current_query_id = query_id
 
         # Propagate any errors that occurred during closing
         if errors:

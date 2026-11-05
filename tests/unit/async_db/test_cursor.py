@@ -3,7 +3,7 @@ import re
 import time
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 from unittest.mock import patch
 
 from httpx import URL, HTTPStatusError, Request, StreamError, codes
@@ -2058,3 +2058,224 @@ async def test_cursor_execute_stream_walk_to_last_result_set(
     assert cursor.rowcount == 2
     assert await cursor.fetchall() == [["q1"], ["q2"]]
     assert await cursor.fetchall() == []
+
+
+def _result_set(query_id: Optional[str], statistics: Dict[str, Any]) -> Dict[str, Any]:
+    result: Dict[str, Any] = {
+        "meta": [{"name": "a", "type": "int"}],
+        "data": [[1]],
+        "rows": 1,
+        "statistics": statistics,
+    }
+    if query_id is not None:
+        result["query"] = {
+            "query_id": query_id,
+            "request_id": "r",
+            "query_label": None,
+        }
+    return result
+
+
+async def test_cursor_query_id(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """query_id comes from the query block of each result set."""
+    assert cursor.query_id == ""
+    for query_id in ("q1", "q2"):
+        httpx_mock.add_response(
+            url=query_url, json=_result_set(query_id, query_statistics)
+        )
+    await cursor.execute("select 1; select 2")
+    assert cursor.query_id == "q1"
+    assert await cursor.nextset() is True
+    assert cursor.query_id == "q2"
+    assert await cursor.nextset() is False
+    assert cursor.query_id == "q2"
+
+
+async def test_cursor_query_id_missing(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """Without a query block, query_id is empty."""
+    httpx_mock.add_response(url=query_url, json=_result_set(None, query_statistics))
+    await cursor.execute("select 1")
+    assert cursor.query_id == ""
+
+
+async def test_cursor_query_id_stream(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A streamed result set takes query_id from its START record."""
+    lines = [
+        {
+            "message_type": "START",
+            "result_columns": [{"name": "a", "type": "integer"}],
+            "query_id": "q1",
+            "query_label": "l",
+            "request_id": "r",
+        },
+        {"message_type": "DATA", "data": [[1]]},
+        {"message_type": "FINISH_SUCCESSFULLY", "statistics": query_statistics},
+    ]
+    httpx_mock.add_response(
+        url=streaming_query_url,
+        content="\n".join(json.dumps(line) for line in lines).encode(),
+    )
+    await cursor.execute_stream("select 1")
+    assert cursor.query_id == "q1"
+
+
+def _error_document(query_id: Optional[str]) -> Dict[str, Any]:
+    document: Dict[str, Any] = {"errors": [{"description": "boom"}]}
+    if query_id is not None:
+        document["query"] = {"query_id": query_id}
+    return document
+
+
+async def test_cursor_query_id_not_a_dict(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A query block that is not an object leaves query_id empty."""
+    result = _result_set(None, query_statistics)
+    result["query"] = "select 1"
+    httpx_mock.add_response(url=query_url, json=result)
+    await cursor.execute("select 1")
+    assert await cursor.fetchall() == [[1]]
+    assert cursor.query_id == ""
+
+
+@mark.parametrize("failed_query_id", ["q2", None])
+async def test_cursor_query_id_failed_request(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+    failed_query_id: Optional[str],
+):
+    """After a failed statement, query_id is its id, never an earlier one."""
+    httpx_mock.add_response(url=query_url, json=_result_set("q1", query_statistics))
+    httpx_mock.add_response(
+        url=query_url,
+        status_code=codes.BAD_REQUEST,
+        json=_error_document(failed_query_id),
+    )
+    with raises(FireboltStructuredError):
+        await cursor.execute("select 1; select 2")
+    assert cursor.query_id == (failed_query_id or "")
+
+
+async def test_cursor_query_id_failed_result_set_in_response(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """An error document in a response reports the id of the failed statement."""
+    httpx_mock.add_response(
+        url=query_url,
+        content="\n".join(
+            [
+                json.dumps(_result_set("q1", query_statistics)),
+                json.dumps(_error_document("q2")),
+            ]
+        ).encode(),
+    )
+    with raises(FireboltStructuredError) as exc_info:
+        await cursor.execute("select 1; select 1", skip_parsing=True)
+    assert exc_info.value.query_id == "q2"
+    assert cursor.query_id == "q2"
+
+
+async def test_cursor_query_id_reset_by_next_execute(
+    httpx_mock: HTTPXMock,
+    query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A new execute replaces the id of a failed one."""
+    httpx_mock.add_response(
+        url=query_url, status_code=codes.BAD_REQUEST, json=_error_document("q1")
+    )
+    httpx_mock.add_response(url=query_url, json=_result_set("q2", query_statistics))
+    with raises(FireboltStructuredError):
+        await cursor.execute("select 1")
+    assert cursor.query_id == "q1"
+    await cursor.execute("select 2")
+    assert cursor.query_id == "q2"
+
+
+def _stream_error_line(query_id: str, statistics: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "message_type": "FINISH_WITH_ERRORS",
+        "errors": [{"description": "boom"}],
+        "query_id": query_id,
+        "query_label": "l",
+        "request_id": "r",
+        "statistics": statistics,
+    }
+
+
+async def test_cursor_query_id_stream_failing_statement(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A streamed statement that fails without a START reports its id."""
+    lines = _copy_then_select_lines(query_statistics)[:2]
+    lines.append(_stream_error_line("q2", query_statistics))
+    httpx_mock.add_response(
+        url=streaming_query_url,
+        content="\n".join(json.dumps(line) for line in lines).encode(),
+    )
+    await cursor.execute_stream("copy ...; select ...", skip_parsing=True)
+    assert cursor.query_id == "q1"
+    with raises(FireboltStructuredError) as exc_info:
+        await cursor.nextset()
+    assert exc_info.value.query_id == "q2"
+    assert cursor.query_id == "q2"
+
+
+async def test_cursor_query_id_stream_failing_first_statement(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A streamed query failing at execute reports its id."""
+    httpx_mock.add_response(
+        url=streaming_query_url,
+        content=json.dumps(_stream_error_line("q1", query_statistics)).encode(),
+    )
+    with raises(FireboltStructuredError):
+        await cursor.execute_stream("select 1")
+    assert cursor.query_id == "q1"
+
+
+async def test_cursor_query_id_stream_rejected(
+    httpx_mock: HTTPXMock,
+    streaming_query_url: str,
+    query_statistics: Dict[str, Any],
+    cursor: Cursor,
+):
+    """A streamed query rejected with an error status reports its id."""
+    httpx_mock.add_response(
+        url=streaming_query_url,
+        status_code=codes.BAD_REQUEST,
+        json=_stream_error_line("q1", query_statistics),
+    )
+    with raises(FireboltStructuredError):
+        await cursor.execute_stream("select 1")
+    assert cursor.query_id == "q1"
