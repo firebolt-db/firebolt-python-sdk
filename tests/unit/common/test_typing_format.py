@@ -47,15 +47,18 @@ def formatter_v1() -> StatementFormatter:
         (False, "false"),
         # Date, datetime
         (date(2022, 1, 10), "'2022-01-10'"),
-        (datetime(2022, 1, 10, 1, 1, 1), "'2022-01-10 01:01:01'"),
+        (datetime(2022, 1, 10, 1, 1, 1), "TIMESTAMP '2022-01-10 01:01:01'"),
         (
             datetime(2022, 1, 10, 1, 1, 1, tzinfo=timezone(timedelta(hours=1))),
-            "'2022-01-10 00:01:01'",
+            "TIMESTAMPTZ '2022-01-10 01:01:01+01:00'",
         ),
-        (datetime(2022, 1, 10, 1, 1, 1, 123456), "'2022-01-10 01:01:01.123456'"),
+        (
+            datetime(2022, 1, 10, 1, 1, 1, 123456),
+            "TIMESTAMP '2022-01-10 01:01:01.123456'",
+        ),
         (
             datetime(2022, 1, 10, 1, 1, 1, 50, tzinfo=timezone(timedelta(hours=1))),
-            "'2022-01-10 00:01:01.000050'",
+            "TIMESTAMPTZ '2022-01-10 01:01:01.000050+01:00'",
         ),
         # List, tuple
         ([], "[]"),
@@ -78,7 +81,46 @@ def test_format_statement_keeps_datetime_fractional_seconds(
     statement = parse("SELECT * FROM t WHERE ts = ?")[0]
     assert (
         formatter.format_statement(statement, [datetime(2024, 2, 29, 1, 2, 3, 4)])
-        == "SELECT * FROM t WHERE ts = '2024-02-29 01:02:03.000004'"
+        == "SELECT * FROM t WHERE ts = TIMESTAMP '2024-02-29 01:02:03.000004'"
+    )
+
+
+@mark.parametrize(
+    "value,result",
+    [
+        (datetime(1, 1, 1), "TIMESTAMP '0001-01-01 00:00:00'"),
+        (
+            datetime(2024, 7, 1, 12, 0, 0, 4),
+            "TIMESTAMP '2024-07-01 12:00:00.000004'",
+        ),
+        (
+            datetime(2024, 7, 1, 12, 0, 0, 123456, tzinfo=timezone.utc),
+            "TIMESTAMPTZ '2024-07-01 12:00:00.123456+00:00'",
+        ),
+        (
+            datetime(
+                2024, 7, 1, 12, 0, tzinfo=timezone(timedelta(hours=5, minutes=45))
+            ),
+            "TIMESTAMPTZ '2024-07-01 12:00:00+05:45'",
+        ),
+        (
+            datetime(
+                2024, 7, 1, 12, 0, tzinfo=timezone(-timedelta(hours=3, minutes=30))
+            ),
+            "TIMESTAMPTZ '2024-07-01 12:00:00-03:30'",
+        ),
+    ],
+)
+def test_datetime_parameter_types(
+    formatter: StatementFormatter, value: datetime, result: str
+) -> None:
+    assert formatter.format_value(value) == result
+    assert formatter.format_value([value]) == f"[{result}]"
+    assert (
+        formatter.format_statement(parse("SELECT ?")[0], [value]) == f"SELECT {result}"
+    )
+    assert formatter.convert_parameter_for_serialization(value) == value.isoformat(
+        sep=" "
     )
 
 
