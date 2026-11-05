@@ -1,11 +1,15 @@
 import time
-from random import randint
 from typing import Callable
+from uuid import uuid4
 
 from pytest import mark, raises
 
 from firebolt.async_db import Connection
-from firebolt.utils.exception import FireboltError, FireboltStructuredError
+from firebolt.utils.exception import (
+    FireboltError,
+    FireboltStructuredError,
+    MethodNotAllowedInAsyncError,
+)
 
 LONG_SELECT = "SELECT checksum(*) FROM GENERATE_SERIES(1, 2500000000)"  # approx 3 sec
 
@@ -16,7 +20,7 @@ pytestmark = mark.parametrize("connection_factory", ["remote"], indirect=True)
 
 async def test_insert_async(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id INT, name TEXT)")
@@ -53,9 +57,30 @@ async def test_insert_async(connection: Connection) -> None:
         await cursor.execute(f"DROP TABLE {table_name}")
 
 
+async def test_select_async(connection: Connection) -> None:
+    cursor = connection.cursor()
+    await cursor.execute_async("SELECT 1", null_output_format=True)
+    token = cursor.async_query_token
+    assert token is not None, "Async token was not returned"
+    # sleep for 2 sec to make sure the async query is completed
+    time.sleep(2)
+    assert await connection.is_async_query_running(token) == False
+    assert await connection.is_async_query_successful(token) == True
+    with raises(MethodNotAllowedInAsyncError):
+        await cursor.fetchall()
+
+
+async def test_select_async_requires_null_output_format(
+    connection: Connection,
+) -> None:
+    cursor = connection.cursor()
+    with raises(FireboltStructuredError):
+        await cursor.execute_async("SELECT 1")
+
+
 async def test_insert_async_running(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
@@ -75,7 +100,7 @@ async def test_check_async_execution_from_another_connection(
     connection_1 = await connection_factory()
     connection_2 = await connection_factory()
     cursor = connection_1.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id INT, name TEXT)")
@@ -101,7 +126,7 @@ async def test_check_async_execution_from_another_connection(
 
 async def test_check_async_query_fails(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id LONG)")
@@ -126,7 +151,7 @@ async def test_check_async_execution_fails(connection: Connection) -> None:
 
 async def test_cancel_async_query(connection: Connection) -> None:
     cursor = connection.cursor()
-    rnd_suffix = str(randint(0, 1000))
+    rnd_suffix = uuid4().hex[:12]
     table_name = f"test_insert_async_{rnd_suffix}"
     try:
         await cursor.execute(f"CREATE TABLE {table_name} (id LONG)")

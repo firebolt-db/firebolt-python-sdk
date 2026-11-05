@@ -11,6 +11,7 @@ from firebolt.common._types import ParameterType, SetParameter
 from firebolt.common.constants import (
     JSON_LINES_OUTPUT_FORMAT,
     JSON_OUTPUT_FORMAT,
+    NULL_OUTPUT_FORMAT,
 )
 from firebolt.utils.exception import (
     ConfigurationError,
@@ -48,6 +49,7 @@ class BaseStatementPlanner(ABC):
         async_execution: bool = False,
         streaming: bool = False,
         bulk_insert: bool = False,
+        null_output_format: bool = False,
     ) -> ExecutionPlan:
         """Create an execution plan for a given statement and parameters.
 
@@ -69,18 +71,24 @@ class BaseStatementPlanner(ABC):
                 Defaults to False.
             bulk_insert (bool): If True, the query will be treated as a bulk insert
                 operation. Defaults to False.
+            null_output_format (bool): If True and the query is executed
+                asynchronously, request the NULL output format. Defaults to False.
 
         Returns:
             ExecutionPlan: An object representing the execution plan.
         """
         if bulk_insert:
-            return self._create_bulk_execution_plan(
+            plan = self._create_bulk_execution_plan(
                 raw_query, parameters, async_execution
             )
         else:
-            return self._create_standard_execution_plan(
+            plan = self._create_standard_execution_plan(
                 raw_query, parameters, skip_parsing, async_execution, streaming
             )
+        if null_output_format and async_execution:
+            assert plan.query_params is not None
+            plan.query_params["output_format"] = NULL_OUTPUT_FORMAT
+        return plan
 
     def _validate_bulk_insert_query(self, query: str) -> None:
         """Validate that query is an INSERT statement for bulk_insert."""

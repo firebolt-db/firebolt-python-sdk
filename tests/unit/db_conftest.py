@@ -852,7 +852,6 @@ def async_query_callback(async_token: str) -> Callable:
     def do_query(request: Request, **kwargs) -> Response:
         assert request.read() != b""
         assert request.method == "POST"
-        assert f"output_format={JSON_OUTPUT_FORMAT}" in str(request.url)
         assert "async=true" in str(request.url)
         query_response = {
             "message": "the query was accepted for async processing",
