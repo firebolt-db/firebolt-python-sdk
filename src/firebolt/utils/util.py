@@ -1,3 +1,4 @@
+import json
 import logging
 from functools import lru_cache
 from os import environ
@@ -5,6 +6,7 @@ from time import time
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
+    Any,
     Callable,
     Dict,
     List,
@@ -161,6 +163,16 @@ def validate_engine_name_and_url_v1(
         )
 
 
+def _structured_error_from_body(body: Any) -> Optional[FireboltStructuredError]:
+    if not isinstance(body, dict):
+        return None
+    errors = body.get("errors")
+    # FireboltStructuredError.__str__ indexes each error as a dict
+    if isinstance(errors, list) and errors and all(isinstance(e, dict) for e in errors):
+        return FireboltStructuredError(body)
+    return None
+
+
 def raise_error_from_response(resp: Response) -> None:
     """
     Raise a correct error from the response.
@@ -172,15 +184,17 @@ def raise_error_from_response(resp: Response) -> None:
         resp (Response): HTTP response
     """
     to_raise = None
-    # If error is Text - raise as is
     if "text/plain" in resp.headers.get("Content-Type", ""):
-        raise FireboltError(resp.text)
-    # If error is Json - parse it and raise
+        # Queries sent with output_format=NULL get JSON error bodies labelled
+        # as plain text, so check for a structured error before raising as is
+        try:
+            to_raise = _structured_error_from_body(json.loads(resp.text))
+        except ValueError:
+            pass
+        raise to_raise or FireboltError(resp.text)
     try:
-        decoded = resp.json()
-        if "errors" in decoded and len(decoded["errors"]) > 0:
-            # Raise later to avoid catching it in the except block
-            to_raise = FireboltStructuredError(decoded)
+        # Raise later to avoid catching it in the except block
+        to_raise = _structured_error_from_body(resp.json())
 
     except Exception:
         # If we can't parse the body, print out the error body

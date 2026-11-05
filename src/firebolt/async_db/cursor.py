@@ -176,6 +176,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
+        null_output_format: bool = False,
     ) -> int:
         """Execute a database query without maintaining a connection."""
         ...
@@ -189,6 +190,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
         async_execution: bool = False,
         streaming: bool = False,
         bulk_insert: bool = False,
+        null_output_format: bool = False,
     ) -> None:
         await self._close_rowset_and_reset()
         self._row_set = StreamingAsyncRowSet() if streaming else InMemoryAsyncRowSet()
@@ -208,6 +210,7 @@ class Cursor(BaseCursor, metaclass=ABCMeta):
                 async_execution,
                 streaming,
                 bulk_insert,
+                null_output_format,
             )
             await self._execute_plan(plan, timeout)
             self._state = CursorState.DONE
@@ -581,6 +584,7 @@ class CursorV2(Cursor):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
+        null_output_format: bool = False,
     ) -> int:
         """
         Execute a database query without maintating a connection.
@@ -604,6 +608,10 @@ class CursorV2(Cursor):
                 actual values
             skip_parsing (bool): Flag to disable query parsing. This will
                 disable parameterized queries while potentially improving performance
+            null_output_format (bool): Request the NULL output format, so the
+                server does not serialize any results. Required for async
+                SELECT queries, which are accepted from engine version
+                4.32.13 on. Defaults to False.
 
         Returns:
             int: Always returns -1, as async execution does not return row count.
@@ -613,6 +621,7 @@ class CursorV2(Cursor):
             [parameters] if parameters else [],
             skip_parsing,
             async_execution=True,
+            null_output_format=null_output_format,
         )
         return -1
 
@@ -704,6 +713,7 @@ class CursorV1(Cursor):
         query: str,
         parameters: Optional[Sequence[ParameterType]] = None,
         skip_parsing: bool = False,
+        null_output_format: bool = False,
     ) -> int:
         raise V1NotSupportedError("Async execution")
 

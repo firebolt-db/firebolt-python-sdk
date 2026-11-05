@@ -798,8 +798,8 @@ Trying to access `async_query_token` before calling `execute_async` will raise a
     separately using multiple `execute_async` calls.
 
 .. note::
-    Firebolt accepts async SELECT queries from engine version 4.32.13 on. Older engines reject them.
-    There is currently no way to retrieve the results of an async SELECT, so ``execute_async`` is best
+    Firebolt accepts async SELECT queries from engine version 4.32.13 on, when they are sent with
+    ``execute_async(query, null_output_format=True)``. Older engines reject them. There is currently no way to retrieve the results of an async SELECT, so ``execute_async`` is best
     suited for DML queries. Calling fetch methods after ``execute_async`` raises an exception.
 
 Monitoring the query status

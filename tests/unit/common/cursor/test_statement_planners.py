@@ -64,24 +64,51 @@ def test_execution_plan_defaults():
 
 # BaseStatementPlanner tests
 @pytest.mark.parametrize(
-    "streaming,async_execution,expected_format",
+    "streaming,expected_format",
     [
-        (True, False, JSON_LINES_OUTPUT_FORMAT),
-        (False, False, JSON_OUTPUT_FORMAT),
-        (False, True, NULL_OUTPUT_FORMAT),
+        (True, JSON_LINES_OUTPUT_FORMAT),
+        (False, JSON_OUTPUT_FORMAT),
     ],
 )
-def test_get_output_format(streaming, async_execution, expected_format):
+def test_get_output_format(streaming, expected_format):
     """Test output format selection."""
-    assert (
-        BaseStatementPlanner._get_output_format(streaming, async_execution)
-        == expected_format
+    assert BaseStatementPlanner._get_output_format(streaming) == expected_format
+
+
+@pytest.mark.parametrize(
+    "async_execution,null_output_format,expected_format",
+    [
+        (True, True, NULL_OUTPUT_FORMAT),
+        (True, False, JSON_OUTPUT_FORMAT),
+        (False, True, JSON_OUTPUT_FORMAT),
+    ],
+)
+@pytest.mark.parametrize("bulk_insert", [False, True])
+@pytest.mark.parametrize(
+    "planner_fixture,query",
+    [
+        ("fb_numeric_planner", "INSERT INTO t VALUES ($1)"),
+        ("qmark_planner", "INSERT INTO t VALUES (?)"),
+    ],
+)
+def test_null_output_format_opt_in(
+    request,
+    planner_fixture,
+    query,
+    async_execution,
+    null_output_format,
+    expected_format,
+    bulk_insert,
+):
+    planner = request.getfixturevalue(planner_fixture)
+    plan = planner.create_execution_plan(
+        query,
+        [[1]],
+        async_execution=async_execution,
+        bulk_insert=bulk_insert,
+        null_output_format=null_output_format,
     )
-
-
-def test_get_output_format_rejects_streaming_async():
-    with pytest.raises(AssertionError):
-        BaseStatementPlanner._get_output_format(True, True)
+    assert plan.query_params["output_format"] == expected_format
 
 
 # FbNumericStatementPlanner tests
@@ -136,7 +163,8 @@ def test_fb_numeric_execution_plan_no_parameters(fb_numeric_planner):
     "streaming,async_execution,expected_format,expected_async",
     [
         (True, False, JSON_LINES_OUTPUT_FORMAT, None),
-        (False, True, NULL_OUTPUT_FORMAT, True),
+        (False, True, JSON_OUTPUT_FORMAT, True),
+        (True, True, JSON_LINES_OUTPUT_FORMAT, True),
         (False, False, JSON_OUTPUT_FORMAT, None),
     ],
 )
@@ -222,7 +250,8 @@ def test_qmark_execution_plan_skip_parsing(qmark_planner):
     "streaming,async_execution,expected_format,expected_async",
     [
         (True, False, JSON_LINES_OUTPUT_FORMAT, None),
-        (False, True, NULL_OUTPUT_FORMAT, True),
+        (False, True, JSON_OUTPUT_FORMAT, True),
+        (True, True, JSON_LINES_OUTPUT_FORMAT, True),
         (False, False, JSON_OUTPUT_FORMAT, None),
     ],
 )

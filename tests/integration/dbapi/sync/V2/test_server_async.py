@@ -57,7 +57,7 @@ def test_insert_async(connection: Connection) -> None:
 
 def test_select_async(connection: Connection) -> None:
     cursor = connection.cursor()
-    cursor.execute_async("SELECT 1")
+    cursor.execute_async("SELECT 1", null_output_format=True)
     token = cursor.async_query_token
     assert token is not None, "Async token was not returned"
     # sleep for 2 sec to make sure the async query is completed
@@ -66,6 +66,14 @@ def test_select_async(connection: Connection) -> None:
     assert connection.is_async_query_successful(token) == True
     with raises(MethodNotAllowedInAsyncError):
         cursor.fetchall()
+
+
+def test_select_async_requires_null_output_format(
+    connection: Connection,
+) -> None:
+    cursor = connection.cursor()
+    with raises(FireboltStructuredError):
+        cursor.execute_async("SELECT 1")
 
 
 def test_insert_async_running(connection: Connection) -> None:

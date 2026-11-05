@@ -11,7 +11,7 @@ from httpx import URL, HTTPStatusError, Request, StreamError, codes
 from pytest import LogCaptureFixture, mark, raises
 from pytest_httpx import HTTPXMock
 
-from firebolt.common.constants import CursorState
+from firebolt.common.constants import NULL_OUTPUT_FORMAT, CursorState
 from firebolt.common.row_set.types import Column
 from firebolt.db import Connection, Cursor
 from firebolt.db.cursor import ColType, ProgrammingError
@@ -893,6 +893,22 @@ def test_cursor_execute_async(
     )
     cursor.execute_async("SELECT 2")
     verify_async_fetch_not_allowed(cursor)
+    assert cursor.async_query_token == async_token
+    assert cursor._state == CursorState.DONE
+
+
+def test_cursor_execute_async_null_output_format(
+    httpx_mock: HTTPXMock,
+    async_query_callback: Callable,
+    async_query_url: URL,
+    cursor: Cursor,
+    async_token: str,
+):
+    httpx_mock.add_callback(
+        async_query_callback,
+        url=async_query_url.copy_set_param("output_format", NULL_OUTPUT_FORMAT),
+    )
+    cursor.execute_async("SELECT 2", null_output_format=True)
     assert cursor.async_query_token == async_token
     assert cursor._state == CursorState.DONE
 
