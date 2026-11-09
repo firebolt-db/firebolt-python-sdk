@@ -4,7 +4,7 @@ Service
 
 The service package enables launching and cataloging Firebolt engines and databases.
 
-.. automodule:: firebolt.service.base
+.. automodule:: firebolt.service.V2.base
    :members:
    :exclude-members: BaseService
    :undoc-members:
@@ -15,7 +15,7 @@ The service package enables launching and cataloging Firebolt engines and databa
 Database
 --------------------------------
 
-.. automodule:: firebolt.service.database
+.. automodule:: firebolt.service.V2.database
    :members:
    :undoc-members:
    :show-inheritance:
@@ -25,7 +25,7 @@ Database
 Engine
 ------------------------------
 
-.. automodule:: firebolt.service.engine
+.. automodule:: firebolt.service.V2.engine
    :members:
    :undoc-members:
    :show-inheritance:
@@ -33,7 +33,7 @@ Engine
 Instance type
 --------------------------------------
 
-.. automodule:: firebolt.service.instance_type
+.. automodule:: firebolt.service.V2.instance_type
    :members:
    :exclude-members: InstanceTypeLookup
    :undoc-members:
@@ -50,7 +50,7 @@ Manager
 Types
 -----------------------------
 
-.. automodule:: firebolt.service.types
+.. automodule:: firebolt.service.V2.types
    :members:
    :undoc-members:
    :show-inheritance:
